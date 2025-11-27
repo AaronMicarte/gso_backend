@@ -143,12 +143,47 @@ ALTER TABLE `loginaudit`
   ADD CONSTRAINT `fk_login_user` FOREIGN KEY (`UserID`) REFERENCES `user` (`UserID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
--- Constraints for table `user`
+-- Dumping data for table `department`
 --
-ALTER TABLE `user`
-  ADD CONSTRAINT `fk_user_department` FOREIGN KEY (`DepartmentID`) REFERENCES `department` (`DepartmentID`) ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_user_role` FOREIGN KEY (`UserRoleID`) REFERENCES `userrole` (`UserRoleID`) ON UPDATE CASCADE;
-COMMIT;
+
+INSERT IGNORE INTO `department` (`DepartmentID`, `DepartmentName`) VALUES
+(1, 'GSO'),
+(2, 'Human Resources'),
+(3, 'PESO'),
+(4, 'Accounting'),
+(5, 'CSWD');
+-- --------------------------------------------------------
+
+--
+-- Dumping data for table `loginaudit`
+--
+
+INSERT IGNORE INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`) VALUES
+(1, 1, '2025-11-26 10:00:00', 'Success'),
+(2, 2, '2025-11-26 10:05:00', 'Success'),
+(3, 3, '2025-11-26 10:10:00', 'Failed');
+
+-- --------------------------------------------------------
+
+--
+-- Dumping data for table `user`
+--
+
+INSERT IGNORE INTO `user` (`UserID`, `UserRoleID`, `DepartmentID`, `Username`, `Email`, `Password`) VALUES
+(1, 1, 1, 'gso.admin', 'gso.admin@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),  -- GSO Admin
+(2, 2, 2, 'gso.staff', 'gso.staff@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'),  -- GSO Staff
+(3, 3, 5, 'gso.custodian', 'gso.custodian@gmail.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'); -- Custodian
+
+-- --------------------------------------------------------
+
+--
+-- Dumping data for table `userrole`
+--
+
+INSERT IGNORE INTO `userrole` (`UserRoleID`, `Role`) VALUES
+(1, 'gso admin'),
+(2, 'gso staff'),
+(3, 'custodian');
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
