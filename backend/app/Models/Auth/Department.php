@@ -9,12 +9,15 @@ class Department extends Model
 {
     protected $table = 'department';
     protected $primaryKey = 'DepartmentID';
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
         'DepartmentName',
+        'DepartmentCode',
+        'IsActive',
     ];
 
     /**

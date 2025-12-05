@@ -18,6 +18,7 @@ class LoginAudit extends Model
         'UserID',
         'EventTime',
         'Status',
+        'IPAddress',
     ];
 
     /**

@@ -9,13 +9,16 @@ class LoginAuditSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     * Status values: 'Login', 'Logout', 'FailedLogin'
      */
     public function run(): void
     {
-        DB::table('loginaudits')->insert([
-            ['LoginAuditID' => 1, 'UserID' => 1, 'EventTime' => '2025-11-26 10:00:00', 'Status' => 'Success'],
-            ['LoginAuditID' => 2, 'UserID' => 2, 'EventTime' => '2025-11-26 10:05:00', 'Status' => 'Success'],
-            ['LoginAuditID' => 3, 'UserID' => 3, 'EventTime' => '2025-11-26 10:10:00', 'Status' => 'Failed'],
+        // LoginAudit is populated during actual login/logout events
+        // Seeding sample data for testing purposes only
+        DB::table('loginaudit')->insert([
+            ['UserID' => 1, 'EventTime' => '2025-11-26 10:00:00', 'Status' => 'Login'],
+            ['UserID' => 2, 'EventTime' => '2025-11-26 10:05:00', 'Status' => 'Login'],
+            ['UserID' => 3, 'EventTime' => '2025-11-26 10:10:00', 'Status' => 'FailedLogin'],
         ]);
     }
 }

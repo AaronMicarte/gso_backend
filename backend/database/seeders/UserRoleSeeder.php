@@ -12,10 +12,12 @@ class UserRoleSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('userroles')->insert([
-            ['UserRoleID' => 1, 'Role' => 'gso admin'],
-            ['UserRoleID' => 2, 'Role' => 'gso staff'],
-            ['UserRoleID' => 3, 'Role' => 'custodian'],
+        DB::table('userrole')->insert([
+            ['RoleName' => 'Admin', 'Description' => 'System Administrator - Full Access'],
+            ['RoleName' => 'GSO Staff', 'Description' => 'General Services Office Staff'],
+            ['RoleName' => 'Property Custodian', 'Description' => 'Manages property inventory'],
+            ['RoleName' => 'Department Head', 'Description' => 'Can approve requests'],
+            ['RoleName' => 'End User', 'Description' => 'Regular property accountable user'],
         ]);
     }
 }

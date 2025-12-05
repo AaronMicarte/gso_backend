@@ -9,12 +9,14 @@ class UserRole extends Model
 {
     protected $table = 'userrole';
     protected $primaryKey = 'UserRoleID';
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
-        'Role',
+        'RoleName',
+        'Description',
     ];
 
     /**

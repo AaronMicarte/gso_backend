@@ -17,6 +17,11 @@ class User extends Authenticatable
     protected $primaryKey = 'UserID';
 
     /**
+     * Disable Laravel's automatic timestamps (we use CreatedDate/UpdatedDate)
+     */
+    public $timestamps = false;
+
+    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
@@ -25,6 +30,8 @@ class User extends Authenticatable
         'Username',
         'Email',
         'Password',
+        'FullName',
+        'IsActive',
     ];
 
     /**
@@ -71,16 +78,17 @@ class User extends Authenticatable
 
     /**
      * Get the name of the unique identifier for the user.
+     * This is the primary key column used by Laravel's auth system.
      */
-    public function getAuthIdentifierName()
+    public function getAuthIdentifierName(): string
     {
-        return 'Username';
+        return 'UserID';
     }
 
     /**
      * Get the password for the user.
      */
-    public function getAuthPassword()
+    public function getAuthPassword(): string
     {
         return $this->Password;
     }

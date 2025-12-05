@@ -15,28 +15,31 @@ class UserSeeder extends Seeder
     {
         DB::table('user')->insert([
             [
-                'UserID' => 1,
                 'UserRoleID' => 1,
                 'DepartmentID' => 1,
                 'Username' => 'gso.admin',
-                'Email' => 'gso.admin@gmail.com',
+                'Email' => 'admin@gso.gov.ph',
                 'Password' => Hash::make('123'),
+                'FullName' => 'GSO Administrator',
+                'IsActive' => 1,
             ],
             [
-                'UserID' => 2,
                 'UserRoleID' => 2,
-                'DepartmentID' => 2,
-                'Username' => 'gso.staff',
-                'Email' => 'gso.staff@gmail.com',
+                'DepartmentID' => 1,
+                'Username' => 'gso.staff.aaronmicarte',
+                'Email' => 'aaron.micarte@gso.gov.ph',
                 'Password' => Hash::make('123'),
+                'FullName' => 'Aaron Micarte',
+                'IsActive' => 1,
             ],
             [
-                'UserID' => 3,
                 'UserRoleID' => 3,
-                'DepartmentID' => 5,
-                'Username' => 'gso.custodian',
-                'Email' => 'gso.custodian@gmail.com',
+                'DepartmentID' => 1,
+                'Username' => 'custodian',
+                'Email' => 'custodian@gso.gov.ph',
                 'Password' => Hash::make('123'),
+                'FullName' => 'Property Custodian',
+                'IsActive' => 1,
             ],
         ]);
     }
