@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models\MasterData;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Classification extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $table = 'classification';
+    protected $primaryKey = 'ClassificationID';
+    public $timestamps = false;
+    const DELETED_AT = 'deleted_at';
+
+    protected $fillable = [
+        'CategoryID',
+        'ClassificationName',
+        'Description',
+        'CreatedDate',
+        'UpdatedDate',
+    ];
+
+    protected $casts = [
+        'CreatedDate' => 'datetime',
+        'UpdatedDate' => 'datetime',
+    ];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->CreatedDate) {
+                $model->CreatedDate = now();
+            }
+        });
+
+        static::updating(function ($model) {
+            $model->UpdatedDate = now();
+        });
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(\App\Models\MasterData\Category::class, 'CategoryID', 'CategoryID');
+    }
+}
