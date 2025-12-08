@@ -20,7 +20,13 @@ return [
     'allowed_methods' => ['*'],
 
     // In production, change to your actual domain
-    'allowed_origins' => ['http://localhost:3000'],
+    'allowed_origins' => [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3000',
+        'http://10.102.77.196:3000',
+        'http://169.254.116.186:3000'
+    ],
 
     'allowed_origins_patterns' => [],
 

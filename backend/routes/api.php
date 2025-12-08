@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Auth\MFAController;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,7 +26,24 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard routes
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
     Route::get('/dashboard/activity', [DashboardController::class, 'getRecentActivity']);
+
+    // MFA Management routes (require authentication)
+    Route::prefix('mfa')->group(function () {
+        Route::get('/status', [MFAController::class, 'getMFAStatus']);
+        Route::post('/generate-secret', [MFAController::class, 'generateSecret']);
+        Route::post('/enable', [MFAController::class, 'enableMFA']);
+        Route::post('/disable', [MFAController::class, 'disableMFA']);
+        Route::get('/trusted-devices', [MFAController::class, 'getTrustedDevices']);
+        Route::post('/revoke-device', [MFAController::class, 'revokeTrustedDevice']);
+    });
 });
 
-// Public authentication routes
-Route::post('/login', [AuthController::class, 'login']);
+// Public authentication routes - with CSRF protection
+Route::middleware('api')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/mfa/verify', [AuthController::class, 'completeMFALogin']);
+
+    // Public MFA setup routes (for login flow when MFA setup is required)
+    Route::post('/mfa/setup/generate', [AuthController::class, 'generateMFASecretForLogin']);
+    Route::post('/mfa/setup/enable', [AuthController::class, 'enableMFADuringLogin']);
+});

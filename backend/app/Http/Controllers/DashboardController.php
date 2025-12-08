@@ -67,7 +67,8 @@ class DashboardController extends Controller
                     'loginaudit.Status as action',
                     'user.Username as user',
                     'user.FullName as fullName',
-                    'loginaudit.EventTime as timestamp'
+                    'loginaudit.EventTime as timestamp',
+                    'loginaudit.IPAddress as ip_address'
                 )
                 ->orderBy('loginaudit.EventTime', 'desc')
                 ->limit(5)
@@ -80,6 +81,7 @@ class DashboardController extends Controller
                         'description' => $item->fullName ?? $item->user,
                         'user' => $item->user,
                         'timestamp' => $item->timestamp,
+                        'ip_address' => $item->ip_address,
                     ];
                 });
 

@@ -32,6 +32,9 @@ class User extends Authenticatable
         'Password',
         'FullName',
         'IsActive',
+        'MFASecret',
+        'MFAEnabled',
+        'BackupCodes',
     ];
 
     /**
@@ -74,6 +77,14 @@ class User extends Authenticatable
     public function loginAudits(): HasMany
     {
         return $this->hasMany(LoginAudit::class, 'UserID', 'UserID');
+    }
+
+    /**
+     * Get the trusted devices for the user.
+     */
+    public function trustedDevices(): HasMany
+    {
+        return $this->hasMany(TrustedDevice::class, 'UserID', 'UserID');
     }
 
     /**
