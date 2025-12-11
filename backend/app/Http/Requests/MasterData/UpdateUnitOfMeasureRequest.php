@@ -11,7 +11,7 @@ class UpdateUnitOfMeasureRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +21,10 @@ class UpdateUnitOfMeasureRequest extends FormRequest
      */
     public function rules(): array
     {
+        $id = $this->route('id');
         return [
-            //
+            'UnitName' => 'sometimes|required|string|max:50|unique:unitofmeasure,UnitName,' . $id . ',UnitOfMeasureID',
+            'Description' => 'nullable|string|max:100',
         ];
     }
 }

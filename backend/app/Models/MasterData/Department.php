@@ -19,11 +19,13 @@ class Department extends Model
         'DepartmentCode',
         'DepartmentName',
         'Description',
+        'IsActive',
         'CreatedDate',
         'UpdatedDate',
     ];
 
     protected $casts = [
+        'IsActive' => 'boolean',
         'CreatedDate' => 'datetime',
         'UpdatedDate' => 'datetime',
     ];

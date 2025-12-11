@@ -10,7 +10,7 @@ abstract class BaseMasterDataService
 {
     protected $model;
     protected $searchableFields = [];
-    protected $defaultSortField = 'id';
+    protected $defaultSortField;
     protected $defaultSortOrder = 'desc';
 
     /**
@@ -38,7 +38,17 @@ abstract class BaseMasterDataService
         $this->applyFilters($query, $params);
 
         // Sorting
-        $sortBy = $params['sort_by'] ?? $this->defaultSortField;
+        $modelInstance = new $this->model;
+        $sortBy = $params['sort_by'] ?? ($this->defaultSortField ?: $modelInstance->getKeyName());
+        // Map common incoming sort_by aliases (frontend may send 'id') to the model's primary key
+        if (in_array(strtolower($sortBy), ['id'])) {
+            $sortBy = $modelInstance->getKeyName();
+        }
+        // Only allow sorting by fields that exist on the model - if not allowed, fall back to default
+        $allowedSortFields = array_merge($this->searchableFields, $modelInstance->getFillable(), [$modelInstance->getKeyName(), 'CreatedDate', 'UpdatedDate']);
+        if (!in_array($sortBy, $allowedSortFields)) {
+            $sortBy = $this->defaultSortField ?: $modelInstance->getKeyName();
+        }
         $sortOrder = $params['sort_order'] ?? $this->defaultSortOrder;
         $query->orderBy($sortBy, $sortOrder);
 

@@ -11,7 +11,7 @@ class UpdatePropertyClassificationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,9 @@ class UpdatePropertyClassificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'ClassificationName' => 'sometimes|required|string|max:50',
+            'Description' => 'nullable|string|max:255',
+            'DocumentType' => 'sometimes|required|in:ICS,PAR',
         ];
     }
 }

@@ -18,7 +18,7 @@ class PropertyType extends Model
     protected $fillable = [
         'ClassificationID',
         'PropertyClassificationID',
-        'PropertyTypeName',
+        'PropertyName',
         'Description',
         'CreatedDate',
         'UpdatedDate',

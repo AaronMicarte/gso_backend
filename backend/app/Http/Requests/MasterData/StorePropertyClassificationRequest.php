@@ -11,7 +11,7 @@ class StorePropertyClassificationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,9 @@ class StorePropertyClassificationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'ClassificationName' => 'required|string|max:50',
+            'Description' => 'nullable|string|max:255',
+            'DocumentType' => 'required|in:ICS,PAR',
         ];
     }
 }

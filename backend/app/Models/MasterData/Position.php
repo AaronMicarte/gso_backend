@@ -17,7 +17,7 @@ class Position extends Model
 
     protected $fillable = [
         'PositionName',
-        'Description',
+        'PositionDescription',
         'CreatedDate',
         'UpdatedDate',
     ];

@@ -14,6 +14,8 @@ class PropertyClassificationResource extends JsonResource
             'name' => $this->ClassificationName,
             'description' => $this->Description,
             'document_type' => $this->DocumentType,
+            'created_at' => null,
+            'updated_at' => null,
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
             'is_deleted' => $this->trashed(),
         ];

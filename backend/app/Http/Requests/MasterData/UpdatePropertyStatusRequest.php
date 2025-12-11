@@ -11,7 +11,7 @@ class UpdatePropertyStatusRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class UpdatePropertyStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'StatusName' => 'sometimes|required|string|max:50',
+            'Description' => 'nullable|string|max:255',
         ];
     }
 }

@@ -18,11 +18,13 @@ class Category extends Model
     protected $fillable = [
         'CategoryName',
         'Description',
+        'IsActive',
         'CreatedDate',
         'UpdatedDate',
     ];
 
     protected $casts = [
+        'IsActive' => 'boolean',
         'CreatedDate' => 'datetime',
         'UpdatedDate' => 'datetime',
     ];

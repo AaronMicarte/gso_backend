@@ -12,7 +12,7 @@ class PositionResource extends JsonResource
         return [
             'id' => $this->PositionID,
             'name' => $this->PositionName,
-            'description' => $this->Description,
+            'description' => $this->PositionDescription,
             'created_at' => $this->CreatedDate?->format('Y-m-d H:i:s'),
             'updated_at' => $this->UpdatedDate?->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),

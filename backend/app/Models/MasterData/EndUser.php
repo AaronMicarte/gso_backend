@@ -16,18 +16,18 @@ class EndUser extends Model
     const DELETED_AT = 'deleted_at';
 
     protected $fillable = [
-        'FirstName',
-        'LastName',
-        'MiddleName',
+        'FullName',
         'DepartmentID',
         'PositionID',
         'ContactNumber',
         'Email',
+        'IsActive',
         'CreatedDate',
         'UpdatedDate',
     ];
 
     protected $casts = [
+        'IsActive' => 'boolean',
         'CreatedDate' => 'datetime',
         'UpdatedDate' => 'datetime',
     ];

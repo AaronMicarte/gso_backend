@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\MFAController;
-use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\MasterData\CategoryController as MasterDataCategoryController;
 use App\Http\Controllers\Admin\MasterData\ClassificationController;
 use App\Http\Controllers\Admin\MasterData\ConditionController;
@@ -31,6 +30,11 @@ use App\Http\Controllers\Admin\MasterData\UserRoleController;
 |
 */
 
+// Public routes
+Route::get('/test-connection', function () {
+    return response()->json(['message' => 'API is working']);
+});
+
 // Protected routes - requires session-based authentication (httpOnly cookie)
 Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
@@ -53,61 +57,58 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin routes
     Route::prefix('admin')->group(function () {
-        // Legacy category route (keep for backward compatibility)
-        Route::apiResource('categories', CategoryController::class);
-
-        // Master Data routes (new structured approach)
+        // Master Data routes (structured approach)
         Route::prefix('master-data')->group(function () {
             // Categories
-            Route::apiResource('categories', MasterDataCategoryController::class);
+            Route::apiResource('categories', MasterDataCategoryController::class)->parameters(['categories' => 'id']);
             Route::post('categories/{id}/restore', [MasterDataCategoryController::class, 'restore']);
 
             // Classifications
-            Route::apiResource('classifications', ClassificationController::class);
+            Route::apiResource('classifications', ClassificationController::class)->parameters(['classifications' => 'id']);
             Route::post('classifications/{id}/restore', [ClassificationController::class, 'restore']);
 
             // Conditions
-            Route::apiResource('conditions', ConditionController::class);
+            Route::apiResource('conditions', ConditionController::class)->parameters(['conditions' => 'id']);
             Route::post('conditions/{id}/restore', [ConditionController::class, 'restore']);
 
             // Departments
-            Route::apiResource('departments', MasterDataDepartmentController::class);
+            Route::apiResource('departments', MasterDataDepartmentController::class)->parameters(['departments' => 'id']);
             Route::post('departments/{id}/restore', [MasterDataDepartmentController::class, 'restore']);
 
             // Disposal Methods
-            Route::apiResource('disposal-methods', DisposalMethodController::class);
+            Route::apiResource('disposal-methods', DisposalMethodController::class)->parameters(['disposal-methods' => 'id']);
             Route::post('disposal-methods/{id}/restore', [DisposalMethodController::class, 'restore']);
 
             // End Users
-            Route::apiResource('end-users', EndUserController::class);
+            Route::apiResource('end-users', EndUserController::class)->parameters(['end-users' => 'id']);
             Route::post('end-users/{id}/restore', [EndUserController::class, 'restore']);
 
             // Positions
-            Route::apiResource('positions', PositionController::class);
+            Route::apiResource('positions', PositionController::class)->parameters(['positions' => 'id']);
             Route::post('positions/{id}/restore', [PositionController::class, 'restore']);
 
             // Property Classifications
-            Route::apiResource('property-classifications', PropertyClassificationController::class);
+            Route::apiResource('property-classifications', PropertyClassificationController::class)->parameters(['property-classifications' => 'id']);
             Route::post('property-classifications/{id}/restore', [PropertyClassificationController::class, 'restore']);
 
             // Property Statuses
-            Route::apiResource('property-statuses', PropertyStatusController::class);
+            Route::apiResource('property-statuses', PropertyStatusController::class)->parameters(['property-statuses' => 'id']);
             Route::post('property-statuses/{id}/restore', [PropertyStatusController::class, 'restore']);
 
             // Property Types
-            Route::apiResource('property-types', PropertyTypeController::class);
+            Route::apiResource('property-types', PropertyTypeController::class)->parameters(['property-types' => 'id']);
             Route::post('property-types/{id}/restore', [PropertyTypeController::class, 'restore']);
 
             // Suppliers
-            Route::apiResource('suppliers', SupplierController::class);
+            Route::apiResource('suppliers', SupplierController::class)->parameters(['suppliers' => 'id']);
             Route::post('suppliers/{id}/restore', [SupplierController::class, 'restore']);
 
             // Units of Measure
-            Route::apiResource('units-of-measure', UnitOfMeasureController::class);
+            Route::apiResource('units-of-measure', UnitOfMeasureController::class)->parameters(['units-of-measure' => 'id']);
             Route::post('units-of-measure/{id}/restore', [UnitOfMeasureController::class, 'restore']);
 
             // User Roles
-            Route::apiResource('user-roles', UserRoleController::class);
+            Route::apiResource('user-roles', UserRoleController::class)->parameters(['user-roles' => 'id']);
             Route::post('user-roles/{id}/restore', [UserRoleController::class, 'restore']);
         });
     });
@@ -115,7 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // Public authentication routes - with CSRF protection
 Route::middleware('api')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/mfa/verify', [AuthController::class, 'completeMFALogin']);
 
     // Public MFA setup routes (for login flow when MFA setup is required)

@@ -11,7 +11,7 @@ class UpdateUserRoleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class UpdateUserRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'RoleName' => 'sometimes|required|string|max:50',
+            'Description' => 'nullable|string|max:255',
         ];
     }
 }

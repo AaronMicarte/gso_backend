@@ -13,7 +13,7 @@ class PropertyTypeResource extends JsonResource
             'id' => $this->PropertyTypeID,
             'classification_id' => $this->ClassificationID,
             'property_classification_id' => $this->PropertyClassificationID,
-            'name' => $this->PropertyTypeName,
+            'name' => $this->PropertyName,
             'description' => $this->Description,
             'created_at' => $this->CreatedDate?->format('Y-m-d H:i:s'),
             'updated_at' => $this->UpdatedDate?->format('Y-m-d H:i:s'),

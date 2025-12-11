@@ -11,7 +11,7 @@ class UpdateConditionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class UpdateConditionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'ConditionName' => 'sometimes|required|string|max:50',
+            'Description' => 'nullable|string|max:255',
         ];
     }
 }

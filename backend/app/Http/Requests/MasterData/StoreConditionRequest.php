@@ -11,7 +11,7 @@ class StoreConditionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class StoreConditionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'ConditionName' => 'required|string|max:50',
+            'Description' => 'nullable|string|max:255',
         ];
     }
 }

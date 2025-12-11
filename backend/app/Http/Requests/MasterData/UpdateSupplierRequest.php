@@ -11,7 +11,7 @@ class UpdateSupplierRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,13 @@ class UpdateSupplierRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'SupplierName' => 'sometimes|required|string|max:100',
+            'Address' => 'nullable|string|max:255',
+            'ContactPerson' => 'nullable|string|max:100',
+            'ContactNumber' => 'nullable|string|max:20',
+            'Email' => 'nullable|email|max:100',
+            'TIN' => 'nullable|string|max:50',
+            'IsActive' => 'sometimes|boolean',
         ];
     }
 }

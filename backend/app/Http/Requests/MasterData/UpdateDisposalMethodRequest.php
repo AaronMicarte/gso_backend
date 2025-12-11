@@ -11,7 +11,7 @@ class UpdateDisposalMethodRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class UpdateDisposalMethodRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'MethodName' => 'sometimes|required|string|max:100',
+            'Description' => 'nullable|string|max:255',
         ];
     }
 }

@@ -13,6 +13,8 @@ class UnitOfMeasureResource extends JsonResource
             'id' => $this->UnitOfMeasureID,
             'name' => $this->UnitName,
             'description' => $this->Description,
+            'created_at' => null,
+            'updated_at' => null,
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
             'is_deleted' => $this->trashed(),
         ];

@@ -11,7 +11,7 @@ class UpdateEndUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,12 @@ class UpdateEndUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'FullName' => 'sometimes|required|string|max:100',
+            'DepartmentID' => 'sometimes|required|integer|exists:department,DepartmentID',
+            'PositionID' => 'sometimes|required|integer|exists:position,PositionID',
+            'ContactNumber' => 'nullable|string|max:20',
+            'Email' => 'nullable|email|max:100',
+            'IsActive' => 'sometimes|boolean',
         ];
     }
 }

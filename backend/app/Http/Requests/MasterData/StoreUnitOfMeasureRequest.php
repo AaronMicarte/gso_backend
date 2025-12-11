@@ -11,7 +11,7 @@ class StoreUnitOfMeasureRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class StoreUnitOfMeasureRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'UnitName' => 'required|string|max:50|unique:unitofmeasure,UnitName',
+            'Description' => 'nullable|string|max:100',
         ];
     }
 }

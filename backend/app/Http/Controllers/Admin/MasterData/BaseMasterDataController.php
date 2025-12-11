@@ -36,6 +36,7 @@ abstract class BaseMasterDataController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "Failed to fetch {$this->entityName}. Please try again.",
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -72,10 +73,11 @@ abstract class BaseMasterDataController extends Controller
     /**
      * Create new record
      */
-    public function store($request): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
-            $data = $request instanceof Request ? $request->validated() : $request;
+            // Get validated data from FormRequest or regular Request
+            $data = method_exists($request, 'validated') ? $request->validated() : $request->all();
             $item = $this->service->create($data);
 
             return response()->json([
@@ -85,12 +87,14 @@ abstract class BaseMasterDataController extends Controller
             ], 201);
         } catch (Exception $e) {
             Log::error("Error creating {$this->entityName}: " . $e->getMessage(), [
-                'data' => is_array($data) ? $data : []
+                'data' => isset($data) ? $data : [],
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => "Failed to create {$this->entityName}. Please try again.",
+                'error' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -98,10 +102,11 @@ abstract class BaseMasterDataController extends Controller
     /**
      * Update existing record
      */
-    public function update($request, $id): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         try {
-            $data = $request instanceof Request ? $request->validated() : $request;
+            // Get validated data from FormRequest or regular Request
+            $data = method_exists($request, 'validated') ? $request->validated() : $request->all();
             $item = $this->service->update($id, $data);
 
             if (!$item) {
@@ -117,7 +122,9 @@ abstract class BaseMasterDataController extends Controller
                 'data' => $this->transformItem($item),
             ], 200);
         } catch (Exception $e) {
-            Log::error("Error updating {$this->entityName} #{$id}: " . $e->getMessage());
+            Log::error("Error updating {$this->entityName} #{$id}: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,

@@ -11,7 +11,7 @@ class StoreDisposalMethodRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,8 @@ class StoreDisposalMethodRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'MethodName' => 'required|string|max:100',
+            'Description' => 'nullable|string|max:255',
         ];
     }
 }

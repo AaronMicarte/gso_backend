@@ -11,14 +11,12 @@ class EndUserResource extends JsonResource
     {
         return [
             'id' => $this->EndUserID,
-            'first_name' => $this->FirstName,
-            'last_name' => $this->LastName,
-            'middle_name' => $this->MiddleName,
-            'full_name' => $this->full_name,
+            'full_name' => $this->FullName,
             'department_id' => $this->DepartmentID,
             'position_id' => $this->PositionID,
             'contact_number' => $this->ContactNumber,
             'email' => $this->Email,
+            'is_active' => (bool)$this->IsActive,
             'created_at' => $this->CreatedDate?->format('Y-m-d H:i:s'),
             'updated_at' => $this->UpdatedDate?->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
