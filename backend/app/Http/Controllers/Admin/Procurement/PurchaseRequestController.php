@@ -194,6 +194,11 @@ class PurchaseRequestController extends Controller
             return response()->json(['message' => 'Purchase Request not found'], 404);
         }
 
+        // Only allow approval if PR is Budget Checked (PRStatusID == 5)
+        if ($pr->PRStatusID !== 5) {
+            return response()->json(['message' => 'Cannot approve PR unless it is marked as Budget Checked.'], 400);
+        }
+
         $pr->update([
             'PRStatusID' => 2, // Approved
             'ApprovedBy' => Auth::id(),
@@ -218,5 +223,27 @@ class PurchaseRequestController extends Controller
         ]);
 
         return response()->json(['message' => 'Purchase Request rejected successfully']);
+    }
+
+    public function setBudgetChecked(Request $request, $id)
+    {
+        $pr = PurchaseRequest::find($id);
+
+        if (!$pr) {
+            return response()->json(['message' => 'Purchase Request not found'], 404);
+        }
+
+        // Only allow if current user is admin (RoleID 1 or 6)
+        $currentUser = Auth::user();
+        if (!in_array($currentUser->UserRoleID, [1, 6])) {
+            return response()->json(['message' => 'Unauthorized: Only admins can set budget checked status'], 403);
+        }
+
+        $pr->update([
+            'PRStatusID' => 5, // Budget Checked
+            'UpdatedDate' => now(),
+        ]);
+
+        return response()->json(['message' => 'Purchase Request marked as budget checked successfully']);
     }
 }

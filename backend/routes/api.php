@@ -118,6 +118,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('purchase-requests', \App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class)->parameters(['purchase-requests' => 'id']);
             Route::post('purchase-requests/{id}/approve', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'approve']);
             Route::post('purchase-requests/{id}/reject', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'reject']);
+            Route::post('purchase-requests/{id}/budget-checked', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'setBudgetChecked']);
 
             // Purchase Orders
             Route::apiResource('purchase-orders', \App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class)->parameters(['purchase-orders' => 'id']);
