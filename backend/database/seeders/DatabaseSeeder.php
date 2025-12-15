@@ -20,6 +20,8 @@ class DatabaseSeeder extends Seeder
             UserRoleSeeder::class,
             UserSeeder::class,
             LoginAuditSeeder::class,
+            PurchaseRequestStatusSeeder::class,
+            PurchaseOrderStatusSeeder::class,
         ]);
     }
 }

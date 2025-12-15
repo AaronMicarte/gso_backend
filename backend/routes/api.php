@@ -111,6 +111,19 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('user-roles', UserRoleController::class)->parameters(['user-roles' => 'id']);
             Route::post('user-roles/{id}/restore', [UserRoleController::class, 'restore']);
         });
+
+        // Procurement Routes
+        Route::prefix('procurement')->group(function () {
+            // Purchase Requests
+            Route::apiResource('purchase-requests', \App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class)->parameters(['purchase-requests' => 'id']);
+            Route::post('purchase-requests/{id}/approve', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'approve']);
+            Route::post('purchase-requests/{id}/reject', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'reject']);
+
+            // Purchase Orders
+            Route::apiResource('purchase-orders', \App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class)->parameters(['purchase-orders' => 'id']);
+            Route::post('purchase-orders/{id}/approve', [\App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class, 'approve']);
+            Route::post('purchase-orders/{id}/reject', [\App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class, 'reject']);
+        });
     });
 });
 

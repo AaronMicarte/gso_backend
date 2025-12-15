@@ -141,6 +141,11 @@ class AuthController extends Controller
                             'FullName' => $user->FullName ?? $user->Username,
                             'Role' => $user->userRole->RoleName ?? 'N/A',
                             'Department' => $user->department->DepartmentName ?? 'N/A',
+                            'DepartmentID' => $user->DepartmentID,
+                            'department' => [
+                                'DepartmentID' => $user->department->DepartmentID ?? 0,
+                                'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
+                            ]
                         ]
                     ]);
                 }
@@ -202,6 +207,11 @@ class AuthController extends Controller
                 'FullName' => $user->FullName ?? $user->Username,
                 'Role' => $user->userRole->RoleName ?? 'N/A',
                 'Department' => $user->department->DepartmentName ?? 'N/A',
+                'DepartmentID' => $user->DepartmentID,
+                'department' => [
+                    'DepartmentID' => $user->department->DepartmentID ?? 0,
+                    'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
+                ]
             ]
         ]);
     }
@@ -276,6 +286,11 @@ class AuthController extends Controller
                 'FullName' => $user->FullName ?? $user->Username,
                 'Role' => $user->userRole->RoleName ?? 'N/A',
                 'Department' => $user->department->DepartmentName ?? 'N/A',
+                'DepartmentID' => $user->DepartmentID,
+                'department' => [
+                    'DepartmentID' => $user->department->DepartmentID ?? 0,
+                    'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
+                ]
             ]
         ]);
 
@@ -346,7 +361,8 @@ class AuthController extends Controller
     public function getUser(Request $request)
     {
         try {
-            $user = $request->user();
+            // Eager load department and userRole relationships
+            $user = $request->user()->load(['department', 'userRole']);
 
             return response()->json([
                 'user' => [
@@ -356,6 +372,11 @@ class AuthController extends Controller
                     'FullName' => $user->FullName ?? $user->Username,
                     'Role' => $user->userRole->RoleName ?? 'N/A',
                     'Department' => $user->department->DepartmentName ?? 'N/A',
+                    'DepartmentID' => $user->DepartmentID,
+                    'department' => [
+                        'DepartmentID' => $user->department->DepartmentID ?? 0,
+                        'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
+                    ]
                 ]
             ]);
         } catch (\Exception $e) {
