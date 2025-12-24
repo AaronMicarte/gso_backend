@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\MasterData\PropertyTypeController;
 use App\Http\Controllers\Admin\MasterData\SupplierController;
 use App\Http\Controllers\Admin\MasterData\UnitOfMeasureController;
 use App\Http\Controllers\Admin\MasterData\UserRoleController;
+use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,19 +113,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('user-roles/{id}/restore', [UserRoleController::class, 'restore']);
         });
 
-        // Procurement Routes
+        // Delivery Receipt routes (simplified workflow - starts here)
         Route::prefix('procurement')->group(function () {
-            // Purchase Requests
-            Route::apiResource('purchase-requests', \App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class)->parameters(['purchase-requests' => 'id']);
-            Route::post('purchase-requests/{id}/approve', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'approve']);
-            Route::post('purchase-requests/{id}/reject', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'reject']);
-            Route::post('purchase-requests/{id}/budget-checked', [\App\Http\Controllers\Admin\Procurement\PurchaseRequestController::class, 'setBudgetChecked']);
-
-            // Purchase Orders
-            Route::apiResource('purchase-orders', \App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class)->parameters(['purchase-orders' => 'id']);
-            Route::post('purchase-orders/{id}/approve', [\App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class, 'approve']);
-            Route::post('purchase-orders/{id}/reject', [\App\Http\Controllers\Admin\Procurement\PurchaseOrderController::class, 'reject']);
+            Route::apiResource('delivery-receipts', DeliveryReceiptController::class)->parameters(['delivery-receipts' => 'id']);
+            Route::post('delivery-receipts/{id}/restore', [DeliveryReceiptController::class, 'restore']);
+            Route::get('delivery-receipts-helpers/suppliers', [DeliveryReceiptController::class, 'getSuppliers']);
+            Route::get('delivery-receipts-helpers/property-types', [DeliveryReceiptController::class, 'getPropertyTypes']);
         });
+
+        // Note: Procurement routes (PR/PO) have been removed per project requirements
     });
 });
 

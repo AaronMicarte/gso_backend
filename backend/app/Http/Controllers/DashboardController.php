@@ -22,14 +22,10 @@ class DashboardController extends Controller
             $stats = [
                 'totalAssets' => DB::table('assignedproperty')->count(),
                 'totalInventory' => DB::table('propertyinventorydetail')->count(),
-                'pendingRequests' => DB::table('purchaserequest')
-                    ->whereIn('PRStatusID', [1]) // Pending status
-                    ->count(),
+                'totalDeliveryReceipts' => DB::table('deliveryreceipt')->count(),
                 'totalUsers' => DB::table('user')->where('IsActive', 1)->count(),
                 'totalDepartments' => DB::table('department')->where('IsActive', 1)->count(),
-                'pendingJobOrders' => DB::table('joborder')
-                    ->whereIn('JobOrderStatusID', [1, 2]) // Pending or In Progress
-                    ->count(),
+                'totalSuppliers' => DB::table('supplier')->where('IsActive', 1)->count(),
                 'forDisposal' => DB::table('assignedproperty')
                     ->where('PropertyStatusID', 4) // For Disposal status
                     ->count(),
@@ -85,36 +81,33 @@ class DashboardController extends Controller
                     ];
                 });
 
-            // Recent purchase requests (last 5)
-            $purchaseRequests = DB::table('purchaserequest')
-                ->join('user', 'purchaserequest.RequestedBy', '=', 'user.UserID')
-                ->join('department', 'purchaserequest.DepartmentID', '=', 'department.DepartmentID')
-                ->join('purchaserequeststatus', 'purchaserequest.PRStatusID', '=', 'purchaserequeststatus.PRStatusID')
+            // Recent delivery receipts (last 5)
+            $deliveryReceipts = DB::table('deliveryreceipt')
+                ->join('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->select(
-                    'purchaserequest.PurchaseRequestID as id',
-                    'purchaserequest.PRNumber as prNumber',
-                    'purchaserequeststatus.StatusName as status',
+                    'deliveryreceipt.DRID as id',
+                    'deliveryreceipt.DRNumber as drNumber',
+                    'deliveryreceipt.SupplierName as supplier',
                     'user.Username as user',
-                    'department.DepartmentName as department',
-                    'purchaserequest.CreatedDate as timestamp'
+                    'deliveryreceipt.CreatedDate as timestamp'
                 )
-                ->orderBy('purchaserequest.CreatedDate', 'desc')
+                ->orderBy('deliveryreceipt.CreatedDate', 'desc')
                 ->limit(5)
                 ->get()
                 ->map(function ($item) {
                     return [
-                        'id' => 'pr_' . $item->id,
-                        'type' => 'purchase_request',
-                        'action' => 'Purchase Request ' . $item->status,
-                        'description' => $item->prNumber ?? 'PR-' . $item->id,
-                        'user' => $item->department,
+                        'id' => 'dr_' . $item->id,
+                        'type' => 'delivery_receipt',
+                        'action' => 'New Delivery Receipt',
+                        'description' => $item->drNumber ?? 'DR-' . $item->id,
+                        'user' => $item->supplier ?? $item->user,
                         'timestamp' => $item->timestamp,
                     ];
                 });
 
             // Merge and sort by timestamp
             $activities = collect($loginAudits)
-                ->merge($purchaseRequests)
+                ->merge($deliveryReceipts)
                 ->sortByDesc('timestamp')
                 ->take(10)
                 ->values()
