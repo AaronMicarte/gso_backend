@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Auth\User;
 
 class DeliveryReceipt extends Model
@@ -41,5 +42,10 @@ class DeliveryReceipt extends Model
     public function details(): HasMany
     {
         return $this->hasMany(DeliveryReceiptDetail::class, 'DRID', 'DRID');
+    }
+
+    public function iar(): HasOne
+    {
+        return $this->hasOne(InspectionAcceptanceReport::class, 'DRID', 'DRID');
     }
 }

@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
             LoginAuditSeeder::class,
             PurchaseRequestStatusSeeder::class,
             PurchaseOrderStatusSeeder::class,
+            ClassificationSeeder::class,
+            PropertyTypeSeeder::class,
         ]);
     }
 }

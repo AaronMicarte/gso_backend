@@ -138,7 +138,7 @@ INSERT INTO `condition` (`ConditionID`, `ConditionName`, `Description`, `deleted
 
 CREATE TABLE `deliveryreceipt` (
   `DRID` int(11) NOT NULL,
-  `DRNumber` varchar(50) DEFAULT NULL,
+  `DRNumber` varchar(50) NOT NULL,
   `SupplierName` varchar(255) DEFAULT NULL COMMENT 'Supplier name (manual entry or from supplier table)',
   `PONumber` varchar(50) DEFAULT NULL COMMENT 'Manual PO Number reference (optional)',
   `InvoiceNumber` varchar(50) DEFAULT NULL COMMENT 'Invoice number from supplier',
@@ -161,6 +161,7 @@ CREATE TABLE `deliveryreceiptdetail` (
   `ItemDescription` varchar(255) NOT NULL COMMENT 'Manual item description',
   `PropertyTypeID` int(11) NOT NULL,
   `QuantityDelivered` int(11) NOT NULL,
+  `UnitOfMeasureID` int(11) NOT NULL,
   `UnitCost` decimal(18,2) DEFAULT NULL,
   `TotalCost` decimal(18,2) DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
@@ -750,6 +751,23 @@ CREATE TABLE `propertytype` (
 -- --------------------------------------------------------
 
 --
+-- Dumping data for table `propertytype`
+--
+
+INSERT INTO `propertytype` (`PropertyTypeID`, `ClassificationID`, `PropertyClassificationID`, `PropertyName`, `Description`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
+(1, 1, 2, 'Office Furniture', 'Chairs, tables, cabinets and other furniture', '2025-12-23 16:00:00', NULL, NULL),
+(2, 1, 2, 'Office Equipment', 'Photocopiers, shredders, projectors', '2025-12-23 16:00:00', NULL, NULL),
+(3, 1, 2, 'IT Equipment', 'Desktops, laptops, servers, printers, networking equipment', '2025-12-23 16:00:00', NULL, NULL),
+(4, 1, 2, 'Machinery and Equipment', 'Industrial machines, generators, HVAC, tools', '2025-12-23 16:00:00', NULL, NULL),
+(5, 1, 2, 'Medical Equipment', 'Medical devices and instruments', '2025-12-23 16:00:00', NULL, NULL),
+(6, 1, 1, 'Library and Reference Materials', 'Books, subscriptions, educational materials', '2025-12-23 16:00:00', NULL, NULL),
+(7, 1, 1, 'Supplies and Consumables', 'Stationery, cleaning supplies, expendable items', '2025-12-23 16:00:00', NULL, NULL),
+(8, 1, 1, 'Personal Protective Equipment (PPE)', 'Safety gear and single/short-use protective items', '2025-12-23 16:00:00', NULL, NULL),
+(9, 1, 2, 'Other Fixed Assets', 'Miscellaneous non-expendable assets not otherwise classified', '2025-12-23 16:00:00', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `qrcode`
 --
 
@@ -1022,6 +1040,8 @@ ALTER TABLE `deliveryreceipt`
   ADD PRIMARY KEY (`DRID`),
   ADD KEY `POID` (`PONumber`),
   ADD KEY `ReceivedBy` (`ReceivedBy`);
+  ALTER TABLE `deliveryreceipt`
+    ADD UNIQUE KEY `DRNumber` (`DRNumber`);
 
 --
 -- Indexes for table `deliveryreceiptdetail`
@@ -1030,7 +1050,8 @@ ALTER TABLE `deliveryreceiptdetail`
   ADD PRIMARY KEY (`DRDetailID`),
   ADD KEY `DRID` (`DRID`),
   ADD KEY `PODetailID` (`ItemDescription`),
-  ADD KEY `PropertyTypeID` (`PropertyTypeID`);
+  ADD KEY `PropertyTypeID` (`PropertyTypeID`),
+  ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`);
 
 --
 -- Indexes for table `department`

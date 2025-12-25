@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\MasterData\SupplierController;
 use App\Http\Controllers\Admin\MasterData\UnitOfMeasureController;
 use App\Http\Controllers\Admin\MasterData\UserRoleController;
 use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
+use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -119,6 +120,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('delivery-receipts/{id}/restore', [DeliveryReceiptController::class, 'restore']);
             Route::get('delivery-receipts-helpers/suppliers', [DeliveryReceiptController::class, 'getSuppliers']);
             Route::get('delivery-receipts-helpers/property-types', [DeliveryReceiptController::class, 'getPropertyTypes']);
+
+            // IAR routes (Inspection & Acceptance Report)
+            Route::apiResource('inspection-acceptance-reports', InspectionAcceptanceReportController::class)->parameters(['inspection-acceptance-reports' => 'id']);
+            Route::get('inspection-acceptance-reports-helpers/conditions', [InspectionAcceptanceReportController::class, 'getConditions']);
+            Route::get('inspection-acceptance-reports-helpers/users', [InspectionAcceptanceReportController::class, 'getUsers']);
         });
 
         // Note: Procurement routes (PR/PO) have been removed per project requirements

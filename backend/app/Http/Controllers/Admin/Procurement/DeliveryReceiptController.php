@@ -13,13 +13,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class DeliveryReceiptController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = DeliveryReceipt::with(['receivedByUser', 'details.propertyType']);
+            $query = DeliveryReceipt::with(['receivedByUser', 'details.propertyType', 'details.unitOfMeasure'])
+                ->withCount('iar as hasIAR');
 
             // Filter by date range
             if ($request->has('start_date') && $request->has('end_date')) {
@@ -38,6 +40,12 @@ class DeliveryReceiptController extends Controller
 
             $deliveryReceipts = $query->orderBy('CreatedDate', 'desc')->paginate(15);
 
+            // Transform to include IAR info
+            $deliveryReceipts->getCollection()->transform(function ($dr) {
+                $dr->hasIAR = $dr->hasIAR > 0;
+                return $dr;
+            });
+
             return response()->json([
                 'success' => true,
                 'data' => $deliveryReceipts
@@ -54,16 +62,31 @@ class DeliveryReceiptController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
+            // determine min allowed date (configurable years back) in Asia/Manila
+            $backdateYears = (int) config('gso.dr_backdate_years', 5);
+            $minDate = Carbon::now('Asia/Manila')->subYears($backdateYears)->toDateString();
+            $isAdmin = Auth::user() && (Auth::user()->UserRoleID ?? null) == 1;
+
+            $dateRules = 'required|date|before_or_equal:today';
+            // allow admin override via request flag 'override_past_limit'
+            $overrideRequested = $request->boolean('override_past_limit', false);
+            if (!($isAdmin && $overrideRequested)) {
+                $dateRules .= '|after_or_equal:' . $minDate;
+            }
+
             $validator = Validator::make($request->all(), [
+                'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
                 'supplier_name' => 'required|string|max:255',
-                'po_number' => 'required|string|max:50',
+                'po_number' => 'nullable|string|max:50', // OPTIONAL
                 'invoice_number' => 'nullable|string|max:50',
-                'date_received' => 'required|date',
+                'date_received' => $dateRules,
+                'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
                 'details' => 'required|array|min:1',
                 'details.*.item_description' => 'required|string|max:255',
                 'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
                 'details.*.quantity_delivered' => 'required|integer|min:1',
+                'details.*.unit_of_measure_id' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
             ]);
 
@@ -77,11 +100,18 @@ class DeliveryReceiptController extends Controller
 
             DB::beginTransaction();
 
-            // Generate DR number
-            $drNumber = 'DR-' . date('Y') . '-' . str_pad(DeliveryReceipt::count() + 1, 4, '0', STR_PAD_LEFT);
+            // enforce timezone-aware no-future date check (Asia/Manila)
+            $manilaNow = Carbon::now('Asia/Manila')->toDateString();
+            if (Carbon::parse($request->date_received, 'Asia/Manila')->gt(Carbon::parse($manilaNow))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['date_received' => ['Date received cannot be in the future.']]
+                ], 422);
+            }
 
             $deliveryReceipt = DeliveryReceipt::create([
-                'DRNumber' => $drNumber,
+                'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
                 'PONumber' => $request->po_number,
                 'InvoiceNumber' => $request->invoice_number,
@@ -97,6 +127,7 @@ class DeliveryReceiptController extends Controller
                     'ItemDescription' => $detail['item_description'],
                     'PropertyTypeID' => $detail['property_type_id'],
                     'QuantityDelivered' => $detail['quantity_delivered'],
+                    'UnitOfMeasureID' => $detail['unit_of_measure_id'],
                     'UnitCost' => $detail['unit_cost'],
                     'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
                 ]);
@@ -107,7 +138,7 @@ class DeliveryReceiptController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt created successfully',
-                'data' => $deliveryReceipt->load(['receivedByUser', 'details.propertyType'])
+                'data' => $deliveryReceipt->load(['receivedByUser', 'details.propertyType', 'details.unitOfMeasure'])
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -122,12 +153,21 @@ class DeliveryReceiptController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $deliveryReceipt = DeliveryReceipt::with(['receivedByUser', 'details.propertyType'])
+            $deliveryReceipt = DeliveryReceipt::with(['details'])
                 ->findOrFail($id);
+
+            // Load receivedByUser
+            $deliveryReceipt->receivedByUser = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
+
+            // Load and attach relationships for details
+            $deliveryReceipt->details->each(function ($detail) {
+                $detail->propertyType = PropertyType::find($detail->PropertyTypeID);
+                $detail->unitOfMeasure = \App\Models\MasterData\UnitOfMeasure::find($detail->UnitOfMeasureID);
+            });
 
             return response()->json([
                 'success' => true,
-                'data' => $deliveryReceipt
+                'data' => $deliveryReceipt->toArray()
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -143,15 +183,34 @@ class DeliveryReceiptController extends Controller
         try {
             $deliveryReceipt = DeliveryReceipt::findOrFail($id);
 
+            // For update: apply same backdate rules as store (use config)
+            $backdateYears = (int) config('gso.dr_backdate_years', 5);
+            $minDate = Carbon::now('Asia/Manila')->subYears($backdateYears)->toDateString();
+            $isAdmin = Auth::user() && (Auth::user()->UserRoleID ?? null) == 1;
+            $dateRules = 'required|date|before_or_equal:today';
+            $overrideRequested = $request->boolean('override_past_limit', false);
+            if (!($isAdmin && $overrideRequested)) {
+                $dateRules .= '|after_or_equal:' . $minDate;
+            }
+
             $validator = Validator::make($request->all(), [
+                'dr_number' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
+                ],
                 'supplier_name' => 'required|string|max:255',
-                'po_number' => 'required|string|max:50',
-                'date_received' => 'required|date',
+                'po_number' => 'nullable|string|max:50', // OPTIONAL
+                'date_received' => $dateRules,
+                'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
                 'details' => 'required|array|min:1',
+                'details.*.dr_detail_id' => 'sometimes|integer|exists:deliveryreceiptdetail,DRDetailID', // Optional for updates
                 'details.*.item_description' => 'required|string|max:255',
                 'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
                 'details.*.quantity_delivered' => 'required|integer|min:1',
+                'details.*.unit_of_measure_id' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
             ]);
 
@@ -164,27 +223,54 @@ class DeliveryReceiptController extends Controller
             }
 
             DB::beginTransaction();
-
+            // enforce timezone-aware no-future date check (Asia/Manila)
+            $manilaNow = Carbon::now('Asia/Manila')->toDateString();
+            if (Carbon::parse($request->date_received, 'Asia/Manila')->gt(Carbon::parse($manilaNow))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['date_received' => ['Date received cannot be in the future.']]
+                ], 422);
+            }
             $deliveryReceipt->update([
+                'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
                 'PONumber' => $request->po_number,
                 'DateReceived' => $request->date_received,
                 'Remarks' => $request->remarks,
             ]);
 
-            // Delete existing details
-            $deliveryReceipt->details()->delete();
+            // Handle details update properly - update existing, delete removed, insert new
+            $existingDetailIds = $deliveryReceipt->details()->pluck('DRDetailID')->toArray();
+            $incomingDetailIds = collect($request->details)->pluck('dr_detail_id')->filter()->toArray();
 
-            // Create new details
+            // Delete details that are no longer in the request
+            $detailsToDelete = array_diff($existingDetailIds, $incomingDetailIds);
+            if (!empty($detailsToDelete)) {
+                DeliveryReceiptDetail::whereIn('DRDetailID', $detailsToDelete)->delete();
+            }
+
+            // Update existing details and insert new ones
             foreach ($request->details as $detail) {
-                DeliveryReceiptDetail::create([
+                $detailData = [
                     'DRID' => $deliveryReceipt->DRID,
                     'ItemDescription' => $detail['item_description'],
                     'PropertyTypeID' => $detail['property_type_id'],
                     'QuantityDelivered' => $detail['quantity_delivered'],
+                    'UnitOfMeasureID' => $detail['unit_of_measure_id'],
                     'UnitCost' => $detail['unit_cost'],
                     'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
-                ]);
+                ];
+
+                if (isset($detail['dr_detail_id']) && $detail['dr_detail_id']) {
+                    // Update existing detail
+                    DeliveryReceiptDetail::where('DRDetailID', $detail['dr_detail_id'])
+                        ->where('DRID', $deliveryReceipt->DRID) // Security check
+                        ->update($detailData);
+                } else {
+                    // Insert new detail
+                    DeliveryReceiptDetail::create($detailData);
+                }
             }
 
             DB::commit();
@@ -192,7 +278,7 @@ class DeliveryReceiptController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt updated successfully',
-                'data' => $deliveryReceipt->load(['receivedByUser', 'details.propertyType'])
+                'data' => $deliveryReceipt->load(['receivedByUser', 'details.propertyType', 'details.unitOfMeasure'])
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

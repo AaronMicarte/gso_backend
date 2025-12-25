@@ -21,6 +21,7 @@ class DeliveryReceiptDetail extends Model
         'ItemDescription',
         'PropertyTypeID',
         'QuantityDelivered',
+        'UnitOfMeasureID',
         'UnitCost',
         'TotalCost'
     ];
@@ -29,6 +30,7 @@ class DeliveryReceiptDetail extends Model
         'QuantityDelivered' => 'integer',
         'UnitCost' => 'decimal:2',
         'TotalCost' => 'decimal:2',
+        'UnitOfMeasureID' => 'integer',
     ];
 
     public function deliveryReceipt(): BelongsTo
@@ -39,5 +41,10 @@ class DeliveryReceiptDetail extends Model
     public function propertyType(): BelongsTo
     {
         return $this->belongsTo(PropertyType::class, 'PropertyTypeID', 'PropertyTypeID');
+    }
+
+    public function unitOfMeasure(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\UnitOfMeasure::class, 'UnitOfMeasureID', 'UnitOfMeasureID');
     }
 }
