@@ -33,6 +33,8 @@ class DeliveryReceiptDetail extends Model
         'UnitOfMeasureID' => 'integer',
     ];
 
+    protected $with = ['propertyType', 'unitOfMeasure'];
+
     public function deliveryReceipt(): BelongsTo
     {
         return $this->belongsTo(DeliveryReceipt::class, 'DRID', 'DRID');

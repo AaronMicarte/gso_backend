@@ -20,7 +20,9 @@ class DeliveryReceiptController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = DeliveryReceipt::with(['receivedByUser', 'details.propertyType', 'details.unitOfMeasure'])
+            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure'])
+                ->leftJoin('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
+                ->select('deliveryreceipt.*', 'user.FullName as received_by_name')
                 ->withCount('iar as hasIAR');
 
             // Filter by date range
@@ -43,6 +45,13 @@ class DeliveryReceiptController extends Controller
             // Transform to include IAR info
             $deliveryReceipts->getCollection()->transform(function ($dr) {
                 $dr->hasIAR = $dr->hasIAR > 0;
+                // Set receivedByUser from the joined data
+                $dr->receivedByUser = $dr->received_by_name ? [
+                    'UserID' => $dr->ReceivedBy,
+                    'FullName' => $dr->received_by_name
+                ] : null;
+                // Remove the temporary field
+                unset($dr->received_by_name);
                 return $dr;
             });
 
@@ -135,10 +144,19 @@ class DeliveryReceiptController extends Controller
 
             DB::commit();
 
+            // Load relationships
+            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure']);
+            // Set receivedByUser manually
+            $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
+            $deliveryReceipt->receivedByUser = $user ? [
+                'UserID' => $user->UserID,
+                'FullName' => $user->FullName
+            ] : null;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt created successfully',
-                'data' => $deliveryReceipt->load(['receivedByUser', 'details.propertyType', 'details.unitOfMeasure'])
+                'data' => $deliveryReceipt
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -153,21 +171,28 @@ class DeliveryReceiptController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $deliveryReceipt = DeliveryReceipt::with(['details'])
+            $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure'])
                 ->findOrFail($id);
 
-            // Load receivedByUser
-            $deliveryReceipt->receivedByUser = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
+            // Set receivedByUser explicitly
+            $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
+            $deliveryReceipt->receivedByUser = $user ? [
+                'UserID' => $user->UserID,
+                'FullName' => $user->FullName
+            ] : null;
 
-            // Load and attach relationships for details
-            $deliveryReceipt->details->each(function ($detail) {
-                $detail->propertyType = PropertyType::find($detail->PropertyTypeID);
-                $detail->unitOfMeasure = \App\Models\MasterData\UnitOfMeasure::find($detail->UnitOfMeasureID);
-            });
+            // Normalize relationship keys for frontend by converting the model to an array
+            $data = $deliveryReceipt->toArray();
+            if (!empty($data['details']) && is_array($data['details'])) {
+                foreach ($data['details'] as &$d) {
+                    $d['propertyType'] = $d['property_type'] ?? null;
+                    $d['unitOfMeasure'] = $d['unit_of_measure'] ?? null;
+                }
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $deliveryReceipt->toArray()
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -275,10 +300,19 @@ class DeliveryReceiptController extends Controller
 
             DB::commit();
 
+            // Load relationships
+            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure']);
+            // Set receivedByUser manually
+            $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
+            $deliveryReceipt->receivedByUser = $user ? [
+                'UserID' => $user->UserID,
+                'FullName' => $user->FullName
+            ] : null;
+
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt updated successfully',
-                'data' => $deliveryReceipt->load(['receivedByUser', 'details.propertyType', 'details.unitOfMeasure'])
+                'data' => $deliveryReceipt
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

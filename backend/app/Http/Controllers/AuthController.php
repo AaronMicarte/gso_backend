@@ -140,6 +140,7 @@ class AuthController extends Controller
                             'Email' => $user->Email,
                             'FullName' => $user->FullName ?? $user->Username,
                             'Role' => $user->userRole->RoleName ?? 'N/A',
+                            'UserRoleID' => $user->UserRoleID,
                             'Department' => $user->department->DepartmentName ?? 'N/A',
                             'DepartmentID' => $user->DepartmentID,
                             'department' => [
@@ -178,6 +179,7 @@ class AuthController extends Controller
                     'Username' => $user->Username,
                     'FullName' => $user->FullName ?? $user->Username,
                     'Role' => $userRole,
+                    'UserRoleID' => $user->UserRoleID,
                 ]
             ], 200);
         }
@@ -206,6 +208,7 @@ class AuthController extends Controller
                 'Email' => $user->Email,
                 'FullName' => $user->FullName ?? $user->Username,
                 'Role' => $user->userRole->RoleName ?? 'N/A',
+                'UserRoleID' => $user->UserRoleID,
                 'Department' => $user->department->DepartmentName ?? 'N/A',
                 'DepartmentID' => $user->DepartmentID,
                 'department' => [
@@ -285,6 +288,7 @@ class AuthController extends Controller
                 'Email' => $user->Email,
                 'FullName' => $user->FullName ?? $user->Username,
                 'Role' => $user->userRole->RoleName ?? 'N/A',
+                'UserRoleID' => $user->UserRoleID,
                 'Department' => $user->department->DepartmentName ?? 'N/A',
                 'DepartmentID' => $user->DepartmentID,
                 'department' => [
@@ -371,6 +375,7 @@ class AuthController extends Controller
                     'Email' => $user->Email,
                     'FullName' => $user->FullName ?? $user->Username,
                     'Role' => $user->userRole->RoleName ?? 'N/A',
+                    'UserRoleID' => $user->UserRoleID,
                     'Department' => $user->department->DepartmentName ?? 'N/A',
                     'DepartmentID' => $user->DepartmentID,
                     'department' => [
