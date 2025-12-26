@@ -150,7 +150,7 @@ class MFAService
         // Dev-friendly log entry to help debug cookie creation/verification
         if (app()->environment('local') || config('app.debug')) {
             
-            logger()->debug('trusted-device.created', [
+            logger()->debug('trusted-device.created', [
                 'user_id' => $user->UserID,
                 'device_id' => $device->DeviceID,
                 'device_name' => $deviceName,
