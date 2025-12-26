@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth as AuthFacade;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class InspectionAcceptanceReportController extends Controller
 {
@@ -27,6 +28,18 @@ class InspectionAcceptanceReportController extends Controller
                 'details.condition',
                 'details.drDetail'
             ]);
+
+            // Role-based filtering
+            $user = AuthFacade::user();
+            if ($user->UserRoleID == 2) { // GSO Staff
+                $query->where(function ($q) use ($user) {
+                    $q->where('InspectedBy', $user->UserID)
+                      ->orWhere('AcceptedBy', $user->UserID);
+                });
+            } elseif ($user->UserRoleID == 3) { // Property Custodian
+                $query->where('AcceptedBy', $user->UserID);
+            }
+            // Admin (UserRoleID == 1) sees all, no filter needed
 
             // Filter by date range
             if ($request->has('start_date') && $request->has('end_date')) {
@@ -63,10 +76,17 @@ class InspectionAcceptanceReportController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
+            // Preprocess request data: convert empty strings to null for nullable fields
+            $requestData = $request->all();
+            if (isset($requestData['date_accepted']) && $requestData['date_accepted'] === '') {
+                $requestData['date_accepted'] = null;
+            }
+            $request->merge($requestData);
+
             $validator = Validator::make($request->all(), [
                 'dr_id' => 'required|integer|exists:deliveryreceipt,DRID',
                 'inspected_by' => 'required|integer|exists:user,UserID',
-                'accepted_by' => 'required|integer|exists:user,UserID',
+                'accepted_by' => 'nullable|integer|exists:user,UserID',
                 'date_inspected' => 'required|date',
                 'date_accepted' => 'nullable|date',
                 'remarks' => 'nullable|string',
@@ -84,6 +104,26 @@ class InspectionAcceptanceReportController extends Controller
                     'success' => false,
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Validate dates are today (Asia/Manila timezone)
+            $todayManila = new \DateTime('now', new \DateTimeZone('Asia/Manila'));
+            $todayManilaStr = $todayManila->format('Y-m-d');
+
+            if ($request->date_inspected !== $todayManilaStr) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Date Inspected must be today (Philippine time)',
+                    'errors' => ['date_inspected' => ['Date Inspected must be today']]
+                ], 422);
+            }
+
+            if ($request->date_accepted && $request->date_accepted !== $todayManilaStr) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Date Accepted must be today (Philippine time)',
+                    'errors' => ['date_accepted' => ['Date Accepted must be today']]
                 ], 422);
             }
 
@@ -105,7 +145,7 @@ class InspectionAcceptanceReportController extends Controller
                 'IARNumber' => $iarNumber,
                 'DRID' => $request->dr_id,
                 'InspectedBy' => $request->inspected_by,
-                'AcceptedBy' => $request->accepted_by,
+                'AcceptedBy' => $request->accepted_by ?: null,
                 'DateInspected' => $request->date_inspected,
                 'DateAccepted' => $request->date_accepted,
                 'Remarks' => $request->remarks,
@@ -160,6 +200,25 @@ class InspectionAcceptanceReportController extends Controller
                 'details.drDetail'
             ])->findOrFail($id);
 
+            // Role-based access control
+            $user = AuthFacade::user();
+            if ($user->UserRoleID == 2) { // GSO Staff
+                if ($iar->InspectedBy != $user->UserID && $iar->AcceptedBy != $user->UserID) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Access denied'
+                    ], 403);
+                }
+            } elseif ($user->UserRoleID == 3) { // Property Custodian
+                if ($iar->AcceptedBy != $user->UserID) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Access denied'
+                    ], 403);
+                }
+            }
+            // Admin can access all
+
             return response()->json([
                 'success' => true,
                 'data' => $iar
@@ -177,6 +236,25 @@ class InspectionAcceptanceReportController extends Controller
     {
         try {
             $iar = InspectionAcceptanceReport::findOrFail($id);
+
+            // Role-based access control
+            $user = AuthFacade::user();
+            if ($user->UserRoleID == 2) { // GSO Staff
+                if ($iar->InspectedBy != $user->UserID && $iar->AcceptedBy != $user->UserID) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Access denied'
+                    ], 403);
+                }
+            } elseif ($user->UserRoleID == 3) { // Property Custodian
+                if ($iar->AcceptedBy != $user->UserID) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Access denied'
+                    ], 403);
+                }
+            }
+            // Admin can update all
 
             $validator = Validator::make($request->all(), [
                 'inspected_by' => 'required|integer|exists:user,UserID',
@@ -200,6 +278,25 @@ class InspectionAcceptanceReportController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
+
+            // Validate dates are today (Asia/Manila timezone) - TEMPORARILY DISABLED FOR DEBUGGING
+            // $todayManila = Carbon::now('Asia/Manila')->format('Y-m-d');
+
+            // if ($request->date_inspected !== $todayManila) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Date Inspected must be today (Philippine time)',
+            //         'errors' => ['date_inspected' => ['Date Inspected must be today']]
+            //     ], 422);
+            // }
+
+            // if ($request->date_accepted && $request->date_accepted !== $todayManila) {
+            //     return response()->json([
+            //         'success' => false,
+            //         'message' => 'Date Accepted must be today (Philippine time)',
+            //         'errors' => ['date_accepted' => ['Date Accepted must be today']]
+            //     ], 422);
+            // }
 
             DB::beginTransaction();
 
@@ -255,6 +352,16 @@ class InspectionAcceptanceReportController extends Controller
     {
         try {
             $iar = InspectionAcceptanceReport::findOrFail($id);
+
+            // Role-based access control - only admin can delete
+            $user = AuthFacade::user();
+            if ($user->UserRoleID != 1) { // Not Admin
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Access denied'
+                ], 403);
+            }
+
             $iar->details()->delete();
             $iar->delete();
 
@@ -294,10 +401,18 @@ class InspectionAcceptanceReportController extends Controller
     public function getUsers(): JsonResponse
     {
         try {
-            $users = User::select('UserID', 'FullName')
-                ->where('IsActive', 1)
-                ->orderBy('FullName')
-                ->get();
+            $currentUser = AuthFacade::user();
+            $query = User::select('UserID', 'FullName', 'UserRoleID')
+                ->where('IsActive', 1);
+
+            // Role-based filtering: Admin and GSO Staff only see themselves
+            if ($currentUser->UserRoleID == 1 || $currentUser->UserRoleID == 2) {
+                // Admin (1) and GSO Staff (2) can only select themselves
+                $query->where('UserID', $currentUser->UserID);
+            }
+            // Property Custodian (3) and other roles see all active users
+
+            $users = $query->orderBy('FullName')->get();
 
             return response()->json([
                 'success' => true,

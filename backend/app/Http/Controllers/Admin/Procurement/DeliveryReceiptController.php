@@ -174,6 +174,10 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure'])
                 ->findOrFail($id);
 
+            // Load IAR count
+            $deliveryReceipt->loadCount('iar as hasIAR');
+            $deliveryReceipt->hasIAR = $deliveryReceipt->hasIAR > 0;
+
             // Set receivedByUser explicitly
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
@@ -207,6 +211,15 @@ class DeliveryReceiptController extends Controller
     {
         try {
             $deliveryReceipt = DeliveryReceipt::findOrFail($id);
+
+            // Check if DR has been inspected (has IAR)
+            $deliveryReceipt->loadCount('iar as hasIAR');
+            if ($deliveryReceipt->hasIAR > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot edit delivery receipt that has already been inspected.',
+                ], 403);
+            }
 
             // For update: apply same backdate rules as store (use config)
             $backdateYears = (int) config('gso.dr_backdate_years', 5);
