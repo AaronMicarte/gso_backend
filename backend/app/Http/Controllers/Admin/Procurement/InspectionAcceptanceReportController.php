@@ -21,9 +21,6 @@ class InspectionAcceptanceReportController extends Controller
     {
         try {
             $query = InspectionAcceptanceReport::with([
-                'deliveryReceipt',
-                'inspectedByUser',
-                'acceptedByUser',
                 'details.propertyType',
                 'details.condition',
                 'details.drDetail'
@@ -59,6 +56,14 @@ class InspectionAcceptanceReportController extends Controller
             }
 
             $iars = $query->orderBy('CreatedDate', 'desc')->paginate(15);
+
+            // Manually load deliveryReceipt and users
+            $iars->getCollection()->transform(function ($iar) {
+                $iar->deliveryReceipt = DeliveryReceipt::find($iar->DRID);
+                $iar->inspectedByUser = $iar->InspectedBy ? \App\Models\Auth\User::find($iar->InspectedBy) : null;
+                $iar->acceptedByUser = $iar->AcceptedBy ? \App\Models\Auth\User::find($iar->AcceptedBy) : null;
+                return $iar;
+            });
 
             return response()->json([
                 'success' => true,
@@ -192,13 +197,15 @@ class InspectionAcceptanceReportController extends Controller
     {
         try {
             $iar = InspectionAcceptanceReport::with([
-                'deliveryReceipt.details.propertyType',
-                'inspectedByUser',
-                'acceptedByUser',
                 'details.propertyType',
                 'details.condition',
                 'details.drDetail'
             ])->findOrFail($id);
+
+            // Manually load deliveryReceipt and users
+            $iar->deliveryReceipt = DeliveryReceipt::find($iar->DRID);
+            $iar->inspectedByUser = $iar->InspectedBy ? \App\Models\Auth\User::find($iar->InspectedBy) : null;
+            $iar->acceptedByUser = $iar->AcceptedBy ? \App\Models\Auth\User::find($iar->AcceptedBy) : null;
 
             // Role-based access control
             $user = AuthFacade::user();
@@ -219,9 +226,24 @@ class InspectionAcceptanceReportController extends Controller
             }
             // Admin can access all
 
+            // Normalize response for frontend (ensure camelCase relationship keys expected by frontend)
+            $data = $iar->toArray();
+            // Attach nested user arrays if present
+            $data['inspectedByUser'] = $iar->inspectedByUser ? $iar->inspectedByUser->toArray() : ($data['inspected_by_user'] ?? null);
+            $data['acceptedByUser'] = $iar->acceptedByUser ? $iar->acceptedByUser->toArray() : ($data['accepted_by_user'] ?? null);
+
+            if (!empty($data['details']) && is_array($data['details'])) {
+                foreach ($data['details'] as &$d) {
+                    // Map snake_case nested keys to camelCase for frontend
+                    $d['drDetail'] = $d['dr_detail'] ?? null;
+                    $d['condition'] = $d['condition'] ?? null;
+                    $d['propertyType'] = $d['property_type'] ?? null;
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'data' => $iar
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             return response()->json([

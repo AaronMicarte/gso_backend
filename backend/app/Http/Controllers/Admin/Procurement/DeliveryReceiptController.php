@@ -20,7 +20,7 @@ class DeliveryReceiptController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure'])
+            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'iar'])
                 ->leftJoin('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->select('deliveryreceipt.*', 'user.FullName as received_by_name')
                 ->withCount('iar as hasIAR');
@@ -45,6 +45,19 @@ class DeliveryReceiptController extends Controller
             // Transform to include IAR info
             $deliveryReceipts->getCollection()->transform(function ($dr) {
                 $dr->hasIAR = $dr->hasIAR > 0;
+
+                // Determine IAR status: Pending IAR, Inspected, Accepted
+                if ($dr->hasIAR) {
+                    $iar = $dr->iar ?? $dr->iar()->first();
+                    if ($iar && !empty($iar->DateAccepted)) {
+                        $dr->iar_status = 'Accepted';
+                    } else {
+                        $dr->iar_status = 'Inspected';
+                    }
+                } else {
+                    $dr->iar_status = 'Pending IAR';
+                }
+
                 // Set receivedByUser from the joined data
                 $dr->receivedByUser = $dr->received_by_name ? [
                     'UserID' => $dr->ReceivedBy,
@@ -177,6 +190,14 @@ class DeliveryReceiptController extends Controller
             // Load IAR count
             $deliveryReceipt->loadCount('iar as hasIAR');
             $deliveryReceipt->hasIAR = $deliveryReceipt->hasIAR > 0;
+
+            // Determine IAR status
+            if ($deliveryReceipt->hasIAR) {
+                $iar = $deliveryReceipt->iar()->first();
+                $deliveryReceipt->iar_status = ($iar && !empty($iar->DateAccepted)) ? 'Accepted' : 'Inspected';
+            } else {
+                $deliveryReceipt->iar_status = 'Pending IAR';
+            }
 
             // Set receivedByUser explicitly
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
