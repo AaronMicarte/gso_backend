@@ -147,6 +147,18 @@ class MFAService
         // Return device with plain token (only shown once)
         $device->plain_token = $token;
 
+        // Dev-friendly log entry to help debug cookie creation/verification
+        if (app()->environment('local') || config('app.debug')) {
+            
+            logger()->debug('trusted-device.created', [
+                'user_id' => $user->UserID,
+                'device_id' => $device->DeviceID,
+                'device_name' => $deviceName,
+                'ip' => $ipAddress,
+                'user_agent' => substr($userAgent ?? 'n/a', 0, 200),
+            ]);
+        }
+
         return $device;
     }
 
@@ -162,10 +174,23 @@ class MFAService
             ->first();
 
         if (!$device || !$device->isValid()) {
+            if (app()->environment('local') || config('app.debug')) {
+                logger()->debug('trusted-device.verify_failed', [
+                    'user_id' => $user->UserID,
+                    'token_hash' => substr($hashedToken, 0, 16),
+                ]);
+            }
             return null;
         }
 
         $device->updateLastUsed();
+
+        if (app()->environment('local') || config('app.debug')) {
+            logger()->debug('trusted-device.verified', [
+                'user_id' => $user->UserID,
+                'device_id' => $device->DeviceID,
+            ]);
+        }
 
         return $device;
     }
