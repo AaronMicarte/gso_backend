@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Add CORS middleware globally
         $middleware->append(HandleCors::class);
 
+        // Replace the default VerifyCsrfToken with our custom one
+        $middleware->web(replace: [
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,
+        ]);
+
         // Add Sanctum middleware for API requests
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,

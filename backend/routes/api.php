@@ -132,11 +132,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Public authentication routes - with CSRF protection
-Route::middleware('api')->group(function () {
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
-    Route::post('/mfa/verify', [AuthController::class, 'completeMFALogin']);
-
-    // Public MFA setup routes (for login flow when MFA setup is required)
-    Route::post('/mfa/setup/generate', [AuthController::class, 'generateMFASecretForLogin']);
-    Route::post('/mfa/setup/enable', [AuthController::class, 'enableMFADuringLogin']);
+Route::middleware('web')->group(function () {
+    // Moved to web.php
 });

@@ -227,7 +227,7 @@ class AuthController extends Controller
         try {
             $request->validate([
                 'user_id' => 'required|integer',
-                'code' => 'required|string|size:6',
+                'code' => 'required|string|min:6|max:8',
                 'trust_device' => 'boolean',
                 'device_name' => 'nullable|string|max:255',
             ]);
