@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Procurement\InspectionAcceptanceReport;
 use App\Models\Procurement\IARDetail;
 use App\Models\Procurement\DeliveryReceipt;
+use App\Models\Procurement\PropertyReceived;
+use App\Models\Procurement\IarSignature;
+use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\MasterData\Condition;
 use App\Models\Auth\User;
 use Illuminate\Http\Request;
@@ -215,6 +218,40 @@ class InspectionAcceptanceReportController extends Controller
                 }
             }
 
+            // If AcceptedBy is set, ensure an accepted signature exists (either inline saved above or previously saved)
+            if ($iar->AcceptedBy) {
+                $acceptedExists = IarSignature::where('iar_id', $iar->IARID)->where('role', 'accepted')->exists();
+                if (! $acceptedExists) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Accepted signature is required when Accepted By is set',
+                        'errors' => ['accepted_signature' => ['Accepted signature is required']]
+                    ], 422);
+                }
+
+                // Create propertyreceived record if it does not exist
+                $existingReceived = PropertyReceived::where('IARID', $iar->IARID)->first();
+                if (! $existingReceived) {
+                    $iar->load('details');
+                    $totalCost = 0;
+                    foreach ($iar->details as $d) {
+                        $drDetail = DeliveryReceiptDetail::find($d->DRDetailID);
+                        $unitCost = $drDetail ? (float) ($drDetail->UnitCost ?? 0) : 0;
+                        $totalCost += $unitCost * (int) $d->QuantityAccepted;
+                    }
+
+                    PropertyReceived::create([
+                        'IARID' => $iar->IARID,
+                        'ReceivedBy' => $iar->AcceptedBy,
+                        'ReleasedBy' => $iar->InspectedBy,
+                        'DateReceived' => Carbon::now('Asia/Manila')->format('Y-m-d'),
+                        'TotalCost' => $totalCost,
+                        'Remarks' => 'Auto-created on acceptance'
+                    ]);
+                }
+            }
+
             DB::commit();
 
             return response()->json([
@@ -421,6 +458,40 @@ class InspectionAcceptanceReportController extends Controller
                     'QuantityRejected' => $detail['quantity_rejected'],
                     'Remarks' => $detail['remarks'] ?? null,
                 ]);
+            }
+
+            // If AcceptedBy is set, ensure an accepted signature exists
+            if ($iar->AcceptedBy) {
+                $acceptedExists = IarSignature::where('iar_id', $iar->IARID)->where('role', 'accepted')->exists();
+                if (! $acceptedExists) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Accepted signature is required when Accepted By is set',
+                        'errors' => ['accepted_signature' => ['Accepted signature is required']]
+                    ], 422);
+                }
+
+                // Create propertyreceived record if it does not exist
+                $existingReceived = PropertyReceived::where('IARID', $iar->IARID)->first();
+                if (! $existingReceived) {
+                    $iar->load('details');
+                    $totalCost = 0;
+                    foreach ($iar->details as $d) {
+                        $drDetail = DeliveryReceiptDetail::find($d->DRDetailID);
+                        $unitCost = $drDetail ? (float) ($drDetail->UnitCost ?? 0) : 0;
+                        $totalCost += $unitCost * (int) $d->QuantityAccepted;
+                    }
+
+                    PropertyReceived::create([
+                        'IARID' => $iar->IARID,
+                        'ReceivedBy' => $iar->AcceptedBy,
+                        'ReleasedBy' => $iar->InspectedBy,
+                        'DateReceived' => Carbon::now('Asia/Manila')->format('Y-m-d'),
+                        'TotalCost' => $totalCost,
+                        'Remarks' => 'Auto-created on acceptance'
+                    ]);
+                }
             }
 
             DB::commit();
