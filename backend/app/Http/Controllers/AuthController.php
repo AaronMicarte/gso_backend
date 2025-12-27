@@ -306,17 +306,22 @@ class AuthController extends Controller
                 $request->ip()
             );
 
-            // Set cookie (30 days, secure, httpOnly, sameSite strict)
+            // Determine secure and sameSite based on environment and request
+            // Match logic used in MFAController::verifyCode so behavior is consistent
+            $secure = $request->isSecure() || app()->environment('production');
+            $sameSite = $secure ? 'None' : 'Lax';
+
+            // Set cookie (30 days)
             $response->cookie(
                 'device_token',
                 $device->plain_token,
                 60 * 24 * 30, // 30 days in minutes
                 '/',
                 null,
-                true,  // secure
+                $secure,  // secure set based on environment/request
                 true,  // httpOnly
                 false, // raw
-                'strict' // sameSite
+                $sameSite // sameSite
             );
         }
 
