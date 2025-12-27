@@ -11,11 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('purchaserequestdetail', function (Blueprint $table) {
-            $table->string('ItemDescription')->after('PurchaseRequestID');
-            $table->integer('PropertyTypeID')->nullable()->change();
-            $table->integer('UnitOfMeasureID')->nullable()->change();
-        });
+        if (Schema::hasTable('purchaserequestdetail')) {
+            Schema::table('purchaserequestdetail', function (Blueprint $table) {
+                if (!Schema::hasColumn('purchaserequestdetail', 'ItemDescription')) {
+                    $table->string('ItemDescription')->after('PurchaseRequestID');
+                }
+                if (Schema::hasColumn('purchaserequestdetail', 'PropertyTypeID')) {
+                    $table->integer('PropertyTypeID')->nullable()->change();
+                }
+                if (Schema::hasColumn('purchaserequestdetail', 'UnitOfMeasureID')) {
+                    $table->integer('UnitOfMeasureID')->nullable()->change();
+                }
+            });
+        }
     }
 
     /**

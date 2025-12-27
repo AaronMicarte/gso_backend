@@ -22,8 +22,14 @@ return new class extends Migration
         ];
 
         foreach ($tables as $table) {
+            // Only add soft deletes if table exists
+            if (!Schema::hasTable($table)) {
+                continue;
+            }
             Schema::table($table, function (Blueprint $table) {
-                $table->softDeletes()->after('UpdatedDate');
+                if (!Schema::hasColumn($table->getTable(), 'deleted_at')) {
+                    $table->softDeletes()->after('UpdatedDate');
+                }
             });
         }
     }

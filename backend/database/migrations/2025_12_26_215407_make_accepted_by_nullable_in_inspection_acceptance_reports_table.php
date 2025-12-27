@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('inspectionacceptancereport', function (Blueprint $table) {
-            $table->integer('AcceptedBy')->nullable()->change();
-        });
+        if (Schema::hasTable('inspectionacceptancereport')) {
+            Schema::table('inspectionacceptancereport', function (Blueprint $table) {
+                $table->integer('AcceptedBy')->nullable()->change();
+            });
+        }
     }
 
     /**

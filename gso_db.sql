@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 11, 2025 at 10:46 AM
+-- Generation Time: Dec 27, 2025 at 09:15 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -106,6 +106,13 @@ CREATE TABLE `classification` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `classification`
+--
+
+INSERT INTO `classification` (`ClassificationID`, `CategoryID`, `ClassificationName`, `Description`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
+(1, 1, 'General Assets', 'Fallback classification for property types', '2025-12-23 16:00:00', NULL, NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -138,13 +145,24 @@ INSERT INTO `condition` (`ConditionID`, `ConditionName`, `Description`, `deleted
 
 CREATE TABLE `deliveryreceipt` (
   `DRID` int(11) NOT NULL,
-  `DRNumber` varchar(50) DEFAULT NULL,
-  `POID` int(11) NOT NULL,
+  `DRNumber` varchar(50) NOT NULL,
+  `SupplierName` varchar(255) DEFAULT NULL COMMENT 'Supplier name (manual entry or from supplier table)',
+  `PONumber` varchar(50) DEFAULT NULL COMMENT 'Manual PO Number reference (optional)',
+  `InvoiceNumber` varchar(50) DEFAULT NULL COMMENT 'Invoice number from supplier',
   `ReceivedBy` int(11) NOT NULL,
   `DateReceived` date NOT NULL,
   `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp()
+  `CreatedDate` datetime DEFAULT current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `deliveryreceipt`
+--
+
+INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `CreatedDate`, `deleted_at`) VALUES
+(5, 'DR_TEST_02', 'MICARTE DELIVERY', 'abcd123', '123454321', 1, '2025-12-25', 'good i guess', '2025-12-25 13:21:34', NULL),
+(6, 'DR_TEST_03', 'TYRON DELIVERY', 'dcba321', '543212345', 1, '2025-12-26', 'okeh rah', '2025-12-26 14:36:20', NULL);
 
 -- --------------------------------------------------------
 
@@ -155,12 +173,27 @@ CREATE TABLE `deliveryreceipt` (
 CREATE TABLE `deliveryreceiptdetail` (
   `DRDetailID` int(11) NOT NULL,
   `DRID` int(11) NOT NULL,
-  `PODetailID` int(11) NOT NULL,
+  `ItemDescription` varchar(255) NOT NULL COMMENT 'Manual item description',
   `PropertyTypeID` int(11) NOT NULL,
   `QuantityDelivered` int(11) NOT NULL,
+  `UnitOfMeasureID` int(11) NOT NULL DEFAULT 1,
   `UnitCost` decimal(18,2) DEFAULT NULL,
-  `TotalCost` decimal(18,2) DEFAULT NULL
+  `TotalCost` decimal(18,2) DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `deliveryreceiptdetail`
+--
+
+INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ItemDescription`, `PropertyTypeID`, `QuantityDelivered`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `deleted_at`) VALUES
+(11, 5, 'Laptop', 3, 1, 1, 30000.00, 30000.00, NULL),
+(12, 5, 'Keyboard', 3, 1, 1, 499.00, 499.00, NULL),
+(13, 5, 'Mouse', 3, 1, 1, 299.00, 299.00, '2025-12-25 16:58:25'),
+(14, 5, 'Charger', 3, 1, 1, 999.99, 999.99, NULL),
+(15, 5, 'Mouse', 3, 1, 1, 799.00, 799.00, NULL),
+(16, 6, 'Item1', 3, 5, 1, 230.00, 1150.00, NULL),
+(17, 6, 'Item2', 6, 2, 1, 500.00, 1000.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -186,7 +219,7 @@ CREATE TABLE `department` (
 INSERT INTO `department` (`DepartmentID`, `DepartmentName`, `Description`, `DepartmentCode`, `IsActive`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
 (1, 'General Services Office', NULL, 'GSO', 1, '2025-12-05 02:07:27', NULL, NULL),
 (2, 'Administrative Office', NULL, 'ADMIN', 1, '2025-12-05 02:07:27', NULL, NULL),
-(3, 'Finance Department', NULL, 'FIN', 1, '2025-12-05 02:07:27', NULL, NULL),
+(3, 'Finance Department', NULL, 'FIN', 1, '2025-12-05 02:07:27', '2025-12-11 22:27:05', '2025-12-11 14:27:05'),
 (4, 'Human Resources', NULL, 'HR', 1, '2025-12-05 02:07:27', NULL, NULL),
 (5, 'IT Department', NULL, 'IT', 1, '2025-12-05 02:07:27', NULL, NULL),
 (6, 'General Services Office', NULL, 'GSO', 1, '2025-12-09 17:28:09', NULL, NULL),
@@ -194,7 +227,7 @@ INSERT INTO `department` (`DepartmentID`, `DepartmentName`, `Description`, `Depa
 (8, 'Finance Department', NULL, 'FIN', 1, '2025-12-09 17:28:09', NULL, NULL),
 (9, 'Human Resources', NULL, 'HR', 1, '2025-12-09 17:28:09', NULL, NULL),
 (10, 'IT Department', NULL, 'IT', 1, '2025-12-09 17:28:09', NULL, NULL),
-(11, 'Molugan', 'First Barangay', 'Brgy. Molugan', 1, '2025-12-09 23:01:17', NULL, NULL);
+(11, 'Molugan', 'First Barangay', 'Molu', 1, '2025-12-09 23:01:17', '2025-12-26 17:13:13', NULL);
 
 -- --------------------------------------------------------
 
@@ -255,6 +288,40 @@ CREATE TABLE `iardetail` (
   `QuantityRejected` int(11) DEFAULT 0,
   `Remarks` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `iardetail`
+--
+
+INSERT INTO `iardetail` (`IARDetailID`, `IARID`, `DRDetailID`, `PropertyTypeID`, `ConditionID`, `QuantityAccepted`, `QuantityRejected`, `Remarks`) VALUES
+(3, 1, 16, 3, 1, 5, 0, 'good'),
+(4, 1, 17, 6, 1, 2, 0, 'good');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `iar_signatures`
+--
+
+CREATE TABLE `iar_signatures` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `iar_id` int(11) NOT NULL,
+  `role` varchar(20) NOT NULL,
+  `signed_by_user_id` int(11) NOT NULL,
+  `source` varchar(20) NOT NULL,
+  `storage_disk` varchar(32) NOT NULL DEFAULT 'public',
+  `storage_path` varchar(512) NOT NULL,
+  `url` varchar(512) DEFAULT NULL,
+  `mime` varchar(50) NOT NULL,
+  `width` int(10) UNSIGNED DEFAULT NULL,
+  `height` int(10) UNSIGNED DEFAULT NULL,
+  `size_bytes` int(10) UNSIGNED DEFAULT NULL,
+  `sha256_hash` char(64) NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -341,12 +408,19 @@ CREATE TABLE `inspectionacceptancereport` (
   `IARNumber` varchar(50) DEFAULT NULL,
   `DRID` int(11) NOT NULL,
   `InspectedBy` int(11) NOT NULL,
-  `AcceptedBy` int(11) NOT NULL,
+  `AcceptedBy` int(11) DEFAULT NULL,
   `DateInspected` date NOT NULL,
   `DateAccepted` date DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `inspectionacceptancereport`
+--
+
+INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `InspectedBy`, `AcceptedBy`, `DateInspected`, `DateAccepted`, `Remarks`, `CreatedDate`) VALUES
+(1, 'IAR-2025-0001', 6, 2, 1, '2025-12-26', '2025-12-26', 'good need accept for admin', '2025-12-26 23:20:59');
 
 -- --------------------------------------------------------
 
@@ -368,68 +442,6 @@ CREATE TABLE `inventorycustodianslip` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `joborder`
---
-
-CREATE TABLE `joborder` (
-  `JobOrderID` int(11) NOT NULL,
-  `JobOrderNumber` varchar(50) DEFAULT NULL,
-  `PropertyID` int(11) NOT NULL,
-  `RequestedBy` int(11) NOT NULL,
-  `RequestedByDeptID` int(11) NOT NULL,
-  `ConditionID` int(11) NOT NULL,
-  `JobOrderStatusID` int(11) NOT NULL,
-  `DateRequested` date NOT NULL,
-  `JobType` varchar(100) DEFAULT NULL,
-  `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp(),
-  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `joborderdetail`
---
-
-CREATE TABLE `joborderdetail` (
-  `JobOrderDetailID` int(11) NOT NULL,
-  `JobOrderID` int(11) NOT NULL,
-  `AssignedTo` int(11) NOT NULL,
-  `ConditionID` int(11) NOT NULL,
-  `TaskDescription` text DEFAULT NULL,
-  `StartDate` date DEFAULT NULL,
-  `EstimatedCompletionDate` date DEFAULT NULL,
-  `ActualCompletionDate` date DEFAULT NULL,
-  `Status` varchar(50) DEFAULT NULL,
-  `Remarks` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `joborderstatus`
---
-
-CREATE TABLE `joborderstatus` (
-  `JobOrderStatusID` int(11) NOT NULL,
-  `StatusName` varchar(50) NOT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `joborderstatus`
---
-
-INSERT INTO `joborderstatus` (`JobOrderStatusID`, `StatusName`, `deleted_at`) VALUES
-(1, 'Pending', NULL),
-(2, 'In Progress', NULL),
-(3, 'Completed', NULL),
-(4, 'Cancelled', NULL);
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `loginaudit`
 --
 
@@ -446,9 +458,7 @@ CREATE TABLE `loginaudit` (
 --
 
 INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAddress`) VALUES
-(55, 1, '2025-12-09 20:43:07', 'FailedLogin', '127.0.0.1'),
-(56, 1, '2025-12-09 20:43:14', 'Login', '127.0.0.1'),
-(57, 1, '2025-12-11 17:16:42', 'Login', '127.0.0.1');
+(109, 1, '2025-12-27 15:12:12', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -469,7 +479,10 @@ CREATE TABLE `migrations` (
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (1, '2025_12_08_000000_fix_backup_codes_column', 1),
 (2, '2025_12_08_000001_fix_trusted_devices_columns', 2),
-(3, '2025_12_08_221000_add_soft_deletes_to_all_master_data_tables', 3);
+(3, '2025_12_08_221000_add_soft_deletes_to_all_master_data_tables', 3),
+(4, '2025_12_15_002331_fix_purchaserequestdetail_columns', 4),
+(5, '2025_12_26_215407_make_accepted_by_nullable_in_inspection_acceptance_reports_table', 5),
+(6, '2025_12_27_000001_create_iar_signatures_table', 6);
 
 -- --------------------------------------------------------
 
@@ -571,6 +584,13 @@ CREATE TABLE `position` (
   `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `position`
+--
+
+INSERT INTO `position` (`PositionID`, `PositionName`, `PositionDescription`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
+(1, 'Manager', 'Manage', '2025-12-26 17:14:09', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -788,125 +808,20 @@ CREATE TABLE `propertytype` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- --------------------------------------------------------
-
 --
--- Table structure for table `purchaseorder`
+-- Dumping data for table `propertytype`
 --
 
-CREATE TABLE `purchaseorder` (
-  `POID` int(11) NOT NULL,
-  `PONumber` varchar(50) DEFAULT NULL,
-  `PurchaseRequestID` int(11) NOT NULL,
-  `SupplierID` int(11) NOT NULL,
-  `POStatusID` int(11) NOT NULL,
-  `PODate` date NOT NULL,
-  `TotalAmount` decimal(18,2) DEFAULT NULL,
-  `Remarks` text DEFAULT NULL,
-  `CreatedBy` int(11) NOT NULL,
-  `ApprovedBy` int(11) DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp(),
-  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchaseorderdetail`
---
-
-CREATE TABLE `purchaseorderdetail` (
-  `PODetailID` int(11) NOT NULL,
-  `POID` int(11) NOT NULL,
-  `PropertyTypeID` int(11) NOT NULL,
-  `UnitOfMeasureID` int(11) NOT NULL,
-  `QuantityOrdered` int(11) NOT NULL,
-  `UnitCost` decimal(18,2) NOT NULL,
-  `TotalCost` decimal(18,2) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchaseorderstatus`
---
-
-CREATE TABLE `purchaseorderstatus` (
-  `POStatusID` int(11) NOT NULL,
-  `StatusName` varchar(50) NOT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `purchaseorderstatus`
---
-
-INSERT INTO `purchaseorderstatus` (`POStatusID`, `StatusName`, `deleted_at`) VALUES
-(1, 'Pending', NULL),
-(2, 'Partially Delivered', NULL),
-(3, 'Fully Delivered', NULL),
-(4, 'Completed', NULL),
-(5, 'Cancelled', NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchaserequest`
---
-
-CREATE TABLE `purchaserequest` (
-  `PurchaseRequestID` int(11) NOT NULL,
-  `PRNumber` varchar(50) DEFAULT NULL,
-  `RequestedBy` int(11) NOT NULL,
-  `DepartmentID` int(11) NOT NULL,
-  `ApprovedBy` int(11) DEFAULT NULL,
-  `PRStatusID` int(11) NOT NULL,
-  `DateRequested` date NOT NULL,
-  `DateApproved` date DEFAULT NULL,
-  `Purpose` varchar(255) DEFAULT NULL,
-  `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp(),
-  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchaserequestdetail`
---
-
-CREATE TABLE `purchaserequestdetail` (
-  `PRDetailID` int(11) NOT NULL,
-  `PurchaseRequestID` int(11) NOT NULL,
-  `PropertyTypeID` int(11) NOT NULL,
-  `UnitOfMeasureID` int(11) NOT NULL,
-  `QuantityRequested` int(11) NOT NULL,
-  `EstimatedUnitCost` decimal(18,2) DEFAULT NULL,
-  `EstimatedTotalCost` decimal(18,2) DEFAULT NULL,
-  `Remarks` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `purchaserequeststatus`
---
-
-CREATE TABLE `purchaserequeststatus` (
-  `PRStatusID` int(11) NOT NULL,
-  `StatusName` varchar(50) NOT NULL,
-  `deleted_at` timestamp NULL DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `purchaserequeststatus`
---
-
-INSERT INTO `purchaserequeststatus` (`PRStatusID`, `StatusName`, `deleted_at`) VALUES
-(1, 'Pending', NULL),
-(2, 'Approved', NULL),
-(3, 'Rejected', NULL),
-(4, 'Completed', NULL);
+INSERT INTO `propertytype` (`PropertyTypeID`, `ClassificationID`, `PropertyClassificationID`, `PropertyName`, `Description`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
+(1, 1, 2, 'Office Furniture', 'Chairs, tables, cabinets and other furniture', '2025-12-23 16:00:00', NULL, NULL),
+(2, 1, 2, 'Office Equipment', 'Photocopiers, shredders, projectors', '2025-12-23 16:00:00', NULL, NULL),
+(3, 1, 2, 'IT Equipment', 'Desktops, laptops, servers, printers, networking equipment', '2025-12-23 16:00:00', NULL, NULL),
+(4, 1, 2, 'Machinery and Equipment', 'Industrial machines, generators, HVAC, tools', '2025-12-23 16:00:00', NULL, NULL),
+(5, 1, 2, 'Medical Equipment', 'Medical devices and instruments', '2025-12-23 16:00:00', NULL, NULL),
+(6, 1, 1, 'Library and Reference Materials', 'Books, subscriptions, educational materials', '2025-12-23 16:00:00', NULL, NULL),
+(7, 1, 1, 'Supplies and Consumables', 'Stationery, cleaning supplies, expendable items', '2025-12-23 16:00:00', NULL, NULL),
+(8, 1, 1, 'Personal Protective Equipment (PPE)', 'Safety gear and single/short-use protective items', '2025-12-23 16:00:00', NULL, NULL),
+(9, 1, 2, 'Other Fixed Assets', 'Miscellaneous non-expendable assets not otherwise classified', '2025-12-23 16:00:00', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -957,6 +872,15 @@ CREATE TABLE `supplier` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `supplier`
+--
+
+INSERT INTO `supplier` (`SupplierID`, `SupplierName`, `Address`, `ContactPerson`, `ContactNumber`, `Email`, `TIN`, `IsActive`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
+(1, 'Tyron Corporation', 'Zone 7, Molugan, El Salvador City', 'Tyron Micarte', '09476971709', 'micarte2010@gmail.com', '04102010', 1, '2025-12-14 13:00:36', NULL, NULL),
+(2, 'Los Pollos Hermanos', 'Albaquerque, New Mexico', 'Gus Fring', '09925077173', 'lospolloshermanos@gmail.com', '11281996', 1, '2025-12-14 13:25:54', NULL, NULL),
+(3, 'Cyron Suppliers', 'Lapasan, Cagayan de Oro City, Philippines, 9000', 'Cyron Micarte', '09925077173', 'cyronmicarte@gmail.com', '12281996', 1, '2025-12-26 15:58:19', '2025-12-26 15:58:47', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -981,8 +905,22 @@ CREATE TABLE `trusted_devices` (
 --
 
 INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`, `UserAgent`, `IPAddress`, `LastUsedAt`, `ExpiresAt`, `CreatedDate`, `UpdatedAt`) VALUES
-(1, 1, 'Chrome on Windows', 'eda74245cebb5f23a7164784c17ab4491ab0af790ef8f018c593271742fa1e42', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-09 20:43:14', '2026-01-07 18:11:53', '2025-12-08 18:11:53', '2025-12-09 20:43:14'),
-(2, 1, 'Chrome on Windows', 'c9332e35a6ccae5c7c5b4610fef2aca432c6d38a8edccdb37909d6c885eb73a7', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0', '127.0.0.1', NULL, '2026-01-10 17:16:44', '2025-12-11 17:16:44', NULL);
+(2, 1, 'Chrome on Windows', 'c9332e35a6ccae5c7c5b4610fef2aca432c6d38a8edccdb37909d6c885eb73a7', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 OPR/124.0.0.0', '127.0.0.1', '2025-12-15 14:25:04', '2026-01-10 17:16:44', '2025-12-11 17:16:44', '2025-12-15 14:25:04'),
+(3, 1, 'Chrome on Windows', 'c95708984fb23dfc9cfef266241438707610d2fe0367749f3c592a5ddd84a307', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', NULL, '2026-01-22 22:52:51', '2025-12-23 22:52:51', NULL),
+(4, 1, 'Chrome on Windows', 'c3d8ac332ea8932cc62c93d0b8fd7fdfa929d6881091503a760a84ed60871cdf', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', '2025-12-26 01:47:11', '2026-01-24 11:43:19', '2025-12-25 11:43:19', '2025-12-26 01:47:11'),
+(5, 2, 'Chrome on Windows', '5d38ec8112a241ac51bd1054287359f13db93eddbeeceedc2c00a75fa7254c62', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', '2025-12-26 01:58:59', '2026-01-25 01:50:51', '2025-12-26 01:50:51', '2025-12-26 01:58:59'),
+(6, 1, 'Chrome on Windows', 'f0abe4c2229c497e20f71f96a23a308a6d527600ddd09ed2b3f6ea0299b06504', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', '2025-12-26 13:44:36', '2026-01-25 05:00:31', '2025-12-26 05:00:31', '2025-12-26 13:44:36'),
+(7, 2, 'Chrome on Windows', '5da659491728cf8cce8b7047ae8042604fa041012793d906516d7da35c598b76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', NULL, '2026-01-25 15:40:17', '2025-12-26 15:40:17', NULL),
+(8, 1, 'Chrome on Windows', 'a3051dd0a8a9a066b757288fd8ac12e048ab422eb0625e2bb48b148ec43b1119', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', NULL, '2026-01-25 15:42:08', '2025-12-26 15:42:08', NULL),
+(9, 1, 'Chrome on Windows', 'b92e29cf3590cb2081e5e23d680c14f90394e6130a76487b47cd8fb01b800465', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 19:58:42', '2025-12-26 19:58:42', NULL),
+(10, 2, 'Chrome on Windows', '70d67ccb4d54238fd7f39e5ad25e384d4994f23129b871c4504abfe1c2eac54c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 20:25:30', '2025-12-26 20:25:30', NULL),
+(11, 1, 'Chrome on Windows', '007b0a3e275d0bbc1f9ca5624401a575d08c77cb7a7c8b289158ae284aa5583a', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-26 21:30:25', '2026-01-25 20:37:55', '2025-12-26 20:37:55', '2025-12-26 21:30:25'),
+(12, 2, 'Chrome on Windows', '94ada0a3e302afb58e6232d466783a443e42cebe1112dd4db70561c0d19e695f', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 21:31:20', '2025-12-26 21:31:20', NULL),
+(13, 1, 'Chrome on Windows', 'a5c72bdb09e2ee1e42d280443e63c8c271654b763fe0391e93412a492679c314', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-26 21:45:10', '2026-01-25 21:44:53', '2025-12-26 21:44:53', '2025-12-26 21:45:10'),
+(14, 2, 'Chrome on Windows', 'e78fd6567203219bca58ec8d6a4adf51d41fded34533b12ec668b0c59ee7debf', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-26 22:14:13', '2026-01-25 21:46:23', '2025-12-26 21:46:23', '2025-12-26 22:14:13'),
+(15, 1, 'Chrome on Windows', '2a4fbee9a3c9a96124751e83b736dbad0e70937c22df5487d294f08a99c819ed', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:35:58', '2025-12-26 22:35:58', NULL),
+(16, 2, 'Chrome on Windows', 'c6ba2be624d0c8d1fbd27bb47776e15e631a2c05adb6de82b08e62ab3d5ba446', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:37:45', '2025-12-26 22:37:45', NULL),
+(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-27 15:12:12', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2025-12-27 15:12:12');
 
 -- --------------------------------------------------------
 
@@ -1038,7 +976,7 @@ CREATE TABLE `user` (
 
 INSERT INTO `user` (`UserID`, `UserRoleID`, `DepartmentID`, `Username`, `Email`, `Password`, `FullName`, `IsActive`, `MFAEnabled`, `MFASecret`, `BackupCodes`, `CreatedDate`, `UpdatedDate`) VALUES
 (1, 1, 1, 'gso.admin', 'micarte.aaron08@gmail.com', '$2y$12$ftgGRhJOPo.5FWmybeLLv.Z8wX8/H.BifZNZsK51uQIsJHUB/k.h6', 'GSO Administrator', 1, 1, 'eyJpdiI6IndTcFYzbnlmQjd5R2dnaEk1dzNNV1E9PSIsInZhbHVlIjoiaVZKanNlUDFSS20vSXJrblptbC9DMFlnTnVJVWpsQ1ZyaTkxTDZOVjViQT0iLCJtYWMiOiI0YWMwODkzOGRmZmExNzBjMWVkNDRmNGQzYWIyMDNkNGY0NWQ1MzNmM2VmNWQzYjE0YzJmMWY3OWRhOTViYTNhIiwidGFnIjoiIn0=', 'eyJpdiI6IitaZWR2a2JoQk5UWHREbXBDOWVPdWc9PSIsInZhbHVlIjoiTEVwTVB5K0xoK000c3pFdHdWOGpnNnBtQ1k2WWsreVZLb1BjMWh3dzlscmJlWCthVWxPR3ZhNkx1VWNTZXQrUlAwNytQVUxpM1dyM1VacFc2TW9hR24zT3V0NC8vaXJJeFFMdERzVnpZNUVKTkdkdUdRWUZ4QldzNElqSVhCdE5BUlhVVnBVTGRIQ0YyeFh4d3F1RDRqZy92eGZpeURrc1ZnRm90QWM1dFpRPSIsIm1hYyI6ImQ2YjlkMDg3ZGZmNmUwZTM1ZTI2ZmZiYzk0NzU0MWU2ZTIyMjk3ZGE0YmZiYWNlYTRmYTU1ZTVmOTVhZDAzOTciLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2025-12-08 17:51:44'),
-(2, 2, 1, 'gso.staff.aaronmicarte', 'aaron.micarte@gso.gov.ph', '$2y$12$YU66h83wjMCOJ9LMN81o8OuWpIuFYTFQpHCxkuWDAurXbYJS9Q.Mu', 'Aaron Micarte', 1, 0, NULL, NULL, '2025-12-05 02:07:29', NULL),
+(2, 2, 1, 'gso.staff.aaronmicarte', 'aaron.micarte@gso.gov.ph', '$2y$12$YU66h83wjMCOJ9LMN81o8OuWpIuFYTFQpHCxkuWDAurXbYJS9Q.Mu', 'Aaron Micarte', 1, 1, 'eyJpdiI6IjlHZGd3c0dKcmxwcnBLNEdhN2pkWVE9PSIsInZhbHVlIjoiRkd3RWh6SUczdmt3NnpVU0lhUnVGazNSSmdCYkU3OCtLZzA3T1RPZW1BST0iLCJtYWMiOiI3NjliN2M0MDBjZDE4N2YyODcxMWVkMjNjODdiMmVlMDcwZDEwYWIzYTk3NzFhMDVkMjY1MTQzMDM4Y2Y0OThkIiwidGFnIjoiIn0=', 'eyJpdiI6InRLc2pkQjlRVHpZd2ZzKzZ3c0RCRmc9PSIsInZhbHVlIjoiZUlXMnFlWFZ0dkNtZmUxMVVON0VUa3lXOG1EWDNmVjdrRFUxN09TUElBR2Q1K1NNeEF1WHJjTFMyN3dNbG01alUxMGN1b0l4cE5qQmRPL1BUNGxPRU00VGFOaFVtNEd2SWpJTnlEYmhLbTFrVEk0NU51UDY1S2Z4K2RCOHhxbGVyZnkyU1lXbkp2QXFPNlZWNCtwZ0lndHVyd2ljeW4wSUdObktkajJuVkpnPSIsIm1hYyI6ImU0NDM1MWY0YzZkYTYyZmMwY2QzYWM1M2ZiYmMwZTE4MzY0NzM2OWU0YzU2YTg3ODljOWY1NzhiNWVkNWEzNWQiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2025-12-26 01:48:44'),
 (3, 3, 1, 'custodian', 'custodian@gso.gov.ph', '$2y$12$hlU7QKnUbWphvJnFxYgaY.gJVzBnxVKKV.kjw7xB5Oh.1jN0cfA62', 'Property Custodian', 1, 0, NULL, NULL, '2025-12-05 02:07:29', NULL);
 
 -- --------------------------------------------------------
@@ -1066,11 +1004,11 @@ INSERT INTO `userrole` (`UserRoleID`, `RoleName`, `Description`, `CreatedDate`, 
 (3, 'Property Custodian', 'Manages property inventory', '2025-12-05 02:07:28', NULL, NULL),
 (4, 'Department Head', 'Can approve requests', '2025-12-05 02:07:28', NULL, NULL),
 (5, 'End User', 'Regular property accountable user', '2025-12-05 02:07:28', NULL, NULL),
-(6, 'Admin', 'System Administrator - Full Access', '2025-12-09 17:28:09', NULL, NULL),
-(7, 'GSO Staff', 'General Services Office Staff', '2025-12-09 17:28:09', NULL, NULL),
-(8, 'Property Custodian', 'Manages property inventory', '2025-12-09 17:28:09', NULL, NULL),
-(9, 'Department Head', 'Can approve requests', '2025-12-09 17:28:09', NULL, NULL),
-(10, 'End User', 'Regular property accountable user', '2025-12-09 17:28:09', NULL, NULL);
+(6, 'Admin', 'System Administrator - Full Access', '2025-12-09 17:28:09', '2025-12-14 15:04:49', '2025-12-14 07:04:49'),
+(7, 'GSO Staff', 'General Services Office Staff', '2025-12-09 17:28:09', '2025-12-14 15:04:55', '2025-12-14 07:04:55'),
+(8, 'Property Custodian', 'Manages property inventory', '2025-12-09 17:28:09', '2025-12-14 15:04:59', '2025-12-14 07:04:59'),
+(9, 'Department Head', 'Can approve requests', '2025-12-09 17:28:09', '2025-12-14 15:05:03', '2025-12-14 07:05:03'),
+(10, 'End User', 'Regular property accountable user', '2025-12-09 17:28:09', '2025-12-14 15:05:07', '2025-12-14 07:05:07');
 
 -- --------------------------------------------------------
 
@@ -1173,7 +1111,8 @@ ALTER TABLE `condition`
 --
 ALTER TABLE `deliveryreceipt`
   ADD PRIMARY KEY (`DRID`),
-  ADD KEY `POID` (`POID`),
+  ADD UNIQUE KEY `ux_deliveryreceipt_drnumber` (`DRNumber`),
+  ADD KEY `POID` (`PONumber`),
   ADD KEY `ReceivedBy` (`ReceivedBy`);
 
 --
@@ -1182,8 +1121,9 @@ ALTER TABLE `deliveryreceipt`
 ALTER TABLE `deliveryreceiptdetail`
   ADD PRIMARY KEY (`DRDetailID`),
   ADD KEY `DRID` (`DRID`),
-  ADD KEY `PODetailID` (`PODetailID`),
-  ADD KEY `PropertyTypeID` (`PropertyTypeID`);
+  ADD KEY `PODetailID` (`ItemDescription`),
+  ADD KEY `PropertyTypeID` (`PropertyTypeID`),
+  ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`);
 
 --
 -- Indexes for table `department`
@@ -1214,6 +1154,15 @@ ALTER TABLE `iardetail`
   ADD KEY `DRDetailID` (`DRDetailID`),
   ADD KEY `PropertyTypeID` (`PropertyTypeID`),
   ADD KEY `ConditionID` (`ConditionID`);
+
+--
+-- Indexes for table `iar_signatures`
+--
+ALTER TABLE `iar_signatures`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `iar_signatures_iar_id_role_unique` (`iar_id`,`role`),
+  ADD KEY `iar_signatures_signed_by_user_id_index` (`signed_by_user_id`),
+  ADD KEY `iar_signatures_sha256_hash_index` (`sha256_hash`);
 
 --
 -- Indexes for table `icsdetail`
@@ -1267,33 +1216,6 @@ ALTER TABLE `inventorycustodianslip`
   ADD UNIQUE KEY `ICSNumber` (`ICSNumber`),
   ADD KEY `IssuedTo` (`IssuedTo`),
   ADD KEY `IssuedBy` (`IssuedBy`);
-
---
--- Indexes for table `joborder`
---
-ALTER TABLE `joborder`
-  ADD PRIMARY KEY (`JobOrderID`),
-  ADD UNIQUE KEY `JobOrderNumber` (`JobOrderNumber`),
-  ADD KEY `PropertyID` (`PropertyID`),
-  ADD KEY `RequestedBy` (`RequestedBy`),
-  ADD KEY `RequestedByDeptID` (`RequestedByDeptID`),
-  ADD KEY `ConditionID` (`ConditionID`),
-  ADD KEY `JobOrderStatusID` (`JobOrderStatusID`);
-
---
--- Indexes for table `joborderdetail`
---
-ALTER TABLE `joborderdetail`
-  ADD PRIMARY KEY (`JobOrderDetailID`),
-  ADD KEY `JobOrderID` (`JobOrderID`),
-  ADD KEY `AssignedTo` (`AssignedTo`),
-  ADD KEY `ConditionID` (`ConditionID`);
-
---
--- Indexes for table `joborderstatus`
---
-ALTER TABLE `joborderstatus`
-  ADD PRIMARY KEY (`JobOrderStatusID`);
 
 --
 -- Indexes for table `loginaudit`
@@ -1464,59 +1386,6 @@ ALTER TABLE `propertytype`
   ADD KEY `PropertyClassificationID` (`PropertyClassificationID`);
 
 --
--- Indexes for table `purchaseorder`
---
-ALTER TABLE `purchaseorder`
-  ADD PRIMARY KEY (`POID`),
-  ADD UNIQUE KEY `PONumber` (`PONumber`),
-  ADD KEY `PurchaseRequestID` (`PurchaseRequestID`),
-  ADD KEY `SupplierID` (`SupplierID`),
-  ADD KEY `POStatusID` (`POStatusID`),
-  ADD KEY `CreatedBy` (`CreatedBy`),
-  ADD KEY `ApprovedBy` (`ApprovedBy`);
-
---
--- Indexes for table `purchaseorderdetail`
---
-ALTER TABLE `purchaseorderdetail`
-  ADD PRIMARY KEY (`PODetailID`),
-  ADD KEY `POID` (`POID`),
-  ADD KEY `PropertyTypeID` (`PropertyTypeID`),
-  ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`);
-
---
--- Indexes for table `purchaseorderstatus`
---
-ALTER TABLE `purchaseorderstatus`
-  ADD PRIMARY KEY (`POStatusID`);
-
---
--- Indexes for table `purchaserequest`
---
-ALTER TABLE `purchaserequest`
-  ADD PRIMARY KEY (`PurchaseRequestID`),
-  ADD UNIQUE KEY `PRNumber` (`PRNumber`),
-  ADD KEY `RequestedBy` (`RequestedBy`),
-  ADD KEY `DepartmentID` (`DepartmentID`),
-  ADD KEY `ApprovedBy` (`ApprovedBy`),
-  ADD KEY `PRStatusID` (`PRStatusID`);
-
---
--- Indexes for table `purchaserequestdetail`
---
-ALTER TABLE `purchaserequestdetail`
-  ADD PRIMARY KEY (`PRDetailID`),
-  ADD KEY `PurchaseRequestID` (`PurchaseRequestID`),
-  ADD KEY `PropertyTypeID` (`PropertyTypeID`),
-  ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`);
-
---
--- Indexes for table `purchaserequeststatus`
---
-ALTER TABLE `purchaserequeststatus`
-  ADD PRIMARY KEY (`PRStatusID`);
-
---
 -- Indexes for table `qrcode`
 --
 ALTER TABLE `qrcode`
@@ -1614,7 +1483,7 @@ ALTER TABLE `category`
 -- AUTO_INCREMENT for table `classification`
 --
 ALTER TABLE `classification`
-  MODIFY `ClassificationID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `ClassificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `condition`
@@ -1626,13 +1495,13 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
-  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `department`
@@ -1656,7 +1525,13 @@ ALTER TABLE `enduser`
 -- AUTO_INCREMENT for table `iardetail`
 --
 ALTER TABLE `iardetail`
-  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `iar_signatures`
+--
+ALTER TABLE `iar_signatures`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `icsdetail`
@@ -1686,7 +1561,7 @@ ALTER TABLE `iiruprecommendation`
 -- AUTO_INCREMENT for table `inspectionacceptancereport`
 --
 ALTER TABLE `inspectionacceptancereport`
-  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `inventorycustodianslip`
@@ -1695,34 +1570,16 @@ ALTER TABLE `inventorycustodianslip`
   MODIFY `ICSID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `joborder`
---
-ALTER TABLE `joborder`
-  MODIFY `JobOrderID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `joborderdetail`
---
-ALTER TABLE `joborderdetail`
-  MODIFY `JobOrderDetailID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `joborderstatus`
---
-ALTER TABLE `joborderstatus`
-  MODIFY `JobOrderStatusID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=110;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -1752,7 +1609,7 @@ ALTER TABLE `physicalcountsession`
 -- AUTO_INCREMENT for table `position`
 --
 ALTER TABLE `position`
-  MODIFY `PositionID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `PositionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `propertyclassification`
@@ -1824,43 +1681,7 @@ ALTER TABLE `propertytransferdetail`
 -- AUTO_INCREMENT for table `propertytype`
 --
 ALTER TABLE `propertytype`
-  MODIFY `PropertyTypeID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `purchaseorder`
---
-ALTER TABLE `purchaseorder`
-  MODIFY `POID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `purchaseorderdetail`
---
-ALTER TABLE `purchaseorderdetail`
-  MODIFY `PODetailID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `purchaseorderstatus`
---
-ALTER TABLE `purchaseorderstatus`
-  MODIFY `POStatusID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `purchaserequest`
---
-ALTER TABLE `purchaserequest`
-  MODIFY `PurchaseRequestID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `purchaserequestdetail`
---
-ALTER TABLE `purchaserequestdetail`
-  MODIFY `PRDetailID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `purchaserequeststatus`
---
-ALTER TABLE `purchaserequeststatus`
-  MODIFY `PRStatusID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `PropertyTypeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `qrcode`
@@ -1872,13 +1693,13 @@ ALTER TABLE `qrcode`
 -- AUTO_INCREMENT for table `supplier`
 --
 ALTER TABLE `supplier`
-  MODIFY `SupplierID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `SupplierID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -1940,7 +1761,6 @@ ALTER TABLE `classification`
 -- Constraints for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  ADD CONSTRAINT `deliveryreceipt_ibfk_1` FOREIGN KEY (`POID`) REFERENCES `purchaseorder` (`POID`),
   ADD CONSTRAINT `deliveryreceipt_ibfk_2` FOREIGN KEY (`ReceivedBy`) REFERENCES `user` (`UserID`);
 
 --
@@ -1948,8 +1768,8 @@ ALTER TABLE `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceiptdetail`
   ADD CONSTRAINT `deliveryreceiptdetail_ibfk_1` FOREIGN KEY (`DRID`) REFERENCES `deliveryreceipt` (`DRID`),
-  ADD CONSTRAINT `deliveryreceiptdetail_ibfk_2` FOREIGN KEY (`PODetailID`) REFERENCES `purchaseorderdetail` (`PODetailID`),
-  ADD CONSTRAINT `deliveryreceiptdetail_ibfk_3` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`);
+  ADD CONSTRAINT `deliveryreceiptdetail_ibfk_3` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
+  ADD CONSTRAINT `fk_drdetail_unitofmeasure` FOREIGN KEY (`UnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`) ON UPDATE CASCADE;
 
 --
 -- Constraints for table `enduser`
@@ -1966,6 +1786,13 @@ ALTER TABLE `iardetail`
   ADD CONSTRAINT `iardetail_ibfk_2` FOREIGN KEY (`DRDetailID`) REFERENCES `deliveryreceiptdetail` (`DRDetailID`),
   ADD CONSTRAINT `iardetail_ibfk_3` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
   ADD CONSTRAINT `iardetail_ibfk_4` FOREIGN KEY (`ConditionID`) REFERENCES `condition` (`ConditionID`);
+
+--
+-- Constraints for table `iar_signatures`
+--
+ALTER TABLE `iar_signatures`
+  ADD CONSTRAINT `iar_signatures_iar_id_foreign` FOREIGN KEY (`iar_id`) REFERENCES `inspectionacceptancereport` (`IARID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `iar_signatures_signed_by_user_id_foreign` FOREIGN KEY (`signed_by_user_id`) REFERENCES `user` (`UserID`);
 
 --
 -- Constraints for table `icsdetail`
@@ -2005,24 +1832,6 @@ ALTER TABLE `inspectionacceptancereport`
 ALTER TABLE `inventorycustodianslip`
   ADD CONSTRAINT `inventorycustodianslip_ibfk_1` FOREIGN KEY (`IssuedTo`) REFERENCES `enduser` (`EndUserID`),
   ADD CONSTRAINT `inventorycustodianslip_ibfk_2` FOREIGN KEY (`IssuedBy`) REFERENCES `user` (`UserID`);
-
---
--- Constraints for table `joborder`
---
-ALTER TABLE `joborder`
-  ADD CONSTRAINT `joborder_ibfk_1` FOREIGN KEY (`PropertyID`) REFERENCES `assignedproperty` (`PropertyID`),
-  ADD CONSTRAINT `joborder_ibfk_2` FOREIGN KEY (`RequestedBy`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `joborder_ibfk_3` FOREIGN KEY (`RequestedByDeptID`) REFERENCES `department` (`DepartmentID`),
-  ADD CONSTRAINT `joborder_ibfk_4` FOREIGN KEY (`ConditionID`) REFERENCES `condition` (`ConditionID`),
-  ADD CONSTRAINT `joborder_ibfk_5` FOREIGN KEY (`JobOrderStatusID`) REFERENCES `joborderstatus` (`JobOrderStatusID`);
-
---
--- Constraints for table `joborderdetail`
---
-ALTER TABLE `joborderdetail`
-  ADD CONSTRAINT `joborderdetail_ibfk_1` FOREIGN KEY (`JobOrderID`) REFERENCES `joborder` (`JobOrderID`),
-  ADD CONSTRAINT `joborderdetail_ibfk_2` FOREIGN KEY (`AssignedTo`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `joborderdetail_ibfk_3` FOREIGN KEY (`ConditionID`) REFERENCES `condition` (`ConditionID`);
 
 --
 -- Constraints for table `loginaudit`
@@ -2135,41 +1944,6 @@ ALTER TABLE `propertytransferdetail`
 ALTER TABLE `propertytype`
   ADD CONSTRAINT `propertytype_ibfk_1` FOREIGN KEY (`ClassificationID`) REFERENCES `classification` (`ClassificationID`),
   ADD CONSTRAINT `propertytype_ibfk_2` FOREIGN KEY (`PropertyClassificationID`) REFERENCES `propertyclassification` (`PropertyClassificationID`);
-
---
--- Constraints for table `purchaseorder`
---
-ALTER TABLE `purchaseorder`
-  ADD CONSTRAINT `purchaseorder_ibfk_1` FOREIGN KEY (`PurchaseRequestID`) REFERENCES `purchaserequest` (`PurchaseRequestID`),
-  ADD CONSTRAINT `purchaseorder_ibfk_2` FOREIGN KEY (`SupplierID`) REFERENCES `supplier` (`SupplierID`),
-  ADD CONSTRAINT `purchaseorder_ibfk_3` FOREIGN KEY (`POStatusID`) REFERENCES `purchaseorderstatus` (`POStatusID`),
-  ADD CONSTRAINT `purchaseorder_ibfk_4` FOREIGN KEY (`CreatedBy`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `purchaseorder_ibfk_5` FOREIGN KEY (`ApprovedBy`) REFERENCES `user` (`UserID`);
-
---
--- Constraints for table `purchaseorderdetail`
---
-ALTER TABLE `purchaseorderdetail`
-  ADD CONSTRAINT `purchaseorderdetail_ibfk_1` FOREIGN KEY (`POID`) REFERENCES `purchaseorder` (`POID`),
-  ADD CONSTRAINT `purchaseorderdetail_ibfk_2` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
-  ADD CONSTRAINT `purchaseorderdetail_ibfk_3` FOREIGN KEY (`UnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`);
-
---
--- Constraints for table `purchaserequest`
---
-ALTER TABLE `purchaserequest`
-  ADD CONSTRAINT `purchaserequest_ibfk_1` FOREIGN KEY (`RequestedBy`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `purchaserequest_ibfk_2` FOREIGN KEY (`DepartmentID`) REFERENCES `department` (`DepartmentID`),
-  ADD CONSTRAINT `purchaserequest_ibfk_3` FOREIGN KEY (`ApprovedBy`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `purchaserequest_ibfk_4` FOREIGN KEY (`PRStatusID`) REFERENCES `purchaserequeststatus` (`PRStatusID`);
-
---
--- Constraints for table `purchaserequestdetail`
---
-ALTER TABLE `purchaserequestdetail`
-  ADD CONSTRAINT `purchaserequestdetail_ibfk_1` FOREIGN KEY (`PurchaseRequestID`) REFERENCES `purchaserequest` (`PurchaseRequestID`),
-  ADD CONSTRAINT `purchaserequestdetail_ibfk_2` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
-  ADD CONSTRAINT `purchaserequestdetail_ibfk_3` FOREIGN KEY (`UnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`);
 
 --
 -- Constraints for table `qrcode`

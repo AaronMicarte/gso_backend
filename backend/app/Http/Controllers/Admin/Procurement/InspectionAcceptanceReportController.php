@@ -169,6 +169,52 @@ class InspectionAcceptanceReportController extends Controller
                 ]);
             }
 
+            // Require inspected signature when InspectedBy is provided
+            $hasInspectedSignature = $request->hasFile('inspected_signature') || $request->input('inspected_signature');
+            if ($iar->InspectedBy && !$hasInspectedSignature) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Inspected signature is required when Inspected By is set',
+                    'errors' => ['inspected_signature' => ['Inspected signature is required']] 
+                ], 422);
+            }
+
+            // If inspected signature provided inline during create, save it
+            if ($hasInspectedSignature) {
+                try {
+                    $signatureService = new \App\Services\SignatureService();
+                    $input = $request->file('inspected_signature') ?? $request->input('inspected_signature');
+                    $signatureService->processAndStore($iar->IARID, 'inspected', $input, $request->input('inspected_signature_source') ?? 'upload', $iar->InspectedBy);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to save inspected signature',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
+            // If accepted signature provided inline during create, save it too (supports CreateIARPage inline behavior)
+            $hasAcceptedSignature = $request->hasFile('accepted_signature') || $request->input('accepted_signature');
+            if ($hasAcceptedSignature) {
+                try {
+                    $signatureService = $signatureService ?? new \App\Services\SignatureService();
+                    $input = $request->file('accepted_signature') ?? $request->input('accepted_signature');
+                    // Prefer IAR AcceptedBy if set, otherwise use authenticated user as signer
+                    $signedBy = $iar->AcceptedBy ?: (auth()->user()->UserID ?? null);
+                    $signatureService->processAndStore($iar->IARID, 'accepted', $input, $request->input('accepted_signature_source') ?? 'upload', $signedBy);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to save accepted signature',
+                        'error' => $e->getMessage()
+                    ], 500);
+                }
+            }
+
             DB::commit();
 
             return response()->json([
@@ -199,13 +245,24 @@ class InspectionAcceptanceReportController extends Controller
             $iar = InspectionAcceptanceReport::with([
                 'details.propertyType',
                 'details.condition',
-                'details.drDetail'
+                'details.drDetail.unitOfMeasure',
+                'inspectedByUser',
+                'acceptedByUser'
             ])->findOrFail($id);
 
-            // Manually load deliveryReceipt and users
+            // Manually load deliveryReceipt
             $iar->deliveryReceipt = DeliveryReceipt::find($iar->DRID);
-            $iar->inspectedByUser = $iar->InspectedBy ? \App\Models\Auth\User::find($iar->InspectedBy) : null;
-            $iar->acceptedByUser = $iar->AcceptedBy ? \App\Models\Auth\User::find($iar->AcceptedBy) : null;
+
+            // Manually load users
+            $iar->inspectedByUser = $iar->InspectedBy ? User::find($iar->InspectedBy) : null;
+            $iar->acceptedByUser = $iar->AcceptedBy ? User::find($iar->AcceptedBy) : null;
+
+            // Ensure unitOfMeasure is loaded for all details
+            foreach ($iar->details as $detail) {
+                if ($detail->drDetail) {
+                    $detail->drDetail->load('unitOfMeasure');
+                }
+            }
 
             // Role-based access control
             $user = AuthFacade::user();
@@ -228,9 +285,29 @@ class InspectionAcceptanceReportController extends Controller
 
             // Normalize response for frontend (ensure camelCase relationship keys expected by frontend)
             $data = $iar->toArray();
-            // Attach nested user arrays if present
-            $data['inspectedByUser'] = $iar->inspectedByUser ? $iar->inspectedByUser->toArray() : ($data['inspected_by_user'] ?? null);
-            $data['acceptedByUser'] = $iar->acceptedByUser ? $iar->acceptedByUser->toArray() : ($data['accepted_by_user'] ?? null);
+            // Users are manually loaded
+            $data['inspectedByUser'] = $iar->inspectedByUser ? $iar->inspectedByUser->toArray() : null;
+            $data['acceptedByUser'] = $iar->acceptedByUser ? $iar->acceptedByUser->toArray() : null;
+
+            // Attach signatures if present
+            $inspectedSig = $iar->inspectedSignature()->first();
+            $acceptedSig = $iar->acceptedSignature()->first();
+            $data['inspectedSignature'] = $inspectedSig ? [
+                'url' => $inspectedSig->url,
+                'source' => $inspectedSig->source,
+                'storage_disk' => $inspectedSig->storage_disk,
+                'storage_path' => $inspectedSig->storage_path,
+                'signed_by_user_id' => $inspectedSig->signed_by_user_id,
+                'signed_at' => $inspectedSig->created_at,
+            ] : null;
+            $data['acceptedSignature'] = $acceptedSig ? [
+                'url' => $acceptedSig->url,
+                'source' => $acceptedSig->source,
+                'storage_disk' => $acceptedSig->storage_disk,
+                'storage_path' => $acceptedSig->storage_path,
+                'signed_by_user_id' => $acceptedSig->signed_by_user_id,
+                'signed_at' => $acceptedSig->created_at,
+            ] : null;
 
             if (!empty($data['details']) && is_array($data['details'])) {
                 foreach ($data['details'] as &$d) {
@@ -398,6 +475,96 @@ class InspectionAcceptanceReportController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Save signature helper used when creating/updating IAR
+     */
+    private function saveSignature($iarId, $role, $signatureInput, $source, $signedByUserId)
+    {
+        // $signatureInput may be an UploadedFile or a base64 string
+        $pngContents = null;
+        $mime = 'image/png';
+
+        if ($signatureInput instanceof \Illuminate\Http\UploadedFile) {
+            $file = $signatureInput;
+            $original = file_get_contents($file->getRealPath());
+            $detected = $file->getClientMimeType();
+            if (!in_array($detected, ['image/png', 'image/jpeg', 'image/jpg'])) {
+                throw new \Exception('Invalid image type.');
+            }
+            if (in_array($detected, ['image/jpeg', 'image/jpg'])) {
+                $img = imagecreatefromstring($original);
+                ob_start();
+                imagepng($img);
+                $pngContents = ob_get_clean();
+                imagedestroy($img);
+            } else {
+                $pngContents = $original;
+            }
+        } else {
+            // base64
+            $sig = $signatureInput;
+            if (is_string($sig) && preg_match('/^data:image\/(png|jpeg);base64,/', $sig)) {
+                $base64 = preg_replace('/^data:image\/(png|jpeg);base64,/', '', $sig);
+                $decoded = base64_decode($base64);
+                if ($decoded === false) {
+                    throw new \Exception('Invalid base64');
+                }
+                $finfo = finfo_open();
+                $detected = finfo_buffer($finfo, $decoded, FILEINFO_MIME_TYPE);
+                finfo_close($finfo);
+                if (!in_array($detected, ['image/png', 'image/jpeg'])) {
+                    throw new \Exception('Invalid image type');
+                }
+                if ($detected === 'image/jpeg') {
+                    $img = imagecreatefromstring($decoded);
+                    ob_start();
+                    imagepng($img);
+                    $pngContents = ob_get_clean();
+                    imagedestroy($img);
+                } else {
+                    $pngContents = $decoded;
+                }
+            } else {
+                throw new \Exception('No valid signature data');
+            }
+        }
+
+        // Basic image checks
+        $image = imagecreatefromstring($pngContents);
+        if (!$image) {
+            throw new \Exception('Invalid image data');
+        }
+        $width = imagesx($image);
+        $height = imagesy($image);
+        imagedestroy($image);
+
+        $disk = config('filesystems.default', 'public');
+        $filename = 'signatures/iar_' . $iarId . '_' . $role . '_' . time() . '.png';
+        Storage::disk($disk)->put($filename, $pngContents);
+        $url = Storage::disk($disk)->url($filename);
+        $tmpPath = Storage::disk($disk)->path($filename);
+        $hash = hash_file('sha256', $tmpPath);
+        $size = Storage::disk($disk)->size($filename);
+
+        return IarSignature::updateOrCreate(
+            ['iar_id' => $iarId, 'role' => $role],
+            [
+                'signed_by_user_id' => $signedByUserId,
+                'source' => $source,
+                'storage_disk' => $disk,
+                'storage_path' => $filename,
+                'url' => $url,
+                'mime' => 'image/png',
+                'width' => $width,
+                'height' => $height,
+                'size_bytes' => $size,
+                'sha256_hash' => $hash,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]
+        );
     }
 
     public function getConditions(): JsonResponse

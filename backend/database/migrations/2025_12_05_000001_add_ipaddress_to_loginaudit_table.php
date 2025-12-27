@@ -15,10 +15,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('loginaudit', function (Blueprint $table) {
-            // VARCHAR(45) to support both IPv4 and IPv6 addresses
-            $table->string('IPAddress', 45)->nullable()->after('Status');
-        });
+        if (!Schema::hasColumn('loginaudit', 'IPAddress')) {
+            Schema::table('loginaudit', function (Blueprint $table) {
+                // VARCHAR(45) to support both IPv4 and IPv6 addresses
+                $table->string('IPAddress', 45)->nullable()->after('Status');
+            });
+        }
     }
 
     /**
@@ -26,8 +28,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('loginaudit', function (Blueprint $table) {
-            $table->dropColumn('IPAddress');
-        });
+        if (Schema::hasColumn('loginaudit', 'IPAddress')) {
+            Schema::table('loginaudit', function (Blueprint $table) {
+                $table->dropColumn('IPAddress');
+            });
+        }
     }
 };

@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\MasterData\UnitOfMeasureController;
 use App\Http\Controllers\Admin\MasterData\UserRoleController;
 use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
 use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
+use App\Http\Controllers\Admin\Procurement\IarSignatureController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +37,9 @@ use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
 Route::get('/test-connection', function () {
     return response()->json(['message' => 'API is working']);
 });
+
+// Public signature stream for local/dev disk (allows simple dev access to private files)
+Route::get('/signatures/{iarId}/{role}', [IarSignatureController::class, 'showPublic']);
 
 // Protected routes - requires session-based authentication (httpOnly cookie)
 Route::middleware('auth:sanctum')->group(function () {
@@ -123,6 +127,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
             // IAR routes (Inspection & Acceptance Report)
             Route::apiResource('inspection-acceptance-reports', InspectionAcceptanceReportController::class)->parameters(['inspection-acceptance-reports' => 'id']);
+            Route::post('inspection-acceptance-reports/{id}/signatures', [IarSignatureController::class, 'store']);
+            // Stream signature file (fallback when storage URL isn't directly accessible)
+            Route::get('inspection-acceptance-reports/{id}/signatures/{role}', [IarSignatureController::class, 'show']);
             Route::get('inspection-acceptance-reports-helpers/conditions', [InspectionAcceptanceReportController::class, 'getConditions']);
             Route::get('inspection-acceptance-reports-helpers/users', [InspectionAcceptanceReportController::class, 'getUsers']);
         });

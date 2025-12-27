@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Auth\User;
+use App\Models\Procurement\IarSignature;
 
 class InspectionAcceptanceReport extends Model
 {
@@ -50,5 +51,20 @@ class InspectionAcceptanceReport extends Model
     public function details(): HasMany
     {
         return $this->hasMany(IARDetail::class, 'IARID', 'IARID');
+    }
+
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(IarSignature::class, 'iar_id', 'IARID');
+    }
+
+    public function inspectedSignature(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(IarSignature::class, 'iar_id', 'IARID')->where('role', 'inspected');
+    }
+
+    public function acceptedSignature(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(IarSignature::class, 'iar_id', 'IARID')->where('role', 'accepted');
     }
 }

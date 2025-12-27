@@ -9,6 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // If the table doesn't exist yet (fresh tests), skip safely
+        if (!Schema::hasTable('deliveryreceiptdetail')) {
+            return;
+        }
+
         // Add column only if it doesn't already exist (idempotent)
         if (!Schema::hasColumn('deliveryreceiptdetail', 'UnitOfMeasureID')) {
             Schema::table('deliveryreceiptdetail', function (Blueprint $table) {
@@ -28,9 +33,15 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (!Schema::hasTable('deliveryreceiptdetail')) {
+            return;
+        }
+
         Schema::table('deliveryreceiptdetail', function (Blueprint $table) {
-            $table->dropForeign('UnitOfMeasureID');
-            $table->dropColumn('UnitOfMeasureID');
+            if (Schema::hasColumn('deliveryreceiptdetail', 'UnitOfMeasureID')) {
+                try { $table->dropForeign(['UnitOfMeasureID']); } catch (\Exception $e) {}
+                $table->dropColumn('UnitOfMeasureID');
+            }
         });
     }
 };
