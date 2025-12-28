@@ -20,6 +20,9 @@ class IARDetail extends Model
         'ConditionID',
         'QuantityAccepted',
         'QuantityRejected',
+        'VerifiedBrand',
+        'VerifiedModel',
+        'VerifiedSerial',
         'Remarks',
     ];
 

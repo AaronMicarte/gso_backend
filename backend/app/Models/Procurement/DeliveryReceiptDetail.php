@@ -19,6 +19,9 @@ class DeliveryReceiptDetail extends Model
     protected $fillable = [
         'DRID',
         'ItemDescription',
+        'Brand',
+        'ModelNumber',
+        'SerialNumber',
         'PropertyTypeID',
         'QuantityDelivered',
         'UnitOfMeasureID',

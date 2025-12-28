@@ -99,17 +99,38 @@ class DeliveryReceiptController extends Controller
             $validator = Validator::make($request->all(), [
                 'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
                 'supplier_name' => 'required|string|max:255',
-                'po_number' => 'nullable|string|max:50', // OPTIONAL
-                'invoice_number' => 'nullable|string|max:50',
+                'po_number' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
+                        return $q->where('SupplierName', $request->supplier_name);
+                    }),
+                ], // OPTIONAL - unique per supplier
+                'invoice_number' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
+                        return $q->where('SupplierName', $request->supplier_name);
+                    }),
+                ],
                 'date_received' => $dateRules,
                 'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
                 'details' => 'required|array|min:1',
                 'details.*.item_description' => 'required|string|max:255',
+                'details.*.brand' => 'nullable|string|max:100',
+                'details.*.model_number' => 'nullable|string|max:100',
+                'details.*.serial_number' => 'nullable|string|max:100',
                 'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
                 'details.*.quantity_delivered' => 'required|integer|min:1',
                 'details.*.unit_of_measure_id' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
+            ], [
+                'dr_number.unique' => 'DR number already exists',
+                'po_number.unique' => 'PO number already exists for this supplier',
+                'invoice_number.unique' => 'Invoice number already exists for this supplier',
             ]);
 
             if ($validator->fails()) {
@@ -147,6 +168,9 @@ class DeliveryReceiptController extends Controller
                 DeliveryReceiptDetail::create([
                     'DRID' => $deliveryReceipt->DRID,
                     'ItemDescription' => $detail['item_description'],
+                    'Brand' => $detail['brand'] ?? null,
+                    'ModelNumber' => $detail['model_number'] ?? null,
+                    'SerialNumber' => $detail['serial_number'] ?? null,
                     'PropertyTypeID' => $detail['property_type_id'],
                     'QuantityDelivered' => $detail['quantity_delivered'],
                     'UnitOfMeasureID' => $detail['unit_of_measure_id'],
@@ -260,17 +284,39 @@ class DeliveryReceiptController extends Controller
                     Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
                 'supplier_name' => 'required|string|max:255',
-                'po_number' => 'nullable|string|max:50', // OPTIONAL
+                'po_number' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
+                        return $q->where('SupplierName', $request->supplier_name);
+                    })->ignore($deliveryReceipt->DRID, 'DRID'),
+                ], // OPTIONAL - unique per supplier (ignore current record on update)
+                'invoice_number' => [
+                    'nullable',
+                    'string',
+                    'max:50',
+                    Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
+                        return $q->where('SupplierName', $request->supplier_name);
+                    })->ignore($deliveryReceipt->DRID, 'DRID'),
+                ],
                 'date_received' => $dateRules,
                 'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
                 'details' => 'required|array|min:1',
                 'details.*.dr_detail_id' => 'sometimes|integer|exists:deliveryreceiptdetail,DRDetailID', // Optional for updates
                 'details.*.item_description' => 'required|string|max:255',
+                'details.*.brand' => 'nullable|string|max:100',
+                'details.*.model_number' => 'nullable|string|max:100',
+                'details.*.serial_number' => 'nullable|string|max:100',
                 'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
                 'details.*.quantity_delivered' => 'required|integer|min:1',
                 'details.*.unit_of_measure_id' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
+            ], [
+                'dr_number.unique' => 'DR number already exists',
+                'po_number.unique' => 'PO number already exists for this supplier',
+                'invoice_number.unique' => 'Invoice number already exists for this supplier',
             ]);
 
             if ($validator->fails()) {
@@ -314,6 +360,9 @@ class DeliveryReceiptController extends Controller
                 $detailData = [
                     'DRID' => $deliveryReceipt->DRID,
                     'ItemDescription' => $detail['item_description'],
+                    'Brand' => $detail['brand'] ?? null,
+                    'ModelNumber' => $detail['model_number'] ?? null,
+                    'SerialNumber' => $detail['serial_number'] ?? null,
                     'PropertyTypeID' => $detail['property_type_id'],
                     'QuantityDelivered' => $detail['quantity_delivered'],
                     'UnitOfMeasureID' => $detail['unit_of_measure_id'],

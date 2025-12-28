@@ -26,7 +26,12 @@ class InspectionAcceptanceReportController extends Controller
             $query = InspectionAcceptanceReport::with([
                 'details.propertyType',
                 'details.condition',
-                'details.drDetail'
+                'details.drDetail.unitOfMeasure',
+                'deliveryReceipt' => function ($query) {
+                    $query->withTrashed();
+                },
+                'inspectedByUser',
+                'acceptedByUser'
             ]);
 
             // Role-based filtering
@@ -60,11 +65,12 @@ class InspectionAcceptanceReportController extends Controller
 
             $iars = $query->orderBy('CreatedDate', 'desc')->paginate(15);
 
-            // Manually load deliveryReceipt and users
+            // Ensure compatibility with older UIs that expect camelCase relation attributes
             $iars->getCollection()->transform(function ($iar) {
-                $iar->deliveryReceipt = DeliveryReceipt::find($iar->DRID);
+                // Eager loading returns snake_case keys in JSON; add camelCase duplicates for frontend compatibility
                 $iar->inspectedByUser = $iar->InspectedBy ? \App\Models\Auth\User::find($iar->InspectedBy) : null;
                 $iar->acceptedByUser = $iar->AcceptedBy ? \App\Models\Auth\User::find($iar->AcceptedBy) : null;
+                $iar->deliveryReceipt = $iar->deliveryReceipt ?? ($iar->DRID ? \App\Models\Procurement\DeliveryReceipt::withTrashed()->find($iar->DRID) : null);
                 return $iar;
             });
 
@@ -104,6 +110,9 @@ class InspectionAcceptanceReportController extends Controller
                 'details.*.condition_id' => 'required|integer|exists:condition,ConditionID',
                 'details.*.quantity_accepted' => 'required|integer|min:0',
                 'details.*.quantity_rejected' => 'required|integer|min:0',
+                'details.*.verified_brand' => 'nullable|string|max:255',
+                'details.*.verified_model' => 'nullable|string|max:255',
+                'details.*.verified_serial' => 'nullable|string|max:255',
                 'details.*.remarks' => 'nullable|string',
             ]);
 
@@ -168,6 +177,9 @@ class InspectionAcceptanceReportController extends Controller
                     'ConditionID' => $detail['condition_id'],
                     'QuantityAccepted' => $detail['quantity_accepted'],
                     'QuantityRejected' => $detail['quantity_rejected'],
+                    'VerifiedBrand' => $detail['verified_brand'] ?? null,
+                    'VerifiedModel' => $detail['verified_model'] ?? null,
+                    'VerifiedSerial' => $detail['verified_serial'] ?? null,
                     'Remarks' => $detail['remarks'] ?? null,
                 ]);
             }
@@ -283,16 +295,15 @@ class InspectionAcceptanceReportController extends Controller
                 'details.propertyType',
                 'details.condition',
                 'details.drDetail.unitOfMeasure',
-                'inspectedByUser',
-                'acceptedByUser'
+                'deliveryReceipt' => function ($q) { $q->withTrashed(); }
             ])->findOrFail($id);
 
-            // Manually load deliveryReceipt
-            $iar->deliveryReceipt = DeliveryReceipt::find($iar->DRID);
-
-            // Manually load users
-            $iar->inspectedByUser = $iar->InspectedBy ? User::find($iar->InspectedBy) : null;
-            $iar->acceptedByUser = $iar->AcceptedBy ? User::find($iar->AcceptedBy) : null;
+            // Load additional relationships
+            $iar->load([
+                'deliveryReceipt',
+                'inspectedByUser',
+                'acceptedByUser'
+            ]);
 
             // Ensure unitOfMeasure is loaded for all details
             foreach ($iar->details as $detail) {
@@ -346,6 +357,9 @@ class InspectionAcceptanceReportController extends Controller
                 'signed_at' => $acceptedSig->created_at,
             ] : null;
 
+            // Ensure deliveryReceipt is exposed in camelCase for frontend
+            $data['deliveryReceipt'] = $iar->deliveryReceipt ? $iar->deliveryReceipt->toArray() : null;
+
             if (!empty($data['details']) && is_array($data['details'])) {
                 foreach ($data['details'] as &$d) {
                     // Map snake_case nested keys to camelCase for frontend
@@ -394,7 +408,7 @@ class InspectionAcceptanceReportController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'inspected_by' => 'required|integer|exists:user,UserID',
-                'accepted_by' => 'required|integer|exists:user,UserID',
+                'accepted_by' => 'nullable|integer|exists:user,UserID',
                 'date_inspected' => 'required|date',
                 'date_accepted' => 'nullable|date',
                 'remarks' => 'nullable|string',
@@ -404,6 +418,9 @@ class InspectionAcceptanceReportController extends Controller
                 'details.*.condition_id' => 'required|integer|exists:condition,ConditionID',
                 'details.*.quantity_accepted' => 'required|integer|min:0',
                 'details.*.quantity_rejected' => 'required|integer|min:0',
+                'details.*.verified_brand' => 'nullable|string|max:255',
+                'details.*.verified_model' => 'nullable|string|max:255',
+                'details.*.verified_serial' => 'nullable|string|max:255',
                 'details.*.remarks' => 'nullable|string',
             ]);
 
@@ -456,6 +473,9 @@ class InspectionAcceptanceReportController extends Controller
                     'ConditionID' => $detail['condition_id'],
                     'QuantityAccepted' => $detail['quantity_accepted'],
                     'QuantityRejected' => $detail['quantity_rejected'],
+                    'VerifiedBrand' => $detail['verified_brand'] ?? null,
+                    'VerifiedModel' => $detail['verified_model'] ?? null,
+                    'VerifiedSerial' => $detail['verified_serial'] ?? null,
                     'Remarks' => $detail['remarks'] ?? null,
                 ]);
             }
@@ -496,17 +516,61 @@ class InspectionAcceptanceReportController extends Controller
 
             DB::commit();
 
+            // Load relationships like in show method
+            $iar->load([
+                'deliveryReceipt',
+                'details.propertyType',
+                'details.condition',
+                'details.drDetail.unitOfMeasure',
+                'inspectedByUser',
+                'acceptedByUser'
+            ]);
+
+            // Backwards compatibility: add camelCase properties expected by older UIs
+            $iar->inspectedByUser = $iar->InspectedBy ? User::find($iar->InspectedBy) : null;
+            $iar->acceptedByUser = $iar->AcceptedBy ? User::find($iar->AcceptedBy) : null;
+
+            // Normalize response similar to show() so frontend receives signatures and deliveryReceipt
+            $data = $iar->toArray();
+            $data['inspectedByUser'] = $iar->inspectedByUser ? $iar->inspectedByUser->toArray() : null;
+            $data['acceptedByUser'] = $iar->acceptedByUser ? $iar->acceptedByUser->toArray() : null;
+
+            // Attach signatures if present
+            $inspectedSig = $iar->inspectedSignature()->first();
+            $acceptedSig = $iar->acceptedSignature()->first();
+            $data['inspectedSignature'] = $inspectedSig ? [
+                'url' => $inspectedSig->url,
+                'source' => $inspectedSig->source,
+                'storage_disk' => $inspectedSig->storage_disk,
+                'storage_path' => $inspectedSig->storage_path,
+                'signed_by_user_id' => $inspectedSig->signed_by_user_id,
+                'signed_at' => $inspectedSig->created_at,
+            ] : null;
+            $data['acceptedSignature'] = $acceptedSig ? [
+                'url' => $acceptedSig->url,
+                'source' => $acceptedSig->source,
+                'storage_disk' => $acceptedSig->storage_disk,
+                'storage_path' => $acceptedSig->storage_path,
+                'signed_by_user_id' => $acceptedSig->signed_by_user_id,
+                'signed_at' => $acceptedSig->created_at,
+            ] : null;
+
+            // Ensure deliveryReceipt is exposed in camelCase for frontend
+            $data['deliveryReceipt'] = $iar->deliveryReceipt ? $iar->deliveryReceipt->toArray() : null;
+
+            if (!empty($data['details']) && is_array($data['details'])) {
+                foreach ($data['details'] as &$d) {
+                    // Map snake_case nested keys to camelCase for frontend
+                    $d['drDetail'] = $d['dr_detail'] ?? null;
+                    $d['condition'] = $d['condition'] ?? null;
+                    $d['propertyType'] = $d['property_type'] ?? null;
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'IAR updated successfully',
-                'data' => $iar->load([
-                    'deliveryReceipt',
-                    'inspectedByUser',
-                    'acceptedByUser',
-                    'details.propertyType',
-                    'details.condition',
-                    'details.drDetail'
-                ])
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

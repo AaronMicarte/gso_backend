@@ -135,6 +135,15 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Note: Procurement routes (PR/PO) have been removed per project requirements
+            // Inventory routes
+            Route::prefix('inventory')->group(function () {
+                Route::get('pending-ingestion', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'pendingIngestion']);
+                Route::post('ingest-from-iar', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'ingestFromIar']);
+                Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
+                Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);
+                Route::post('details/{id}/generate-qr', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'generateQr']);
+                Route::post('issuances', [\App\Http\Controllers\Admin\Inventory\IssuanceController::class, 'store']);
+            });
     });
 });
 
