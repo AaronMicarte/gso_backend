@@ -46,4 +46,9 @@ class PropertyInventory extends Model
     {
         return $this->hasMany(PropertyInventoryDetail::class, 'InventoryID', 'InventoryID');
     }
+
+    public function iar()
+    {
+        return $this->belongsTo(\App\Models\Procurement\InspectionAcceptanceReport::class, 'IARID', 'IARID');
+    }
 }

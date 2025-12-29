@@ -49,4 +49,9 @@ class PropertyInventoryDetail extends Model
     {
         return $this->belongsTo(\App\Models\MasterData\PropertyType::class, 'PropertyTypeID', 'PropertyTypeID');
     }
+
+    public function drDetail()
+    {
+        return $this->belongsTo(\App\Models\Procurement\DeliveryReceiptDetail::class, 'SourceDRDetailID', 'DRDetailID');
+    }
 }

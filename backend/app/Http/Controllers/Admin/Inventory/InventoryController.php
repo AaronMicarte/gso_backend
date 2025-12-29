@@ -10,15 +10,23 @@ use App\Models\Procurement\InspectionAcceptanceReport;
 use App\Models\Procurement\PropertyReceived;
 use App\Models\Procurement\DeliveryReceiptDetail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class InventoryController extends Controller
 {
     // POST /api/admin/inventory/ingest-from-iar
     public function ingestFromIar(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'iar_id' => 'required|integer|exists:inspectionacceptancereport,IARID',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
 
         $iarId = $request->input('iar_id');
 
@@ -89,10 +97,59 @@ class InventoryController extends Controller
             ->whereNotIn('IARID', function($query) {
                 $query->select('IARID')->from('propertyinventory')->whereNotNull('IARID');
             })
-            ->with(['details'])
+            ->with([
+                'details.drDetail' => function($query) {
+                    $query->select('DRDetailID', 'ItemDescription', 'UnitCost', 'Brand', 'ModelNumber', 'SerialNumber');
+                },
+                'details.propertyType' => function($query) {
+                    $query->select('PropertyTypeID', 'PropertyName');
+                },
+                'signatures' => function($query) {
+                    $query->select('id', 'iar_id', 'role', 'url', 'created_at', 'signed_by_user_id')
+                          ->with(['user' => function($q) {
+                              $q->select('UserID', 'FullName');
+                          }]);
+                }
+            ])
             ->get();
 
-        return response()->json($pendingIars);
+        // Transform the data to match frontend expectations
+        $transformedIars = $pendingIars->map(function($iar) {
+            return [
+                'IARID' => $iar->IARID,
+                'IARNumber' => $iar->IARNumber,
+                'DateAccepted' => $iar->DateAccepted,
+                'details' => $iar->details->map(function($detail) {
+                    return [
+                        'IARDetailID' => $detail->IARDetailID,
+                        'QuantityAccepted' => $detail->QuantityAccepted,
+                        'ItemDescription' => $detail->drDetail?->ItemDescription ?? 'No description available',
+                        'VerifiedBrand' => $detail->VerifiedBrand,
+                        'VerifiedModel' => $detail->VerifiedModel,
+                        'VerifiedSerial' => $detail->VerifiedSerial,
+                        'UnitCost' => $detail->drDetail?->UnitCost ? (float) $detail->drDetail->UnitCost : 0.0,
+                        'propertyType' => $detail->propertyType ? [
+                            'PropertyTypeID' => $detail->propertyType->PropertyTypeID,
+                            'PropertyName' => $detail->propertyType->PropertyName
+                        ] : null
+                    ];
+                }),
+                'signatures' => $iar->signatures->map(function($signature) {
+                    return [
+                        'id' => $signature->id,
+                        'role' => $signature->role,
+                        'url' => $signature->url,
+                        'created_at' => $signature->created_at,
+                        'user' => $signature->user ? [
+                            'UserID' => $signature->user->UserID,
+                            'FullName' => $signature->user->FullName
+                        ] : null
+                    ];
+                })
+            ];
+        });
+
+        return response()->json($transformedIars);
     }
 
     // GET /api/admin/inventory
@@ -101,7 +158,10 @@ class InventoryController extends Controller
         $page = max(1, (int) $request->query('page', 1));
         $perPage = max(10, (int) $request->query('per_page', 10));
 
-        $query = PropertyInventory::with(['details']);
+        $query = PropertyInventory::with([
+            'details.propertyType',
+            'iar.deliveryReceipt' // Load IAR and its DR
+        ]);
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
@@ -111,7 +171,18 @@ class InventoryController extends Controller
     // GET /api/admin/inventory/{id}
     public function show($id)
     {
-        $inventory = PropertyInventory::with(['details.propertyType', 'details.qrCode'])->find($id);
+        $inventory = PropertyInventory::with([
+            'details' => function($query) {
+                $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                      ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description');
+            },
+            'details.propertyType',
+            'details.qrCode',
+            'details.drDetail' => function($query) {
+                $query->select('DRDetailID', 'ItemDescription');
+            },
+            'iar.deliveryReceipt' // Include IAR and DR info
+        ])->find($id);
         if (!$inventory) {
             return response()->json(['message' => 'Inventory not found'], 404);
         }

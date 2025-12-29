@@ -596,7 +596,10 @@ class InspectionAcceptanceReportController extends Controller
                 ], 403);
             }
 
-            $iar->details()->delete();
+            // Delete related propertyreceived records first (hard delete as they are tightly coupled)
+            PropertyReceived::where('IARID', $id)->delete();
+
+            // Soft delete the IAR (preserves record for auditing)
             $iar->delete();
 
             return response()->json([
