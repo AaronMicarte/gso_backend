@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 28, 2025 at 01:32 PM
+-- Generation Time: Dec 29, 2025 at 03:20 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -165,7 +165,9 @@ INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `PONumber`, `
 (6, 'DR_TEST_03', 'TYRON DELIVERY', 'dcba321', '543212345', 1, '2025-12-26', 'okeh rah', '2025-12-26 14:36:20', NULL),
 (7, 'DR_TEST_04', 'CYRON DELIVERY', 'hif1h29481', '512512312', 1, '2025-12-27', 'good', '2025-12-27 21:08:58', NULL),
 (8, 'DR_TEST_05', 'Supplier_01', '1234wqdasd', '124124124214', 1, '2025-12-27', 'Everything looks good', '2025-12-27 22:57:17', NULL),
-(9, 'DR_TEST_06', 'Supplier_01', 'sfajfj123123', '521512321', 1, '2025-12-27', 'good', '2025-12-27 23:03:01', NULL);
+(9, 'DR_TEST_06', 'Supplier_01', 'sfajfj123123', '521512321', 1, '2025-12-27', 'good', '2025-12-27 23:03:01', NULL),
+(10, 'test1', 'MICARTE DELIVERY', 'abcd123', '124124124214', 1, '2025-12-28', 'good', '2025-12-28 20:42:55', NULL),
+(11, 'DR_TEST_12', 'MICARTE DELIVERY', 'dcba321', '1234', 1, '2025-12-29', 'good everything madafakas', '2025-12-29 22:08:28', NULL);
 
 -- --------------------------------------------------------
 
@@ -204,7 +206,11 @@ INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ItemDescription`, `B
 (19, 8, 'Marijuana', NULL, NULL, NULL, 5, 250, 7, 199.00, 49750.00, NULL),
 (20, 8, 'Printer', NULL, NULL, NULL, 3, 5, 1, 699.00, 3495.00, NULL),
 (21, 9, 'item1', NULL, NULL, NULL, 6, 1, 3, 300.00, 300.00, NULL),
-(22, 9, 'item2', NULL, NULL, NULL, 4, 1, 7, 500.00, 500.00, NULL);
+(22, 9, 'item2', NULL, NULL, NULL, 4, 1, 7, 500.00, 500.00, NULL),
+(23, 10, 'laptop', 'asus', 'vivo', 'asus123', 3, 1, 1, 30000.00, 30000.00, NULL),
+(24, 10, 'shabu', NULL, NULL, NULL, 7, 30, 6, 599.00, 17970.00, NULL),
+(25, 11, 'Laptop', 'Asus', 'Vivobook', '12345asus', 3, 1, 1, 32000.00, 32000.00, '2025-12-29 14:09:03'),
+(26, 11, 'Laptops', 'Asus', 'Vivobook', '12345asus', 3, 1, 1, 35000.00, 35000.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -318,7 +324,10 @@ INSERT INTO `iardetail` (`IARDetailID`, `IARID`, `DRDetailID`, `PropertyTypeID`,
 (22, 5, 21, 6, 1, 1, 0, NULL, NULL, NULL, 'i miss'),
 (23, 5, 22, 4, 1, 1, 0, NULL, NULL, NULL, 'you ulol'),
 (24, 4, 19, 5, 1, 250, 0, NULL, NULL, NULL, 'olala'),
-(25, 4, 20, 3, 1, 5, 0, NULL, NULL, NULL, 'paldo');
+(25, 4, 20, 3, 1, 5, 0, NULL, NULL, NULL, 'paldo'),
+(76, 6, 23, 3, 1, 1, 0, 'asus', 'vivo', 'asus123', 'good'),
+(77, 6, 24, 7, 1, 30, 0, NULL, NULL, NULL, 'paldo'),
+(80, 7, 26, 3, 1, 1, 0, 'Asus', 'Vivobook', '12345asus', 'good');
 
 -- --------------------------------------------------------
 
@@ -358,7 +367,11 @@ INSERT INTO `iar_signatures` (`id`, `iar_id`, `role`, `signed_by_user_id`, `sour
 (5, 4, 'inspected', 1, 'canvas', 'local', 'signatures/iar_4_inspected_1766847526.png', '/storage/signatures/iar_4_inspected_1766847526.png', 'image/png', 1000, 300, 15178, 'd7932ed8978cc1d0c1be57b977eb4398400262729848e95537079e1950fec426', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 14:58:46', '2025-12-27 14:58:46'),
 (6, 5, 'inspected', 1, 'canvas', 'local', 'signatures/iar_5_inspected_1766847869.png', '/storage/signatures/iar_5_inspected_1766847869.png', 'image/png', 1000, 300, 15669, 'b708e3c4679cef754850907e71dee77f5cf71438bcd5c4e8cf0090ec9bd2e883', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:04:29', '2025-12-27 15:04:29'),
 (7, 5, 'accepted', 1, 'canvas', 'local', 'signatures/iar_5_accepted_1766847871.png', '/storage/signatures/iar_5_accepted_1766847871.png', 'image/png', 1000, 300, 17044, '62a9a27af03d7c9f729f8e1e1181376b08b9dfb90c96b30069b00c418ffe0135', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:04:29', '2025-12-27 15:04:31'),
-(8, 4, 'accepted', 1, 'canvas', 'local', 'signatures/iar_4_accepted_1766847926.png', '/storage/signatures/iar_4_accepted_1766847926.png', 'image/png', 1000, 300, 15568, '93c9fa13c066553b10d8a7324ceafc1a4735d5c42c35319061aac68bd7cc3572', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:05:26', '2025-12-27 15:05:26');
+(8, 4, 'accepted', 1, 'canvas', 'local', 'signatures/iar_4_accepted_1766847926.png', '/storage/signatures/iar_4_accepted_1766847926.png', 'image/png', 1000, 300, 15568, '93c9fa13c066553b10d8a7324ceafc1a4735d5c42c35319061aac68bd7cc3572', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:05:26', '2025-12-27 15:05:26'),
+(9, 6, 'inspected', 1, 'canvas', 'local', 'signatures/iar_6_inspected_1766926552.png', '/storage/signatures/iar_6_inspected_1766926552.png', 'image/png', 1000, 300, 16129, '1dd838575fb0199d8e9f5b8b912fb2cd3674086d447bbdba12a78363b6ae000f', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-28 12:55:53', '2025-12-28 12:55:53'),
+(10, 6, 'accepted', 1, 'canvas', 'local', 'signatures/iar_6_accepted_1766932133.png', '/storage/signatures/iar_6_accepted_1766932133.png', 'image/png', 1000, 300, 17496, '3993e66859f77916c662b53b00519e5192475d75f2ebcfeff0587ced10cb0ff9', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-28 14:28:53', '2025-12-28 14:28:53'),
+(11, 7, 'inspected', 1, 'canvas', 'local', 'signatures/iar_7_inspected_1767017427.png', '/storage/signatures/iar_7_inspected_1767017427.png', 'image/png', 1000, 300, 16930, '42a8a18d2cf87549c8114dcbab3f51e48a8a747d64ce1fa469233918f434461c', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-29 14:10:29', '2025-12-29 14:10:29'),
+(12, 7, 'accepted', 1, 'canvas', 'local', 'signatures/iar_7_accepted_1767017490.png', '/storage/signatures/iar_7_accepted_1767017490.png', 'image/png', 1000, 300, 16311, '7e6e02aa09a70e697d2afde442b413ce7c1769b1774f652c7687824ec4cf7461', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-29 14:11:30', '2025-12-29 14:11:30');
 
 -- --------------------------------------------------------
 
@@ -461,7 +474,9 @@ INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `Inspect
 (2, 'IAR-2025-0002', 5, 1, 1, '2025-12-27', '2025-12-27', 'good', '2025-12-27 17:30:35'),
 (3, 'IAR-2025-0003', 7, 1, 1, '2025-12-27', '2025-12-27', 'good item', '2025-12-27 21:18:44'),
 (4, 'IAR-2025-0004', 8, 1, 1, '2025-12-27', '2025-12-27', 'actually good shit', '2025-12-27 22:58:46'),
-(5, 'IAR-2025-0005', 9, 1, 1, '2025-12-27', '2025-12-27', 'good', '2025-12-27 23:04:28');
+(5, 'IAR-2025-0005', 9, 1, 1, '2025-12-27', '2025-12-27', 'good', '2025-12-27 23:04:28'),
+(6, 'IAR-2025-0006', 10, 1, 1, '2025-12-05', '2025-12-28', 'good', '2025-12-28 20:55:52'),
+(7, 'IAR-2025-0007', 11, 1, 1, '2025-12-29', '2025-12-29', 'good ig uess', '2025-12-29 22:10:27');
 
 -- --------------------------------------------------------
 
@@ -502,7 +517,8 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (109, 1, '2025-12-27 15:12:12', 'Login', '127.0.0.1'),
 (110, 1, '2025-12-27 22:44:51', 'Login', '127.0.0.1'),
 (111, 1, '2025-12-28 14:45:06', 'Login', '127.0.0.1'),
-(112, 1, '2025-12-28 20:14:10', 'Login', '127.0.0.1');
+(112, 1, '2025-12-28 20:14:10', 'Login', '127.0.0.1'),
+(113, 1, '2025-12-29 21:08:52', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -704,7 +720,6 @@ CREATE TABLE `propertyinventory` (
   `UnitOfMeasureID` int(11) NOT NULL,
   `DRID` int(11) DEFAULT NULL,
   `IARID` int(11) DEFAULT NULL,
-  `ModelNumber` varchar(100) DEFAULT NULL,
   `DateReceived` date DEFAULT NULL,
   `UnitCost` decimal(18,2) DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
@@ -723,6 +738,7 @@ CREATE TABLE `propertyinventorydetail` (
   `InventoryID` int(11) NOT NULL,
   `PropertyTypeID` int(11) DEFAULT NULL,
   `ReceivedID` int(11) DEFAULT NULL,
+  `Description` varchar(255) DEFAULT NULL COMMENT 'Item Description',
   `PropertyNumber` varchar(50) DEFAULT NULL,
   `SerialNumber` varchar(100) DEFAULT NULL,
   `Quantity` int(11) DEFAULT 1,
@@ -794,7 +810,9 @@ CREATE TABLE `propertyreceived` (
 
 INSERT INTO `propertyreceived` (`ReceivedID`, `IARID`, `ReceivedBy`, `ReleasedBy`, `DateReceived`, `TotalCost`, `Remarks`, `CreatedDate`) VALUES
 (1, 5, 1, 1, '2025-12-27', 800.00, 'Auto-created on acceptance', '2025-12-27 23:04:29'),
-(2, 4, 1, 1, '2025-12-27', 53245.00, 'Auto-created on acceptance', '2025-12-27 23:05:27');
+(2, 4, 1, 1, '2025-12-27', 53245.00, 'Auto-created on acceptance', '2025-12-27 23:05:27'),
+(3, 6, 1, 1, '2025-12-28', 47970.00, 'Auto-created on acceptance', '2025-12-28 22:28:54'),
+(4, 7, 1, 1, '2025-12-29', 35000.00, 'Auto-created on acceptance', '2025-12-29 22:11:31');
 
 -- --------------------------------------------------------
 
@@ -921,18 +939,13 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('2w4igYzXRpQ94qtVCDvlA2UGbnz4dseINiEGjsKH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiWkJ2emZtdGFQdEFrZmlRemlwdXRJNTZaVXdKTlJ6UFJYV3Y0UkpQcSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvdW5pdHMtb2YtbWVhc3VyZT9wZXJfcGFnZT1hbGwiO3M6NToicm91dGUiO3M6MjI6InVuaXRzLW9mLW1lYXN1cmUuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1766925106),
-('3VGqvkzsyJW44lf0LINv4beWVB91zz94U3m9fJSR', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibFp5eFBlSmNQRGF1R3EwMHJEbktsNXZpcjE5NmNReTZZWU51YUlXeiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766847559),
-('AXAxUNcgw3dRJWyM9OoE598MHsV5KqU0my1bdgCs', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoia25Bc205QVd3VU85dURBMjlBR3hmRG5GcnBTMnpBYVFoR3lMTTlJcCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766848153),
-('bngiBfqg8io2dyZYC1OJFqNNiG9SbInfHgafTeKM', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoibnJyRHBmVDMzSk5qOWh6RThSeFZKVldBcURtc0h1NHBBRHVhNjM0dyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy81L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766847886),
-('fSExJiH0ppFvbT90l8w4OxEtow6ByYTTFfYtc80g', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiRVVKc0hRQlFLRE9ybU1YRzFUYlJSZWtvS3RaVWNoWGRTbDBXZURvMCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1766848154),
-('IcbBdrHTTwfl5wtF62GzkbGrSv0zo2aRJxudjlrw', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZDRVUUVSZG0zc2dHY1VQQ3FIU2NsU29KNUZ5Ym5tY1lnMFpYVGYwUyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766904417),
-('KuFz6COXQDAo6g5nElhqe6X89HJWiXeB5N5lfofJ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTXRlNlRKdERWMkRPeDVVWVVVMUhXbTZNUzcyckV3ejRHRzYyWFlCeCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766847960),
-('LJ8QoHFrr6RBdk1rYdQyN8XSFcMAa4icl6Z2LoHr', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZ2ZQTHo0YUtNVHJJSjcwelBXaGxtUUdxUW5Sc2xZemxqdERGV3ZmZiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1766904417),
-('MpIPTxDo6b1MwvGbpMWV5xHWQIoGAPlJL4f1kq3B', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNzVaaWhrWDROc3Z2NHNPVDBVelNCRHd3SlRQeHpDS1o1Y3BJYmZtUCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1766848164),
-('NPv3MFJEXgkia9lVa15ny1TWr68wNO7dnQ3uuFDA', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidWNEcDBoSVFnWHl5dld1eEYySnV6RDZ4UDFObEZDUXBLdnQ4cVdwSCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy81L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1766847887),
-('vLbqf7KJPZqW93cxE70oeHdx4IwtnAe3SmPTkEfQ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiSndQdDdkV1NUNENRY29iWEhXbG9wUnpkMGxTeURnb2U0SWNqNmZqOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1766847961),
-('yRtGbUQftHUvOprda7QiazTPdtvPdZaVZJTpzVWm', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUTRuUE82akV0M25UYXRLWTdZOE5XeUh3bWVVVFA0Y3plNWJnekdSbyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy80L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766847602);
+('2w4igYzXRpQ94qtVCDvlA2UGbnz4dseINiEGjsKH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiWkJ2emZtdGFQdEFrZmlRemlwdXRJNTZaVXdKTlJ6UFJYV3Y0UkpQcSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvdW5pdHMtb2YtbWVhc3VyZT9wZXJfcGFnZT1hbGwiO3M6NToicm91dGUiO3M6MjI6InVuaXRzLW9mLW1lYXN1cmUuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1766939726),
+('4ypfObVgE3cQPB0xVcX69L9e9rkV15KNucdSa4Ff', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiakt6NHlRUTRBVVFIV0lGNDFjR0NMNlBZejI5aFFFaFdtdFpoTU5XOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy82L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766932144),
+('6kzHOGgbsfwVos25ao61TcDxpGzh78OaUj1upBjD', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiOWR6S2NWb2hWUWhzeHJMWWd3TzVMTzFpbmhHemhOOTV3Q0ZBU0swNiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vaW52ZW50b3J5P3BhZ2U9MSZwZXJfcGFnZT0xMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1767017895),
+('gRdmFFotid7BdF9Hd22Zyego8FHrQRyLOf8vRvdK', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWktmdXBleVZjeVJRcXFWbzMzYUVQekZ6N0pVdzdFSXJjeGJsZUR4OCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1767017502),
+('hl1ztIZbxhy9uEJ3RSct6MfxRbNKLdMkVuuI3kE0', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiU2k5cmt4NnZ3a3ZHNDhjb0owVlVDYVRYbHVQU3dRaUZZRm5tcWRqRCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy82L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1766932144),
+('OsT6kA635XXvpfAMMmEmPtCiswkfI759QfAcGCi1', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoicXhaVzFITVNEQzBncUtHNEN3eGgzY3JUTHN5U2M0MkNzZXJFdzE5WSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy82L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766931314),
+('Urh3tRmtn6kCQouMZmqtNzbcEC2HJcSVljY5RF3M', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoib1ZvRUpyMWpCeWZTVjNGYXFTQjNUSmJlelZoaGNkR2ZOdWNrcGN2QSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1767017502);
 
 -- --------------------------------------------------------
 
@@ -1002,7 +1015,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (14, 2, 'Chrome on Windows', 'e78fd6567203219bca58ec8d6a4adf51d41fded34533b12ec668b0c59ee7debf', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-26 22:14:13', '2026-01-25 21:46:23', '2025-12-26 21:46:23', '2025-12-26 22:14:13'),
 (15, 1, 'Chrome on Windows', '2a4fbee9a3c9a96124751e83b736dbad0e70937c22df5487d294f08a99c819ed', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:35:58', '2025-12-26 22:35:58', NULL),
 (16, 2, 'Chrome on Windows', 'c6ba2be624d0c8d1fbd27bb47776e15e631a2c05adb6de82b08e62ab3d5ba446', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:37:45', '2025-12-26 22:37:45', NULL),
-(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-28 20:14:08', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2025-12-28 20:14:08');
+(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-29 21:08:51', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2025-12-29 21:08:51');
 
 -- --------------------------------------------------------
 
@@ -1581,13 +1594,13 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
-  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `department`
@@ -1611,13 +1624,13 @@ ALTER TABLE `enduser`
 -- AUTO_INCREMENT for table `iardetail`
 --
 ALTER TABLE `iardetail`
-  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `iar_signatures`
 --
 ALTER TABLE `iar_signatures`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `icsdetail`
@@ -1647,7 +1660,7 @@ ALTER TABLE `iiruprecommendation`
 -- AUTO_INCREMENT for table `inspectionacceptancereport`
 --
 ALTER TABLE `inspectionacceptancereport`
-  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `inventorycustodianslip`
@@ -1659,7 +1672,7 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
 
 --
 -- AUTO_INCREMENT for table `migrations`
@@ -1743,7 +1756,7 @@ ALTER TABLE `propertyissuancedetail`
 -- AUTO_INCREMENT for table `propertyreceived`
 --
 ALTER TABLE `propertyreceived`
-  MODIFY `ReceivedID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `ReceivedID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `propertystatus`

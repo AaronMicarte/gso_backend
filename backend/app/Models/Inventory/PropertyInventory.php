@@ -24,12 +24,22 @@ class PropertyInventory extends Model
     ];
 
     // Keep frontend compatibility: expose DateAcquired (virtual) mapped to DateReceived
-    protected $appends = ['DateAcquired'];
+    protected $appends = ['DateAcquired', 'TotalItems', 'TotalValue'];
 
     public function getDateAcquiredAttribute()
     {
         // Prefer DateReceived if present, else fallback to CreatedDate
         return $this->attributes['DateReceived'] ?? $this->attributes['CreatedDate'] ?? null;
+    }
+
+    public function getTotalItemsAttribute()
+    {
+        return $this->details->sum('Quantity');
+    }
+
+    public function getTotalValueAttribute()
+    {
+        return $this->details->sum('TotalCost');
     }
 
     public function details()
