@@ -157,15 +157,37 @@ class InventoryController extends Controller
     {
         $page = max(1, (int) $request->query('page', 1));
         $perPage = max(10, (int) $request->query('per_page', 10));
+        $search = $request->query('search');
 
         $query = PropertyInventory::with([
             'details.propertyType',
             'iar.deliveryReceipt' // Load IAR and its DR
         ]);
 
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('InventoryNumber', 'like', '%' . $search . '%')
+                  ->orWhere('Remarks', 'like', '%' . $search . '%')
+                  ->orWhereHas('iar', function ($iarQuery) use ($search) {
+                      $iarQuery->where('IARNumber', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('iar.deliveryReceipt', function ($drQuery) use ($search) {
+                      $drQuery->where('DRNumber', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json($paginator);
+        return response()->json([
+            'data' => $paginator->items(),
+            'meta' => [
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+            ]
+        ]);
     }
 
     // GET /api/admin/inventory/{id}
