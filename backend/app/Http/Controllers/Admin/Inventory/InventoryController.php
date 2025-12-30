@@ -179,15 +179,8 @@ class InventoryController extends Controller
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        return response()->json([
-            'data' => $paginator->items(),
-            'meta' => [
-                'total' => $paginator->total(),
-                'per_page' => $paginator->perPage(),
-                'current_page' => $paginator->currentPage(),
-                'last_page' => $paginator->lastPage(),
-            ]
-        ]);
+        // Return standard Laravel pagination response
+        return $paginator;
     }
 
     // GET /api/admin/inventory/{id}
