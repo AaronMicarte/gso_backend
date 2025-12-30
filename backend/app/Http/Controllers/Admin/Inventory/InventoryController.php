@@ -160,6 +160,10 @@ class InventoryController extends Controller
         $search = $request->query('search');
 
         $query = PropertyInventory::with([
+            'details' => function($query) {
+                $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                      ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description');
+            },
             'details.propertyType',
             'iar.deliveryReceipt' // Load IAR and its DR
         ]);
@@ -178,6 +182,14 @@ class InventoryController extends Controller
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        // Transform data to include description
+        $paginator->getCollection()->transform(function ($inventory) {
+            $firstDetail = $inventory->details->first();
+            $description = $firstDetail ? ($firstDetail->Description ?: $firstDetail->dr_item_description ?: 'No description') : 'No description';
+            $inventory->Description = $description;
+            return $inventory;
+        });
 
         // Return standard Laravel pagination response
         return $paginator;
