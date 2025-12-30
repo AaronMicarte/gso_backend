@@ -141,7 +141,9 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::post('ingest-from-iar', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'ingestFromIar']);
                 Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
                 Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);
+                Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
                 Route::post('details/{id}/generate-qr', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'generateQr']);
+                Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
                 Route::post('issuances', [\App\Http\Controllers\Admin\Inventory\IssuanceController::class, 'store']);
             });
     });

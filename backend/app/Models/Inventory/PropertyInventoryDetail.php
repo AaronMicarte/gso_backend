@@ -22,6 +22,7 @@ class PropertyInventoryDetail extends Model
         'ModelNumber',
         'SerialNumber',
         'PropertyNumber',
+        'Description',
         'Quantity',
         'QuantityAvailable',
         'PropertyStatusID',

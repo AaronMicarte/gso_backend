@@ -189,9 +189,12 @@ class InventoryController extends Controller
         $inventory = PropertyInventory::with([
             'details' => function($query) {
                 $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
-                      ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description');
+                      ->leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
+                      ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
+                      ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                              'propertytype.PropertyName', 'propertytype.Description as property_type_description',
+                              'propertyclassification.ClassificationName', 'propertyclassification.DocumentType');
             },
-            'details.propertyType',
             'details.qrCode',
             'details.drDetail' => function($query) {
                 $query->select('DRDetailID', 'ItemDescription');
@@ -243,5 +246,31 @@ class InventoryController extends Controller
         );
 
         return response()->json(['message' => 'QR generated', 'qr' => $qr], 201);
+    }
+
+    // PUT /api/admin/inventory/details/{id}
+    public function updateDetail(Request $request, $id)
+    {
+        $detail = PropertyInventoryDetail::find($id);
+        if (!$detail) {
+            return response()->json(['message' => 'Inventory detail not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'Description' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $detail->update($request->only(['Description']));
+        $detail->UpdatedDate = now();
+        $detail->save();
+
+        return response()->json(['message' => 'Inventory detail updated successfully', 'detail' => $detail]);
     }
 }
