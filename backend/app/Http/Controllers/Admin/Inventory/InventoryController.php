@@ -51,7 +51,7 @@ class InventoryController extends Controller
                 'CreatedDate' => now(),
             ]);
 
-            // For each IAR detail, create PropertyInventoryDetail
+            // For each IAR detail, create individual PropertyInventoryDetail records
             foreach ($iar->details as $detail) {
                 // Get DR detail for cost/unit info
                 $drDetail = DeliveryReceiptDetail::find($detail->DRDetailID);
@@ -62,24 +62,32 @@ class InventoryController extends Controller
                 $model = $detail->VerifiedModel ?? $drDetail->ModelNumber;
                 $serial = $detail->VerifiedSerial ?? $drDetail->SerialNumber;
 
-                PropertyInventoryDetail::create([
-                    'InventoryID' => $inventory->InventoryID,
-                    'PropertyTypeID' => $detail->PropertyTypeID,
-                    'ConditionID' => $detail->ConditionID,
-                    'Brand' => $brand,
-                    'ModelNumber' => $model,
-                    'SerialNumber' => $serial,
-                    'Quantity' => $detail->QuantityAccepted,
-                    'QuantityAvailable' => $detail->QuantityAccepted,
-                    'PropertyStatusID' => 1, // Available
-                    'UnitOfMeasureID' => $drDetail->UnitOfMeasureID,
-                    'UnitCost' => $drDetail->UnitCost,
-                    'TotalCost' => $drDetail->UnitCost * $detail->QuantityAccepted,
-                    'SourceIARDetailID' => $detail->IARDetailID,
-                    'SourceDRDetailID' => $detail->DRDetailID,
-                    'Remarks' => $detail->Remarks,
-                    'CreatedDate' => now(),
-                ]);
+                // Create individual records for each accepted quantity
+                for ($i = 0; $i < $detail->QuantityAccepted; $i++) {
+                    // For serial numbers, if we have multiple items but only one serial,
+                    // we'll use the same serial for all (common for bulk items)
+                    // In a real system, you'd want separate serials for each item
+                    $itemSerial = $serial;
+
+                    PropertyInventoryDetail::create([
+                        'InventoryID' => $inventory->InventoryID,
+                        'PropertyTypeID' => $detail->PropertyTypeID,
+                        'ConditionID' => $detail->ConditionID,
+                        'Brand' => $brand,
+                        'ModelNumber' => $model,
+                        'SerialNumber' => $itemSerial,
+                        'Quantity' => 1, // Each record represents one physical item
+                        'QuantityAvailable' => 1,
+                        'PropertyStatusID' => 1, // Available
+                        'UnitOfMeasureID' => $drDetail->UnitOfMeasureID,
+                        'UnitCost' => $drDetail->UnitCost,
+                        'TotalCost' => $drDetail->UnitCost, // Cost per individual item
+                        'SourceIARDetailID' => $detail->IARDetailID,
+                        'SourceDRDetailID' => $detail->DRDetailID,
+                        'Remarks' => $detail->Remarks,
+                        'CreatedDate' => now(),
+                    ]);
+                }
             }
 
             DB::commit();
@@ -183,11 +191,16 @@ class InventoryController extends Controller
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        // Transform data to include description
+        // Transform data to include description and computed totals
         $paginator->getCollection()->transform(function ($inventory) {
             $firstDetail = $inventory->details->first();
             $description = $firstDetail ? ($firstDetail->Description ?: $firstDetail->dr_item_description ?: 'No description') : 'No description';
             $inventory->Description = $description;
+            
+            // Compute totals from individual detail records
+            $inventory->TotalItems = $inventory->details->sum('Quantity');
+            $inventory->TotalValue = $inventory->details->sum('TotalCost');
+            
             return $inventory;
         });
 
