@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 29, 2025 at 03:20 PM
+-- Generation Time: Jan 02, 2026 at 10:56 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -152,6 +152,7 @@ CREATE TABLE `deliveryreceipt` (
   `ReceivedBy` int(11) NOT NULL,
   `DateReceived` date NOT NULL,
   `Remarks` text DEFAULT NULL,
+  `dr_picture` varchar(255) NOT NULL COMMENT 'Path to the uploaded DR picture file',
   `CreatedDate` datetime DEFAULT current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -160,14 +161,16 @@ CREATE TABLE `deliveryreceipt` (
 -- Dumping data for table `deliveryreceipt`
 --
 
-INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `CreatedDate`, `deleted_at`) VALUES
-(5, 'DR_TEST_02', 'MICARTE DELIVERY', 'abcd123', '123454321', 1, '2025-12-25', 'good i guess', '2025-12-25 13:21:34', NULL),
-(6, 'DR_TEST_03', 'TYRON DELIVERY', 'dcba321', '543212345', 1, '2025-12-26', 'okeh rah', '2025-12-26 14:36:20', NULL),
-(7, 'DR_TEST_04', 'CYRON DELIVERY', 'hif1h29481', '512512312', 1, '2025-12-27', 'good', '2025-12-27 21:08:58', NULL),
-(8, 'DR_TEST_05', 'Supplier_01', '1234wqdasd', '124124124214', 1, '2025-12-27', 'Everything looks good', '2025-12-27 22:57:17', NULL),
-(9, 'DR_TEST_06', 'Supplier_01', 'sfajfj123123', '521512321', 1, '2025-12-27', 'good', '2025-12-27 23:03:01', NULL),
-(10, 'test1', 'MICARTE DELIVERY', 'abcd123', '124124124214', 1, '2025-12-28', 'good', '2025-12-28 20:42:55', NULL),
-(11, 'DR_TEST_12', 'MICARTE DELIVERY', 'dcba321', '1234', 1, '2025-12-29', 'good everything madafakas', '2025-12-29 22:08:28', NULL);
+INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
+(5, 'DR_TEST_02', 'MICARTE DELIVERY', 'abcd123', '123454321', 1, '2025-12-25', 'good i guess', '', '2025-12-25 13:21:34', '2025-12-29 15:47:10'),
+(6, 'DR_TEST_03', 'TYRON DELIVERY', 'dcba321', '543212345', 1, '2025-12-26', 'okeh rah', '', '2025-12-26 14:36:20', '2025-12-29 15:46:58'),
+(7, 'DR_TEST_04', 'CYRON DELIVERY', 'hif1h29481', '512512312', 1, '2025-12-27', 'good', '', '2025-12-27 21:08:58', '2025-12-29 15:47:03'),
+(8, 'DR_TEST_05', 'Supplier_01', '1234wqdasd', '124124124214', 1, '2025-12-27', 'Everything looks good', '', '2025-12-27 22:57:17', '2025-12-29 15:46:50'),
+(9, 'DR_TEST_06', 'Supplier_01', 'sfajfj123123', '521512321', 1, '2025-12-27', 'good', '', '2025-12-27 23:03:01', '2025-12-29 15:46:40'),
+(10, 'test1', 'MICARTE DELIVERY', 'abcd123', '124124124214', 1, '2025-12-28', 'good', '', '2025-12-28 20:42:55', NULL),
+(11, 'DR_TEST_12', 'MICARTE DELIVERY', 'dcba321', '1234', 1, '2025-12-29', 'good everything madafakas', '', '2025-12-29 22:08:28', NULL),
+(12, 'e', 'e', 'e', 'e', 1, '2026-01-02', 'e', 'dr_pictures/Pr45BlD7qGjIL0hcGuVzwJCxj70oKSceFr38YcjQ.png', '2026-01-02 17:18:30', NULL),
+(13, 'q', 'q', 'q', 'q', 1, '2026-01-02', 'q', 'dr_pictures/fgX0xF83EBodfG8myW2mAlcEAz2xzuLxBV1uau4M.png', '2026-01-02 17:34:35', NULL);
 
 -- --------------------------------------------------------
 
@@ -210,7 +213,9 @@ INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ItemDescription`, `B
 (23, 10, 'laptop', 'asus', 'vivo', 'asus123', 3, 1, 1, 30000.00, 30000.00, NULL),
 (24, 10, 'shabu', NULL, NULL, NULL, 7, 30, 6, 599.00, 17970.00, NULL),
 (25, 11, 'Laptop', 'Asus', 'Vivobook', '12345asus', 3, 1, 1, 32000.00, 32000.00, '2025-12-29 14:09:03'),
-(26, 11, 'Laptops', 'Asus', 'Vivobook', '12345asus', 3, 1, 1, 35000.00, 35000.00, NULL);
+(26, 11, 'Laptops', 'Asus', 'Vivobook', '12345asus', 3, 1, 1, 35000.00, 35000.00, NULL),
+(27, 12, 'e', NULL, NULL, NULL, 7, 5, 7, 555.00, 2775.00, NULL),
+(28, 13, 'q', NULL, NULL, NULL, 7, 3, 7, 333.00, 999.00, NULL);
 
 -- --------------------------------------------------------
 
@@ -314,19 +319,6 @@ CREATE TABLE `iardetail` (
 --
 
 INSERT INTO `iardetail` (`IARDetailID`, `IARID`, `DRDetailID`, `PropertyTypeID`, `ConditionID`, `QuantityAccepted`, `QuantityRejected`, `VerifiedBrand`, `VerifiedModel`, `VerifiedSerial`, `Remarks`) VALUES
-(3, 1, 16, 3, 1, 5, 0, NULL, NULL, NULL, 'good'),
-(4, 1, 17, 6, 1, 2, 0, NULL, NULL, NULL, 'good'),
-(9, 2, 11, 3, 1, 1, 0, NULL, NULL, NULL, 'good'),
-(10, 2, 12, 3, 1, 1, 0, NULL, NULL, NULL, 'good'),
-(11, 2, 14, 3, 1, 1, 0, NULL, NULL, NULL, 'good'),
-(12, 2, 15, 3, 1, 1, 0, NULL, NULL, NULL, 'good'),
-(13, 3, 18, 7, 1, 50, 0, NULL, NULL, NULL, 'good'),
-(22, 5, 21, 6, 1, 1, 0, NULL, NULL, NULL, 'i miss'),
-(23, 5, 22, 4, 1, 1, 0, NULL, NULL, NULL, 'you ulol'),
-(24, 4, 19, 5, 1, 250, 0, NULL, NULL, NULL, 'olala'),
-(25, 4, 20, 3, 1, 5, 0, NULL, NULL, NULL, 'paldo'),
-(76, 6, 23, 3, 1, 1, 0, 'asus', 'vivo', 'asus123', 'good'),
-(77, 6, 24, 7, 1, 30, 0, NULL, NULL, NULL, 'paldo'),
 (80, 7, 26, 3, 1, 1, 0, 'Asus', 'Vivobook', '12345asus', 'good');
 
 -- --------------------------------------------------------
@@ -360,14 +352,8 @@ CREATE TABLE `iar_signatures` (
 --
 
 INSERT INTO `iar_signatures` (`id`, `iar_id`, `role`, `signed_by_user_id`, `source`, `storage_disk`, `storage_path`, `url`, `mime`, `width`, `height`, `size_bytes`, `sha256_hash`, `ip_address`, `user_agent`, `created_at`, `updated_at`) VALUES
-(1, 2, 'inspected', 1, 'canvas', 'public', 'signatures/iar_2_inspected_1766827835.png', '/storage/signatures/iar_2_inspected_1766827835.png', 'image/png', 1000, 300, 20379, '73f8677a1973257ac93841d994ccfb6253bfe0626ef28e431dfa1307d43936cc', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 09:30:35', '2025-12-27 10:04:55'),
-(2, 2, 'accepted', 1, 'canvas', 'local', 'signatures/iar_2_accepted_1766838010.png', '/storage/signatures/iar_2_accepted_1766838010.png', 'image/png', 1000, 300, 14503, '3a4cb073e0bcace154ab913aba68a8d3666b01f1b36edc8bf4a9b49efff67aca', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 12:20:11', '2025-12-27 12:20:11'),
-(3, 3, 'inspected', 1, 'canvas', 'local', 'signatures/iar_3_inspected_1766841524.png', '/storage/signatures/iar_3_inspected_1766841524.png', 'image/png', 1000, 300, 14294, '67216455f63fbc7ed7c16bb6c11e7194454064ec9c8b17b434786948bfd849bc', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 13:18:44', '2025-12-27 13:18:44'),
-(4, 3, 'accepted', 1, 'canvas', 'local', 'signatures/iar_3_accepted_1766841526.png', '/storage/signatures/iar_3_accepted_1766841526.png', 'image/png', 1000, 300, 14543, 'c20c150efdc61de4e9249e0fdb7a492b8d87c2be92b35cb6f668fda8debe6fb1', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 13:18:44', '2025-12-27 13:18:46'),
-(5, 4, 'inspected', 1, 'canvas', 'local', 'signatures/iar_4_inspected_1766847526.png', '/storage/signatures/iar_4_inspected_1766847526.png', 'image/png', 1000, 300, 15178, 'd7932ed8978cc1d0c1be57b977eb4398400262729848e95537079e1950fec426', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 14:58:46', '2025-12-27 14:58:46'),
 (6, 5, 'inspected', 1, 'canvas', 'local', 'signatures/iar_5_inspected_1766847869.png', '/storage/signatures/iar_5_inspected_1766847869.png', 'image/png', 1000, 300, 15669, 'b708e3c4679cef754850907e71dee77f5cf71438bcd5c4e8cf0090ec9bd2e883', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:04:29', '2025-12-27 15:04:29'),
 (7, 5, 'accepted', 1, 'canvas', 'local', 'signatures/iar_5_accepted_1766847871.png', '/storage/signatures/iar_5_accepted_1766847871.png', 'image/png', 1000, 300, 17044, '62a9a27af03d7c9f729f8e1e1181376b08b9dfb90c96b30069b00c418ffe0135', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:04:29', '2025-12-27 15:04:31'),
-(8, 4, 'accepted', 1, 'canvas', 'local', 'signatures/iar_4_accepted_1766847926.png', '/storage/signatures/iar_4_accepted_1766847926.png', 'image/png', 1000, 300, 15568, '93c9fa13c066553b10d8a7324ceafc1a4735d5c42c35319061aac68bd7cc3572', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-27 15:05:26', '2025-12-27 15:05:26'),
 (9, 6, 'inspected', 1, 'canvas', 'local', 'signatures/iar_6_inspected_1766926552.png', '/storage/signatures/iar_6_inspected_1766926552.png', 'image/png', 1000, 300, 16129, '1dd838575fb0199d8e9f5b8b912fb2cd3674086d447bbdba12a78363b6ae000f', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-28 12:55:53', '2025-12-28 12:55:53'),
 (10, 6, 'accepted', 1, 'canvas', 'local', 'signatures/iar_6_accepted_1766932133.png', '/storage/signatures/iar_6_accepted_1766932133.png', 'image/png', 1000, 300, 17496, '3993e66859f77916c662b53b00519e5192475d75f2ebcfeff0587ced10cb0ff9', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-28 14:28:53', '2025-12-28 14:28:53'),
 (11, 7, 'inspected', 1, 'canvas', 'local', 'signatures/iar_7_inspected_1767017427.png', '/storage/signatures/iar_7_inspected_1767017427.png', 'image/png', 1000, 300, 16930, '42a8a18d2cf87549c8114dcbab3f51e48a8a747d64ce1fa469233918f434461c', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2025-12-29 14:10:29', '2025-12-29 14:10:29'),
@@ -462,21 +448,18 @@ CREATE TABLE `inspectionacceptancereport` (
   `DateInspected` date NOT NULL,
   `DateAccepted` date DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp()
+  `CreatedDate` datetime DEFAULT current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `inspectionacceptancereport`
 --
 
-INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `InspectedBy`, `AcceptedBy`, `DateInspected`, `DateAccepted`, `Remarks`, `CreatedDate`) VALUES
-(1, 'IAR-2025-0001', 6, 2, 1, '2025-12-26', '2025-12-26', 'good need accept for admin', '2025-12-26 23:20:59'),
-(2, 'IAR-2025-0002', 5, 1, 1, '2025-12-27', '2025-12-27', 'good', '2025-12-27 17:30:35'),
-(3, 'IAR-2025-0003', 7, 1, 1, '2025-12-27', '2025-12-27', 'good item', '2025-12-27 21:18:44'),
-(4, 'IAR-2025-0004', 8, 1, 1, '2025-12-27', '2025-12-27', 'actually good shit', '2025-12-27 22:58:46'),
-(5, 'IAR-2025-0005', 9, 1, 1, '2025-12-27', '2025-12-27', 'good', '2025-12-27 23:04:28'),
-(6, 'IAR-2025-0006', 10, 1, 1, '2025-12-05', '2025-12-28', 'good', '2025-12-28 20:55:52'),
-(7, 'IAR-2025-0007', 11, 1, 1, '2025-12-29', '2025-12-29', 'good ig uess', '2025-12-29 22:10:27');
+INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `InspectedBy`, `AcceptedBy`, `DateInspected`, `DateAccepted`, `Remarks`, `CreatedDate`, `deleted_at`) VALUES
+(5, 'IAR-2025-0005', 9, 1, 1, '2025-12-27', '2025-12-27', 'good', '2025-12-27 23:04:28', '2025-12-29 15:45:54'),
+(6, 'IAR-2025-0006', 10, 1, 1, '2025-12-05', '2025-12-28', 'good', '2025-12-28 20:55:52', '2025-12-29 15:48:41'),
+(7, 'IAR-2025-0007', 11, 1, 1, '2025-12-29', '2025-12-29', 'good ig uess', '2025-12-29 22:10:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -518,7 +501,13 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (110, 1, '2025-12-27 22:44:51', 'Login', '127.0.0.1'),
 (111, 1, '2025-12-28 14:45:06', 'Login', '127.0.0.1'),
 (112, 1, '2025-12-28 20:14:10', 'Login', '127.0.0.1'),
-(113, 1, '2025-12-29 21:08:52', 'Login', '127.0.0.1');
+(113, 1, '2025-12-29 21:08:52', 'Login', '127.0.0.1'),
+(114, 1, '2025-12-30 01:59:34', 'Logout', '127.0.0.1'),
+(115, 1, '2025-12-30 01:59:43', 'Login', '127.0.0.1'),
+(116, 1, '2025-12-30 16:30:03', 'Login', '127.0.0.1'),
+(117, 1, '2025-12-30 19:48:19', 'Login', '127.0.0.1'),
+(118, 1, '2025-12-31 23:17:21', 'Login', '127.0.0.1'),
+(119, 1, '2026-01-02 15:24:42', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -545,7 +534,13 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (6, '2025_12_27_000001_create_iar_signatures_table', 6),
 (7, '2025_12_28_140000_add_brand_model_serial_to_deliveryreceiptdetail', 7),
 (9, '2025_12_28_140001_add_verified_columns_to_iardetail', 8),
-(10, '2025_12_28_140002_add_missing_columns_to_propertyinventorydetail', 9);
+(10, '2025_12_28_140002_add_missing_columns_to_propertyinventorydetail', 9),
+(11, '2025_12_29_223854_add_deleted_at_to_propertyinventory_table', 10),
+(12, '2025_12_29_234422_add_soft_deletes_to_inspectionacceptancereport_table', 11),
+(13, '2025_12_28_000005_fix_inventory_keys_and_indexes', 12),
+(14, '2025_12_28_000001_add_traceability_fks_to_propertyinventorydetail', 13),
+(15, '2025_12_28_000002_add_inventorydetail_to_qrcode', 13),
+(16, '2025_12_28_000003_add_soft_deletes_to_inventory_tables', 13);
 
 -- --------------------------------------------------------
 
@@ -716,16 +711,25 @@ CREATE TABLE `propertydisposaldetail` (
 
 CREATE TABLE `propertyinventory` (
   `InventoryID` int(11) NOT NULL,
-  `PropertyTypeID` int(11) NOT NULL,
-  `UnitOfMeasureID` int(11) NOT NULL,
+  `PropertyTypeID` int(11) DEFAULT NULL,
+  `UnitOfMeasureID` int(11) DEFAULT NULL,
   `DRID` int(11) DEFAULT NULL,
   `IARID` int(11) DEFAULT NULL,
   `DateReceived` date DEFAULT NULL,
   `UnitCost` decimal(18,2) DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp(),
-  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp()
+  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `InventoryNumber` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `propertyinventory`
+--
+
+INSERT INTO `propertyinventory` (`InventoryID`, `PropertyTypeID`, `UnitOfMeasureID`, `DRID`, `IARID`, `DateReceived`, `UnitCost`, `Remarks`, `CreatedDate`, `UpdatedDate`, `deleted_at`, `InventoryNumber`) VALUES
+(1, NULL, NULL, NULL, 7, '2025-12-29', NULL, 'Auto-ingested from IAR #IAR-2025-0007', '2025-12-29 23:50:55', NULL, NULL, 'INV-20251229-235055-7');
 
 -- --------------------------------------------------------
 
@@ -757,6 +761,13 @@ CREATE TABLE `propertyinventorydetail` (
   `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `propertyinventorydetail`
+--
+
+INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `PropertyTypeID`, `ReceivedID`, `Description`, `PropertyNumber`, `SerialNumber`, `Quantity`, `QuantityAvailable`, `PropertyStatusID`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `SourceIARDetailID`, `SourceDRDetailID`, `ConditionID`, `Brand`, `ModelNumber`, `Remarks`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
+(1, 1, 3, NULL, 'Lost in neon streets, I hear echoes of things I can’t remember, shadows stretching longer than the night itself, my heartbeat syncing with a broken streetlamp flicker, everything melting into one slow hum, I laugh at nothing, and the sky feels too heavy,', NULL, '12345asus', 1, 1, 1, 1, 35000.00, 35000.00, 80, 26, 1, 'Asus', 'Vivobook', 'good', '2025-12-29 23:50:55', '2025-12-30 20:40:16', NULL);
 
 -- --------------------------------------------------------
 
@@ -809,9 +820,6 @@ CREATE TABLE `propertyreceived` (
 --
 
 INSERT INTO `propertyreceived` (`ReceivedID`, `IARID`, `ReceivedBy`, `ReleasedBy`, `DateReceived`, `TotalCost`, `Remarks`, `CreatedDate`) VALUES
-(1, 5, 1, 1, '2025-12-27', 800.00, 'Auto-created on acceptance', '2025-12-27 23:04:29'),
-(2, 4, 1, 1, '2025-12-27', 53245.00, 'Auto-created on acceptance', '2025-12-27 23:05:27'),
-(3, 6, 1, 1, '2025-12-28', 47970.00, 'Auto-created on acceptance', '2025-12-28 22:28:54'),
 (4, 7, 1, 1, '2025-12-29', 35000.00, 'Auto-created on acceptance', '2025-12-29 22:11:31');
 
 -- --------------------------------------------------------
@@ -914,6 +922,7 @@ INSERT INTO `propertytype` (`PropertyTypeID`, `ClassificationID`, `PropertyClass
 CREATE TABLE `qrcode` (
   `QRCodeID` int(11) NOT NULL,
   `PropertyID` int(11) NOT NULL,
+  `InventoryDetailID` int(10) UNSIGNED DEFAULT NULL,
   `DepartmentID` int(11) NOT NULL,
   `QRCodeData` varchar(255) DEFAULT NULL,
   `DateGenerated` datetime DEFAULT current_timestamp()
@@ -939,13 +948,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('2w4igYzXRpQ94qtVCDvlA2UGbnz4dseINiEGjsKH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiWkJ2emZtdGFQdEFrZmlRemlwdXRJNTZaVXdKTlJ6UFJYV3Y0UkpQcSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvdW5pdHMtb2YtbWVhc3VyZT9wZXJfcGFnZT1hbGwiO3M6NToicm91dGUiO3M6MjI6InVuaXRzLW9mLW1lYXN1cmUuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1766939726),
-('4ypfObVgE3cQPB0xVcX69L9e9rkV15KNucdSa4Ff', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiakt6NHlRUTRBVVFIV0lGNDFjR0NMNlBZejI5aFFFaFdtdFpoTU5XOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy82L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766932144),
-('6kzHOGgbsfwVos25ao61TcDxpGzh78OaUj1upBjD', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiOWR6S2NWb2hWUWhzeHJMWWd3TzVMTzFpbmhHemhOOTV3Q0ZBU0swNiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vaW52ZW50b3J5P3BhZ2U9MSZwZXJfcGFnZT0xMCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1767017895),
-('gRdmFFotid7BdF9Hd22Zyego8FHrQRyLOf8vRvdK', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWktmdXBleVZjeVJRcXFWbzMzYUVQekZ6N0pVdzdFSXJjeGJsZUR4OCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1767017502),
-('hl1ztIZbxhy9uEJ3RSct6MfxRbNKLdMkVuuI3kE0', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiU2k5cmt4NnZ3a3ZHNDhjb0owVlVDYVRYbHVQU3dRaUZZRm5tcWRqRCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy82L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1766932144),
-('OsT6kA635XXvpfAMMmEmPtCiswkfI759QfAcGCi1', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoicXhaVzFITVNEQzBncUtHNEN3eGgzY3JUTHN5U2M0MkNzZXJFdzE5WSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy82L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1766931314),
-('Urh3tRmtn6kCQouMZmqtNzbcEC2HJcSVljY5RF3M', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoib1ZvRUpyMWpCeWZTVjNGYXFTQjNUSmJlelZoaGNkR2ZOdWNrcGN2QSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1767017502);
+('j0EQcgP73k8TovpSXVrz9dGH9xjWcRfcFhxnIHcq', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUjlMQ0w3YkxpWFFqWE1xUTdDZzZYTHQyY0FEbDdwZjVSZExUY2NOMiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1767346920),
+('kUiXLfgLyEL84Rb3bf21JzKRrrauj9pTv9aFDPew', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoicDBqSWlCalBZbmRFeHMzRTltankzOGxLQTNic0Y2Mjl3cjYxWkhiRyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vcHJvY3VyZW1lbnQvZGVsaXZlcnktcmVjZWlwdHM/cGFnZT0xJnBlcl9wYWdlPTEwIjtzOjU6InJvdXRlIjtzOjIzOiJkZWxpdmVyeS1yZWNlaXB0cy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1767347774),
+('RGxh2nplaeVmaJmA5dpobNaf0OFSYqudKts8dI2P', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVGdQSGpUS2xHUWc1QmdqUFlUMHJ2WFB1VlZaUkNpR3VTSGZrenFyYSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1767346920);
 
 -- --------------------------------------------------------
 
@@ -1015,7 +1020,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (14, 2, 'Chrome on Windows', 'e78fd6567203219bca58ec8d6a4adf51d41fded34533b12ec668b0c59ee7debf', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-26 22:14:13', '2026-01-25 21:46:23', '2025-12-26 21:46:23', '2025-12-26 22:14:13'),
 (15, 1, 'Chrome on Windows', '2a4fbee9a3c9a96124751e83b736dbad0e70937c22df5487d294f08a99c819ed', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:35:58', '2025-12-26 22:35:58', NULL),
 (16, 2, 'Chrome on Windows', 'c6ba2be624d0c8d1fbd27bb47776e15e631a2c05adb6de82b08e62ab3d5ba446', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:37:45', '2025-12-26 22:37:45', NULL),
-(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-29 21:08:51', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2025-12-29 21:08:51');
+(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-01-02 15:24:42', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2026-01-02 15:24:42');
 
 -- --------------------------------------------------------
 
@@ -1403,6 +1408,7 @@ ALTER TABLE `propertydisposaldetail`
 --
 ALTER TABLE `propertyinventory`
   ADD PRIMARY KEY (`InventoryID`),
+  ADD UNIQUE KEY `inventory_inventorynumber_unique` (`InventoryNumber`),
   ADD KEY `PropertyTypeID` (`PropertyTypeID`),
   ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`),
   ADD KEY `DRID` (`DRID`),
@@ -1490,7 +1496,8 @@ ALTER TABLE `propertytype`
 ALTER TABLE `qrcode`
   ADD PRIMARY KEY (`QRCodeID`),
   ADD KEY `PropertyID` (`PropertyID`),
-  ADD KEY `DepartmentID` (`DepartmentID`);
+  ADD KEY `DepartmentID` (`DepartmentID`),
+  ADD KEY `qrcode_inventorydetailid_index` (`InventoryDetailID`);
 
 --
 -- Indexes for table `sessions`
@@ -1594,13 +1601,13 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
-  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `department`
@@ -1672,13 +1679,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=114;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -1732,13 +1739,13 @@ ALTER TABLE `propertydisposaldetail`
 -- AUTO_INCREMENT for table `propertyinventory`
 --
 ALTER TABLE `propertyinventory`
-  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `propertyinventorydetail`
 --
 ALTER TABLE `propertyinventorydetail`
-  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `propertyissuance`
@@ -1982,6 +1989,7 @@ ALTER TABLE `propertydisposaldetail`
 -- Constraints for table `propertyinventory`
 --
 ALTER TABLE `propertyinventory`
+  ADD CONSTRAINT `fk_propertyinventory_iar` FOREIGN KEY (`IARID`) REFERENCES `inspectionacceptancereport` (`IARID`) ON DELETE SET NULL,
   ADD CONSTRAINT `propertyinventory_ibfk_1` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
   ADD CONSTRAINT `propertyinventory_ibfk_2` FOREIGN KEY (`UnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`),
   ADD CONSTRAINT `propertyinventory_ibfk_3` FOREIGN KEY (`DRID`) REFERENCES `deliveryreceipt` (`DRID`),

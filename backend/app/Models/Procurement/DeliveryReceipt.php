@@ -26,7 +26,8 @@ class DeliveryReceipt extends Model
         'ReceivedBy',
         'DateReceived',
         'Remarks',
-        'CreatedDate'
+        'CreatedDate',
+        'dr_picture'
     ];
 
     protected $casts = [

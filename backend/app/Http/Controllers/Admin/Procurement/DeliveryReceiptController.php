@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
@@ -118,6 +119,7 @@ class DeliveryReceiptController extends Controller
                 'date_received' => $dateRules,
                 'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
+                'dr_picture' => 'required|file|mimes:jpeg,png,jpg,gif|max:2048',
                 'details' => 'required|array|min:1',
                 'details.*.item_description' => 'required|string|max:255',
                 'details.*.brand' => 'nullable|string|max:100',
@@ -131,6 +133,10 @@ class DeliveryReceiptController extends Controller
                 'dr_number.unique' => 'DR number already exists',
                 'po_number.unique' => 'PO number already exists for this supplier',
                 'invoice_number.unique' => 'Invoice number already exists for this supplier',
+                'dr_picture.required' => 'DR picture is required',
+                'dr_picture.file' => 'DR picture must be a valid file',
+                'dr_picture.mimes' => 'DR picture must be a JPEG, PNG, JPG, or GIF file',
+                'dr_picture.max' => 'DR picture must not exceed 2MB',
             ]);
 
             if ($validator->fails()) {
@@ -140,6 +146,9 @@ class DeliveryReceiptController extends Controller
                     'errors' => $validator->errors()
                 ], 422);
             }
+
+            // Handle DR picture upload
+            $drPicturePath = $request->file('dr_picture')->store('dr_pictures', 'public');
 
             DB::beginTransaction();
 
@@ -161,6 +170,7 @@ class DeliveryReceiptController extends Controller
                 'ReceivedBy' => Auth::user()->UserID,
                 'DateReceived' => $request->date_received,
                 'Remarks' => $request->remarks,
+                'dr_picture' => $drPicturePath,
             ]);
 
             // Create details
@@ -193,7 +203,8 @@ class DeliveryReceiptController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt created successfully',
-                'data' => $deliveryReceipt
+                'data' => $deliveryReceipt,
+                'dr_picture_url' => Storage::disk('public')->url($deliveryReceipt->dr_picture)
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -242,6 +253,7 @@ class DeliveryReceiptController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $data,
+                'dr_picture_url' => $deliveryReceipt->dr_picture ? Storage::disk('public')->url($deliveryReceipt->dr_picture) : null
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -303,6 +315,7 @@ class DeliveryReceiptController extends Controller
                 'date_received' => $dateRules,
                 'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
+                'dr_picture' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
                 'details' => 'required|array|min:1',
                 'details.*.dr_detail_id' => 'sometimes|integer|exists:deliveryreceiptdetail,DRDetailID', // Optional for updates
                 'details.*.item_description' => 'required|string|max:255',
@@ -317,6 +330,9 @@ class DeliveryReceiptController extends Controller
                 'dr_number.unique' => 'DR number already exists',
                 'po_number.unique' => 'PO number already exists for this supplier',
                 'invoice_number.unique' => 'Invoice number already exists for this supplier',
+                'dr_picture.file' => 'DR picture must be a valid file',
+                'dr_picture.mimes' => 'DR picture must be a JPEG, PNG, JPG, or GIF file',
+                'dr_picture.max' => 'DR picture must not exceed 2MB',
             ]);
 
             if ($validator->fails()) {
@@ -325,6 +341,12 @@ class DeliveryReceiptController extends Controller
                     'message' => 'Validation failed',
                     'errors' => $validator->errors()
                 ], 422);
+            }
+
+            // Handle DR picture upload (only if a new picture is provided)
+            $drPicturePath = null;
+            if ($request->hasFile('dr_picture')) {
+                $drPicturePath = $request->file('dr_picture')->store('dr_pictures', 'public');
             }
 
             DB::beginTransaction();
@@ -341,8 +363,10 @@ class DeliveryReceiptController extends Controller
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
                 'PONumber' => $request->po_number,
+                'InvoiceNumber' => $request->invoice_number,
                 'DateReceived' => $request->date_received,
                 'Remarks' => $request->remarks,
+                ...$drPicturePath ? ['dr_picture' => $drPicturePath] : [],
             ]);
 
             // Handle details update properly - update existing, delete removed, insert new
@@ -395,7 +419,8 @@ class DeliveryReceiptController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt updated successfully',
-                'data' => $deliveryReceipt
+                'data' => $deliveryReceipt,
+                'dr_picture_url' => Storage::disk('public')->url($deliveryReceipt->dr_picture)
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
