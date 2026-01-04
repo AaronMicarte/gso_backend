@@ -38,7 +38,7 @@ class UserSeeder extends Seeder
                 'Username' => 'custodian',
                 'Email' => 'custodian@gso.gov.ph',
                 'Password' => Hash::make('123'),
-                'FullName' => 'Property Custodian',
+                'FullName' => 'Department Head',
                 'IsActive' => 1,
             ],
         ]);

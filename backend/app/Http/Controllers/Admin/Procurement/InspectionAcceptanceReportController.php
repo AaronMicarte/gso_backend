@@ -41,7 +41,7 @@ class InspectionAcceptanceReportController extends Controller
                     $q->where('InspectedBy', $user->UserID)
                       ->orWhere('AcceptedBy', $user->UserID);
                 });
-            } elseif ($user->UserRoleID == 3) { // Property Custodian
+            } elseif ($user->UserRoleID == 4) { // Department Head
                 $query->where('AcceptedBy', $user->UserID);
             }
             // Admin (UserRoleID == 1) sees all, no filter needed
@@ -737,7 +737,7 @@ class InspectionAcceptanceReportController extends Controller
                 // Admin (1) and GSO Staff (2) can only select themselves
                 $query->where('UserID', $currentUser->UserID);
             }
-            // Property Custodian (3) and other roles see all active users
+            // Department Head (3) and other roles see all active users
 
             $users = $query->orderBy('FullName')->get();
 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Cookie Test - Device Token</title>
+</head>
+
+<body>
+    <h1>Testing device_token Cookie Across Ports</h1>
+
+    <div id="status">Checking cookies...</div>
+
+    <script>
+        // Display all cookies
+        console.log('All cookies:', document.cookie);
+
+        const cookies = document.cookie.split(';').map(c => c.trim());
+        const statusDiv = document.getElementById('status');
+
+        let html = '<h3>Cookies found:</h3><ul>';
+        if (cookies.length === 0 || cookies[0] === '') {
+            html += '<li style="color: red">No cookies found!</li>';
+        } else {
+            cookies.forEach(cookie => {
+                const [name, value] = cookie.split('=');
+                html += `<li><strong>${name}</strong>: ${value.substring(0, 20)}...</li>`;
+            });
+        }
+        html += '</ul>';
+
+        const hasDeviceToken = document.cookie.includes('device_token');
+        html += `<p><strong>device_token present:</strong> ${hasDeviceToken ? 'YES ✅' : 'NO ❌'}</p>`;
+
+        if (!hasDeviceToken) {
+            html += `<p style="color: orange">⚠️ The device_token cookie is not accessible from JavaScript. This is expected behavior for httpOnly cookies (security feature). Check DevTools → Application → Cookies to see if it's actually set.</p>`;
+        }
+
+        statusDiv.innerHTML = html;
+    </script>
+</body>
+
+</html>

@@ -139,12 +139,13 @@ class MFAController extends Controller
                 // For local development over HTTP, send a cookie usable in same-site contexts.
                 $secure = $request->isSecure() || app()->environment('production');
                 $sameSite = $secure ? 'None' : 'Lax';
+                $domain = $request->getHost();
 
                 return response()->json([
                     'message' => 'MFA code verified',
                     'device_token' => $device->plain_token,
                     'user' => $user->only(['UserID', 'Username', 'Email', 'FullName']),
-                ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', null, $secure, true, false, $sameSite);
+                ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
             }
 
             return response()->json([

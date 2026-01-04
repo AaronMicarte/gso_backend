@@ -106,7 +106,7 @@ class AuthController extends Controller
 
         // 6. Check MFA Requirement
         // Roles that REQUIRE MFA (government security policy)
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Property Custodian'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
         $userRole = $user->userRole->RoleName ?? '';
         $requiresMFA = in_array($userRole, $mfaRequiredRoles);
 
@@ -317,7 +317,7 @@ class AuthController extends Controller
                 $device->plain_token,
                 60 * 24 * 30, // 30 days in minutes
                 '/',
-                null,
+                'localhost', // domain - must match frontend/backend for cross-port access
                 $secure,  // secure set based on environment/request
                 true,  // httpOnly
                 false, // raw
@@ -452,7 +452,7 @@ class AuthController extends Controller
         }
 
         // Verify this user's role actually requires MFA
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Property Custodian'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
         $userRole = $user->userRole->RoleName ?? '';
 
         if (!in_array($userRole, $mfaRequiredRoles)) {
@@ -500,7 +500,7 @@ class AuthController extends Controller
         }
 
         // Verify role requires MFA
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Property Custodian'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
         $userRole = $user->userRole->RoleName ?? '';
 
         if (!in_array($userRole, $mfaRequiredRoles)) {

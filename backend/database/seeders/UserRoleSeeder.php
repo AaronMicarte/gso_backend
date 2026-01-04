@@ -15,7 +15,7 @@ class UserRoleSeeder extends Seeder
         DB::table('userrole')->insert([
             ['RoleName' => 'Admin', 'Description' => 'System Administrator - Full Access'],
             ['RoleName' => 'GSO Staff', 'Description' => 'General Services Office Staff'],
-            ['RoleName' => 'Property Custodian', 'Description' => 'Manages property inventory'],
+            ['RoleName' => 'Department Head', 'Description' => 'Manages property inventory for their department'],
             ['RoleName' => 'Department Head', 'Description' => 'Can approve requests'],
             ['RoleName' => 'End User', 'Description' => 'Regular property accountable user'],
         ]);

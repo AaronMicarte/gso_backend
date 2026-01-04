@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\MasterData\UserRoleController;
 use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
 use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
 use App\Http\Controllers\Admin\Procurement\IarSignatureController;
+use App\Http\Controllers\department_head\DashboardController as DepartmentHeadDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -146,6 +147,12 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
                 Route::post('issuances', [\App\Http\Controllers\Admin\Inventory\IssuanceController::class, 'store']);
             });
+    });
+
+    // Department Head routes
+    Route::prefix('department-head')->group(function () {
+        Route::get('dashboard/stats', [DepartmentHeadDashboardController::class, 'getStats']);
+        Route::get('dashboard/activities', [DepartmentHeadDashboardController::class, 'getActivities']);
     });
 });
 
