@@ -17,6 +17,8 @@ class AssetRequestDetail extends Model
     protected $fillable = [
         'RequestID',
         'PropertyInventoryDetailID',
+        'ItemDescription',
+        'Unit',
         'QuantityRequested',
         'Purpose',
     ];

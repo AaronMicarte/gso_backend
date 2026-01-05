@@ -35,15 +35,15 @@ class AssetRequestController extends Controller
         // Admin/GSO can see all
 
         // Status filter
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('Status', $request->status);
         }
 
         // Date range filter
-        if ($request->has('from_date')) {
+        if ($request->filled('from_date')) {
             $query->whereDate('RequestDate', '>=', $request->from_date);
         }
-        if ($request->has('to_date')) {
+        if ($request->filled('to_date')) {
             $query->whereDate('RequestDate', '<=', $request->to_date);
         }
 
@@ -81,22 +81,26 @@ class AssetRequestController extends Controller
     {
         $validated = $request->validate([
             'items' => 'required|array|min:1',
-            'items.*.PropertyInventoryDetailID' => 'required|exists:propertyinventorydetail,InventoryDetailID',
+            'items.*.PropertyInventoryDetailID' => 'nullable|exists:propertyinventorydetail,InventoryDetailID',
+            'items.*.ItemDescription' => 'required_without:items.*.PropertyInventoryDetailID|nullable|string|max:255',
+            'items.*.Unit' => 'nullable|string|max:50',
             'items.*.QuantityRequested' => 'required|integer|min:1',
             'items.*.Purpose' => 'required|string|min:10|max:1000',
         ]);
 
         $user = Auth::user();
 
-        // Validate inventory availability for all items
+        // Validate inventory availability ONLY for inventory items
         foreach ($validated['items'] as $item) {
-            $inventoryDetail = PropertyInventoryDetail::with('propertyInventory')->findOrFail($item['PropertyInventoryDetailID']);
-            if ($inventoryDetail->QuantityOnHand < $item['QuantityRequested']) {
-                return response()->json([
-                    'message' => 'Insufficient quantity available for item: ' . ($inventoryDetail->propertyInventory->ItemDescription ?? 'Unknown Item'),
-                    'available' => $inventoryDetail->QuantityOnHand,
-                    'requested' => $item['QuantityRequested']
-                ], 422);
+            if (!empty($item['PropertyInventoryDetailID'])) {
+                $inventoryDetail = PropertyInventoryDetail::with('propertyInventory')->findOrFail($item['PropertyInventoryDetailID']);
+                if ($inventoryDetail->QuantityOnHand < $item['QuantityRequested']) {
+                    return response()->json([
+                        'message' => 'Insufficient quantity available for item: ' . ($inventoryDetail->propertyInventory->ItemDescription ?? 'Unknown Item'),
+                        'available' => $inventoryDetail->QuantityOnHand,
+                        'requested' => $item['QuantityRequested']
+                    ], 422);
+                }
             }
         }
 
@@ -112,7 +116,9 @@ class AssetRequestController extends Controller
 
             foreach ($validated['items'] as $item) {
                 $assetRequest->details()->create([
-                    'PropertyInventoryDetailID' => $item['PropertyInventoryDetailID'],
+                    'PropertyInventoryDetailID' => $item['PropertyInventoryDetailID'] ?? null,
+                    'ItemDescription' => $item['ItemDescription'] ?? null,
+                    'Unit' => $item['Unit'] ?? null,
                     'QuantityRequested' => $item['QuantityRequested'],
                     'Purpose' => $item['Purpose'],
                 ]);

@@ -47,7 +47,9 @@ return new class extends Migration
         Schema::create('assetrequestdetail', function (Blueprint $table) {
             $table->id('RequestDetailID');
             $table->unsignedBigInteger('RequestID'); // FK to assetrequest
-            $table->integer('PropertyInventoryDetailID'); // InventoryDetailID (Int Signed)
+            $table->integer('PropertyInventoryDetailID')->nullable(); // InventoryDetailID (Int Signed) - Nullable for RIS
+            $table->string('ItemDescription')->nullable(); // For free-form RIS
+            $table->string('Unit', 50)->nullable(); // Unit of measure
             $table->integer('QuantityRequested');
             $table->text('Purpose'); // Required: Why they need this specific item
             $table->timestamps();
@@ -95,7 +97,7 @@ return new class extends Migration
         
         if (Schema::hasTable('propertyissuance') && Schema::hasColumn('propertyissuance', 'RequestID')) {
             Schema::table('propertyissuance', function (Blueprint $table) {
-                // $table->dropForeign(['RequestID']);
+                $table->dropForeign(['RequestID']);
                 $table->dropColumn('RequestID');
             });
         }

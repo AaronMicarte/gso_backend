@@ -39,12 +39,12 @@ class AssetIssuanceController extends Controller
         }
 
         // Status filter
-        if ($request->has('status')) {
+        if ($request->filled('status')) {
             $query->where('Status', $request->status);
         }
 
         // Document type filter
-        if ($request->has('document_type')) {
+        if ($request->filled('document_type')) {
             $query->where('DocumentType', strtoupper($request->document_type));
         }
 
