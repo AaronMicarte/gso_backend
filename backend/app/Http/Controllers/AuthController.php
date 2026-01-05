@@ -130,6 +130,9 @@ class AuthController extends Controller
                     // Use Laravel's session-based auth
                     Auth::login($user);
                     $request->session()->regenerate();
+                    
+                    // Explicitly save session to prevent race condition
+                    $request->session()->save();
 
                     return response()->json([
                         'message' => 'Login successful',
@@ -162,6 +165,7 @@ class AuthController extends Controller
                     'UserID' => $user->UserID,
                     'Username' => $user->Username,
                     'FullName' => $user->FullName ?? $user->Username,
+                    'MFAEnabled' => $user->MFAEnabled,
                 ]
             ], 200);
         }
@@ -180,6 +184,7 @@ class AuthController extends Controller
                     'FullName' => $user->FullName ?? $user->Username,
                     'Role' => $userRole,
                     'UserRoleID' => $user->UserRoleID,
+                    'MFAEnabled' => $user->MFAEnabled,
                 ]
             ], 200);
         }
@@ -198,6 +203,9 @@ class AuthController extends Controller
 
         // Regenerate session to prevent session fixation attacks
         $request->session()->regenerate();
+        
+        // Explicitly save session to prevent race condition
+        $request->session()->save();
 
         return response()->json([
             'message' => 'Login successful',
@@ -211,6 +219,7 @@ class AuthController extends Controller
                 'UserRoleID' => $user->UserRoleID,
                 'Department' => $user->department->DepartmentName ?? 'N/A',
                 'DepartmentID' => $user->DepartmentID,
+                'MFAEnabled' => $user->MFAEnabled,
                 'department' => [
                     'DepartmentID' => $user->department->DepartmentID ?? 0,
                     'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
@@ -278,6 +287,9 @@ class AuthController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        
+        // Explicitly save session to prevent race condition
+        $request->session()->save();
 
         // Trust device if requested
         $response = response()->json([
@@ -312,12 +324,13 @@ class AuthController extends Controller
             $sameSite = $secure ? 'None' : 'Lax';
 
             // Set cookie (30 days)
+            // Use null domain for host-only cookie (works with localhost AND 127.0.0.1)
             $response->cookie(
                 'device_token',
                 $device->plain_token,
                 60 * 24 * 30, // 30 days in minutes
                 '/',
-                'localhost', // domain - must match frontend/backend for cross-port access
+                null, // null = host-only cookie, works across ports
                 $secure,  // secure set based on environment/request
                 true,  // httpOnly
                 false, // raw
@@ -383,6 +396,7 @@ class AuthController extends Controller
                     'UserRoleID' => $user->UserRoleID,
                     'Department' => $user->department->DepartmentName ?? 'N/A',
                     'DepartmentID' => $user->DepartmentID,
+                    'MFAEnabled' => $user->MFAEnabled,
                     'department' => [
                         'DepartmentID' => $user->department->DepartmentID ?? 0,
                         'DepartmentName' => $user->department->DepartmentName ?? 'N/A',

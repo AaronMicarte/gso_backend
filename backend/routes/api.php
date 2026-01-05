@@ -154,6 +154,25 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('dashboard/stats', [DepartmentHeadDashboardController::class, 'getStats']);
         Route::get('dashboard/activities', [DepartmentHeadDashboardController::class, 'getActivities']);
     });
+
+    // Asset Request & Issuance routes (available to all authenticated users with role-based access)
+    Route::prefix('asset-requests')->group(function () {
+        Route::get('', [\App\Http\Controllers\AssetRequestController::class, 'index']);
+        Route::post('', [\App\Http\Controllers\AssetRequestController::class, 'store']);
+        Route::get('available-inventory', [\App\Http\Controllers\AssetRequestController::class, 'getAvailableInventory']);
+        Route::get('{id}', [\App\Http\Controllers\AssetRequestController::class, 'show']);
+        Route::post('{id}/approve', [\App\Http\Controllers\AssetRequestController::class, 'approve']);
+        Route::post('{id}/reject', [\App\Http\Controllers\AssetRequestController::class, 'reject']);
+        Route::post('{id}/cancel', [\App\Http\Controllers\AssetRequestController::class, 'cancel']);
+    });
+
+    Route::prefix('asset-issuances')->group(function () {
+        Route::get('', [\App\Http\Controllers\AssetIssuanceController::class, 'index']);
+        Route::post('', [\App\Http\Controllers\AssetIssuanceController::class, 'store']);
+        Route::get('{id}', [\App\Http\Controllers\AssetIssuanceController::class, 'show']);
+        Route::post('{id}/acknowledge', [\App\Http\Controllers\AssetIssuanceController::class, 'acknowledge']);
+        Route::get('request/{requestId}', [\App\Http\Controllers\AssetIssuanceController::class, 'getByRequest']);
+    });
 });
 
 // Public authentication routes - with CSRF protection

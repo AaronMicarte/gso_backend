@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 02, 2026 at 10:56 AM
+-- Generation Time: Jan 04, 2026 at 06:24 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,64 @@ SET time_zone = "+00:00";
 --
 -- Database: `gso_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assetrequest`
+--
+
+CREATE TABLE `assetrequest` (
+  `RequestID` bigint(20) UNSIGNED NOT NULL,
+  `RequestNumber` varchar(50) NOT NULL,
+  `RequestedBy` int(11) NOT NULL,
+  `DepartmentID` int(11) NOT NULL,
+  `Status` enum('pending','approved','rejected','issued','cancelled') NOT NULL DEFAULT 'pending',
+  `ReviewedBy` int(11) DEFAULT NULL,
+  `ReviewedAt` timestamp NULL DEFAULT NULL,
+  `ReviewNotes` text DEFAULT NULL,
+  `IssuedBy` int(11) DEFAULT NULL,
+  `IssuedAt` timestamp NULL DEFAULT NULL,
+  `RequestDate` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assetrequestdetail`
+--
+
+CREATE TABLE `assetrequestdetail` (
+  `RequestDetailID` bigint(20) UNSIGNED NOT NULL,
+  `RequestID` bigint(20) UNSIGNED NOT NULL,
+  `PropertyInventoryDetailID` int(11) NOT NULL,
+  `QuantityRequested` int(11) NOT NULL,
+  `Purpose` text NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `asset_audit_logs`
+--
+
+CREATE TABLE `asset_audit_logs` (
+  `AuditID` bigint(20) UNSIGNED NOT NULL,
+  `EntityType` varchar(50) NOT NULL,
+  `EntityID` int(11) NOT NULL,
+  `Action` varchar(100) NOT NULL,
+  `PerformedBy` int(11) NOT NULL,
+  `Details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`Details`)),
+  `IPAddress` varchar(50) DEFAULT NULL,
+  `UserAgent` text DEFAULT NULL,
+  `CreatedAt` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -507,7 +565,13 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (116, 1, '2025-12-30 16:30:03', 'Login', '127.0.0.1'),
 (117, 1, '2025-12-30 19:48:19', 'Login', '127.0.0.1'),
 (118, 1, '2025-12-31 23:17:21', 'Login', '127.0.0.1'),
-(119, 1, '2026-01-02 15:24:42', 'Login', '127.0.0.1');
+(119, 1, '2026-01-02 15:24:42', 'Login', '127.0.0.1'),
+(120, 3, '2026-01-05 00:59:43', 'Login', '127.0.0.1'),
+(121, 3, '2026-01-05 00:59:55', 'Login', '127.0.0.1'),
+(122, 1, '2026-01-05 01:00:25', 'Login', '127.0.0.1'),
+(123, 1, '2026-01-05 01:01:49', 'Login', '127.0.0.1'),
+(124, 1, '2026-01-05 01:02:02', 'Logout', '127.0.0.1'),
+(125, 3, '2026-01-05 01:02:10', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -540,7 +604,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (13, '2025_12_28_000005_fix_inventory_keys_and_indexes', 12),
 (14, '2025_12_28_000001_add_traceability_fks_to_propertyinventorydetail', 13),
 (15, '2025_12_28_000002_add_inventorydetail_to_qrcode', 13),
-(16, '2025_12_28_000003_add_soft_deletes_to_inventory_tables', 13);
+(19, '2026_01_04_100000_create_asset_request_workflow', 14);
 
 -- --------------------------------------------------------
 
@@ -720,7 +784,6 @@ CREATE TABLE `propertyinventory` (
   `Remarks` text DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp(),
   `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp(),
-  `deleted_at` timestamp NULL DEFAULT NULL,
   `InventoryNumber` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -728,8 +791,8 @@ CREATE TABLE `propertyinventory` (
 -- Dumping data for table `propertyinventory`
 --
 
-INSERT INTO `propertyinventory` (`InventoryID`, `PropertyTypeID`, `UnitOfMeasureID`, `DRID`, `IARID`, `DateReceived`, `UnitCost`, `Remarks`, `CreatedDate`, `UpdatedDate`, `deleted_at`, `InventoryNumber`) VALUES
-(1, NULL, NULL, NULL, 7, '2025-12-29', NULL, 'Auto-ingested from IAR #IAR-2025-0007', '2025-12-29 23:50:55', NULL, NULL, 'INV-20251229-235055-7');
+INSERT INTO `propertyinventory` (`InventoryID`, `PropertyTypeID`, `UnitOfMeasureID`, `DRID`, `IARID`, `DateReceived`, `UnitCost`, `Remarks`, `CreatedDate`, `UpdatedDate`, `InventoryNumber`) VALUES
+(1, NULL, NULL, NULL, 7, '2025-12-29', NULL, 'Auto-ingested from IAR #IAR-2025-0007', '2025-12-29 23:50:55', NULL, 'INV-20251229-235055-7');
 
 -- --------------------------------------------------------
 
@@ -758,16 +821,15 @@ CREATE TABLE `propertyinventorydetail` (
   `ModelNumber` varchar(100) DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp(),
-  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp(),
-  `deleted_at` timestamp NULL DEFAULT NULL
+  `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `propertyinventorydetail`
 --
 
-INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `PropertyTypeID`, `ReceivedID`, `Description`, `PropertyNumber`, `SerialNumber`, `Quantity`, `QuantityAvailable`, `PropertyStatusID`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `SourceIARDetailID`, `SourceDRDetailID`, `ConditionID`, `Brand`, `ModelNumber`, `Remarks`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
-(1, 1, 3, NULL, 'Lost in neon streets, I hear echoes of things I can’t remember, shadows stretching longer than the night itself, my heartbeat syncing with a broken streetlamp flicker, everything melting into one slow hum, I laugh at nothing, and the sky feels too heavy,', NULL, '12345asus', 1, 1, 1, 1, 35000.00, 35000.00, 80, 26, 1, 'Asus', 'Vivobook', 'good', '2025-12-29 23:50:55', '2025-12-30 20:40:16', NULL);
+INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `PropertyTypeID`, `ReceivedID`, `Description`, `PropertyNumber`, `SerialNumber`, `Quantity`, `QuantityAvailable`, `PropertyStatusID`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `SourceIARDetailID`, `SourceDRDetailID`, `ConditionID`, `Brand`, `ModelNumber`, `Remarks`, `CreatedDate`, `UpdatedDate`) VALUES
+(1, 1, 3, NULL, 'Lost in neon streets, I hear echoes of things I can’t remember, shadows stretching longer than the night itself, my heartbeat syncing with a broken streetlamp flicker, everything melting into one slow hum, I laugh at nothing, and the sky feels too heavy,', NULL, '12345asus', 1, 1, 1, 1, 35000.00, 35000.00, 80, 26, 1, 'Asus', 'Vivobook', 'good', '2025-12-29 23:50:55', '2025-12-30 20:40:16');
 
 -- --------------------------------------------------------
 
@@ -777,6 +839,7 @@ INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `Prop
 
 CREATE TABLE `propertyissuance` (
   `IssuanceID` int(11) NOT NULL,
+  `RequestID` bigint(20) UNSIGNED DEFAULT NULL,
   `IssuedBy` int(11) NOT NULL,
   `IssuedTo` int(11) NOT NULL,
   `DateIssued` date NOT NULL,
@@ -949,6 +1012,7 @@ CREATE TABLE `sessions` (
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
 ('j0EQcgP73k8TovpSXVrz9dGH9xjWcRfcFhxnIHcq', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiUjlMQ0w3YkxpWFFqWE1xUTdDZzZYTHQyY0FEbDdwZjVSZExUY2NOMiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2FjY2VwdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1767346920),
+('KgbwLSGYjz9KNtTIuJhzXBQZe4olmrskHz7PO99W', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUFNXalBVOUh4aFZkMEd2S2VWTFluNXRlb0hOVEROMDNjY04zczQwdSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGhsVTdRS25VYldwaHZKbkZ4WWdhWS5nSlZ6Qm54VktLVi5ranc3eEI1T2guMWpOMGNmQTYyIjt9', 1767546133),
 ('kUiXLfgLyEL84Rb3bf21JzKRrrauj9pTv9aFDPew', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoicDBqSWlCalBZbmRFeHMzRTltankzOGxLQTNic0Y2Mjl3cjYxWkhiRyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vcHJvY3VyZW1lbnQvZGVsaXZlcnktcmVjZWlwdHM/cGFnZT0xJnBlcl9wYWdlPTEwIjtzOjU6InJvdXRlIjtzOjIzOiJkZWxpdmVyeS1yZWNlaXB0cy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1767347774),
 ('RGxh2nplaeVmaJmA5dpobNaf0OFSYqudKts8dI2P', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiVGdQSGpUS2xHUWc1QmdqUFlUMHJ2WFB1VlZaUkNpR3VTSGZrenFyYSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvc2lnbmF0dXJlcy83L2luc3BlY3RlZCI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1767346920);
 
@@ -1020,7 +1084,8 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (14, 2, 'Chrome on Windows', 'e78fd6567203219bca58ec8d6a4adf51d41fded34533b12ec668b0c59ee7debf', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2025-12-26 22:14:13', '2026-01-25 21:46:23', '2025-12-26 21:46:23', '2025-12-26 22:14:13'),
 (15, 1, 'Chrome on Windows', '2a4fbee9a3c9a96124751e83b736dbad0e70937c22df5487d294f08a99c819ed', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:35:58', '2025-12-26 22:35:58', NULL),
 (16, 2, 'Chrome on Windows', 'c6ba2be624d0c8d1fbd27bb47776e15e631a2c05adb6de82b08e62ab3d5ba446', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:37:45', '2025-12-26 22:37:45', NULL),
-(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-01-02 15:24:42', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2026-01-02 15:24:42');
+(17, 1, 'Chrome on Windows', '5d4262ee0011e17413869e5da4a6aa4a227f6c6b192bab64a63b8f7633065ed5', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-01-02 15:24:42', '2026-01-25 23:22:56', '2025-12-26 23:22:56', '2026-01-02 15:24:42'),
+(18, 1, 'Chrome on Windows', '42abe6d47c3a590b2dab583288d4d0e46795465a1a730d186ecdff5e786e2a31', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-01-05 01:01:49', '2026-02-04 01:00:25', '2026-01-05 01:00:25', '2026-01-05 01:01:49');
 
 -- --------------------------------------------------------
 
@@ -1077,7 +1142,7 @@ CREATE TABLE `user` (
 INSERT INTO `user` (`UserID`, `UserRoleID`, `DepartmentID`, `Username`, `Email`, `Password`, `FullName`, `IsActive`, `MFAEnabled`, `MFASecret`, `BackupCodes`, `CreatedDate`, `UpdatedDate`) VALUES
 (1, 1, 1, 'gso.admin', 'micarte.aaron08@gmail.com', '$2y$12$ftgGRhJOPo.5FWmybeLLv.Z8wX8/H.BifZNZsK51uQIsJHUB/k.h6', 'GSO Administrator', 1, 1, 'eyJpdiI6IndTcFYzbnlmQjd5R2dnaEk1dzNNV1E9PSIsInZhbHVlIjoiaVZKanNlUDFSS20vSXJrblptbC9DMFlnTnVJVWpsQ1ZyaTkxTDZOVjViQT0iLCJtYWMiOiI0YWMwODkzOGRmZmExNzBjMWVkNDRmNGQzYWIyMDNkNGY0NWQ1MzNmM2VmNWQzYjE0YzJmMWY3OWRhOTViYTNhIiwidGFnIjoiIn0=', 'eyJpdiI6IitaZWR2a2JoQk5UWHREbXBDOWVPdWc9PSIsInZhbHVlIjoiTEVwTVB5K0xoK000c3pFdHdWOGpnNnBtQ1k2WWsreVZLb1BjMWh3dzlscmJlWCthVWxPR3ZhNkx1VWNTZXQrUlAwNytQVUxpM1dyM1VacFc2TW9hR24zT3V0NC8vaXJJeFFMdERzVnpZNUVKTkdkdUdRWUZ4QldzNElqSVhCdE5BUlhVVnBVTGRIQ0YyeFh4d3F1RDRqZy92eGZpeURrc1ZnRm90QWM1dFpRPSIsIm1hYyI6ImQ2YjlkMDg3ZGZmNmUwZTM1ZTI2ZmZiYzk0NzU0MWU2ZTIyMjk3ZGE0YmZiYWNlYTRmYTU1ZTVmOTVhZDAzOTciLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2025-12-08 17:51:44'),
 (2, 2, 1, 'gso.staff.aaronmicarte', 'aaron.micarte@gso.gov.ph', '$2y$12$YU66h83wjMCOJ9LMN81o8OuWpIuFYTFQpHCxkuWDAurXbYJS9Q.Mu', 'Aaron Micarte', 1, 1, 'eyJpdiI6IjlHZGd3c0dKcmxwcnBLNEdhN2pkWVE9PSIsInZhbHVlIjoiRkd3RWh6SUczdmt3NnpVU0lhUnVGazNSSmdCYkU3OCtLZzA3T1RPZW1BST0iLCJtYWMiOiI3NjliN2M0MDBjZDE4N2YyODcxMWVkMjNjODdiMmVlMDcwZDEwYWIzYTk3NzFhMDVkMjY1MTQzMDM4Y2Y0OThkIiwidGFnIjoiIn0=', 'eyJpdiI6InRLc2pkQjlRVHpZd2ZzKzZ3c0RCRmc9PSIsInZhbHVlIjoiZUlXMnFlWFZ0dkNtZmUxMVVON0VUa3lXOG1EWDNmVjdrRFUxN09TUElBR2Q1K1NNeEF1WHJjTFMyN3dNbG01alUxMGN1b0l4cE5qQmRPL1BUNGxPRU00VGFOaFVtNEd2SWpJTnlEYmhLbTFrVEk0NU51UDY1S2Z4K2RCOHhxbGVyZnkyU1lXbkp2QXFPNlZWNCtwZ0lndHVyd2ljeW4wSUdObktkajJuVkpnPSIsIm1hYyI6ImU0NDM1MWY0YzZkYTYyZmMwY2QzYWM1M2ZiYmMwZTE4MzY0NzM2OWU0YzU2YTg3ODljOWY1NzhiNWVkNWEzNWQiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2025-12-26 01:48:44'),
-(3, 3, 1, 'custodian', 'custodian@gso.gov.ph', '$2y$12$hlU7QKnUbWphvJnFxYgaY.gJVzBnxVKKV.kjw7xB5Oh.1jN0cfA62', 'Property Custodian', 1, 0, NULL, NULL, '2025-12-05 02:07:29', NULL);
+(3, 3, 5, 'IT_Head_Chokoy', 'custodian@gso.gov.ph', '$2y$12$hlU7QKnUbWphvJnFxYgaY.gJVzBnxVKKV.kjw7xB5Oh.1jN0cfA62', 'Chokoy Covid', 1, 0, NULL, NULL, '2025-12-05 02:07:29', '2026-01-05 00:08:45');
 
 -- --------------------------------------------------------
 
@@ -1163,6 +1228,36 @@ CREATE TABLE `wastematerialreport` (
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `assetrequest`
+--
+ALTER TABLE `assetrequest`
+  ADD PRIMARY KEY (`RequestID`),
+  ADD UNIQUE KEY `assetrequest_requestnumber_unique` (`RequestNumber`),
+  ADD KEY `assetrequest_status_index` (`Status`),
+  ADD KEY `assetrequest_requestedby_index` (`RequestedBy`),
+  ADD KEY `assetrequest_departmentid_index` (`DepartmentID`),
+  ADD KEY `assetrequest_requestdate_index` (`RequestDate`),
+  ADD KEY `assetrequest_reviewedby_foreign` (`ReviewedBy`),
+  ADD KEY `assetrequest_issuedby_foreign` (`IssuedBy`);
+
+--
+-- Indexes for table `assetrequestdetail`
+--
+ALTER TABLE `assetrequestdetail`
+  ADD PRIMARY KEY (`RequestDetailID`),
+  ADD KEY `assetrequestdetail_requestid_index` (`RequestID`),
+  ADD KEY `assetrequestdetail_propertyinventorydetailid_index` (`PropertyInventoryDetailID`);
+
+--
+-- Indexes for table `asset_audit_logs`
+--
+ALTER TABLE `asset_audit_logs`
+  ADD PRIMARY KEY (`AuditID`),
+  ADD KEY `asset_audit_logs_entitytype_entityid_index` (`EntityType`,`EntityID`),
+  ADD KEY `asset_audit_logs_performedby_index` (`PerformedBy`),
+  ADD KEY `asset_audit_logs_createdat_index` (`CreatedAt`);
 
 --
 -- Indexes for table `assignedproperty`
@@ -1435,7 +1530,8 @@ ALTER TABLE `propertyinventorydetail`
 ALTER TABLE `propertyissuance`
   ADD PRIMARY KEY (`IssuanceID`),
   ADD KEY `IssuedBy` (`IssuedBy`),
-  ADD KEY `IssuedTo` (`IssuedTo`);
+  ADD KEY `IssuedTo` (`IssuedTo`),
+  ADD KEY `propertyissuance_requestid_foreign` (`RequestID`);
 
 --
 -- Indexes for table `propertyissuancedetail`
@@ -1574,6 +1670,24 @@ ALTER TABLE `wastematerialreport`
 --
 
 --
+-- AUTO_INCREMENT for table `assetrequest`
+--
+ALTER TABLE `assetrequest`
+  MODIFY `RequestID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `assetrequestdetail`
+--
+ALTER TABLE `assetrequestdetail`
+  MODIFY `RequestDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `asset_audit_logs`
+--
+ALTER TABLE `asset_audit_logs`
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `assignedproperty`
 --
 ALTER TABLE `assignedproperty`
@@ -1679,13 +1793,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=120;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=126;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -1805,7 +1919,7 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -1846,6 +1960,28 @@ ALTER TABLE `wastematerialreport`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `assetrequest`
+--
+ALTER TABLE `assetrequest`
+  ADD CONSTRAINT `assetrequest_departmentid_foreign` FOREIGN KEY (`DepartmentID`) REFERENCES `department` (`DepartmentID`),
+  ADD CONSTRAINT `assetrequest_issuedby_foreign` FOREIGN KEY (`IssuedBy`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `assetrequest_requestedby_foreign` FOREIGN KEY (`RequestedBy`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `assetrequest_reviewedby_foreign` FOREIGN KEY (`ReviewedBy`) REFERENCES `user` (`UserID`);
+
+--
+-- Constraints for table `assetrequestdetail`
+--
+ALTER TABLE `assetrequestdetail`
+  ADD CONSTRAINT `assetrequestdetail_propertyinventorydetailid_foreign` FOREIGN KEY (`PropertyInventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`),
+  ADD CONSTRAINT `assetrequestdetail_requestid_foreign` FOREIGN KEY (`RequestID`) REFERENCES `assetrequest` (`RequestID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `asset_audit_logs`
+--
+ALTER TABLE `asset_audit_logs`
+  ADD CONSTRAINT `asset_audit_logs_performedby_foreign` FOREIGN KEY (`PerformedBy`) REFERENCES `user` (`UserID`);
 
 --
 -- Constraints for table `assignedproperty`
@@ -2013,7 +2149,8 @@ ALTER TABLE `propertyinventorydetail`
 --
 ALTER TABLE `propertyissuance`
   ADD CONSTRAINT `propertyissuance_ibfk_1` FOREIGN KEY (`IssuedBy`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `propertyissuance_ibfk_2` FOREIGN KEY (`IssuedTo`) REFERENCES `enduser` (`EndUserID`);
+  ADD CONSTRAINT `propertyissuance_ibfk_2` FOREIGN KEY (`IssuedTo`) REFERENCES `enduser` (`EndUserID`),
+  ADD CONSTRAINT `propertyissuance_requestid_foreign` FOREIGN KEY (`RequestID`) REFERENCES `assetrequest` (`RequestID`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `propertyissuancedetail`
