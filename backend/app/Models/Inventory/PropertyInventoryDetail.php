@@ -51,6 +51,16 @@ class PropertyInventoryDetail extends Model
         return $this->belongsTo(\App\Models\MasterData\PropertyType::class, 'PropertyTypeID', 'PropertyTypeID');
     }
 
+    public function propertyStatus()
+    {
+        return $this->belongsTo(\App\Models\MasterData\PropertyStatus::class, 'PropertyStatusID', 'PropertyStatusID');
+    }
+
+    public function condition()
+    {
+        return $this->belongsTo(\App\Models\MasterData\Condition::class, 'ConditionID', 'ConditionID');
+    }
+
     public function drDetail()
     {
         return $this->belongsTo(\App\Models\Procurement\DeliveryReceiptDetail::class, 'SourceDRDetailID', 'DRDetailID');

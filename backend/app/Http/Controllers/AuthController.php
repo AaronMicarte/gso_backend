@@ -324,13 +324,14 @@ class AuthController extends Controller
             $sameSite = $secure ? 'None' : 'Lax';
 
             // Set cookie (30 days)
-            // Use null domain for host-only cookie (works with localhost AND 127.0.0.1)
+            // Use 'localhost' domain for local development to work with both localhost and 127.0.0.1
+            $domain = app()->environment('local') ? 'localhost' : null;
             $response->cookie(
                 'device_token',
                 $device->plain_token,
                 60 * 24 * 30, // 30 days in minutes
                 '/',
-                null, // null = host-only cookie, works across ports
+                $domain, // 'localhost' for local, null for production
                 $secure,  // secure set based on environment/request
                 true,  // httpOnly
                 false, // raw

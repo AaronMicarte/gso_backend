@@ -298,4 +298,53 @@ class InventoryController extends Controller
 
         return response()->json(['message' => 'Inventory detail updated successfully', 'detail' => $detail]);
     }
+
+    // GET /api/admin/inventory/all-items
+    public function allItems(Request $request)
+    {
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = max(10, (int) $request->query('per_page', 10));
+        $search = $request->query('search');
+        $statusId = $request->query('property_status_id');
+
+        $query = PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
+            ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
+            ->leftJoin('propertyinventory', 'propertyinventorydetail.InventoryID', '=', 'propertyinventory.InventoryID')
+            ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
+            ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
+            ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+            ->select(
+                'propertyinventorydetail.*',
+                'propertytype.PropertyName',
+                'propertyclassification.ClassificationName',
+                'propertyclassification.DocumentType',
+                'propertyinventory.InventoryNumber',
+                'propertystatus.StatusName',
+                'condition.ConditionName',
+                'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                'deliveryreceiptdetail.Brand as dr_brand',
+                'deliveryreceiptdetail.ModelNumber as dr_model',
+                'deliveryreceiptdetail.SerialNumber as dr_serial'
+            );
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('propertyinventorydetail.Brand', 'like', '%' . $search . '%')
+                  ->orWhere('propertyinventorydetail.ModelNumber', 'like', '%' . $search . '%')
+                  ->orWhere('propertyinventorydetail.SerialNumber', 'like', '%' . $search . '%')
+                  ->orWhere('propertyinventorydetail.PropertyNumber', 'like', '%' . $search . '%')
+                  ->orWhere('propertyinventory.InventoryNumber', 'like', '%' . $search . '%')
+                  ->orWhere('propertytype.PropertyName', 'like', '%' . $search . '%')
+                  ->orWhere('deliveryreceiptdetail.ItemDescription', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($statusId) {
+            $query->where('propertyinventorydetail.PropertyStatusID', $statusId);
+        }
+
+        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        return $paginator;
+    }
 }
