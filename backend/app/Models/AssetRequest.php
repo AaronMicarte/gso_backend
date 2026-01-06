@@ -21,6 +21,7 @@ class AssetRequest extends Model
         'RequestNumber',
         'RequestedBy',
         'DepartmentID',
+        'Purpose',
         'Status',
         'ReviewedBy',
         'ReviewedAt',
@@ -97,6 +98,14 @@ class AssetRequest extends Model
      * Check if request can be approved
      */
     public function canBeApproved(): bool
+    {
+        return $this->Status === 'pending';
+    }
+
+    /**
+     * Check if request can be reviewed
+     */
+    public function canBeReviewed(): bool
     {
         return $this->Status === 'pending';
     }

@@ -79,12 +79,15 @@ class AssetRequestController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'Purpose' => 'required|string|min:10|max:1000',
             'items' => 'required|array|min:1',
             'items.*.PropertyInventoryDetailID' => 'nullable|exists:propertyinventorydetail,InventoryDetailID',
-            'items.*.ItemDescription' => 'required_without:items.*.PropertyInventoryDetailID|nullable|string|max:255',
+            'items.*.ItemDescription' => 'required|string|max:255',
             'items.*.Unit' => 'nullable|string|max:50',
             'items.*.QuantityRequested' => 'required|integer|min:1',
-            'items.*.Purpose' => 'required|string|min:10|max:1000',
+            'items.*.Purpose' => 'required|string|min:5|max:1000',
+            'items.*.IntendedEndUser' => 'nullable|string|max:255',
+            'items.*.AdditionalNotes' => 'nullable|string|max:1000',
         ]);
 
         $user = Auth::user();
@@ -109,6 +112,7 @@ class AssetRequestController extends Controller
                 'RequestNumber' => AssetRequest::generateRequestNumber(),
                 'RequestedBy' => $user->UserID,
                 'DepartmentID' => $user->DepartmentID,
+                'Purpose' => $validated['Purpose'],
                 'Status' => 'pending',
                 'RequestDate' => now(),
             ]);
@@ -116,10 +120,12 @@ class AssetRequestController extends Controller
             foreach ($validated['items'] as $item) {
                 $assetRequest->details()->create([
                     'PropertyInventoryDetailID' => $item['PropertyInventoryDetailID'] ?? null,
-                    'ItemDescription' => $item['ItemDescription'] ?? null,
+                    'ItemDescription' => $item['ItemDescription'],
                     'Unit' => $item['Unit'] ?? null,
                     'QuantityRequested' => $item['QuantityRequested'],
                     'Purpose' => $item['Purpose'],
+                    'IntendedEndUser' => $item['IntendedEndUser'] ?? null,
+                    'AdditionalNotes' => $item['AdditionalNotes'] ?? null,
                 ]);
             }
 
@@ -140,7 +146,7 @@ class AssetRequestController extends Controller
 
             return response()->json([
                 'message' => 'Asset request created successfully',
-                'request' => $assetRequest->load(['requester', 'department', 'details.inventoryDetail'])
+                'request' => $assetRequest->load(['requester', 'department', 'details'])
             ], 201);
 
         } catch (\Exception $e) {
@@ -159,12 +165,18 @@ class AssetRequestController extends Controller
     {
         $validated = $request->validate([
             'ReviewNotes' => 'nullable|string|max:500',
+            'details' => 'nullable|array',
+            'details.*.RequestDetailID' => 'required|integer',
+            'details.*.PropertyClassification' => 'required|in:ICS,PAR',
+            'details.*.AssignedEndUserID' => 'nullable|integer',
+            'details.*.AssignedDepartmentID' => 'nullable|integer',
+            'details.*.AdminNotes' => 'nullable|string|max:500',
         ]);
 
         $user = Auth::user();
 
-        // Check authorization (Admin or specific role)
-        if (!in_array($user->RoleID, [1, 4])) { // Admin or Property Officer
+        // Check authorization (Admin or Property Officer)
+        if (!in_array($user->UserRoleID, [1, 2])) { // Admin or GSO Staff
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -179,6 +191,20 @@ class AssetRequestController extends Controller
 
         DB::beginTransaction();
         try {
+            // Update review data for each item
+            if (isset($validated['details'])) {
+                foreach ($validated['details'] as $item) {
+                    $assetRequest->details()
+                        ->where('RequestDetailID', $item['RequestDetailID'])
+                        ->update([
+                            'PropertyClassification' => $item['PropertyClassification'],
+                            'AssignedEndUserID' => $item['AssignedEndUserID'],
+                            'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                            'AdminNotes' => $item['AdminNotes'],
+                        ]);
+                }
+            }
+
             $assetRequest->update([
                 'Status' => 'approved',
                 'ReviewedBy' => $user->UserID,
@@ -194,6 +220,7 @@ class AssetRequestController extends Controller
                 $user->UserID,
                 [
                     'request_number' => $assetRequest->RequestNumber,
+                    'items_reviewed' => isset($validated['details']) ? count($validated['details']) : 0,
                     'notes' => $validated['ReviewNotes'] ?? null
                 ]
             );
@@ -202,7 +229,7 @@ class AssetRequestController extends Controller
 
             return response()->json([
                 'message' => 'Asset request approved successfully',
-                'request' => $assetRequest->load(['reviewer'])
+                'request' => $assetRequest->load(['details', 'reviewer'])
             ]);
 
         } catch (\Exception $e) {
@@ -221,11 +248,18 @@ class AssetRequestController extends Controller
     {
         $validated = $request->validate([
             'ReviewNotes' => 'required|string|min:10|max:500',
+            'details' => 'nullable|array',
+            'details.*.RequestDetailID' => 'required|integer',
+            'details.*.PropertyClassification' => 'nullable|in:ICS,PAR',
+            'details.*.AssignedEndUserID' => 'nullable|integer',
+            'details.*.AssignedDepartmentID' => 'nullable|integer',
+            'details.*.AdminNotes' => 'nullable|string|max:500',
         ]);
 
         $user = Auth::user();
 
-        if (!in_array($user->RoleID, [1, 4])) {
+        // Check authorization (Admin or GSO Staff)
+        if (!in_array($user->UserRoleID, [1, 2])) { // Admin or GSO Staff
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -240,6 +274,20 @@ class AssetRequestController extends Controller
 
         DB::beginTransaction();
         try {
+            // Update review data for each item
+            if (isset($validated['details'])) {
+                foreach ($validated['details'] as $item) {
+                    $assetRequest->details()
+                        ->where('RequestDetailID', $item['RequestDetailID'])
+                        ->update([
+                            'PropertyClassification' => $item['PropertyClassification'],
+                            'AssignedEndUserID' => $item['AssignedEndUserID'],
+                            'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                            'AdminNotes' => $item['AdminNotes'],
+                        ]);
+                }
+            }
+
             $assetRequest->update([
                 'Status' => 'rejected',
                 'ReviewedBy' => $user->UserID,
@@ -254,6 +302,7 @@ class AssetRequestController extends Controller
                 $user->UserID,
                 [
                     'request_number' => $assetRequest->RequestNumber,
+                    'items_reviewed' => isset($validated['details']) ? count($validated['details']) : 0,
                     'reason' => $validated['ReviewNotes']
                 ]
             );
@@ -262,7 +311,7 @@ class AssetRequestController extends Controller
 
             return response()->json([
                 'message' => 'Asset request rejected',
-                'request' => $assetRequest->load(['reviewer'])
+                'request' => $assetRequest->load(['details', 'reviewer'])
             ]);
 
         } catch (\Exception $e) {
@@ -323,6 +372,110 @@ class AssetRequestController extends Controller
     }
 
     /**
+     * Save review data for asset request items (Admin only)
+     */
+    public function saveReview(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'ReviewNotes' => 'nullable|string|max:1000',
+            'items' => 'required|array|min:1',
+            'items.*.RequestDetailID' => 'required|exists:assetrequestdetail,RequestDetailID',
+            'items.*.PropertyClassification' => 'required|in:ICS,PAR',
+            'items.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
+            'items.*.AssignedDepartmentID' => 'nullable|exists:department,DepartmentID',
+            'items.*.AdminNotes' => 'nullable|string|max:1000',
+        ]);
+
+        $user = Auth::user();
+
+        if (!in_array($user->RoleID, [1, 4])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $assetRequest = AssetRequest::with('details')->findOrFail($id);
+
+        if (!$assetRequest->canBeReviewed()) {
+            return response()->json([
+                'message' => 'Request cannot be reviewed',
+                'current_status' => $assetRequest->Status
+            ], 422);
+        }
+
+        // Validate that the items belong to this request
+        $requestDetailIds = $assetRequest->details->pluck('RequestDetailID')->toArray();
+        foreach ($validated['items'] as $item) {
+            if (!in_array($item['RequestDetailID'], $requestDetailIds)) {
+                return response()->json([
+                    'message' => 'Invalid item: Does not belong to this request'
+                ], 422);
+            }
+        }
+
+        // Business logic validation
+        foreach ($validated['items'] as $item) {
+            if ($item['PropertyClassification'] === 'PAR' && empty($item['AssignedEndUserID'])) {
+                return response()->json([
+                    'message' => 'PAR items must be assigned to an individual'
+                ], 422);
+            }
+            
+            if ($item['PropertyClassification'] === 'ICS' && empty($item['AssignedDepartmentID'])) {
+                return response()->json([
+                    'message' => 'ICS items must be assigned to a department'
+                ], 422);
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+            // Update request with review notes
+            $assetRequest->update([
+                'ReviewNotes' => $validated['ReviewNotes'],
+                'ReviewedBy' => $user->UserID,
+                'ReviewedAt' => now(),
+            ]);
+
+            // Update each item with admin assignments
+            foreach ($validated['items'] as $item) {
+                $assetRequest->details()
+                    ->where('RequestDetailID', $item['RequestDetailID'])
+                    ->update([
+                        'PropertyClassification' => $item['PropertyClassification'],
+                        'AssignedEndUserID' => $item['AssignedEndUserID'],
+                        'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                        'AdminNotes' => $item['AdminNotes'],
+                    ]);
+            }
+
+            AssetAuditLog::createLog(
+                'asset_request',
+                $assetRequest->RequestID,
+                'reviewed',
+                $user->UserID,
+                [
+                    'request_number' => $assetRequest->RequestNumber,
+                    'items_reviewed' => count($validated['items']),
+                    'notes' => $validated['ReviewNotes'] ?? null
+                ]
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Review data saved successfully',
+                'request' => $assetRequest->load(['details', 'reviewer'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to save review data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get available inventory items for request
      */
     public function getAvailableInventory()
@@ -340,5 +493,30 @@ class AssetRequestController extends Controller
         ->get();
 
         return response()->json($items);
+    }
+
+    /**
+     * Get end users for assignment
+     */
+    public function getEndUsers()
+    {
+        $endUsers = \App\Models\EndUser::with(['department:DepartmentID,DepartmentName', 'position:PositionID,PositionName'])
+            ->where('IsActive', true)
+            ->orderBy('FullName')
+            ->get();
+
+        return response()->json($endUsers);
+    }
+
+    /**
+     * Get departments for assignment
+     */
+    public function getDepartments()
+    {
+        $departments = \App\Models\Auth\Department::where('IsActive', true)
+            ->orderBy('DepartmentName')
+            ->get(['DepartmentID', 'DepartmentName', 'DepartmentCode']);
+
+        return response()->json($departments);
     }
 }

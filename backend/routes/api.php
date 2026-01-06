@@ -161,7 +161,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('', [\App\Http\Controllers\AssetRequestController::class, 'index']);
         Route::post('', [\App\Http\Controllers\AssetRequestController::class, 'store']);
         Route::get('available-inventory', [\App\Http\Controllers\AssetRequestController::class, 'getAvailableInventory']);
+        Route::get('end-users', [\App\Http\Controllers\AssetRequestController::class, 'getEndUsers']);
+        Route::get('departments', [\App\Http\Controllers\AssetRequestController::class, 'getDepartments']);
         Route::get('{id}', [\App\Http\Controllers\AssetRequestController::class, 'show']);
+        Route::post('{id}/review', [\App\Http\Controllers\AssetRequestController::class, 'saveReview']);
         Route::post('{id}/approve', [\App\Http\Controllers\AssetRequestController::class, 'approve']);
         Route::post('{id}/reject', [\App\Http\Controllers\AssetRequestController::class, 'reject']);
         Route::post('{id}/cancel', [\App\Http\Controllers\AssetRequestController::class, 'cancel']);
