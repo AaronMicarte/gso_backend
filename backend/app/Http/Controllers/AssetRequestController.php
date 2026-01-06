@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AssetRequest;
 use App\Models\AssetAuditLog;
-use App\Models\PropertyInventoryDetail;
+use App\Models\Inventory\PropertyInventoryDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -19,11 +19,11 @@ class AssetRequestController extends Controller
     {
         $user = Auth::user();
         $query = AssetRequest::with([
-            'requester:UserID,FirstName,LastName,Email',
+            'requester:UserID,FullName,Email',
             'department:DepartmentID,DepartmentName,DepartmentCode',
-            'details.inventoryDetail.propertyType:PropertyTypeID,PropertyTypeName',
-            'reviewer:UserID,FirstName,LastName',
-            'issuer:UserID,FirstName,LastName'
+            'details.inventoryDetail',
+            'reviewer:UserID,FullName',
+            'issuer:UserID,FullName'
         ]);
 
         // Role-based filtering
@@ -59,16 +59,15 @@ class AssetRequestController extends Controller
     public function show($id)
     {
         $request = AssetRequest::with([
-            'requester:UserID,FirstName,LastName,Email,DepartmentID',
+            'requester:UserID,FullName,Email,DepartmentID',
             'requester.department:DepartmentID,DepartmentName',
             'department:DepartmentID,DepartmentName,DepartmentCode',
             'details.inventoryDetail.propertyType:PropertyTypeID,PropertyTypeName',
             'details.inventoryDetail.propertyInventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
             'details.inventoryDetail.condition:ConditionID,ConditionName',
-            'reviewer:UserID,FirstName,LastName',
-            'issuer:UserID,FirstName,LastName',
-            'issuances',
-            'auditLogs.performer:UserID,FirstName,LastName'
+            'reviewer:UserID,FullName',
+            'issuer:UserID,FullName',
+            'auditLogs.performer'
         ])->findOrFail($id);
 
         return response()->json($request);
@@ -329,7 +328,7 @@ class AssetRequestController extends Controller
     public function getAvailableInventory()
     {
         $items = PropertyInventoryDetail::with([
-            'propertyInventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
+            'inventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
             'propertyType:PropertyTypeID,PropertyTypeName,PropertyClassificationID',
             'propertyType.propertyClassification:PropertyClassificationID,ClassificationName,DocumentType',
             'condition:ConditionID,ConditionName',

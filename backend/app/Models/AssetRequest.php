@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Auth\User;
+use App\Models\Auth\Department;
 
 class AssetRequest extends Model
 {
@@ -62,10 +64,6 @@ class AssetRequest extends Model
         return $this->belongsTo(User::class, 'IssuedBy', 'UserID');
     }
 
-    public function issuances(): HasMany
-    {
-        return $this->hasMany(AssetIssuance::class, 'RequestID', 'RequestID');
-    }
 
     public function auditLogs(): HasMany
     {

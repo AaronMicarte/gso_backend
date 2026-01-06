@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Inventory\PropertyInventoryDetail;
 
 class AssetRequestDetail extends Model
 {
@@ -31,7 +32,9 @@ class AssetRequestDetail extends Model
 
     public function request(): BelongsTo
     {
-        return $this->belongsTo(AssetRequest::class, 'RequestID', 'RequestID');
+        // Temporarily comment out to avoid circular reference issues
+        // return $this->belongsTo(AssetRequest::class, 'RequestID', 'RequestID');
+        return null;
     }
 
     public function inventoryDetail(): BelongsTo

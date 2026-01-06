@@ -125,7 +125,11 @@ class MFAController extends Controller
 
         // Try TOTP code first
         if ($this->mfaService->verifyCode($user, $validated['code'])) {
-            // Code verified
+            // Code verified - establish session
+            Auth::login($user);
+            $request->session()->regenerate();
+            $request->session()->save();
+
             if ($validated['trust_device'] ?? false) {
                 $device = $this->mfaService->createTrustedDevice(
                     $user,
@@ -144,21 +148,57 @@ class MFAController extends Controller
                 return response()->json([
                     'message' => 'MFA code verified',
                     'device_token' => $device->plain_token,
-                    'user' => $user->only(['UserID', 'Username', 'Email', 'FullName']),
+                    'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
+                    'user_role' => $user->userRole->only(['RoleName']) ?? null,
+                    'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
                 ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
             }
 
             return response()->json([
                 'message' => 'MFA code verified',
-                'user' => $user->only(['UserID', 'Username', 'Email', 'FullName']),
+                'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
+                'user_role' => $user->userRole->only(['RoleName']) ?? null,
+                'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
             ]);
         }
 
         // Try backup code
         if ($this->mfaService->verifyBackupCode($user, $validated['code'])) {
+            // Backup code verified - establish session
+            Auth::login($user);
+            $request->session()->regenerate();
+            $request->session()->save();
+
+            if ($validated['trust_device'] ?? false) {
+                $device = $this->mfaService->createTrustedDevice(
+                    $user,
+                    $validated['device_name'] ?? 'Trusted Device',
+                    $request->header('User-Agent'),
+                    $request->ip()
+                );
+
+                // Return device token to set as cookie
+                // Use secure cookie settings in production or when request is over HTTPS.
+                // For local development over HTTP, send a cookie usable in same-site contexts.
+                $secure = $request->isSecure() || app()->environment('production');
+                $sameSite = $secure ? 'None' : 'Lax';
+                $domain = $request->getHost();
+
+                return response()->json([
+                    'message' => 'Backup code verified',
+                    'device_token' => $device->plain_token,
+                    'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
+                    'user_role' => $user->userRole->only(['RoleName']) ?? null,
+                    'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
+                    'warning' => 'You used a backup code. Please add new backup codes in your security settings.',
+                ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
+            }
+
             return response()->json([
                 'message' => 'Backup code verified',
-                'user' => $user->only(['UserID', 'Username', 'Email', 'FullName']),
+                'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
+                'user_role' => $user->userRole->only(['RoleName']) ?? null,
+                'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
                 'warning' => 'You used a backup code. Please add new backup codes in your security settings.',
             ]);
         }

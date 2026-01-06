@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssetRequest;
 use App\Models\AssetIssuance;
 use App\Models\AssetAuditLog;
-use App\Models\PropertyInventoryDetail;
+use App\Models\Inventory\PropertyInventoryDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;

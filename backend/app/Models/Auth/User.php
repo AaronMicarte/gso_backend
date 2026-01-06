@@ -46,6 +46,14 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     */
+    protected $appends = [
+        'FirstName',
+        'LastName',
+    ];
+
+    /**
      * Get the attributes that should be cast.
      */
     protected function casts(): array
@@ -85,6 +93,26 @@ class User extends Authenticatable
     public function trustedDevices(): HasMany
     {
         return $this->hasMany(TrustedDevice::class, 'UserID', 'UserID');
+    }
+
+    /**
+     * Get the first name (accessor for frontend compatibility).
+     */
+    public function getFirstNameAttribute(): string
+    {
+        $fullName = $this->FullName ?? '';
+        $parts = preg_split('/\s+/', trim($fullName), 2);
+        return $parts[0] ?? '';
+    }
+
+    /**
+     * Get the last name (accessor for frontend compatibility).
+     */
+    public function getLastNameAttribute(): string
+    {
+        $fullName = $this->FullName ?? '';
+        $parts = preg_split('/\s+/', trim($fullName), 2);
+        return $parts[1] ?? '';
     }
 
     /**
