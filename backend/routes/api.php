@@ -156,7 +156,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Department Head routes
-    Route::prefix('department-head')->group(function () {
+    Route::middleware('auth:sanctum')->prefix('department-head')->group(function () {
         Route::get('dashboard/stats', [DepartmentHeadDashboardController::class, 'getStats']);
         Route::get('dashboard/activities', [DepartmentHeadDashboardController::class, 'getActivities']);
     });

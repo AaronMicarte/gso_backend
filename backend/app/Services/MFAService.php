@@ -46,7 +46,31 @@ class MFAService
             return false;
         }
 
-        return $this->google2fa->verifyKey($user->MFASecret, $code);
+        try {
+            $secret = decrypt($user->MFASecret);
+            return $this->verifyPlainCode($secret, $code);
+        } catch (\Exception $e) {
+            \Log::error('Failed to decrypt MFA secret', [
+                'user_id' => $user->UserID,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Verify a TOTP code with a plain (unencrypted) secret.
+     */
+    public function verifyPlainCode(string $secret, string $code): bool
+    {
+        try {
+            return $this->google2fa->verifyKey($secret, $code);
+        } catch (\Exception $e) {
+            \Log::error('Failed to verify MFA code with plain secret', [
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**

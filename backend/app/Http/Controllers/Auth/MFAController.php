@@ -94,7 +94,15 @@ class MFAController extends Controller
         }
 
         // Verify MFA code
-        if (!$this->mfaService->verifyCode($user, $validated['code'])) {
+        try {
+            if (!$this->mfaService->verifyCode($user, $validated['code'])) {
+                return response()->json(['error' => 'Invalid MFA code'], 422);
+            }
+        } catch (\Exception $e) {
+            \Log::error('MFA verification failed during disable', [
+                'user_id' => $user->UserID,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => 'Invalid MFA code'], 422);
         }
 
@@ -124,82 +132,98 @@ class MFAController extends Controller
         }
 
         // Try TOTP code first
-        if ($this->mfaService->verifyCode($user, $validated['code'])) {
-            // Code verified - establish session
-            Auth::login($user);
-            $request->session()->regenerate();
-            $request->session()->save();
+        try {
+            if ($this->mfaService->verifyCode($user, $validated['code'])) {
+                // Code verified - establish session
+                Auth::login($user);
+                $request->session()->regenerate();
+                $request->session()->save();
 
-            if ($validated['trust_device'] ?? false) {
-                $device = $this->mfaService->createTrustedDevice(
-                    $user,
-                    $validated['device_name'] ?? 'Trusted Device',
-                    $request->header('User-Agent'),
-                    $request->ip()
-                );
+                if ($validated['trust_device'] ?? false) {
+                    $device = $this->mfaService->createTrustedDevice(
+                        $user,
+                        $validated['device_name'] ?? 'Trusted Device',
+                        $request->header('User-Agent'),
+                        $request->ip()
+                    );
 
-                // Return device token to set as cookie
-                // Use secure cookie settings in production or when request is over HTTPS.
-                // For local development over HTTP, send a cookie usable in same-site contexts.
-                $secure = $request->isSecure() || app()->environment('production');
-                $sameSite = $secure ? 'None' : 'Lax';
-                $domain = null; // Don't set domain for local development to avoid cross-origin issues
+                    // Return device token to set as cookie
+                    // Use secure cookie settings in production or when request is over HTTPS.
+                    // For local development over HTTP, send a cookie usable in same-site contexts.
+                    $secure = $request->isSecure() || app()->environment('production');
+                    $sameSite = $secure ? 'None' : 'Lax';
+                    $domain = null; // Don't set domain for local development to avoid cross-origin issues
+
+                    return response()->json([
+                        'message' => 'MFA code verified',
+                        'device_token' => $device->plain_token,
+                        'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
+                        'user_role' => $user->userRole->only(['RoleName']) ?? null,
+                        'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
+                    ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
+                }
 
                 return response()->json([
                     'message' => 'MFA code verified',
-                    'device_token' => $device->plain_token,
                     'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
                     'user_role' => $user->userRole->only(['RoleName']) ?? null,
                     'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
-                ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
+                ]);
             }
-
-            return response()->json([
-                'message' => 'MFA code verified',
-                'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
-                'user_role' => $user->userRole->only(['RoleName']) ?? null,
-                'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
+        } catch (\Exception $e) {
+            // Log the error and continue to backup code check
+            \Log::error('MFA verification failed', [
+                'user_id' => $user->UserID,
+                'error' => $e->getMessage(),
             ]);
         }
 
         // Try backup code
-        if ($this->mfaService->verifyBackupCode($user, $validated['code'])) {
-            // Backup code verified - establish session
-            Auth::login($user);
-            $request->session()->regenerate();
-            $request->session()->save();
+        try {
+            if ($this->mfaService->verifyBackupCode($user, $validated['code'])) {
+                // Backup code verified - establish session
+                Auth::login($user);
+                $request->session()->regenerate();
+                $request->session()->save();
 
-            if ($validated['trust_device'] ?? false) {
-                $device = $this->mfaService->createTrustedDevice(
-                    $user,
-                    $validated['device_name'] ?? 'Trusted Device',
-                    $request->header('User-Agent'),
-                    $request->ip()
-                );
+                if ($validated['trust_device'] ?? false) {
+                    $device = $this->mfaService->createTrustedDevice(
+                        $user,
+                        $validated['device_name'] ?? 'Trusted Device',
+                        $request->header('User-Agent'),
+                        $request->ip()
+                    );
 
-                // Return device token to set as cookie
-                // Use secure cookie settings in production or when request is over HTTPS.
-                // For local development over HTTP, send a cookie usable in same-site contexts.
-                $secure = $request->isSecure() || app()->environment('production');
-                $sameSite = $secure ? 'None' : 'Lax';
-                $domain = null; // Don't set domain for local development to avoid cross-origin issues
+                    // Return device token to set as cookie
+                    // Use secure cookie settings in production or when request is over HTTPS.
+                    // For local development over HTTP, send a cookie usable in same-site contexts.
+                    $secure = $request->isSecure() || app()->environment('production');
+                    $sameSite = $secure ? 'None' : 'Lax';
+                    $domain = null; // Don't set domain for local development to avoid cross-origin issues
+
+                    return response()->json([
+                        'message' => 'Backup code verified',
+                        'device_token' => $device->plain_token,
+                        'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
+                        'user_role' => $user->userRole->only(['RoleName']) ?? null,
+                        'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
+                        'warning' => 'You used a backup code. Please add new backup codes in your security settings.',
+                    ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
+                }
 
                 return response()->json([
                     'message' => 'Backup code verified',
-                    'device_token' => $device->plain_token,
                     'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
                     'user_role' => $user->userRole->only(['RoleName']) ?? null,
                     'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
                     'warning' => 'You used a backup code. Please add new backup codes in your security settings.',
-                ])->cookie('device_token', $device->plain_token, 60 * 24 * 30, '/', $domain, $secure, true, false, $sameSite);
+                ]);
             }
-
-            return response()->json([
-                'message' => 'Backup code verified',
-                'user' => $user->only(['UserID', 'Username', 'Email', 'FullName', 'Role', 'UserRoleID', 'DepartmentID']),
-                'user_role' => $user->userRole->only(['RoleName']) ?? null,
-                'department' => $user->department->only(['DepartmentID', 'DepartmentName']) ?? null,
-                'warning' => 'You used a backup code. Please add new backup codes in your security settings.',
+        } catch (\Exception $e) {
+            // Log the error
+            \Log::error('Backup code verification failed', [
+                'user_id' => $user->UserID,
+                'error' => $e->getMessage(),
             ]);
         }
 

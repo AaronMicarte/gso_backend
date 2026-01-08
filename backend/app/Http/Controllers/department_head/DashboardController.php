@@ -28,13 +28,17 @@ class DashboardController extends Controller
             // Get department head-specific stats
             $stats = [
                 // Total assets assigned to this department head's department
-                'totalAssets' => DB::table('assignedproperty')
-                    ->where('DepartmentID', $user->DepartmentID)
+                'totalAssets' => DB::table('propertyissuance')
+                    ->join('user', 'propertyissuance.IssuedTo', '=', 'user.UserID')
+                    ->where('user.DepartmentID', $user->DepartmentID)
+                    ->where('propertyissuance.Status', 'acknowledged')
                     ->count(),
 
                 // Currently assigned assets (all assigned properties in this department)
-                'assignedAssets' => DB::table('assignedproperty')
-                    ->where('DepartmentID', $user->DepartmentID)
+                'assignedAssets' => DB::table('propertyissuance')
+                    ->join('user', 'propertyissuance.IssuedTo', '=', 'user.UserID')
+                    ->where('user.DepartmentID', $user->DepartmentID)
+                    ->where('propertyissuance.Status', 'acknowledged')
                     ->count(),
 
                 // Pending asset requests from this department head's department that need approval
@@ -44,9 +48,11 @@ class DashboardController extends Controller
                     ->count(),
 
                 // Items assigned more than 30 days ago (potentially overdue for return)
-                'overdueReturns' => DB::table('assignedproperty')
-                    ->where('DepartmentID', $user->DepartmentID)
-                    ->where('AssignedDate', '<', $now->copy()->subDays(30)->toDateString())
+                'overdueReturns' => DB::table('propertyissuance')
+                    ->join('user', 'propertyissuance.IssuedTo', '=', 'user.UserID')
+                    ->where('user.DepartmentID', $user->DepartmentID)
+                    ->where('propertyissuance.Status', 'acknowledged')
+                    ->where('propertyissuance.DateIssued', '<', $now->copy()->subDays(30)->toDateString())
                     ->count(),
             ];
 
@@ -115,18 +121,19 @@ class DashboardController extends Controller
                 });
 
             // Recent property assignments in this department (simplified)
-            $assignments = DB::table('assignedproperty')
-                ->join('user', 'assignedproperty.EndUserID', '=', 'user.UserID')
-                ->where('assignedproperty.DepartmentID', $user->DepartmentID)
+            $assignments = DB::table('propertyissuance')
+                ->join('user', 'propertyissuance.IssuedTo', '=', 'user.UserID')
+                ->where('user.DepartmentID', $user->DepartmentID)
+                ->where('propertyissuance.Status', 'acknowledged')
                 ->select(
-                    'assignedproperty.PropertyID as id',
-                    'assignedproperty.AssignedDate as timestamp',
+                    'propertyissuance.IssuanceID as id',
+                    'propertyissuance.DateIssued as timestamp',
                     'user.FullName as assignedTo',
-                    'assignedproperty.Description as itemDescription',
+                    'propertyissuance.DocumentType as itemDescription',
                     DB::raw("'assignment' as type"),
                     DB::raw("'completed' as status")
                 )
-                ->orderBy('assignedproperty.AssignedDate', 'desc')
+                ->orderBy('propertyissuance.DateIssued', 'desc')
                 ->limit(5)
                 ->get()
                 ->map(function ($item) {

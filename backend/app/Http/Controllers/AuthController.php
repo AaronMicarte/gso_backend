@@ -265,14 +265,30 @@ class AuthController extends Controller
         $user->MFASecret = $decryptedSecret;
 
         // Try TOTP code first
-        $codeValid = $this->mfaService->verifyCode($user, $request->code);
+        try {
+            $codeValid = $this->mfaService->verifyPlainCode($decryptedSecret, $request->code);
+        } catch (\Exception $e) {
+            $codeValid = false;
+            \Log::error('MFA verification failed during setup', [
+                'user_id' => $user->UserID,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // Restore encrypted secret
         $user->MFASecret = $originalSecret;
 
         if (!$codeValid) {
             // Try backup code
-            if (!$this->mfaService->verifyBackupCode($user, $request->code)) {
+            try {
+                if (!$this->mfaService->verifyBackupCode($user, $request->code)) {
+                    return response()->json(['message' => 'Invalid MFA code'], 422);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Backup code verification failed during setup', [
+                    'user_id' => $user->UserID,
+                    'error' => $e->getMessage(),
+                ]);
                 return response()->json(['message' => 'Invalid MFA code'], 422);
             }
         }

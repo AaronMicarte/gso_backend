@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 07, 2026 at 02:50 PM
+-- Generation Time: Jan 08, 2026 at 08:40 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -118,6 +118,32 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (5, 'assetrequest', 5, 'created', 3, '{\"request_number\":\"REQ-2026-0002\",\"items_count\":3,\"department\":\"IT Department\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-06 15:48:38'),
 (6, 'asset_request', 5, 'approved', 1, '{\"request_number\":\"REQ-2026-0002\",\"items_reviewed\":3,\"notes\":\"DULA WELL!!!!\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-06 16:39:34'),
 (7, 'asset_request', 5, 'issued', 1, '\"{\\\"request_number\\\":\\\"REQ-2026-0002\\\",\\\"issuances_count\\\":1,\\\"date_issued\\\":\\\"2026-01-07\\\"}\"', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `asset_request_signatures`
+--
+
+CREATE TABLE `asset_request_signatures` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `request_id` bigint(20) UNSIGNED NOT NULL,
+  `role` varchar(20) NOT NULL COMMENT 'requester | approver | issuer',
+  `signed_by_user_id` int(11) NOT NULL,
+  `source` varchar(20) NOT NULL COMMENT 'canvas|upload|typed',
+  `storage_disk` varchar(32) NOT NULL DEFAULT 'public',
+  `storage_path` varchar(512) NOT NULL,
+  `url` varchar(512) DEFAULT NULL,
+  `mime` varchar(50) NOT NULL,
+  `width` int(10) UNSIGNED DEFAULT NULL,
+  `height` int(10) UNSIGNED DEFAULT NULL,
+  `size_bytes` int(10) UNSIGNED DEFAULT NULL,
+  `sha256_hash` char(64) NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1270,7 +1296,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('7P6nnSN0pyePyUwhot8Bq1b77vCK0pZIgEmUVnHH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidE9oajQxWFd4a2x4S21oZ2pOa3B2dFJnVVJMYzVhSTkxaTU3cWczbyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktaXNzdWFuY2VzP3BhZ2U9MSZwZXJfcGFnZT0xNSI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1767793684);
+('7P6nnSN0pyePyUwhot8Bq1b77vCK0pZIgEmUVnHH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidE9oajQxWFd4a2x4S21oZ2pOa3B2dFJnVVJMYzVhSTkxaTU3cWczbyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktaXNzdWFuY2VzP3BhZ2U9MSZwZXJfcGFnZT0xNSI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1767793684),
+('W9cLkeFYUMF56WvE2kEX7r3wEu7KlZvE4TUcbnPn', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUmFWZHVINEpzWlNDZkt6SHRpZHAyUmZoZ0thRkRabXg3alNld05lNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvZGVwYXJ0bWVudC1oZWFkL2Rhc2hib2FyZC9hY3Rpdml0aWVzIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkaGxVN1FLblViV3BodkpuRnhZZ2FZLmdKVnpCbnhWS0tWLmtqdzd4QjVPaC4xak4wY2ZBNjIiO30=', 1767857999);
 
 -- --------------------------------------------------------
 
@@ -1354,7 +1381,8 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (33, 3, 'Chrome on Windows', '2f9c885621f62598e3337678cb904854c3770216999d4f7e0ecfe4cd74c2f304', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-05 22:30:05', '2026-01-06 22:30:05', NULL),
 (34, 1, 'Chrome on Windows', '3c4c1f5d3e899209c0d465f5953e2ab06acaa89c765a09108de3a9ada178d87f', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-05 23:49:42', '2026-01-06 23:49:42', NULL),
 (35, 3, 'Chrome on Windows', '8c40a388046d06eb74145c85b46ed400eaaa67fffdda7bbfe1cf24407091e31d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-06 00:50:54', '2026-01-07 00:50:54', NULL),
-(36, 1, 'Chrome on Windows', 'acf46ed00ad04146142ba504158875138b4d298cc2e35ee2dc25f507acb9904c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-06 18:38:01', '2026-01-07 18:38:01', NULL);
+(36, 1, 'Chrome on Windows', 'acf46ed00ad04146142ba504158875138b4d298cc2e35ee2dc25f507acb9904c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-06 18:38:01', '2026-01-07 18:38:01', NULL),
+(37, 3, 'Trusted Device', '46026b980d69474966efc08c8d8e46e9ba54d1845f0cddd74995f0c06dcd5b64', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-07 15:27:27', '2026-01-08 15:27:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -1529,6 +1557,15 @@ ALTER TABLE `asset_audit_logs`
   ADD KEY `asset_audit_logs_entitytype_entityid_index` (`EntityType`,`EntityID`),
   ADD KEY `asset_audit_logs_performedby_index` (`PerformedBy`),
   ADD KEY `asset_audit_logs_createdat_index` (`CreatedAt`);
+
+--
+-- Indexes for table `asset_request_signatures`
+--
+ALTER TABLE `asset_request_signatures`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `asset_request_signatures_request_id_role_unique` (`request_id`,`role`),
+  ADD KEY `asset_request_signatures_signed_by_user_id_index` (`signed_by_user_id`),
+  ADD KEY `asset_request_signatures_sha256_hash_index` (`sha256_hash`);
 
 --
 -- Indexes for table `assignedproperty`
@@ -1962,6 +1999,12 @@ ALTER TABLE `asset_audit_logs`
   MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
+-- AUTO_INCREMENT for table `asset_request_signatures`
+--
+ALTER TABLE `asset_request_signatures`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `assignedproperty`
 --
 ALTER TABLE `assignedproperty`
@@ -2193,7 +2236,7 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -2256,6 +2299,13 @@ ALTER TABLE `assetrequestdetail`
 --
 ALTER TABLE `asset_audit_logs`
   ADD CONSTRAINT `asset_audit_logs_performedby_foreign` FOREIGN KEY (`PerformedBy`) REFERENCES `user` (`UserID`);
+
+--
+-- Constraints for table `asset_request_signatures`
+--
+ALTER TABLE `asset_request_signatures`
+  ADD CONSTRAINT `asset_request_signatures_request_id_foreign` FOREIGN KEY (`request_id`) REFERENCES `assetrequest` (`RequestID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `asset_request_signatures_signed_by_user_id_foreign` FOREIGN KEY (`signed_by_user_id`) REFERENCES `user` (`UserID`);
 
 --
 -- Constraints for table `assignedproperty`
