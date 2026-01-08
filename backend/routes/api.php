@@ -39,6 +39,11 @@ Route::get('/test-connection', function () {
     return response()->json(['message' => 'API is working']);
 });
 
+// Public MFA routes (for login flow)
+Route::post('/mfa/verify', [MFAController::class, 'verifyCode']);
+Route::post('/mfa/setup/generate', [AuthController::class, 'generateMFASecretForLogin']);
+Route::post('/mfa/setup/enable', [AuthController::class, 'enableMFADuringLogin']);
+
 // Public signature stream for local/dev disk (allows simple dev access to private files)
 Route::get('/signatures/{iarId}/{role}', [IarSignatureController::class, 'showPublic']);
 
@@ -160,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('asset-requests')->group(function () {
         Route::get('', [\App\Http\Controllers\AssetRequestController::class, 'index']);
         Route::post('', [\App\Http\Controllers\AssetRequestController::class, 'store']);
+        Route::get('approved', [\App\Http\Controllers\PropertyIssuanceController::class, 'getApprovedRequests']);
         Route::get('available-inventory', [\App\Http\Controllers\AssetRequestController::class, 'getAvailableInventory']);
         Route::get('end-users', [\App\Http\Controllers\AssetRequestController::class, 'getEndUsers']);
         Route::get('departments', [\App\Http\Controllers\AssetRequestController::class, 'getDepartments']);
@@ -168,14 +174,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}/approve', [\App\Http\Controllers\AssetRequestController::class, 'approve']);
         Route::post('{id}/reject', [\App\Http\Controllers\AssetRequestController::class, 'reject']);
         Route::post('{id}/cancel', [\App\Http\Controllers\AssetRequestController::class, 'cancel']);
+        Route::post('{id}/issue', [\App\Http\Controllers\PropertyIssuanceController::class, 'store']);
     });
 
-    Route::prefix('asset-issuances')->group(function () {
-        Route::get('', [\App\Http\Controllers\AssetIssuanceController::class, 'index']);
-        Route::post('', [\App\Http\Controllers\AssetIssuanceController::class, 'store']);
-        Route::get('{id}', [\App\Http\Controllers\AssetIssuanceController::class, 'show']);
-        Route::post('{id}/acknowledge', [\App\Http\Controllers\AssetIssuanceController::class, 'acknowledge']);
-        Route::get('request/{requestId}', [\App\Http\Controllers\AssetIssuanceController::class, 'getByRequest']);
+    Route::prefix('property-issuances')->group(function () {
+        Route::get('', [\App\Http\Controllers\PropertyIssuanceController::class, 'index']);
+        Route::post('', [\App\Http\Controllers\PropertyIssuanceController::class, 'store']);
+        Route::get('stats', [\App\Http\Controllers\PropertyIssuanceController::class, 'getStats']);
+        Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
+        Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
     });
 });
 

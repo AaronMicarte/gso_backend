@@ -27,25 +27,23 @@ class DashboardController extends Controller
 
             // Get department head-specific stats
             $stats = [
-                // Total assets under this department head's department (from assignedproperty)
+                // Total assets assigned to this department head's department
                 'totalAssets' => DB::table('assignedproperty')
                     ->where('DepartmentID', $user->DepartmentID)
                     ->count(),
 
-                // Currently assigned assets in this department (not returned - but assignedproperty doesn't track returns)
+                // Currently assigned assets (all assigned properties in this department)
                 'assignedAssets' => DB::table('assignedproperty')
                     ->where('DepartmentID', $user->DepartmentID)
-                    ->where('PropertyStatusID', 2) // Assigned status
                     ->count(),
 
-                // Pending issuance requests for this department head's department (if Status column exists)
-                'pendingRequests' => DB::table('propertyissuance')
-                    ->join('user', 'propertyissuance.IssuedTo', '=', 'user.UserID')
-                    ->where('user.DepartmentID', $user->DepartmentID)
-                    ->whereDate('propertyissuance.DateIssued', '>=', $now->toDateString())
+                // Pending asset requests from this department head's department that need approval
+                'pendingRequests' => DB::table('assetrequest')
+                    ->where('DepartmentID', $user->DepartmentID)
+                    ->where('Status', 'pending')
                     ->count(),
 
-                // Overdue items (this is tricky without return dates - maybe items assigned for more than 30 days)
+                // Items assigned more than 30 days ago (potentially overdue for return)
                 'overdueReturns' => DB::table('assignedproperty')
                     ->where('DepartmentID', $user->DepartmentID)
                     ->where('AssignedDate', '<', $now->copy()->subDays(30)->toDateString())
@@ -77,16 +75,54 @@ class DashboardController extends Controller
 
             $activities = [];
 
-            // Recent assignments in this department head's department
+            // Recent asset requests from this department head's department
+            $requests = DB::table('assetrequest')
+                ->join('user', 'assetrequest.RequestedBy', '=', 'user.UserID')
+                ->leftJoin('asset_request_signatures', function($join) {
+                    $join->on('assetrequest.RequestID', '=', 'asset_request_signatures.request_id')
+                         ->where('asset_request_signatures.role', '=', 'requester');
+                })
+                ->where('assetrequest.DepartmentID', $user->DepartmentID)
+                ->select(
+                    'assetrequest.RequestID as id',
+                    'assetrequest.created_at as timestamp',
+                    'assetrequest.Status as status',
+                    'user.FullName as requesterName',
+                    'assetrequest.Purpose as purpose',
+                    DB::raw("'request' as type")
+                )
+                ->orderBy('assetrequest.created_at', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($item) {
+                    $status = $item->status;
+                    $statusText = match($status) {
+                        'pending' => 'pending',
+                        'approved' => 'completed',
+                        'rejected' => 'completed',
+                        'issued' => 'completed',
+                        'cancelled' => 'completed',
+                        default => 'pending'
+                    };
+
+                    return [
+                        'id' => 'request_' . $item->id,
+                        'type' => $item->type,
+                        'message' => "Asset request by {$item->requesterName} - " . ucfirst($status),
+                        'time' => $this->getRelativeTime($item->timestamp),
+                        'status' => $statusText,
+                    ];
+                });
+
+            // Recent property assignments in this department (simplified)
             $assignments = DB::table('assignedproperty')
                 ->join('user', 'assignedproperty.EndUserID', '=', 'user.UserID')
-                ->join('propertyinventorydetail', 'assignedproperty.InventoryDetailID', '=', 'propertyinventorydetail.InventoryDetailID')
                 ->where('assignedproperty.DepartmentID', $user->DepartmentID)
                 ->select(
                     'assignedproperty.PropertyID as id',
                     'assignedproperty.AssignedDate as timestamp',
                     'user.FullName as assignedTo',
-                    'propertyinventorydetail.Description as itemDescription',
+                    'assignedproperty.Description as itemDescription',
                     DB::raw("'assignment' as type"),
                     DB::raw("'completed' as status")
                 )
@@ -97,22 +133,22 @@ class DashboardController extends Controller
                     return [
                         'id' => 'assignment_' . $item->id,
                         'type' => $item->type,
-                        'message' => "Property assigned to {$item->assignedTo}",                        'time' => Carbon::parse($item->timestamp)->diffForHumans(),                        'time' => $this->getRelativeTime($item->timestamp),
+                        'message' => "Property assigned to {$item->assignedTo}",
+                        'time' => $this->getRelativeTime($item->timestamp),
                         'status' => $item->status,
                     ];
                 });
 
-            // Recent issuances in this department head's department
+            // Recent issuances in this department (simplified)
             $issuances = DB::table('propertyissuance')
-                ->join('user', 'propertyissuance.IssuedTo', '=', 'user.UserID')
-                ->join('propertyissuancedetail', 'propertyissuance.IssuanceID', '=', 'propertyissuancedetail.IssuanceID')
-                ->join('propertyinventorydetail', 'propertyissuancedetail.InventoryDetailID', '=', 'propertyinventorydetail.InventoryDetailID')
+                ->join('user', 'propertyissuance.IssuedBy', '=', 'user.UserID')
                 ->where('user.DepartmentID', $user->DepartmentID)
                 ->select(
                     'propertyissuance.IssuanceID as id',
                     'propertyissuance.DateIssued as timestamp',
-                    'user.FullName as issuedTo',
-                    'propertyinventorydetail.Description as itemDescription',
+                    'propertyissuance.IssuedToName as issuedTo',
+                    'propertyissuance.DocumentType as documentType',
+                    'propertyissuance.DocumentNumber as documentNumber',
                     DB::raw("'issuance' as type"),
                     DB::raw("'completed' as status")
                 )
@@ -123,40 +159,16 @@ class DashboardController extends Controller
                     return [
                         'id' => 'issuance_' . $item->id,
                         'type' => $item->type,
-                        'message' => "Property issued to {$item->issuedTo}",
-                        'time' => $this->getRelativeTime($item->timestamp),
-                        'status' => $item->status,
-                    ];
-                });
-
-            // Recent property receipts in this department
-            $receipts = DB::table('propertyreceived')
-                ->join('inspectionacceptancereport', 'propertyreceived.IARID', '=', 'inspectionacceptancereport.IARID')
-                ->where('propertyreceived.ReceivedBy', $user->UserID)
-                ->select(
-                    'propertyreceived.ReceivedID as id',
-                    'propertyreceived.DateReceived as timestamp',
-                    'inspectionacceptancereport.IARNumber as iarNumber',
-                    DB::raw("'receipt' as type"),
-                    DB::raw("'completed' as status")
-                )
-                ->orderBy('propertyreceived.DateReceived', 'desc')
-                ->limit(5)
-                ->get()
-                ->map(function ($item) {
-                    return [
-                        'id' => 'receipt_' . $item->id,
-                        'type' => $item->type,
-                        'message' => "Property received from {$item->iarNumber}",
+                        'message' => ucfirst($item->documentType) . " issued to {$item->issuedTo}",
                         'time' => $this->getRelativeTime($item->timestamp),
                         'status' => $item->status,
                     ];
                 });
 
             // Merge and sort by timestamp (most recent first)
-            $activities = collect($assignments)
+            $activities = collect($requests)
+                ->merge($assignments)
                 ->merge($issuances)
-                ->merge($receipts)
                 ->sortByDesc(function ($item) {
                     return strtotime($item['timestamp'] ?? '1970-01-01');
                 })

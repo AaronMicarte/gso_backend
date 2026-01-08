@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Auth\User;
 use App\Models\Auth\Department;
+use App\Models\PropertyIssuance;
 
 class AssetRequest extends Model
 {
@@ -65,11 +66,20 @@ class AssetRequest extends Model
         return $this->belongsTo(User::class, 'IssuedBy', 'UserID');
     }
 
+    public function propertyIssuance(): HasMany
+    {
+        return $this->hasMany(PropertyIssuance::class, 'RequestID', 'RequestID');
+    }
 
     public function auditLogs(): HasMany
     {
         return $this->hasMany(AssetAuditLog::class, 'EntityID', 'RequestID')
             ->where('EntityType', 'asset_request');
+    }
+
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(AssetRequestSignature::class, 'request_id', 'RequestID');
     }
 
     /**

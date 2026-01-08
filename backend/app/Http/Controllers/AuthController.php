@@ -424,6 +424,11 @@ class AuthController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
+            // Clear device token cookie to require MFA verification on next login
+            $response = response()->json([
+                'message' => 'Logout successful'
+            ])->cookie('device_token', '', -1, '/'); // Expire the cookie
+
             // Log logout event
             if ($request->user()) {
                 LoginAudit::create([
@@ -433,9 +438,8 @@ class AuthController extends Controller
                     'IPAddress' => $request->ip(),
                 ]);
             }
-            return response()->json([
-                'message' => 'Logout successful'
-            ]);
+
+            return $response;
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Logout failed: ' . $e->getMessage()

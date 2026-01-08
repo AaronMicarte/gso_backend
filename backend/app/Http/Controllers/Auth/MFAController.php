@@ -143,7 +143,7 @@ class MFAController extends Controller
                 // For local development over HTTP, send a cookie usable in same-site contexts.
                 $secure = $request->isSecure() || app()->environment('production');
                 $sameSite = $secure ? 'None' : 'Lax';
-                $domain = app()->environment('local') ? 'localhost' : $request->getHost();
+                $domain = null; // Don't set domain for local development to avoid cross-origin issues
 
                 return response()->json([
                     'message' => 'MFA code verified',
@@ -182,7 +182,7 @@ class MFAController extends Controller
                 // For local development over HTTP, send a cookie usable in same-site contexts.
                 $secure = $request->isSecure() || app()->environment('production');
                 $sameSite = $secure ? 'None' : 'Lax';
-                $domain = app()->environment('local') ? 'localhost' : $request->getHost();
+                $domain = null; // Don't set domain for local development to avoid cross-origin issues
 
                 return response()->json([
                     'message' => 'Backup code verified',

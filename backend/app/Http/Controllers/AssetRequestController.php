@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssetRequest;
 use App\Models\AssetAuditLog;
 use App\Models\Inventory\PropertyInventoryDetail;
+use App\Services\AssetRequestSignatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -88,6 +89,8 @@ class AssetRequestController extends Controller
             'items.*.Purpose' => 'required|string|min:5|max:1000',
             'items.*.IntendedEndUser' => 'nullable|string|max:255',
             'items.*.AdditionalNotes' => 'nullable|string|max:1000',
+            'requesterSignature' => 'required|string', // base64 data URL
+            'requesterSignatureSource' => 'required|in:canvas,upload',
         ]);
 
         $user = Auth::user();
@@ -142,6 +145,16 @@ class AssetRequestController extends Controller
                 ]
             );
 
+            // Process requester signature
+            $signatureService = new AssetRequestSignatureService();
+            $signatureService->processAndStore(
+                $assetRequest->RequestID,
+                'requester',
+                $validated['requesterSignature'],
+                $validated['requesterSignatureSource'],
+                $user->UserID
+            );
+
             DB::commit();
 
             return response()->json([
@@ -171,6 +184,8 @@ class AssetRequestController extends Controller
             'details.*.AssignedEndUserID' => 'nullable|integer',
             'details.*.AssignedDepartmentID' => 'nullable|integer',
             'details.*.AdminNotes' => 'nullable|string|max:500',
+            'approverSignature' => 'required|string', // base64 data URL
+            'approverSignatureSource' => 'required|in:canvas,upload',
         ]);
 
         $user = Auth::user();
@@ -223,6 +238,16 @@ class AssetRequestController extends Controller
                     'items_reviewed' => isset($validated['details']) ? count($validated['details']) : 0,
                     'notes' => $validated['ReviewNotes'] ?? null
                 ]
+            );
+
+            // Process approver signature
+            $signatureService = new AssetRequestSignatureService();
+            $signatureService->processAndStore(
+                $assetRequest->RequestID,
+                'approver',
+                $validated['approverSignature'],
+                $validated['approverSignatureSource'],
+                $user->UserID
             );
 
             DB::commit();
@@ -378,12 +403,12 @@ class AssetRequestController extends Controller
     {
         $validated = $request->validate([
             'ReviewNotes' => 'nullable|string|max:1000',
-            'items' => 'required|array|min:1',
-            'items.*.RequestDetailID' => 'required|exists:assetrequestdetail,RequestDetailID',
-            'items.*.PropertyClassification' => 'required|in:ICS,PAR',
-            'items.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
-            'items.*.AssignedDepartmentID' => 'nullable|exists:department,DepartmentID',
-            'items.*.AdminNotes' => 'nullable|string|max:1000',
+            'details' => 'required|array|min:1',
+            'details.*.RequestDetailID' => 'required|exists:assetrequestdetail,RequestDetailID',
+            'details.*.PropertyClassification' => 'required|in:ICS,PAR',
+            'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
+            'details.*.AssignedDepartmentID' => 'nullable|exists:department,DepartmentID',
+            'details.*.AdminNotes' => 'nullable|string|max:1000',
         ]);
 
         $user = Auth::user();
@@ -403,7 +428,7 @@ class AssetRequestController extends Controller
 
         // Validate that the items belong to this request
         $requestDetailIds = $assetRequest->details->pluck('RequestDetailID')->toArray();
-        foreach ($validated['items'] as $item) {
+        foreach ($validated['details'] as $item) {
             if (!in_array($item['RequestDetailID'], $requestDetailIds)) {
                 return response()->json([
                     'message' => 'Invalid item: Does not belong to this request'
@@ -412,7 +437,7 @@ class AssetRequestController extends Controller
         }
 
         // Business logic validation
-        foreach ($validated['items'] as $item) {
+        foreach ($validated['details'] as $item) {
             if ($item['PropertyClassification'] === 'PAR' && empty($item['AssignedEndUserID'])) {
                 return response()->json([
                     'message' => 'PAR items must be assigned to an individual'
@@ -436,7 +461,7 @@ class AssetRequestController extends Controller
             ]);
 
             // Update each item with admin assignments
-            foreach ($validated['items'] as $item) {
+            foreach ($validated['details'] as $item) {
                 $assetRequest->details()
                     ->where('RequestDetailID', $item['RequestDetailID'])
                     ->update([
@@ -454,7 +479,7 @@ class AssetRequestController extends Controller
                 $user->UserID,
                 [
                     'request_number' => $assetRequest->RequestNumber,
-                    'items_reviewed' => count($validated['items']),
+                    'items_reviewed' => count($validated['details']),
                     'notes' => $validated['ReviewNotes'] ?? null
                 ]
             );
