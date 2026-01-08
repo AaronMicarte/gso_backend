@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Inventory\InventoryDetail;
+use App\Models\Inventory\PropertyInventoryDetail;
 
 class PropertyIssuanceDetail extends Model
 {
@@ -40,7 +40,7 @@ class PropertyIssuanceDetail extends Model
 
     public function inventoryDetail(): BelongsTo
     {
-        return $this->belongsTo(InventoryDetail::class, 'InventoryDetailID', 'InventoryDetailID');
+        return $this->belongsTo(PropertyInventoryDetail::class, 'InventoryDetailID', 'InventoryDetailID');
     }
 
     public function requestDetail(): BelongsTo

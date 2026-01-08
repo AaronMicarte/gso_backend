@@ -13,28 +13,12 @@ class PropertyInventoryDetail extends Model
     protected $primaryKey = 'InventoryDetailID';
     public $timestamps = false;
 
-    protected $fillable = [
-        'InventoryDetailID',
-        'InventoryID',
-        'PropertyTypeID',
-        'ConditionID',
-        'Brand',
-        'ModelNumber',
-        'SerialNumber',
-        'PropertyNumber',
-        'Description',
-        'Quantity',
-        'QuantityAvailable',
-        'PropertyStatusID',
-        'UnitOfMeasureID',
-        'UnitCost',
-        'TotalCost',
-        'SourceIARDetailID',
-        'SourceDRDetailID',
-        'Remarks',
-        'CreatedDate',
-        'UpdatedDate',
-    ];
+    protected $appends = ['ItemDescription'];
+
+    public function getItemDescriptionAttribute()
+    {
+        return $this->Description;
+    }
 
     public function inventory()
     {

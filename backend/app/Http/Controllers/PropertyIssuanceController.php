@@ -7,7 +7,6 @@ use App\Models\PropertyIssuance;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\AssetAuditLog;
 use App\Models\Inventory\PropertyInventoryDetail;
-use App\Models\Inventory\InventoryDetail;
 use App\Models\EndUser;
 use App\Services\AssetRequestSignatureService;
 use Illuminate\Http\Request;
@@ -24,11 +23,12 @@ class PropertyIssuanceController extends Controller
     {
         $user = Auth::user();
         $query = PropertyIssuance::with([
-            'request.requester:UserID,FirstName,LastName',
+            'request.requester',
             'request.department:DepartmentID,DepartmentName',
-            'issuedBy:UserID,FirstName,LastName',
-            'issuedTo:EndUserID,FirstName,LastName,DepartmentID',
-            'details.inventoryDetail.inventory:InventoryID,ItemDescription,Brand,ModelNumber,PropertyTypeID,Accountable',
+            'issuedBy',
+            'issuedTo',
+            'details.inventoryDetail:InventoryDetailID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
+            'details.inventoryDetail.inventory',
         ]);
 
         // Role-based filtering
@@ -61,11 +61,12 @@ class PropertyIssuanceController extends Controller
     public function show($id)
     {
         $issuance = PropertyIssuance::with([
-            'request.requester:UserID,FirstName,LastName,Email',
+            'request.requester',
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
-            'issuedBy:UserID,FirstName,LastName,Email',
-            'issuedTo:EndUserID,FirstName,LastName,Position,DepartmentID',
-            'details.inventoryDetail.inventory:InventoryID,ItemDescription,Brand,ModelNumber,PropertyTypeID,Accountable,PropertyNumber,SerialNumber',
+            'issuedBy',
+            'issuedTo',
+            'details.inventoryDetail:InventoryDetailID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
+            'details.inventoryDetail.inventory',
         ])->findOrFail($id);
 
         return response()->json($issuance);
@@ -142,6 +143,7 @@ class PropertyIssuanceController extends Controller
                     PropertyIssuanceDetail::create([
                         'IssuanceID' => $issuance->IssuanceID,
                         'RequestDetailID' => $detail->RequestDetailID,
+                        'InventoryDetailID' => $detail->PropertyInventoryDetailID,
                         'ItemDescription' => $detail->ItemDescription,
                         'Unit' => $detail->Unit,
                         'QuantityIssued' => $detail->QuantityRequested,
@@ -278,11 +280,12 @@ class PropertyIssuanceController extends Controller
     public function generateDocument($id, $type)
     {
         $issuance = PropertyIssuance::with([
-            'request.requester:UserID,FirstName,LastName,Position',
+            'request.requester.userRole',
             'request.department:DepartmentID,DepartmentName',
-            'issuedBy:UserID,FirstName,LastName,Position',
-            'issuedTo:EndUserID,FirstName,LastName,Position',
-            'details.inventoryDetail.inventory:InventoryID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,Accountable,UnitCost',
+            'issuedBy.userRole',
+            'issuedTo.position',
+            'details.inventoryDetail:InventoryDetailID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
+            'details.inventoryDetail.inventory',
         ])->findOrFail($id);
 
         $documentType = strtoupper($type);
@@ -298,27 +301,27 @@ class PropertyIssuanceController extends Controller
             'date_issued' => $issuance->DateIssued,
             'department' => $issuance->request->department->DepartmentName,
             'recipient' => [
-                'name' => $issuance->issuedTo->FirstName . ' ' . $issuance->issuedTo->LastName,
-                'position' => $issuance->issuedTo->Position ?? 'N/A'
+                'name' => $issuance->issuedTo->FullName,
+                'position' => $issuance->issuedTo->position?->PositionName ?? 'N/A'
             ],
             'issuer' => [
-                'name' => $issuance->issuedBy->FirstName . ' ' . $issuance->issuedBy->LastName,
-                'position' => $issuance->issuedBy->Position ?? 'N/A'
+                'name' => $issuance->issuedBy->FullName,
+                'position' => $issuance->issuedBy->userRole?->RoleName ?? 'N/A'
             ],
             'items' => $issuance->details->map(function ($detail) {
                 return [
-                    'description' => $detail->inventoryDetail->inventory->ItemDescription,
-                    'brand' => $detail->inventoryDetail->inventory->Brand,
-                    'model' => $detail->inventoryDetail->inventory->ModelNumber,
-                    'property_number' => $detail->inventoryDetail->inventory->PropertyNumber,
-                    'serial_number' => $detail->inventoryDetail->inventory->SerialNumber,
-                    'unit_cost' => $detail->inventoryDetail->inventory->UnitCost,
+                    'description' => $detail->inventoryDetail->ItemDescription,
+                    'brand' => $detail->inventoryDetail->Brand,
+                    'model' => $detail->inventoryDetail->ModelNumber,
+                    'property_number' => $detail->inventoryDetail->PropertyNumber,
+                    'serial_number' => $detail->inventoryDetail->SerialNumber,
+                    'unit_cost' => $detail->inventoryDetail->UnitCost,
                     'quantity' => $detail->QuantityIssued,
-                    'total_cost' => $detail->inventoryDetail->inventory->UnitCost * $detail->QuantityIssued
+                    'total_cost' => $detail->inventoryDetail->UnitCost * $detail->QuantityIssued
                 ];
             }),
             'total_amount' => $issuance->details->sum(function ($detail) {
-                return $detail->inventoryDetail->inventory->UnitCost * $detail->QuantityIssued;
+                return $detail->inventoryDetail->UnitCost * $detail->QuantityIssued;
             }),
             'remarks' => $issuance->Remarks
         ];
@@ -350,11 +353,8 @@ class PropertyIssuanceController extends Controller
                           ->whereYear('DateIssued', now()->year)
                           ->count();
         
-        $parCount = $query->whereHas('details.inventoryDetail.inventory', function ($q) {
-            $q->where('Accountable', 'Yes');
-        })->count();
-        
-        $icsCount = $total - $parCount;
+        $parCount = (clone $query)->where('DocumentType', 'PAR')->count();
+        $icsCount = (clone $query)->where('DocumentType', 'ICS')->count();
 
         return response()->json([
             'total_issuances' => $total,

@@ -103,17 +103,6 @@ class PropertyIssuance extends Model
 
     public function getDocumentTypeAttribute(): string
     {
-        // Determine document type based on request items
-        if ($this->request && $this->request->items) {
-            $hasAccountableItems = $this->request->items()
-                ->whereHas('inventoryDetail.inventory', function($query) {
-                    $query->where('Accountable', 'Yes');
-                })
-                ->exists();
-            
-            return $hasAccountableItems ? 'PAR' : 'ICS';
-        }
-        
-        return 'PAR';
+        return $this->attributes['DocumentType'] ?? 'PAR';
     }
 }
