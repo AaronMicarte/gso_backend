@@ -6,6 +6,7 @@ use App\Models\AssetRequest;
 use App\Models\AssetAuditLog;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Services\AssetRequestSignatureService;
+use App\Models\AssetAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -68,7 +69,9 @@ class AssetRequestController extends Controller
             'details.inventoryDetail.condition:ConditionID,ConditionName',
             'reviewer:UserID,FullName',
             'issuer:UserID,FullName',
-            'auditLogs.performer'
+            'auditLogs.performer',
+            'signatures.signedByUser:UserID,FullName',
+            'details.assignments'
         ])->findOrFail($id);
 
         return response()->json($request);
@@ -79,6 +82,15 @@ class AssetRequestController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+
+        // Only Department Heads can create asset requests
+        if ($user->RoleID !== 3) { // 3 = Department Head
+            return response()->json([
+                'message' => 'Unauthorized: Only Department Heads can create asset requests'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'Purpose' => 'required|string|min:10|max:1000',
             'items' => 'required|array|min:1',
@@ -181,7 +193,7 @@ class AssetRequestController extends Controller
             'details' => 'nullable|array',
             'details.*.RequestDetailID' => 'required|integer',
             'details.*.PropertyClassification' => 'required|in:ICS,PAR',
-            'details.*.AssignedEndUserID' => 'nullable|integer',
+            'details.*.AssignedEndUserID' => 'nullable|exists:user,UserID',
             'details.*.AssignedDepartmentID' => 'nullable|integer',
             'details.*.AdminNotes' => 'nullable|string|max:500',
             'approverSignature' => 'required|string', // base64 data URL
@@ -191,7 +203,7 @@ class AssetRequestController extends Controller
         $user = Auth::user();
 
         // Check authorization (Admin or Property Officer)
-        if (!in_array($user->UserRoleID, [1, 2])) { // Admin or GSO Staff
+        if (!in_array($user->UserRoleID, [1, 4])) { // Admin or Property Officer
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -240,15 +252,33 @@ class AssetRequestController extends Controller
                 ]
             );
 
-            // Process approver signature
-            $signatureService = new AssetRequestSignatureService();
-            $signatureService->processAndStore(
-                $assetRequest->RequestID,
-                'approver',
-                $validated['approverSignature'],
-                $validated['approverSignatureSource'],
-                $user->UserID
-            );
+            // Create issuance assignments for each item
+            if (isset($validated['details'])) {
+                foreach ($validated['details'] as $item) {
+                    AssetAssignment::create([
+                        'AssetRequestDetailID' => $item['RequestDetailID'],
+                        'AssignedUserID' => $item['AssignedEndUserID'],
+                        'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                        'AssignmentType' => 'issuance',
+                        'PropertyClassification' => $item['PropertyClassification'],
+                        'AdminNotes' => $item['AdminNotes'],
+                        'AssignedBy' => $user->UserID,
+                        'AssignedAt' => now(),
+                    ]);
+                }
+            }
+
+            // Save approver signature
+            if (isset($validated['approverSignature']) && isset($validated['approverSignatureSource'])) {
+                $signatureService = new AssetRequestSignatureService();
+                $signatureService->processAndStore(
+                    $assetRequest->RequestID,
+                    'approver',
+                    $validated['approverSignature'],
+                    $validated['approverSignatureSource'],
+                    $user->UserID
+                );
+            }
 
             DB::commit();
 
@@ -276,15 +306,15 @@ class AssetRequestController extends Controller
             'details' => 'nullable|array',
             'details.*.RequestDetailID' => 'required|integer',
             'details.*.PropertyClassification' => 'nullable|in:ICS,PAR',
-            'details.*.AssignedEndUserID' => 'nullable|integer',
+            'details.*.AssignedEndUserID' => 'nullable|exists:user,UserID',
             'details.*.AssignedDepartmentID' => 'nullable|integer',
             'details.*.AdminNotes' => 'nullable|string|max:500',
         ]);
 
         $user = Auth::user();
 
-        // Check authorization (Admin or GSO Staff)
-        if (!in_array($user->UserRoleID, [1, 2])) { // Admin or GSO Staff
+        // Check authorization (Admin or Property Officer)
+        if (!in_array($user->UserRoleID, [1, 4])) { // Admin or Property Officer
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -397,6 +427,82 @@ class AssetRequestController extends Controller
     }
 
     /**
+     * Confirm receipt of issued items (Assigned end user or department member)
+     */
+    public function receive(Request $request, $id)
+    {
+        $user = Auth::user();
+        $assetRequest = AssetRequest::with('details.assignments')->findOrFail($id);
+
+        if ($assetRequest->Status !== 'issued' && $assetRequest->Status !== 'approved') {
+            return response()->json([
+                'message' => 'Request must be issued before receipt confirmation',
+                'current_status' => $assetRequest->Status
+            ], 422);
+        }
+
+        // Check if user is authorized to confirm receipt
+        $isAuthorized = false;
+        foreach ($assetRequest->details as $detail) {
+            // Get the latest issuance assignment
+            $latestIssuance = $detail->assignments
+                ->where('AssignmentType', 'issuance')
+                ->sortByDesc('AssignedAt')
+                ->first();
+
+            if ($latestIssuance) {
+                if ($latestIssuance->AssignedUserID === $user->UserID) {
+                    $isAuthorized = true;
+                    break;
+                }
+                if ($latestIssuance->AssignedDepartmentID === $user->DepartmentID) {
+                    $isAuthorized = true;
+                    break;
+                }
+            }
+        }
+
+        if (!$isAuthorized) {
+            return response()->json(['message' => 'Unauthorized: You are not assigned to receive these items'], 403);
+        }
+
+        DB::beginTransaction();
+        try {
+            $assetRequest->update([
+                'Status' => 'received',
+                'IssuedAt' => now(), // Update issued timestamp if not set
+            ]);
+
+            // Create audit log
+            AssetAuditLog::createLog(
+                'asset_request',
+                $assetRequest->RequestID,
+                'received',
+                $user->UserID,
+                [
+                    'request_number' => $assetRequest->RequestNumber,
+                    'received_by' => $user->FullName,
+                    'department' => $user->department->DepartmentName ?? 'Unknown'
+                ]
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Receipt confirmed successfully',
+                'request' => $assetRequest->load(['details.assignments'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to confirm receipt',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Save review data for asset request items (Admin only)
      */
     public function saveReview(Request $request, $id)
@@ -406,14 +512,14 @@ class AssetRequestController extends Controller
             'details' => 'required|array|min:1',
             'details.*.RequestDetailID' => 'required|exists:assetrequestdetail,RequestDetailID',
             'details.*.PropertyClassification' => 'required|in:ICS,PAR',
-            'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
+            'details.*.AssignedEndUserID' => 'nullable|exists:user,UserID',
             'details.*.AssignedDepartmentID' => 'nullable|exists:department,DepartmentID',
             'details.*.AdminNotes' => 'nullable|string|max:1000',
         ]);
 
         $user = Auth::user();
 
-        if (!in_array($user->RoleID, [1, 4])) {
+        if (!in_array($user->UserRoleID, [1, 4])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -460,16 +566,18 @@ class AssetRequestController extends Controller
                 'ReviewedAt' => now(),
             ]);
 
-            // Update each item with admin assignments
+            // Create asset assignments for each item
             foreach ($validated['details'] as $item) {
-                $assetRequest->details()
-                    ->where('RequestDetailID', $item['RequestDetailID'])
-                    ->update([
-                        'PropertyClassification' => $item['PropertyClassification'],
-                        'AssignedEndUserID' => $item['AssignedEndUserID'],
-                        'AssignedDepartmentID' => $item['AssignedDepartmentID'],
-                        'AdminNotes' => $item['AdminNotes'],
-                    ]);
+                AssetAssignment::create([
+                    'AssetRequestDetailID' => $item['RequestDetailID'],
+                    'AssignedUserID' => $item['AssignedEndUserID'],
+                    'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                    'AssignmentType' => 'request',
+                    'PropertyClassification' => $item['PropertyClassification'],
+                    'AdminNotes' => $item['AdminNotes'],
+                    'AssignedBy' => $user->UserID,
+                    'AssignedAt' => now(),
+                ]);
             }
 
             AssetAuditLog::createLog(

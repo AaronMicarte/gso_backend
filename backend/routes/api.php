@@ -174,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}/approve', [\App\Http\Controllers\AssetRequestController::class, 'approve']);
         Route::post('{id}/reject', [\App\Http\Controllers\AssetRequestController::class, 'reject']);
         Route::post('{id}/cancel', [\App\Http\Controllers\AssetRequestController::class, 'cancel']);
+        Route::post('{id}/receive', [\App\Http\Controllers\AssetRequestController::class, 'receive']);
         Route::post('{id}/issue', [\App\Http\Controllers\PropertyIssuanceController::class, 'store']);
     });
 

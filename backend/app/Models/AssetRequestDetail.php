@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\EndUser;
 use App\Models\Auth\Department;
@@ -40,9 +41,7 @@ class AssetRequestDetail extends Model
 
     public function request(): BelongsTo
     {
-        // Temporarily comment out to avoid circular reference issues
-        // return $this->belongsTo(AssetRequest::class, 'RequestID', 'RequestID');
-        return null;
+        return $this->belongsTo(AssetRequest::class, 'RequestID', 'RequestID');
     }
 
     public function inventoryDetail(): BelongsTo
@@ -58,5 +57,13 @@ class AssetRequestDetail extends Model
     public function assignedDepartment(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'AssignedDepartmentID', 'DepartmentID');
+    }
+
+    /**
+     * Get the asset assignments for this detail.
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(AssetAssignment::class, 'AssetRequestDetailID', 'RequestDetailID');
     }
 }

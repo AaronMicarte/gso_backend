@@ -13,7 +13,7 @@ class AssetRequestSignatureService
 
     public function __construct($enforcePixelCoverage = true)
     {
-        $this->disk = config('filesystems.default', 'public');
+        $this->disk = 'public'; // Use public disk for web-accessible signatures
         $this->enforcePixelCoverage = $enforcePixelCoverage;
     }
 

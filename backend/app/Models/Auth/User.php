@@ -131,4 +131,12 @@ class User extends Authenticatable
     {
         return $this->Password;
     }
+
+    /**
+     * Get the role ID (alias for UserRoleID for backward compatibility).
+     */
+    public function getRoleIDAttribute(): ?int
+    {
+        return $this->UserRoleID;
+    }
 }
