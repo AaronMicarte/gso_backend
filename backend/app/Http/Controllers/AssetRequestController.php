@@ -64,7 +64,7 @@ class AssetRequestController extends Controller
             'requester:UserID,FullName,Email,DepartmentID',
             'requester.department:DepartmentID,DepartmentName',
             'department:DepartmentID,DepartmentName,DepartmentCode',
-            'details.inventoryDetail.propertyType:PropertyTypeID,PropertyTypeName',
+            'details.inventoryDetail.propertyType:PropertyTypeID,PropertyName',
             'details.inventoryDetail.propertyInventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
             'details.inventoryDetail.condition:ConditionID,ConditionName',
             'reviewer:UserID,FullName',
@@ -84,21 +84,23 @@ class AssetRequestController extends Controller
     {
         $user = Auth::user();
 
-        // Only Department Heads can create asset requests
-        if ($user->RoleID !== 3) { // 3 = Department Head
+        // Allow Admin (1), GSO Staff (2), Property Custodian (3), and Department Head (4)
+        $allowedRoles = [1, 2, 3, 4];
+        
+        if (!in_array($user->RoleID, $allowedRoles)) { 
             return response()->json([
-                'message' => 'Unauthorized: Only Department Heads can create asset requests'
+                'message' => 'Unauthorized: You do not have permission to create asset requests. Your Role ID: ' . $user->RoleID
             ], 403);
         }
 
         $validated = $request->validate([
-            'Purpose' => 'required|string|min:10|max:1000',
+            'Purpose' => 'required|string|min:5|max:1000',
             'items' => 'required|array|min:1',
             'items.*.PropertyInventoryDetailID' => 'nullable|exists:propertyinventorydetail,InventoryDetailID',
             'items.*.ItemDescription' => 'required|string|max:255',
             'items.*.Unit' => 'nullable|string|max:50',
             'items.*.QuantityRequested' => 'required|integer|min:1',
-            'items.*.Purpose' => 'required|string|min:5|max:1000',
+            'items.*.Purpose' => 'required|string|max:1000',
             'items.*.IntendedEndUser' => 'nullable|string|max:255',
             'items.*.AdditionalNotes' => 'nullable|string|max:1000',
             'requesterSignature' => 'required|string', // base64 data URL
@@ -615,7 +617,7 @@ class AssetRequestController extends Controller
     {
         $items = PropertyInventoryDetail::with([
             'inventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
-            'propertyType:PropertyTypeID,PropertyTypeName,PropertyClassificationID',
+            'propertyType:PropertyTypeID,PropertyName,PropertyClassificationID',
             'propertyType.propertyClassification:PropertyClassificationID,ClassificationName,DocumentType',
             'condition:ConditionID,ConditionName',
             'unitOfMeasure:UnitOfMeasureID,UnitName'

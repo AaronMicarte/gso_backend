@@ -13,6 +13,27 @@ class PropertyInventoryDetail extends Model
     protected $primaryKey = 'InventoryDetailID';
     public $timestamps = false;
 
+    protected $fillable = [
+        'InventoryID',
+        'PropertyTypeID',
+        'PropertyNumber',
+        'ConditionID',
+        'Brand',
+        'ModelNumber',
+        'SerialNumber',
+        'Description',
+        'Quantity',
+        'QuantityAvailable',
+        'PropertyStatusID',
+        'UnitOfMeasureID',
+        'UnitCost',
+        'TotalCost',
+        'SourceIARDetailID',
+        'SourceDRDetailID',
+        'Remarks',
+        'CreatedDate',
+    ];
+
     protected $appends = ['ItemDescription'];
 
     public function getItemDescriptionAttribute()
@@ -48,5 +69,15 @@ class PropertyInventoryDetail extends Model
     public function drDetail()
     {
         return $this->belongsTo(\App\Models\Procurement\DeliveryReceiptDetail::class, 'SourceDRDetailID', 'DRDetailID');
+    }
+
+    public function unitOfMeasure()
+    {
+        return $this->belongsTo(\App\Models\MasterData\UnitOfMeasure::class, 'UnitOfMeasureID', 'UnitOfMeasureID');
+    }
+
+    public function assetAssignments()
+    {
+        return $this->hasMany(\App\Models\AssetAssignment::class, 'PropertyInventoryDetailID', 'InventoryDetailID');
     }
 }

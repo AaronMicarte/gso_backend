@@ -12,10 +12,18 @@ class PropertyIssuanceDetail extends Model
 
     protected $fillable = [
         'IssuanceID',
+        'RequestDetailID',
         'InventoryDetailID',
+        'ItemDescription',
+        'Unit',
         'QuantityIssued',
         'Remarks',
     ];
+
+    public function requestDetail()
+    {
+        return $this->belongsTo(\App\Models\AssetRequestDetail::class, 'RequestDetailID', 'RequestDetailID');
+    }
 
     public function issuance()
     {

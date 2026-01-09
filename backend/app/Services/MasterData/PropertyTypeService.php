@@ -6,7 +6,7 @@ use App\Models\MasterData\PropertyType;
 
 class PropertyTypeService extends BaseMasterDataService
 {
-    protected $searchableFields = ['PropertyTypeName', 'Description'];
+    protected $searchableFields = ['PropertyName', 'Description'];
     protected $defaultSortField = 'PropertyTypeID';
 
     public function __construct()

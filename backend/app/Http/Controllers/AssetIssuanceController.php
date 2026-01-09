@@ -24,7 +24,7 @@ class AssetIssuanceController extends Controller
             'request.requester:UserID,FirstName,LastName',
             'request.department:DepartmentID,DepartmentName',
             'inventoryDetail.propertyInventory:InventoryID,ItemDescription,Brand,ModelNumber',
-            'inventoryDetail.propertyType:PropertyTypeID,PropertyTypeName',
+            'inventoryDetail.propertyType:PropertyTypeID,PropertyName',
             'issuedToUser:UserID,FirstName,LastName',
             'issuer:UserID,FirstName,LastName',
             'acknowledger:UserID,FirstName,LastName'
@@ -64,7 +64,7 @@ class AssetIssuanceController extends Controller
             'request.requester:UserID,FirstName,LastName,Email',
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
             'inventoryDetail.propertyInventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
-            'inventoryDetail.propertyType:PropertyTypeID,PropertyTypeName,PropertyClassificationID',
+            'inventoryDetail.propertyType:PropertyTypeID,PropertyName,PropertyClassificationID',
             'inventoryDetail.propertyType.propertyClassification:PropertyClassificationID,ClassificationName,DocumentType',
             'inventoryDetail.condition:ConditionID,ConditionName',
             'issuedToUser:UserID,FirstName,LastName,Email',

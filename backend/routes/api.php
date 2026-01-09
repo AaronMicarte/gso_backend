@@ -182,8 +182,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('', [\App\Http\Controllers\PropertyIssuanceController::class, 'index']);
         Route::post('', [\App\Http\Controllers\PropertyIssuanceController::class, 'store']);
         Route::get('stats', [\App\Http\Controllers\PropertyIssuanceController::class, 'getStats']);
+        Route::get('available-inventory', [\App\Http\Controllers\PropertyIssuanceController::class, 'getAvailableInventory']);
+        Route::get('requests-for-issuance', [\App\Http\Controllers\PropertyIssuanceController::class, 'getRequestsForIssuance']);
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
+        Route::post('{id}/acknowledge', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledge']);
     });
 });
 

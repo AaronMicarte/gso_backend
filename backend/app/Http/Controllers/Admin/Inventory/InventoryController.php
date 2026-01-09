@@ -51,6 +51,20 @@ class InventoryController extends Controller
                 'CreatedDate' => now(),
             ]);
 
+            // Initialize Property Number Sequence
+            $year = date('Y');
+            $prefix = $year . '-';
+            // Find the highest existing number for this year
+            $latestItem = PropertyInventoryDetail::where('PropertyNumber', 'like', $prefix . '%')
+                ->orderBy('PropertyNumber', 'desc')
+                ->withTrashed()
+                ->first();
+            
+            $currentSequence = 0;
+            if ($latestItem && preg_match('/-(\d+)$/', $latestItem->PropertyNumber, $matches)) {
+                $currentSequence = intval($matches[1]);
+            }
+
             // For each IAR detail, create individual PropertyInventoryDetail records
             foreach ($iar->details as $detail) {
                 // Get DR detail for cost/unit info
@@ -69,13 +83,19 @@ class InventoryController extends Controller
                     // In a real system, you'd want separate serials for each item
                     $itemSerial = $serial;
 
+                    // Assign Property Number
+                    $currentSequence++;
+                    $propertyNumber = $prefix . str_pad($currentSequence, 6, '0', STR_PAD_LEFT);
+
                     PropertyInventoryDetail::create([
                         'InventoryID' => $inventory->InventoryID,
                         'PropertyTypeID' => $detail->PropertyTypeID,
+                        'PropertyNumber' => $propertyNumber,
                         'ConditionID' => $detail->ConditionID,
                         'Brand' => $brand,
                         'ModelNumber' => $model,
                         'SerialNumber' => $itemSerial,
+                        'Description' => $detail->Remarks,
                         'Quantity' => 1, // Each record represents one physical item
                         'QuantityAvailable' => 1,
                         'PropertyStatusID' => 1, // Available

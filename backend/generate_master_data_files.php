@@ -36,7 +36,7 @@ $entities = [
         'primaryKey' => 'PropertyStatusID',
     ],
     'PropertyType' => [
-        'fields' => ['ClassificationID' => 'required|integer|exists:classification,ClassificationID', 'PropertyClassificationID' => 'required|integer|exists:propertyclassification,PropertyClassificationID', 'PropertyTypeName' => 'required|string|max:100', 'Description' => 'nullable|string|max:255'],
+        'fields' => ['ClassificationID' => 'required|integer|exists:classification,ClassificationID', 'PropertyClassificationID' => 'required|integer|exists:propertyclassification,PropertyClassificationID', 'PropertyName' => 'required|string|max:100', 'Description' => 'nullable|string|max:255'],
         'primaryKey' => 'PropertyTypeID',
     ],
     'Supplier' => [
