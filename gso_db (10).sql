@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 08, 2026 at 08:40 AM
+-- Generation Time: Jan 09, 2026 at 08:48 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -33,7 +33,7 @@ CREATE TABLE `assetrequest` (
   `RequestedBy` int(11) NOT NULL,
   `DepartmentID` int(11) NOT NULL,
   `Purpose` text DEFAULT NULL,
-  `Status` enum('pending','approved','rejected','issued','cancelled') NOT NULL DEFAULT 'pending',
+  `Status` enum('pending','approved','rejected','issued','received','cancelled') NOT NULL DEFAULT 'pending',
   `ReviewedBy` int(11) DEFAULT NULL,
   `ReviewedAt` timestamp NULL DEFAULT NULL,
   `ReviewNotes` text DEFAULT NULL,
@@ -51,7 +51,9 @@ CREATE TABLE `assetrequest` (
 
 INSERT INTO `assetrequest` (`RequestID`, `RequestNumber`, `RequestedBy`, `DepartmentID`, `Purpose`, `Status`, `ReviewedBy`, `ReviewedAt`, `ReviewNotes`, `IssuedBy`, `IssuedAt`, `RequestDate`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 'REQ-2026-0001', 3, 5, NULL, 'pending', NULL, NULL, NULL, NULL, NULL, '2026-01-05 19:12:31', '2026-01-05 19:12:31', '2026-01-05 19:12:31', NULL),
-(5, 'REQ-2026-0002', 3, 5, 'para maka dota ko', 'issued', 1, '2026-01-06 16:39:34', 'DULA WELL!!!!', 1, '2026-01-07 13:42:55', '2026-01-06 15:48:38', '2026-01-06 15:48:38', '2026-01-07 13:42:55', NULL);
+(5, 'REQ-2026-0002', 3, 5, 'para maka dota ko', 'approved', 1, '2026-01-06 16:39:34', 'DULA WELL!!!!', NULL, NULL, '2026-01-06 15:48:38', '2026-01-06 15:48:38', '2026-01-08 17:39:07', NULL),
+(6, 'REQ-2026-0003', 3, 5, 'guba ang keyboard di ko ka dula', 'approved', 1, '2026-01-08 10:37:08', 'apila ko dula id : 34123124', NULL, NULL, '2026-01-08 07:41:50', '2026-01-08 07:41:50', '2026-01-08 17:39:07', NULL),
+(7, 'REQ-2026-0004', 3, 5, 'basta', 'issued', 1, '2026-01-08 17:55:24', 'okay man gotchu!', 1, '2026-01-09 07:24:46', '2026-01-08 17:51:11', '2026-01-08 17:51:11', '2026-01-09 07:24:46', NULL);
 
 -- --------------------------------------------------------
 
@@ -86,7 +88,42 @@ INSERT INTO `assetrequestdetail` (`RequestDetailID`, `RequestID`, `PropertyInven
 (1, 1, NULL, 'Laptop', 'unit', 1, 'para maka dota', NULL, NULL, NULL, NULL, NULL, NULL, '2026-01-05 19:12:31', '2026-01-05 19:12:31', NULL),
 (5, 5, NULL, 'Laptop', 'unit', 1, 'para maka dota ko', 'Aaron Micarte', 'kanang high end unta', 'PAR', NULL, NULL, 'ok', '2026-01-06 15:48:38', '2026-01-06 16:39:34', NULL),
 (6, 5, NULL, 'Keyboard', 'pc', 1, 'para maka dota ko', 'Aaron Micarte', 'basta', 'PAR', NULL, NULL, 'ok', '2026-01-06 15:48:38', '2026-01-06 16:39:34', NULL),
-(7, 5, NULL, 'Mouse', 'unit', 1, 'para maka click kos dota', 'Aaron Micarte', 'kanang dili guba', 'PAR', NULL, NULL, 'ok', '2026-01-06 15:48:38', '2026-01-06 16:39:34', NULL);
+(7, 5, NULL, 'Mouse', 'unit', 1, 'para maka click kos dota', 'Aaron Micarte', 'kanang dili guba', 'PAR', NULL, NULL, 'ok', '2026-01-06 15:48:38', '2026-01-06 16:39:34', NULL),
+(8, 6, NULL, 'Keyboard', 'unit', 1, 'kanang working tas ga color', 'Cyron Micarte', 'basta working', 'PAR', NULL, NULL, 'okay', '2026-01-08 07:41:50', '2026-01-08 10:37:08', NULL),
+(9, 7, NULL, 'Laptop', 'pc', 1, 'para maka dota', 'Aaron Micarte', 'smooth 120 fps', 'PAR', NULL, NULL, 'okay all goodz', '2026-01-08 17:51:11', '2026-01-08 17:55:24', NULL),
+(10, 7, NULL, 'Printer', 'pc', 1, 'maka print', 'IT Department', 'nay built in ink', 'ICS', 3, 5, 'wow okay', '2026-01-08 17:51:11', '2026-01-08 17:55:24', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `asset_assignments`
+--
+
+CREATE TABLE `asset_assignments` (
+  `AssignmentID` bigint(20) UNSIGNED NOT NULL,
+  `AssetRequestDetailID` bigint(20) UNSIGNED DEFAULT NULL,
+  `PropertyInventoryDetailID` bigint(20) UNSIGNED DEFAULT NULL,
+  `AssignedUserID` bigint(20) UNSIGNED DEFAULT NULL,
+  `AssignedDepartmentID` bigint(20) UNSIGNED DEFAULT NULL,
+  `AssignmentType` enum('request','issuance') NOT NULL,
+  `PropertyClassification` enum('ICS','PAR') DEFAULT NULL,
+  `AdminNotes` text DEFAULT NULL,
+  `AssignedBy` bigint(20) UNSIGNED NOT NULL,
+  `AssignedAt` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `asset_assignments`
+--
+
+INSERT INTO `asset_assignments` (`AssignmentID`, `AssetRequestDetailID`, `PropertyInventoryDetailID`, `AssignedUserID`, `AssignedDepartmentID`, `AssignmentType`, `PropertyClassification`, `AdminNotes`, `AssignedBy`, `AssignedAt`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 8, NULL, NULL, NULL, 'issuance', 'PAR', 'okay', 1, '2026-01-08 10:02:19', '2026-01-08 10:02:19', '2026-01-08 10:02:19', NULL),
+(2, 8, NULL, NULL, NULL, 'issuance', 'PAR', 'okay', 1, '2026-01-08 10:37:08', '2026-01-08 10:37:08', '2026-01-08 10:37:08', NULL),
+(3, 9, NULL, NULL, NULL, 'issuance', 'PAR', 'okay all goodz', 1, '2026-01-08 17:55:24', '2026-01-08 17:55:24', '2026-01-08 17:55:24', NULL),
+(4, 10, NULL, 3, 5, 'issuance', 'ICS', 'wow okay', 1, '2026-01-08 17:55:24', '2026-01-08 17:55:24', '2026-01-08 17:55:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -117,7 +154,14 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (4, 'assetrequest', 4, 'created', 3, '{\"request_number\":\"REQ-2026-0004\",\"items_count\":1,\"department\":\"IT Department\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-05 19:24:17'),
 (5, 'assetrequest', 5, 'created', 3, '{\"request_number\":\"REQ-2026-0002\",\"items_count\":3,\"department\":\"IT Department\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-06 15:48:38'),
 (6, 'asset_request', 5, 'approved', 1, '{\"request_number\":\"REQ-2026-0002\",\"items_reviewed\":3,\"notes\":\"DULA WELL!!!!\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-06 16:39:34'),
-(7, 'asset_request', 5, 'issued', 1, '\"{\\\"request_number\\\":\\\"REQ-2026-0002\\\",\\\"issuances_count\\\":1,\\\"date_issued\\\":\\\"2026-01-07\\\"}\"', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', NULL);
+(7, 'asset_request', 5, 'issued', 1, '\"{\\\"request_number\\\":\\\"REQ-2026-0002\\\",\\\"issuances_count\\\":1,\\\"date_issued\\\":\\\"2026-01-07\\\"}\"', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', NULL),
+(8, 'assetrequest', 6, 'created', 3, '{\"request_number\":\"REQ-2026-0003\",\"items_count\":1,\"department\":\"IT Department\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 07:41:50'),
+(9, 'asset_request', 6, 'approved', 1, '{\"request_number\":\"REQ-2026-0003\",\"items_reviewed\":1,\"notes\":\"invite ko unya id : 239241231\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 10:02:19'),
+(10, 'asset_request', 6, 'approved', 1, '{\"request_number\":\"REQ-2026-0003\",\"items_reviewed\":1,\"notes\":\"apila ko dula id : 34123124\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 10:37:08'),
+(11, 'asset_request', 6, 'issued', 1, '\"{\\\"request_number\\\":\\\"REQ-2026-0003\\\",\\\"issuances_count\\\":1,\\\"date_issued\\\":\\\"2026-01-08\\\"}\"', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', NULL),
+(12, 'assetrequest', 7, 'created', 3, '{\"request_number\":\"REQ-2026-0004\",\"items_count\":2,\"department\":\"IT Department\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 17:51:11'),
+(13, 'asset_request', 7, 'approved', 1, '{\"request_number\":\"REQ-2026-0004\",\"items_reviewed\":2,\"notes\":\"okay man gotchu!\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 17:55:24'),
+(14, 'asset_request', 7, 'issued', 1, '\"{\\\"request_number\\\":\\\"REQ-2026-0004\\\",\\\"issuances_count\\\":2,\\\"date_issued\\\":\\\"2026-01-09\\\"}\"', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', NULL);
 
 -- --------------------------------------------------------
 
@@ -144,6 +188,18 @@ CREATE TABLE `asset_request_signatures` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `asset_request_signatures`
+--
+
+INSERT INTO `asset_request_signatures` (`id`, `request_id`, `role`, `signed_by_user_id`, `source`, `storage_disk`, `storage_path`, `url`, `mime`, `width`, `height`, `size_bytes`, `sha256_hash`, `ip_address`, `user_agent`, `created_at`, `updated_at`) VALUES
+(1, 6, 'requester', 3, 'canvas', 'local', 'signatures/asset_request_6_requester_1767858110.png', '/storage/signatures/asset_request_6_requester_1767858110.png', 'image/png', 1000, 300, 15903, '29f78577fa8fd31329e36805ea715f50e3d9ee20e0251d789ee409b6a2e68857', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 07:41:50', '2026-01-08 07:41:50'),
+(2, 6, 'approver', 1, 'canvas', 'public', 'signatures/asset_request_6_approver_1767868628.png', 'http://localhost:8000/storage/signatures/asset_request_6_approver_1767868628.png', 'image/png', 1000, 300, 18005, '91747000615379b4a478e60d03ce7e0959bf4bc5024c4df02ca5768aec784eba', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 10:37:08', '2026-01-08 10:37:08'),
+(3, 6, 'issuer', 1, 'canvas', 'public', 'signatures/asset_request_6_issuer_1767892222.png', 'http://localhost:8000/storage/signatures/asset_request_6_issuer_1767892222.png', 'image/png', 1000, 300, 12884, '953fbae92d80fa3949d36b2cc429c5ddf3598b673bdd79e86c4722cbd7fb2e09', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 17:10:24', '2026-01-08 17:10:24'),
+(4, 7, 'requester', 3, 'canvas', 'public', 'signatures/asset_request_7_requester_1767894671.png', 'http://localhost:8000/storage/signatures/asset_request_7_requester_1767894671.png', 'image/png', 1000, 300, 19796, 'b75387c9adc1c7802020b70ccba34d9e36cceede29350f5e991dcfe7c8653b14', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 17:51:11', '2026-01-08 17:51:11'),
+(5, 7, 'approver', 1, 'canvas', 'public', 'signatures/asset_request_7_approver_1767894924.png', 'http://localhost:8000/storage/signatures/asset_request_7_approver_1767894924.png', 'image/png', 1000, 300, 14843, '941b64ad8fb81e7c806bd84df42971e1840d056475107ce31bc3636929b31a62', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-08 17:55:24', '2026-01-08 17:55:24'),
+(6, 7, 'issuer', 1, 'canvas', 'public', 'signatures/asset_request_7_issuer_1767943486.png', 'http://localhost:8000/storage/signatures/asset_request_7_issuer_1767943486.png', 'image/png', 1000, 300, 13703, '5378464aebc91f55623f06cd5d6bb9aa3576b71c8a8517a9cd649172d6af3adf', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '2026-01-09 07:24:46', '2026-01-09 07:24:46');
 
 -- --------------------------------------------------------
 
@@ -728,7 +784,14 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (188, 1, '2026-01-06 23:49:42', 'Login', '127.0.0.1'),
 (189, 1, '2026-01-07 00:50:30', 'Logout', '127.0.0.1'),
 (190, 3, '2026-01-07 00:50:54', 'Login', '127.0.0.1'),
-(191, 1, '2026-01-07 18:38:01', 'Login', '127.0.0.1');
+(191, 1, '2026-01-07 18:38:01', 'Login', '127.0.0.1'),
+(192, 3, '2026-01-08 16:12:09', 'Logout', '127.0.0.1'),
+(193, 1, '2026-01-08 22:18:52', 'Login', '127.0.0.1'),
+(194, 1, '2026-01-09 01:41:18', 'Logout', '127.0.0.1'),
+(195, 3, '2026-01-09 01:52:39', 'Logout', '127.0.0.1'),
+(196, 1, '2026-01-09 01:55:44', 'Logout', '127.0.0.1'),
+(197, 3, '2026-01-09 01:56:19', 'Logout', '127.0.0.1'),
+(198, 1, '2026-01-09 14:57:00', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -842,7 +905,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (98, '2026_01_06_000002_add_asset_request_workflow_fields', 17),
 (99, '2026_01_07_000001_update_propertyissuance_for_asset_request_workflow', 18),
 (100, '2026_01_07_000002_update_propertyissuancedetail_for_asset_request_workflow', 18),
-(101, '2026_01_07_000003_update_propertyissuance_add_freetext_users', 19);
+(101, '2026_01_07_000003_update_propertyissuance_add_freetext_users', 19),
+(102, '2026_01_07_215230_create_asset_request_signatures_table', 20),
+(103, '2026_01_08_000000_create_asset_assignments_table', 21),
+(104, '2026_01_08_230729_add_item_description_to_iar_detail_table', 22);
 
 -- --------------------------------------------------------
 
@@ -1074,15 +1140,15 @@ CREATE TABLE `propertyinventorydetail` (
 --
 
 INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `PropertyTypeID`, `ReceivedID`, `Description`, `PropertyNumber`, `SerialNumber`, `Quantity`, `QuantityAvailable`, `PropertyStatusID`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `SourceIARDetailID`, `SourceDRDetailID`, `ConditionID`, `Brand`, `ModelNumber`, `Remarks`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
-(1, 1, 3, NULL, 'Lost in neon streets, I hear echoes of things I can’t remember, shadows stretching longer than the night itself, my heartbeat syncing with a broken streetlamp flicker, everything melting into one slow hum, I laugh at nothing, and the sky feels too heavy,', NULL, '12345asus', 1, 1, 1, 1, 35000.00, 35000.00, 80, 26, 1, 'Asus', 'Vivobook', 'good', '2025-12-29 23:50:55', '2025-12-30 20:40:16', NULL),
-(2, 2, 7, NULL, NULL, NULL, NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', NULL, NULL),
-(3, 2, 7, NULL, NULL, NULL, NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', NULL, NULL),
-(4, 2, 7, NULL, NULL, NULL, NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', NULL, NULL),
-(5, 2, 7, NULL, NULL, NULL, NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', NULL, NULL),
-(6, 2, 7, NULL, NULL, NULL, NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', NULL, NULL),
-(7, 3, 2, NULL, NULL, NULL, NULL, 1, 1, 1, 2, 99.00, 99.00, 90, 29, 1, NULL, NULL, 'good', '2026-01-06 16:31:10', NULL, NULL),
-(8, 3, 2, NULL, NULL, NULL, NULL, 1, 1, 1, 2, 99.00, 99.00, 91, 30, 1, NULL, NULL, 'good', '2026-01-06 16:31:10', NULL, NULL),
-(9, 3, 2, NULL, NULL, NULL, NULL, 1, 1, 1, 2, 99.00, 99.00, 92, 31, 1, NULL, NULL, 'good', '2026-01-06 16:31:10', NULL, NULL);
+(1, 1, 3, NULL, 'The simple things are also the most extraordinary things, and only the wise can see them.', '2025-000001', '12345asus', 1, 0, 2, 1, 35000.00, 35000.00, 80, 26, 1, 'Asus', 'Vivobook', 'good', '2025-12-29 23:50:55', '2026-01-09 15:24:46', NULL),
+(2, 2, 7, NULL, 'goods', '2026-000001', NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', '2026-01-09 00:15:52', NULL),
+(3, 2, 7, NULL, 'goods', '2026-000002', NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', '2026-01-09 00:15:52', NULL),
+(4, 2, 7, NULL, 'goods', '2026-000003', NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', '2026-01-09 00:15:52', NULL),
+(5, 2, 7, NULL, 'goods', '2026-000004', NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', '2026-01-09 00:15:52', NULL),
+(6, 2, 7, NULL, 'goods', '2026-000005', NULL, 1, 1, 1, 7, 555.00, 555.00, 83, 27, 1, NULL, NULL, 'goods', '2026-01-06 15:13:56', '2026-01-09 00:15:52', NULL),
+(7, 3, 2, NULL, 'good', '2026-000006', NULL, 1, 0, 2, 2, 99.00, 99.00, 90, 29, 1, NULL, NULL, 'good', '2026-01-06 16:31:10', '2026-01-09 15:24:46', NULL),
+(8, 3, 2, NULL, 'good', '2026-000007', NULL, 1, 1, 1, 2, 99.00, 99.00, 91, 30, 1, NULL, NULL, 'good', '2026-01-06 16:31:10', '2026-01-09 00:15:52', NULL),
+(9, 3, 2, NULL, 'good', '2026-000008', NULL, 1, 1, 1, 2, 99.00, 99.00, 92, 31, 1, NULL, NULL, 'good', '2026-01-06 16:31:10', '2026-01-09 00:15:52', NULL);
 
 -- --------------------------------------------------------
 
@@ -1113,7 +1179,8 @@ CREATE TABLE `propertyissuance` (
 --
 
 INSERT INTO `propertyissuance` (`IssuanceID`, `RequestID`, `IssuedBy`, `IssuedTo`, `IssuedToName`, `DocumentType`, `DocumentNumber`, `Status`, `DateIssued`, `Remarks`, `AcknowledgmentSignature`, `AcknowledgedAt`, `AcknowledgmentNotes`, `deleted_at`, `CreatedDate`) VALUES
-(1, 5, 1, NULL, 'Aaron Micarte', 'PAR', 'PAR-2026-0001', 'pending_acknowledgment', '2026-01-07', 'helyeeee', NULL, NULL, NULL, NULL, '2026-01-07 21:42:55');
+(3, 7, 1, NULL, 'Aaron Micarte', 'PAR', 'PAR-2026-0001', 'pending_acknowledgment', '2026-01-09', 'wuba luba dub dub', NULL, NULL, NULL, NULL, '2026-01-09 15:24:46'),
+(4, 7, 1, 3, NULL, 'ICS', 'ICS-2026-0001', 'pending_acknowledgment', '2026-01-09', 'wuba luba dub dub', NULL, NULL, NULL, NULL, '2026-01-09 15:24:46');
 
 -- --------------------------------------------------------
 
@@ -1140,9 +1207,8 @@ CREATE TABLE `propertyissuancedetail` (
 --
 
 INSERT INTO `propertyissuancedetail` (`IssuanceDetailID`, `IssuanceID`, `RequestDetailID`, `ItemDescription`, `Unit`, `InventoryDetailID`, `QuantityIssued`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 5, 'Laptop', 'unit', NULL, 1, 'ok', '2026-01-07 13:42:55', '2026-01-07 13:42:55', NULL),
-(2, 1, 6, 'Keyboard', 'pc', NULL, 1, 'ok', '2026-01-07 13:42:55', '2026-01-07 13:42:55', NULL),
-(3, 1, 7, 'Mouse', 'unit', NULL, 1, 'ok', '2026-01-07 13:42:55', '2026-01-07 13:42:55', NULL);
+(5, 3, 9, 'Laptop', 'pc', 1, 1, 'okay all goodz', '2026-01-09 07:24:46', '2026-01-09 07:24:46', NULL),
+(6, 4, 10, 'Printer', 'pc', 7, 1, 'wow okay', '2026-01-09 07:24:46', '2026-01-09 07:24:46', NULL);
 
 -- --------------------------------------------------------
 
@@ -1296,8 +1362,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('7P6nnSN0pyePyUwhot8Bq1b77vCK0pZIgEmUVnHH', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidE9oajQxWFd4a2x4S21oZ2pOa3B2dFJnVVJMYzVhSTkxaTU3cWczbyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktaXNzdWFuY2VzP3BhZ2U9MSZwZXJfcGFnZT0xNSI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1767793684),
-('W9cLkeFYUMF56WvE2kEX7r3wEu7KlZvE4TUcbnPn', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUmFWZHVINEpzWlNDZkt6SHRpZHAyUmZoZ0thRkRabXg3alNld05lNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvZGVwYXJ0bWVudC1oZWFkL2Rhc2hib2FyZC9hY3Rpdml0aWVzIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkaGxVN1FLblViV3BodkpuRnhZZ2FZLmdKVnpCbnhWS0tWLmtqdzd4QjVPaC4xak4wY2ZBNjIiO30=', 1767857999);
+('GAa5CQov8xWO9evf1qRXiwpbesONckB9n4ywsjV2', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiNEZtU3k2SEpTSmdlN1pKcEhieVRjMjVZMVpuTEVUUThyWXZLdnE0aCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1767941813),
+('uW8PXmx73BPk6HY4fFu4uFDezudnkZ4lklM7lLFo', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiVDhhVzc2c21KZnRxSHpXTEpQT3YxdUVCVGNZaTNvdFN0STJSM0JidyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDY6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktaXNzdWFuY2VzLzMiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1767944714);
 
 -- --------------------------------------------------------
 
@@ -1382,7 +1448,12 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (34, 1, 'Chrome on Windows', '3c4c1f5d3e899209c0d465f5953e2ab06acaa89c765a09108de3a9ada178d87f', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-05 23:49:42', '2026-01-06 23:49:42', NULL),
 (35, 3, 'Chrome on Windows', '8c40a388046d06eb74145c85b46ed400eaaa67fffdda7bbfe1cf24407091e31d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-06 00:50:54', '2026-01-07 00:50:54', NULL),
 (36, 1, 'Chrome on Windows', 'acf46ed00ad04146142ba504158875138b4d298cc2e35ee2dc25f507acb9904c', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-06 18:38:01', '2026-01-07 18:38:01', NULL),
-(37, 3, 'Trusted Device', '46026b980d69474966efc08c8d8e46e9ba54d1845f0cddd74995f0c06dcd5b64', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-07 15:27:27', '2026-01-08 15:27:27', NULL);
+(37, 3, 'Trusted Device', '46026b980d69474966efc08c8d8e46e9ba54d1845f0cddd74995f0c06dcd5b64', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-07 15:27:27', '2026-01-08 15:27:27', NULL),
+(38, 1, 'Trusted Device', 'ca297208def7dfb29420c534e502e5d4eb91797fb442964a43300bf5b98d6ece', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-01-08 22:18:51', '2026-02-07 16:12:37', '2026-01-08 16:12:37', '2026-01-08 22:18:51'),
+(39, 3, 'Trusted Device', 'e32b2bb39edf7e9b1f806dbec3ce22790f9c93c125c2837474a97a1d06f39e11', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-08 01:41:38', '2026-01-09 01:41:38', NULL),
+(40, 1, 'Trusted Device', 'ce1db3455a8f609cb8caf75cef64fb3ecd4f178d526428a56d558a8d24928a38', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-08 01:53:01', '2026-01-09 01:53:01', NULL),
+(41, 3, 'Trusted Device', 'b9b6280c8d3492730f8b5feaf7dd4a87d214f799ae965948e4569229fad77d3e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-08 01:55:58', '2026-01-09 01:55:58', NULL),
+(42, 1, 'Trusted Device', 'cad3b0dfe3d9ecf4f80da6d702b611a3f117c38b36d7d41ea16e97a792f4eb74', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-01-09 14:56:59', '2026-02-08 01:56:30', '2026-01-09 01:56:30', '2026-01-09 14:56:59');
 
 -- --------------------------------------------------------
 
@@ -1548,6 +1619,13 @@ ALTER TABLE `assetrequestdetail`
   ADD KEY `assetrequestdetail_propertyinventorydetailid_index` (`PropertyInventoryDetailID`),
   ADD KEY `assetrequestdetail_assignedenduserid_index` (`AssignedEndUserID`),
   ADD KEY `assetrequestdetail_assigneddepartmentid_index` (`AssignedDepartmentID`);
+
+--
+-- Indexes for table `asset_assignments`
+--
+ALTER TABLE `asset_assignments`
+  ADD PRIMARY KEY (`AssignmentID`),
+  ADD KEY `asset_assignments_assetrequestdetailid_foreign` (`AssetRequestDetailID`);
 
 --
 -- Indexes for table `asset_audit_logs`
@@ -1984,25 +2062,31 @@ ALTER TABLE `wastematerialreport`
 -- AUTO_INCREMENT for table `assetrequest`
 --
 ALTER TABLE `assetrequest`
-  MODIFY `RequestID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `RequestID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `assetrequestdetail`
 --
 ALTER TABLE `assetrequestdetail`
-  MODIFY `RequestDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `RequestDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `asset_assignments`
+--
+ALTER TABLE `asset_assignments`
+  MODIFY `AssignmentID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
 --
 ALTER TABLE `asset_request_signatures`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `assignedproperty`
@@ -2110,13 +2194,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=192;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=199;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=102;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=105;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -2170,25 +2254,25 @@ ALTER TABLE `propertydisposaldetail`
 -- AUTO_INCREMENT for table `propertyinventory`
 --
 ALTER TABLE `propertyinventory`
-  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `propertyinventorydetail`
 --
 ALTER TABLE `propertyinventorydetail`
-  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `propertyissuance`
 --
 ALTER TABLE `propertyissuance`
-  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `propertyissuancedetail`
 --
 ALTER TABLE `propertyissuancedetail`
-  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `propertyreceived`
@@ -2236,7 +2320,7 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=43;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -2293,6 +2377,12 @@ ALTER TABLE `assetrequest`
 ALTER TABLE `assetrequestdetail`
   ADD CONSTRAINT `assetrequestdetail_propertyinventorydetailid_foreign` FOREIGN KEY (`PropertyInventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`),
   ADD CONSTRAINT `assetrequestdetail_requestid_foreign` FOREIGN KEY (`RequestID`) REFERENCES `assetrequest` (`RequestID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `asset_assignments`
+--
+ALTER TABLE `asset_assignments`
+  ADD CONSTRAINT `asset_assignments_assetrequestdetailid_foreign` FOREIGN KEY (`AssetRequestDetailID`) REFERENCES `assetrequestdetail` (`RequestDetailID`);
 
 --
 -- Constraints for table `asset_audit_logs`

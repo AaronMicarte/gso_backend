@@ -187,7 +187,61 @@ class InventoryController extends Controller
         $perPage = max(10, (int) $request->query('per_page', 10));
         $search = $request->query('search');
 
-        $query = PropertyInventory::with([
+        $activeIssuanceStatuses = ['pending_acknowledgment', 'acknowledged'];
+
+                $custodianSql = "(
+                        SELECT COALESCE(eu.FullName, u.FullName, pi.IssuedToName)
+            FROM propertyissuancedetail pidet
+            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+            JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+            WHERE invd.InventoryID = propertyinventory.InventoryID
+              AND pi.deleted_at IS NULL
+              AND pidet.deleted_at IS NULL
+              AND pi.Status IN ('pending_acknowledgment','acknowledged')
+            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+            LIMIT 1
+        )";
+
+                $locationSql = "(
+                        SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
+            FROM propertyissuancedetail pidet
+            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+            JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+            LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                        LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+            LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+            LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+            WHERE invd.InventoryID = propertyinventory.InventoryID
+              AND pi.deleted_at IS NULL
+              AND pidet.deleted_at IS NULL
+              AND pi.Status IN ('pending_acknowledgment','acknowledged')
+            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+            LIMIT 1
+        )";
+
+        $lastIssuedDateSql = "(
+            SELECT pi.DateIssued
+            FROM propertyissuancedetail pidet
+            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+            JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+            WHERE invd.InventoryID = propertyinventory.InventoryID
+              AND pi.deleted_at IS NULL
+              AND pidet.deleted_at IS NULL
+              AND pi.Status IN ('pending_acknowledgment','acknowledged')
+            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+            LIMIT 1
+        )";
+
+        $query = PropertyInventory::query()
+            ->select('propertyinventory.*')
+            ->addSelect(DB::raw($custodianSql . ' as CurrentCustodianName'))
+            ->addSelect(DB::raw($locationSql . ' as CurrentLocation'))
+            ->addSelect(DB::raw($lastIssuedDateSql . ' as LastIssuedDate'))
+            ->with([
             'details' => function($query) {
                 $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
                       ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description');
@@ -220,6 +274,15 @@ class InventoryController extends Controller
             // Compute totals from individual detail records
             $inventory->TotalItems = $inventory->details->sum('Quantity');
             $inventory->TotalValue = $inventory->details->sum('TotalCost');
+
+            // Compute overall status: if all items are assigned, record is Assigned; otherwise Available.
+            $totalDetails = $inventory->details->count();
+            $assignedDetails = $inventory->details->where('PropertyStatusID', 2)->count();
+            $inventory->PrimaryStatus = ($totalDetails > 0 && $assignedDetails === $totalDetails) ? 'Assigned' : 'Available';
+
+            // Provide clean defaults when not currently issued
+            $inventory->CurrentCustodianName = $inventory->CurrentCustodianName ?: 'GSO Property Custodian';
+            $inventory->CurrentLocation = $inventory->CurrentLocation ?: 'GSO Warehouse';
             
             return $inventory;
         });
@@ -231,14 +294,60 @@ class InventoryController extends Controller
     // GET /api/admin/inventory/{id}
     public function show($id)
     {
+        $activeIssuanceStatuses = ['pending_acknowledgment', 'acknowledged'];
+
         $inventory = PropertyInventory::with([
             'details' => function($query) {
                 $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
                       ->leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
                       ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
-                      ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                      ->select(
+                              'propertyinventorydetail.*',
+                              'deliveryreceiptdetail.ItemDescription as dr_item_description',
                               'propertytype.PropertyName', 'propertytype.Description as property_type_description',
-                              'propertyclassification.ClassificationName', 'propertyclassification.DocumentType');
+                              'propertyclassification.ClassificationName', 'propertyclassification.DocumentType'
+                      )
+                                            ->addSelect(DB::raw("(
+                                                    SELECT COALESCE(eu.FullName, u.FullName, pi.IssuedToName)
+                                                    FROM propertyissuancedetail pidet
+                                                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                                    LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                                                    LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                                                    WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        AND pi.deleted_at IS NULL
+                                                        AND pidet.deleted_at IS NULL
+                                                        AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                                    ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                                    LIMIT 1
+                                            ) as custodianName"))
+                                            ->addSelect(DB::raw("(
+                                                    SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
+                                                    FROM propertyissuancedetail pidet
+                                                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                                    LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                                                    LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                                                    LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                                                    LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                                                    LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                                                    LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                                                    WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        AND pi.deleted_at IS NULL
+                                                        AND pidet.deleted_at IS NULL
+                                                        AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                                    ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                                    LIMIT 1
+                                            ) as locationDepartment"))
+                                            ->addSelect(DB::raw("(
+                                                    SELECT pi.DateIssued
+                                                    FROM propertyissuancedetail pidet
+                                                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                                    WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        AND pi.deleted_at IS NULL
+                                                        AND pidet.deleted_at IS NULL
+                                                        AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                                    ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                                    LIMIT 1
+                                            ) as lastIssuedDate"));
             },
             'details.qrCode',
             'details.drDetail' => function($query) {
@@ -249,6 +358,16 @@ class InventoryController extends Controller
         if (!$inventory) {
             return response()->json(['message' => 'Inventory not found'], 404);
         }
+
+        // Map acquisition date name expected by frontend
+        if (!isset($inventory->DateAcquired)) {
+            $inventory->DateAcquired = $inventory->DateReceived ?? $inventory->CreatedDate ?? null;
+        }
+
+        // Compute overall status for the record
+        $totalDetails = $inventory->details?->count() ?? 0;
+        $assignedDetails = $inventory->details?->where('PropertyStatusID', 2)->count() ?? 0;
+        $inventory->PrimaryStatus = ($totalDetails > 0 && $assignedDetails === $totalDetails) ? 'Assigned' : 'Available';
 
         return response()->json($inventory);
     }
@@ -345,7 +464,50 @@ class InventoryController extends Controller
                 'deliveryreceiptdetail.Brand as dr_brand',
                 'deliveryreceiptdetail.ModelNumber as dr_model',
                 'deliveryreceiptdetail.SerialNumber as dr_serial'
-            );
+            )
+            ->addSelect([
+                                'custodianName' => DB::raw("(
+                                        SELECT COALESCE(eu.FullName, u.FullName, pi.IssuedToName)
+                                        FROM propertyissuancedetail pidet
+                                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                        LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            AND pi.deleted_at IS NULL
+                                            AND pidet.deleted_at IS NULL
+                                            AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                        LIMIT 1
+                                ) as custodianName"),
+                                'locationDepartment' => DB::raw("(
+                                        SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
+                                        FROM propertyissuancedetail pidet
+                                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                        LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                                        LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                                        LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                                        LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                                        LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            AND pi.deleted_at IS NULL
+                                            AND pidet.deleted_at IS NULL
+                                            AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                        LIMIT 1
+                                ) as locationDepartment"),
+                                'lastIssuedDate' => DB::raw("(
+                                        SELECT pi.DateIssued
+                                        FROM propertyissuancedetail pidet
+                                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            AND pi.deleted_at IS NULL
+                                            AND pidet.deleted_at IS NULL
+                                            AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                        LIMIT 1
+                                ) as lastIssuedDate"),
+            ]);
 
         if ($search) {
             $query->where(function ($q) use ($search) {

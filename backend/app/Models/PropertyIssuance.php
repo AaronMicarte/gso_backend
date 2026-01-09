@@ -91,14 +91,15 @@ class PropertyIssuance extends Model
         return sprintf('%s-%s%s-%04d', $type, $year, $month, $newSequence);
     }
 
-    public function getStatusAttribute(): string
+    public function getStatusAttribute($value): string
     {
-        // Based on the relationship with asset request
-        if (!$this->request) {
-            return 'issued';
+        // Always prefer the actual stored Status column.
+        // This system uses: pending_acknowledgment, acknowledged, returned, disposed, etc.
+        if ($value !== null) {
+            return (string) $value;
         }
-        
-        return $this->request->Status === 'approved' ? 'issued' : 'pending';
+
+        return (string) ($this->attributes['Status'] ?? 'pending_acknowledgment');
     }
 
     public function getDocumentTypeAttribute(): string

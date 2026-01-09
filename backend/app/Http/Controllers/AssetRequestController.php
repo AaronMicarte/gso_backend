@@ -71,10 +71,92 @@ class AssetRequestController extends Controller
             'issuer:UserID,FullName',
             'auditLogs.performer',
             'signatures.signedByUser:UserID,FullName',
-            'details.assignments'
+            'details.assignments',
+
+            // Real GSO issuance data (propertyissuance + propertyissuancedetail)
+            'propertyIssuance' => function ($q) {
+                $q->with([
+                    'issuedBy:UserID,FullName',
+                    'issuedTo:EndUserID,FullName,DepartmentID',
+                    'details.inventoryDetail' => function ($iq) {
+                        $iq->withTrashed();
+                    },
+                    'details.inventoryDetail.inventory' => function ($iq) {
+                        $iq->withTrashed();
+                    },
+                    'details.inventoryDetail.unitOfMeasure',
+                ])->orderBy('DateIssued', 'desc');
+            },
         ])->findOrFail($id);
 
-        return response()->json($request);
+        // Map propertyIssuance to the frontend's expected `issuances` array
+        $requestArr = $request->toArray();
+        $propertyIssuances = $request->propertyIssuance ?? collect();
+        $requestArr['issuances'] = $propertyIssuances
+            ->map(function ($issuance) use ($request) {
+                $issuedToUser = null;
+
+                // For ICS, recipient should be the request's requester (dept head)
+                if ($issuance->DocumentType === 'ICS' && $request->requester) {
+                    $issuedToUser = $request->requester;
+                } elseif ($issuance->issuedTo) {
+                    $issuedToUser = $issuance->issuedTo;
+                } else {
+                    $issuedToUser = [
+                        'FullName' => $issuance->IssuedToName ?? 'External Recipient',
+                        'department' => null,
+                    ];
+                }
+
+                return [
+                    'IssuanceID' => $issuance->IssuanceID,
+                    'RequestID' => $issuance->RequestID,
+                    'DocumentType' => $issuance->DocumentType,
+                    'DocumentNumber' => $issuance->DocumentNumber,
+                    'IssuedTo' => $issuance->IssuedTo,
+                    'IssuedToName' => $issuance->IssuedToName,
+                    'IssuedBy' => $issuance->IssuedBy,
+                    'IssuanceDate' => $issuance->DateIssued,
+                    'Status' => $issuance->Status,
+
+                    // IMPORTANT: request page expects IssuanceNotes
+                    'IssuanceNotes' => $issuance->Remarks,
+                    // Keep Remarks too for compatibility with other pages
+                    'Remarks' => $issuance->Remarks,
+
+                    'AcknowledgedBy' => $issuance->AcknowledgedBy ?? null,
+                    'AcknowledgedAt' => $issuance->AcknowledgedAt,
+                    'AcknowledgmentSignature' => $issuance->AcknowledgmentSignature,
+                    'AcknowledgmentNotes' => $issuance->AcknowledgmentNotes,
+
+                    'created_at' => $issuance->CreatedDate ?? null,
+                    'updated_at' => $issuance->UpdatedDate ?? null,
+                    'deleted_at' => $issuance->DeletedDate ?? null,
+
+                    'issuer' => $issuance->issuedBy,
+                    'issuedToUser' => $issuedToUser,
+                    'details' => $issuance->details ? $issuance->details->map(function ($detail) {
+                        return [
+                            'IssuanceDetailID' => $detail->IssuanceDetailID,
+                            'IssuanceID' => $detail->IssuanceID,
+                            'RequestDetailID' => $detail->RequestDetailID,
+                            'InventoryDetailID' => $detail->InventoryDetailID,
+                            'QuantityIssued' => $detail->QuantityIssued,
+                            'ItemDescription' => $detail->ItemDescription,
+                            'Remarks' => $detail->Remarks,
+                            'created_at' => $detail->created_at,
+                            'updated_at' => $detail->updated_at,
+                            'inventoryDetail' => $detail->inventoryDetail,
+                        ];
+                    })->values()->all() : [],
+                ];
+            })
+            ->values()
+            ->all();
+
+        unset($requestArr['property_issuance']);
+
+        return response()->json($requestArr);
     }
 
     /**

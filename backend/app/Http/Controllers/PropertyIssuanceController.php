@@ -27,7 +27,7 @@ class PropertyIssuanceController extends Controller
             'request.department:DepartmentID,DepartmentName',
             'issuedBy',
             'issuedTo',
-            'details.inventoryDetail:InventoryDetailID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
+            'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
             'details.inventoryDetail.inventory',
             'details.inventoryDetail.unitOfMeasure',
         ]);
@@ -64,7 +64,11 @@ class PropertyIssuanceController extends Controller
             // Transform each issuance in the group
             $transformedIssuances = $requestIssuances->map(function ($issuance) {
                 // Recipient handling
-                if ($issuance->issuedTo) {
+                // For ICS, the recipient should be the request's requester (dept head).
+                if ($issuance->DocumentType === 'ICS' && $issuance->request && $issuance->request->requester) {
+                    $issuance->issuedToUser = $issuance->request->requester;
+                    $issuance->IssuedToName = $issuance->request->requester->FullName ?? $issuance->IssuedToName;
+                } elseif ($issuance->issuedTo) {
                     $issuance->issuedToUser = $issuance->issuedTo;
                 } else {
                     $issuance->issuedToUser = [
@@ -75,12 +79,64 @@ class PropertyIssuanceController extends Controller
 
                 $issuance->issuer = $issuance->issuedBy;
 
-                // Get all details for this issuance
+                // Get all details for this issuance (normalize fields for frontend)
                 $issuance->details = $issuance->details->map(function ($detail) {
                     if ($detail->inventoryDetail) {
                         $detail->inventoryDetail->propertyInventory = $detail->inventoryDetail->inventory;
+
+                        // Prioritize the Issuance Detail's ItemDescription as the "Item Name" (e.g. "Laptop")
+                        // and keep the Inventory Detail's Description as the "Description" (e.g. specs)
+                        if ($detail->inventoryDetail->propertyInventory) {
+                            // Frontend expects 'ItemDescription' to hold the name (e.g. Laptop)
+                            // and we can append description if needed, or just use the name
+                            $detail->inventoryDetail->propertyInventory->ItemDescription = $detail->ItemDescription ?? $detail->inventoryDetail->dr_item_description ?? $detail->inventoryDetail->Description ?? 'Item';
+                            
+                            $detail->inventoryDetail->propertyInventory->Brand = $detail->inventoryDetail->Brand ?? null;
+                            $detail->inventoryDetail->propertyInventory->ModelNumber = $detail->inventoryDetail->ModelNumber ?? null;
+                            $detail->inventoryDetail->propertyInventory->SerialNumber = $detail->inventoryDetail->SerialNumber ?? null;
+                        } else {
+                            // Fallback: create a minimal propertyInventory object using IssuanceDetail fields
+                            $detail->inventoryDetail->propertyInventory = (object) [
+                                'ItemDescription' => $detail->ItemDescription ?? $detail->inventoryDetail->Description ?? 'Item',
+                                'Brand' => $detail->inventoryDetail->Brand ?? null,
+                                'ModelNumber' => $detail->inventoryDetail->ModelNumber ?? null,
+                                'SerialNumber' => $detail->inventoryDetail->SerialNumber ?? null,
+                            ];
+                        }
+
+                        if (empty($detail->inventoryDetail->unitOfMeasure) && !empty($detail->Unit)) {
+                            $detail->inventoryDetail->unitOfMeasure = (object) ['UnitName' => $detail->Unit];
+                        }
+                        
+                        // Fix for UnitName access: if unitOfMeasure exists but UnitName is null or not set, try to map from direct unit
+                         if (!empty($detail->inventoryDetail->unitOfMeasure) && empty($detail->inventoryDetail->unitOfMeasure->UnitName) && !empty($detail->Unit)) {
+                            $detail->inventoryDetail->unitOfMeasure->UnitName = $detail->Unit;
+                        }
+
+                        // Ensure Description is set on the inventoryDetail itself if missing (backup)
+                        if (empty($detail->inventoryDetail->Description) && !empty($detail->ItemDescription)) {
+                             $detail->inventoryDetail->Description = $detail->ItemDescription;
+                        }
+
                         unset($detail->inventoryDetail->inventory);
+                    } else {
+                        // No linked inventory detail - use issuance detail fields
+                        $detail->inventoryDetail = (object) [
+                            'InventoryDetailID' => null,
+                            'InventoryID' => null,
+                            'PropertyNumber' => $detail->PropertyNumber ?? null,
+                            'UnitCost' => $detail->UnitCost ?? null,
+                            'unitOfMeasure' => (object) ['UnitName' => $detail->Unit ?? null],
+                            'propertyInventory' => (object) [
+                                'ItemName' => $detail->ItemDescription ?? 'Item',
+                                'ItemDescription' => null, // No long description available
+                                'Brand' => null,
+                                'ModelNumber' => null,
+                                'SerialNumber' => null,
+                            ],
+                        ];
                     }
+
                     return $detail;
                 });
 
@@ -129,8 +185,21 @@ class PropertyIssuanceController extends Controller
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
             'issuedBy',
             'issuedTo',
-            'details.inventoryDetail:InventoryDetailID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
-            'details.inventoryDetail.inventory',
+            'details.inventoryDetail' => function ($query) {
+                $query->withTrashed();
+            },
+            'details.inventoryDetail.propertyType' => function ($query) {
+                $query->withTrashed();
+            },
+            'details.inventoryDetail.propertyType.propertyClassification' => function ($query) {
+                $query->withTrashed();
+            },
+            'details.inventoryDetail.inventory' => function ($query) {
+                $query->withTrashed();
+            },
+            'details.inventoryDetail.drDetail' => function ($query) {
+                $query->withTrashed();
+            },
             'details.inventoryDetail.unitOfMeasure',
         ])->findOrFail($id);
 
@@ -160,7 +229,11 @@ class PropertyIssuanceController extends Controller
         $transformedIssuance['issuer'] = $issuance->issuedBy;
 
         // Handle issuedTo relationship
-        if ($issuance->issuedTo) {
+        // For ICS, the recipient should be the request's requester (dept head).
+        if ($issuance->DocumentType === 'ICS' && $issuance->request && $issuance->request->requester) {
+            $transformedIssuance['issuedToUser'] = $issuance->request->requester;
+            $transformedIssuance['IssuedToName'] = $issuance->request->requester->FullName ?? $transformedIssuance['IssuedToName'];
+        } elseif ($issuance->issuedTo) {
             $transformedIssuance['issuedToUser'] = $issuance->issuedTo;
         } else {
             $transformedIssuance['issuedToUser'] = [
@@ -171,11 +244,56 @@ class PropertyIssuanceController extends Controller
 
         // Transform details
         $transformedIssuance['details'] = $issuance->details->map(function ($detail) {
-            if ($detail->inventoryDetail) {
-                $detail->inventoryDetail->propertyInventory = $detail->inventoryDetail->inventory;
-                unset($detail->inventoryDetail->inventory);
-            }
-            return $detail;
+            $inventoryDetail = $detail->inventoryDetail;
+
+            // Item Name should come from DR (deliveryreceiptdetail.ItemDescription) when available.
+            // Fallback to issuance detail ItemDescription (legacy/manual).
+            $itemName = $inventoryDetail?->drDetail?->ItemDescription
+                ?? $detail->ItemDescription
+                ?? 'Item';
+
+            // Technical/long description comes from inventory detail Description.
+            $technicalDescription = $inventoryDetail?->Description ?? null;
+
+            $unitName = $inventoryDetail?->unitOfMeasure?->UnitName ?? $detail->Unit ?? null;
+
+            $propertyType = $inventoryDetail?->propertyType;
+            $propertyClassification = $propertyType?->propertyClassification;
+
+            return [
+                'IssuanceDetailID' => $detail->IssuanceDetailID,
+                'IssuanceID' => $detail->IssuanceID,
+                'RequestDetailID' => $detail->RequestDetailID,
+                'ItemDescription' => $detail->ItemDescription,
+                'Unit' => $detail->Unit,
+                'InventoryDetailID' => $detail->InventoryDetailID,
+                'QuantityIssued' => $detail->QuantityIssued,
+                'Remarks' => $detail->Remarks,
+                'inventoryDetail' => [
+                    'InventoryDetailID' => $inventoryDetail?->InventoryDetailID,
+                    'InventoryID' => $inventoryDetail?->InventoryID,
+                    'PropertyNumber' => $inventoryDetail?->PropertyNumber,
+                    'UnitCost' => $inventoryDetail?->UnitCost,
+                    'propertyType' => $propertyType ? [
+                        'PropertyTypeID' => $propertyType->PropertyTypeID,
+                        'PropertyName' => $propertyType->PropertyName,
+                        'PropertyClassificationID' => $propertyType->PropertyClassificationID,
+                        'propertyClassification' => $propertyClassification ? [
+                            'PropertyClassificationID' => $propertyClassification->PropertyClassificationID,
+                            'ClassificationName' => $propertyClassification->ClassificationName,
+                            'DocumentType' => $propertyClassification->DocumentType,
+                        ] : null,
+                    ] : null,
+                    'unitOfMeasure' => $unitName ? ['UnitName' => $unitName] : null,
+                    'propertyInventory' => [
+                        'ItemName' => $itemName,
+                        'ItemDescription' => $technicalDescription,
+                        'Brand' => $inventoryDetail?->Brand,
+                        'ModelNumber' => $inventoryDetail?->ModelNumber,
+                        'SerialNumber' => $inventoryDetail?->SerialNumber,
+                    ],
+                ],
+            ];
         });
 
         return response()->json($transformedIssuance);
@@ -211,7 +329,7 @@ class PropertyIssuanceController extends Controller
             }
 
             // Get the asset request with its details
-            $assetRequest = AssetRequest::with('details')->findOrFail($validated['request_id']);
+            $assetRequest = AssetRequest::with(['details', 'requester'])->findOrFail($validated['request_id']);
 
             // Verify the request is approved
             if ($assetRequest->Status !== 'approved') {
@@ -221,10 +339,22 @@ class PropertyIssuanceController extends Controller
                 ], 422);
             }
 
-            // Group items by end user (ID or Name) and classification
-            $groupedItems = $assetRequest->details->groupBy(function ($detail) {
-                $userKey = $detail->AssignedEndUserID ? 'ID_'.$detail->AssignedEndUserID : 'NAME_'.($detail->IntendedEndUser ?? 'Unknown');
-                return $userKey . '_' . ($detail->PropertyClassification ?? 'ICS');
+            // Group items by recipient and classification
+            // - PAR: group by assigned end user (ID or Name)
+            // - ICS: always group to the request requester (dept head)
+            $groupedItems = $assetRequest->details->groupBy(function ($detail) use ($assetRequest) {
+                $classification = $detail->PropertyClassification ?? 'ICS';
+
+                if ($classification === 'ICS') {
+                    $requesterId = $assetRequest->RequestedBy;
+                    return 'REQ_' . ($requesterId ?? 'UNKNOWN') . '_ICS';
+                }
+
+                $userKey = $detail->AssignedEndUserID
+                    ? 'ID_' . $detail->AssignedEndUserID
+                    : 'NAME_' . ($detail->IntendedEndUser ?? 'Unknown');
+
+                return $userKey . '_' . $classification;
             });
 
             $issuances = [];
@@ -250,7 +380,15 @@ class PropertyIssuanceController extends Controller
                     'CreatedDate' => now(),
                 ];
 
-                if ($endUserId) {
+                if ($classification === 'ICS') {
+                    // ICS recipient must be the requester (dept head)
+                    $issuanceData['IssuedTo'] = $assetRequest->RequestedBy;
+                    if (!$issuanceData['IssuedTo']) {
+                        $issuanceData['IssuedToName'] = $assetRequest->requester->FullName
+                            ?? $endUserName
+                            ?? 'Unspecified User';
+                    }
+                } elseif ($endUserId) {
                     $issuanceData['IssuedTo'] = $endUserId;
                 } else {
                     $issuanceData['IssuedTo'] = null;
@@ -437,10 +575,11 @@ class PropertyIssuanceController extends Controller
     {
         $issuance = PropertyIssuance::with([
             'request.requester.userRole',
+            'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName',
             'issuedBy.userRole',
             'issuedTo.position',
-            'details.inventoryDetail:InventoryDetailID,ItemDescription,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
+            'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
             'details.inventoryDetail.inventory',
         ])->findOrFail($id);
 
@@ -450,6 +589,22 @@ class PropertyIssuanceController extends Controller
             return response()->json(['message' => 'Invalid document type'], 400);
         }
 
+        // Recipient rules:
+        // - PAR: recipient is the assigned end user (issuedTo)
+        // - ICS: recipient is the request requester (dept head)
+        $recipientName = null;
+        $recipientPosition = null;
+
+        if ($documentType === 'ICS') {
+            $recipientName = $issuance->request?->requester?->FullName;
+            $recipientPosition = $issuance->request?->requester?->userRole?->RoleName
+                ?? $issuance->request?->requester?->department?->DepartmentName
+                ?? 'N/A';
+        } else {
+            $recipientName = $issuance->issuedTo?->FullName;
+            $recipientPosition = $issuance->issuedTo?->position?->PositionName ?? 'N/A';
+        }
+
         // Generate document data
         $documentData = [
             'type' => $documentType,
@@ -457,8 +612,8 @@ class PropertyIssuanceController extends Controller
             'date_issued' => $issuance->DateIssued,
             'department' => $issuance->request->department->DepartmentName,
             'recipient' => [
-                'name' => $issuance->issuedTo->FullName,
-                'position' => $issuance->issuedTo->position?->PositionName ?? 'N/A'
+                'name' => $recipientName ?? $issuance->IssuedToName ?? 'N/A',
+                'position' => $recipientPosition ?? 'N/A'
             ],
             'issuer' => [
                 'name' => $issuance->issuedBy->FullName,
@@ -579,6 +734,10 @@ class PropertyIssuanceController extends Controller
                 )
                 ->whereDoesntHave('assetAssignments');
 
+            // Only include items that are currently marked as available.
+            // (Assigned items may not always have an assetAssignments record depending on legacy data.)
+            $query->where('propertyinventorydetail.PropertyStatusID', 1);
+
             // Filter by search term
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -614,9 +773,12 @@ class PropertyIssuanceController extends Controller
      */
     public function acknowledge(Request $request, $id)
     {
+        // Accept both the canonical payload keys and legacy keys used by older frontend code.
         $validated = $request->validate([
-            'acknowledgment_signature' => 'required|string',
+            'acknowledgment_signature' => 'required_without:signature|string',
+            'signature' => 'required_without:acknowledgment_signature|string',
             'acknowledgment_notes' => 'nullable|string',
+            'notes' => 'nullable|string',
             'acknowledged_by' => 'required|integer|exists:user,UserID',
         ]);
 
@@ -624,15 +786,30 @@ class PropertyIssuanceController extends Controller
             DB::beginTransaction();
 
             $issuance = PropertyIssuance::findOrFail($id);
+
+            $signature = $validated['acknowledgment_signature'] ?? $validated['signature'];
+            $notes = $validated['acknowledgment_notes'] ?? $validated['notes'] ?? null;
             
             // Update acknowledgment info
             $issuance->update([
                 'AcknowledgedBy' => $validated['acknowledged_by'],
                 'AcknowledgedAt' => now(),
-                'AcknowledgmentSignature' => $validated['acknowledgment_signature'],
-                'AcknowledgmentNotes' => $validated['acknowledgment_notes'],
+                'AcknowledgmentSignature' => $signature,
+                'AcknowledgmentNotes' => $notes,
                 'Status' => 'acknowledged'
             ]);
+
+            // If all issuances for the request have been acknowledged, mark the request as received.
+            if ($issuance->RequestID) {
+                $hasPending = PropertyIssuance::where('RequestID', $issuance->RequestID)
+                    ->where('Status', '!=', 'acknowledged')
+                    ->exists();
+
+                if (!$hasPending) {
+                    AssetRequest::where('RequestID', $issuance->RequestID)
+                        ->update(['Status' => 'received']);
+                }
+            }
 
             // Create audit log
             AssetAuditLog::create([
