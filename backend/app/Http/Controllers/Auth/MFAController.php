@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Auth\User;
+use App\Models\Auth\LoginAudit;
 use App\Models\Auth\TrustedDevice;
 use App\Services\MFAService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -135,6 +137,13 @@ class MFAController extends Controller
         try {
             if ($this->mfaService->verifyCode($user, $validated['code'])) {
                 // Code verified - establish session
+                \Log::info('MFA code verified, creating login audit', ['user_id' => $user->UserID]);
+                LoginAudit::create([
+                    'UserID' => $user->UserID,
+                    'EventTime' => Carbon::now(),
+                    'Status' => 'Login',
+                    'IPAddress' => $request->ip(),
+                ]);
                 Auth::login($user);
                 $request->session()->regenerate();
                 $request->session()->save();
@@ -182,6 +191,13 @@ class MFAController extends Controller
         try {
             if ($this->mfaService->verifyBackupCode($user, $validated['code'])) {
                 // Backup code verified - establish session
+                \Log::info('MFA backup code verified, creating login audit', ['user_id' => $user->UserID]);
+                LoginAudit::create([
+                    'UserID' => $user->UserID,
+                    'EventTime' => Carbon::now(),
+                    'Status' => 'Login',
+                    'IPAddress' => $request->ip(),
+                ]);
                 Auth::login($user);
                 $request->session()->regenerate();
                 $request->session()->save();
