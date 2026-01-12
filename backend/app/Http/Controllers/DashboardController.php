@@ -22,10 +22,15 @@ class DashboardController extends Controller
             $stats = [
                 'totalAssets' => DB::table('assignedproperty')->count(),
                 'totalInventory' => DB::table('propertyinventorydetail')->count(),
+                'availableInventory' => DB::table('propertyinventorydetail')->whereNotExists(function ($query) {
+                    $query->select(DB::raw(1))
+                          ->from('assignedproperty')
+                          ->whereRaw('propertyinventorydetail.InventoryDetailID = assignedproperty.InventoryDetailID');
+                })->count(),
                 'totalDeliveryReceipts' => DB::table('deliveryreceipt')->count(),
                 'totalUsers' => DB::table('user')->where('IsActive', 1)->count(),
                 'totalDepartments' => DB::table('department')->where('IsActive', 1)->count(),
-                'totalSuppliers' => DB::table('supplier')->where('IsActive', 1)->count(),
+                'pendingRequests' => DB::table('assetrequest')->where('Status', 'pending')->count(),
                 'forDisposal' => DB::table('assignedproperty')
                     ->where('PropertyStatusID', 4) // For Disposal status
                     ->count(),

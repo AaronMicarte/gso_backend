@@ -450,6 +450,7 @@ class InventoryController extends Controller
         $perPage = max(10, (int) $request->query('per_page', 10));
         $search = $request->query('search');
         $statusId = $request->query('property_status_id');
+        $propertyTypeId = $request->query('property_type_id');
 
         $query = PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
             ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
@@ -528,6 +529,10 @@ class InventoryController extends Controller
 
         if ($statusId) {
             $query->where('propertyinventorydetail.PropertyStatusID', $statusId);
+        }
+
+        if ($propertyTypeId) {
+            $query->where('propertyinventorydetail.PropertyTypeID', $propertyTypeId);
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
