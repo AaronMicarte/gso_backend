@@ -57,8 +57,20 @@ class EndUser extends Model
         return $this->belongsTo(\App\Models\MasterData\Position::class, 'PositionID', 'PositionID');
     }
 
-    public function getFullNameAttribute()
+    public function getFullNameAttribute($value)
     {
-        return "{$this->FirstName} {$this->MiddleName} {$this->LastName}";
+        if (is_string($value) && trim($value) !== '') {
+            return $value;
+        }
+
+        $first = $this->attributes['FirstName'] ?? null;
+        $middle = $this->attributes['MiddleName'] ?? null;
+        $last = $this->attributes['LastName'] ?? null;
+
+        $parts = array_values(array_filter([$first, $middle, $last], function ($part) {
+            return is_string($part) && trim($part) !== '';
+        }));
+
+        return trim(implode(' ', $parts));
     }
 }

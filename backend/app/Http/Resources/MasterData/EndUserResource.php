@@ -21,8 +21,18 @@ class EndUserResource extends JsonResource
             'updated_at' => $this->UpdatedDate?->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
             'is_deleted' => $this->trashed(),
-            'department' => $this->whenLoaded('department'),
-            'position' => $this->whenLoaded('position'),
+            'department' => $this->whenLoaded('department', function () {
+                return [
+                    'id' => $this->department->DepartmentID,
+                    'name' => $this->department->DepartmentName,
+                ];
+            }),
+            'position' => $this->whenLoaded('position', function () {
+                return [
+                    'id' => $this->position->PositionID,
+                    'name' => $this->position->PositionName,
+                ];
+            }),
         ];
     }
 }

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
 use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
 use App\Http\Controllers\Admin\Procurement\IarSignatureController;
 use App\Http\Controllers\department_head\DashboardController as DepartmentHeadDashboardController;
+use App\Http\Controllers\QrCodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -187,6 +188,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
         Route::post('{id}/acknowledge', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledge']);
+    });
+
+    // QR management (assignedproperty + qrcode)
+    Route::prefix('qr')->group(function () {
+        Route::get('properties', [QrCodeController::class, 'index']);
+        Route::post('properties/{propertyId}/generate', [QrCodeController::class, 'generate']);
+        Route::get('scan/{propertyId}', [QrCodeController::class, 'scan']);
     });
 });
 

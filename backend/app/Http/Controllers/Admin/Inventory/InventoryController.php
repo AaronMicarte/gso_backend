@@ -11,6 +11,8 @@ use App\Models\Procurement\PropertyReceived;
 use App\Models\Procurement\DeliveryReceiptDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AssignedProperty;
+use App\Models\QrCode;
 
 class InventoryController extends Controller
 {
@@ -380,30 +382,33 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Inventory detail not found.'], 404);
         }
 
-        $force = $request->boolean('force', false);
-
-        // Only allow manual generation if the inventory detail has been issued (or force=true)
-        $issued = \App\Models\Inventory\PropertyIssuanceDetail::where('InventoryDetailID', $detail->InventoryDetailID)->exists();
-        if (!$issued && !$force) {
-            return response()->json(['message' => 'Cannot generate QR: inventory item is not issued. Generate QR during issuance or set force=true if you really want to.'], 403);
+        $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+        if (!$assignedProperty) {
+            return response()->json([
+                'message' => 'Cannot generate QR: item has no assigned property record yet. Issue the item first to create accountability (assignedproperty), then generate QR.',
+            ], 422);
         }
+
+        $force = $request->boolean('force', false);
 
         // If already has QR and not forcing, return existing
         if ($detail->qrCode && !$force) {
             return response()->json(['message' => 'QR already exists', 'qr' => $detail->qrCode], 200);
         }
 
-        // Generate deterministic QR payload (URL with hash)
-        $baseUrl = config('app.url') ?? env('APP_URL');
-        $hash = substr(sha1($detail->InventoryDetailID . '|' . now()->timestamp), 0, 12);
-        $payload = rtrim($baseUrl, '/') . '/inventory/scan/' . $detail->InventoryDetailID . '?h=' . $hash;
+        $baseUrl = rtrim((string) config('gso.frontend_url'), '/');
+        if ($baseUrl === '') {
+            $baseUrl = 'http://localhost:3000';
+        }
 
-        // Upsert into qrcode table
-        $qr = \App\Models\QrCode::updateOrCreate(
+        $hash = substr(hash_hmac('sha256', (string) $assignedProperty->PropertyID, (string) config('app.key')), 0, 12);
+        $payload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
+
+        $qr = QrCode::updateOrCreate(
             ['InventoryDetailID' => $detail->InventoryDetailID],
             [
-                'PropertyID' => null,
-                'DepartmentID' => null,
+                'PropertyID' => (int) $assignedProperty->PropertyID,
+                'DepartmentID' => (int) $assignedProperty->DepartmentID,
                 'QRCodeData' => $payload,
                 'DateGenerated' => now(),
             ]

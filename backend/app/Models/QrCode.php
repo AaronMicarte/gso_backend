@@ -22,4 +22,9 @@ class QrCode extends Model
     {
         return $this->belongsTo(\App\Models\Inventory\PropertyInventoryDetail::class, 'InventoryDetailID', 'InventoryDetailID');
     }
+
+    public function property()
+    {
+        return $this->belongsTo(\App\Models\AssignedProperty::class, 'PropertyID', 'PropertyID');
+    }
 }

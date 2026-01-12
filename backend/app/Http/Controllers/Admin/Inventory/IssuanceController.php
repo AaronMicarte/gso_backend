@@ -8,7 +8,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Inventory\PropertyIssuance;
 use App\Models\Inventory\PropertyIssuanceDetail;
 use App\Models\Inventory\PropertyInventoryDetail;
+use App\Models\AssignedProperty;
 use App\Models\QrCode;
+use App\Models\EndUser;
 
 class IssuanceController extends Controller
 {
@@ -37,7 +39,7 @@ class IssuanceController extends Controller
             }
             $departmentId = $dept->DepartmentID;
         } else { // enduser
-            $enduser = \App\Models\MasterData\EndUser::find($issuedTo);
+            $enduser = EndUser::find($issuedTo);
             if (!$enduser) {
                 return response()->json(['message' => 'IssuedTo end user not found.'], 422);
             }
@@ -87,14 +89,66 @@ class IssuanceController extends Controller
                     'Remarks' => $d['remarks'] ?? null,
                 ]);
 
+                if ($qtyIssued !== 1) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Issuance quantities must be 1 per InventoryDetailID for QR/accountability tracking.'], 422);
+                }
+
+                // Ensure we have an EndUser for assignedproperty
+                $resolvedEndUser = null;
+                if ($issuedToType === 'enduser') {
+                    $resolvedEndUser = $enduser;
+                } else {
+                    $resolvedEndUser = EndUser::where('DepartmentID', $departmentId)
+                        ->where('FullName', 'Department Custodian')
+                        ->first();
+
+                    if (!$resolvedEndUser) {
+                        $resolvedEndUser = EndUser::create([
+                            'PositionID' => 2,
+                            'DepartmentID' => $departmentId,
+                            'FullName' => 'Department Custodian',
+                            'IsActive' => 1,
+                        ]);
+                    }
+                }
+
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)->first();
+                $assignedPayload = [
+                    'InventoryDetailID' => $inventoryDetail->InventoryDetailID,
+                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                    'DepartmentID' => (int) $departmentId,
+                    'PropertyCardNumber' => $issuance->IssuanceID,
+                    'Description' => $inventoryDetail->Description,
+                    'AssignedDate' => $request->input('date_issued'),
+                    'PropertyStatusID' => 2,
+                    'ConditionID' => (int) ($inventoryDetail->ConditionID ?? 1),
+                    'Remarks' => $request->input('remarks') ?? null,
+                ];
+
+                if ($assignedProperty) {
+                    $assignedProperty->fill($assignedPayload);
+                    $assignedProperty->save();
+                } else {
+                    $assignedProperty = AssignedProperty::create($assignedPayload);
+                }
+
+                $baseUrl = rtrim((string) (config('app.url') ?? env('APP_URL', '')), '/');
+                if ($baseUrl === '') {
+                    $baseUrl = 'http://localhost:3000';
+                }
+
+                $hash = substr(hash_hmac('sha256', (string) $assignedProperty->PropertyID, (string) config('app.key')), 0, 12);
+                $payload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
+
                 // Generate QR for this inventory detail and record department context
                 $payload = rtrim(config('app.url') ?? env('APP_URL'), '/') . '/inventory/scan/' . $inventoryDetail->InventoryDetailID . '?h=' . substr(sha1($inventoryDetail->InventoryDetailID . '|' . now()->timestamp), 0, 12);
 
                 QrCode::updateOrCreate(
                     ['InventoryDetailID' => $inventoryDetail->InventoryDetailID],
                     [
-                        'PropertyID' => null,
-                        'DepartmentID' => $departmentId,
+                        'PropertyID' => (int) $assignedProperty->PropertyID,
+                        'DepartmentID' => (int) $departmentId,
                         'QRCodeData' => $payload,
                         'DateGenerated' => now(),
                     ]

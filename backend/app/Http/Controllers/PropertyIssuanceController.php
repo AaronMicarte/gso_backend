@@ -7,6 +7,8 @@ use App\Models\PropertyIssuance;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\AssetAuditLog;
 use App\Models\Inventory\PropertyInventoryDetail;
+use App\Models\AssignedProperty;
+use App\Models\QrCode;
 use App\Models\EndUser;
 use App\Services\AssetRequestSignatureService;
 use Illuminate\Http\Request;
@@ -365,6 +367,9 @@ class PropertyIssuanceController extends Controller
                 $endUserName = $firstItem->IntendedEndUser;
                 $classification = $firstItem->PropertyClassification ?? 'ICS';
 
+                $resolvedEndUser = $this->resolveEndUserForIssuance($classification, $endUserId, $endUserName, $assetRequest);
+                $resolvedDepartmentId = (int) ($resolvedEndUser->DepartmentID ?? $assetRequest->DepartmentID);
+
                 // Generate document number
                 $documentNumber = $this->generateDocumentNumber($classification);
 
@@ -407,6 +412,10 @@ class PropertyIssuanceController extends Controller
                         foreach ($inventoryMap[$detail->RequestDetailID] as $inventoryItem) {
                             $qtyIssued = $inventoryItem['quantity_issued'];
 
+                            if ((int) $qtyIssued !== 1) {
+                                throw new \Exception('Issuance quantities must be 1 per InventoryDetailID for QR/accountability tracking. InventoryDetailID ' . $inventoryItem['inventory_detail_id'] . ' has quantity_issued=' . $qtyIssued);
+                            }
+
                             PropertyIssuanceDetail::create([
                                 'IssuanceID' => $issuance->IssuanceID,
                                 'RequestDetailID' => $detail->RequestDetailID,
@@ -428,6 +437,40 @@ class PropertyIssuanceController extends Controller
                                 if ($invDetail->fresh()->QuantityAvailable <= 0) {
                                      $invDetail->update(['PropertyStatusID' => 2]); // 2 = Assigned
                                 }
+
+                                // Create/update AssignedProperty (accountability) and generate QR
+                                $assignedProperty = AssignedProperty::where('InventoryDetailID', $invDetail->InventoryDetailID)->first();
+
+                                $assignedPayload = [
+                                    'InventoryDetailID' => $invDetail->InventoryDetailID,
+                                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                                    'DepartmentID' => $resolvedDepartmentId,
+                                    'PropertyCardNumber' => $issuance->DocumentNumber,
+                                    'Description' => $invDetail->Description ?? $detail->ItemDescription,
+                                    'AssignedDate' => $validated['date_issued'],
+                                    'PropertyStatusID' => 2, // Assigned
+                                    'ConditionID' => (int) ($invDetail->ConditionID ?? 1),
+                                    'Remarks' => $validated['remarks'] ?? null,
+                                ];
+
+                                if ($assignedProperty) {
+                                    $assignedProperty->fill($assignedPayload);
+                                    $assignedProperty->save();
+                                } else {
+                                    $assignedProperty = AssignedProperty::create($assignedPayload);
+                                }
+
+                                $qrPayload = $this->buildQrPayloadForProperty((int) $assignedProperty->PropertyID);
+
+                                QrCode::updateOrCreate(
+                                    ['InventoryDetailID' => $invDetail->InventoryDetailID],
+                                    [
+                                        'PropertyID' => (int) $assignedProperty->PropertyID,
+                                        'DepartmentID' => $resolvedDepartmentId,
+                                        'QRCodeData' => $qrPayload,
+                                        'DateGenerated' => now(),
+                                    ]
+                                );
                             }
                         }
                     }
@@ -523,6 +566,53 @@ class PropertyIssuanceController extends Controller
         }
 
         return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    private function resolveEndUserForIssuance(string $classification, ?int $endUserId, ?string $endUserName, AssetRequest $assetRequest): EndUser
+    {
+        if ($classification === 'PAR' && $endUserId) {
+            $endUser = EndUser::find($endUserId);
+            if ($endUser) {
+                return $endUser;
+            }
+        }
+
+        $departmentId = (int) ($assetRequest->DepartmentID ?? ($assetRequest->requester?->DepartmentID ?? 0));
+        $fallbackName = $assetRequest->requester?->FullName ?? null;
+        $nameToUse = $endUserName ?: $fallbackName;
+
+        if (!$departmentId || !$nameToUse) {
+            throw new \Exception('Unable to resolve EndUser for issuance. Please set Assigned End User (PAR) or ensure requester has a FullName + Department.');
+        }
+
+        $existing = EndUser::where('FullName', $nameToUse)
+            ->where('DepartmentID', $departmentId)
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // Auto-create EndUser for user-based recipients (e.g. ICS to requester)
+        return EndUser::create([
+            'PositionID' => 2, // Staff (safe default)
+            'DepartmentID' => $departmentId,
+            'FullName' => $nameToUse,
+            'IsActive' => 1,
+        ]);
+    }
+
+    private function buildQrPayloadForProperty(int $propertyId): string
+    {
+        $baseUrl = rtrim((string) config('gso.frontend_url'), '/');
+        if ($baseUrl === '') {
+            $baseUrl = 'http://localhost:3000';
+        }
+
+        $key = (string) config('app.key');
+        $hash = substr(hash_hmac('sha256', (string) $propertyId, $key), 0, 12);
+
+        return $baseUrl . '/qr/scan/' . $propertyId . '?h=' . $hash;
     }
 
     /**
