@@ -277,7 +277,7 @@ class AssetRequestController extends Controller
             'details' => 'nullable|array',
             'details.*.RequestDetailID' => 'required|integer',
             'details.*.PropertyClassification' => 'required|in:ICS,PAR',
-            'details.*.AssignedEndUserID' => 'nullable|exists:user,UserID',
+            'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
             'details.*.AssignedDepartmentID' => 'nullable|integer',
             'details.*.AdminNotes' => 'nullable|string|max:500',
             'approverSignature' => 'required|string', // base64 data URL
@@ -305,12 +305,20 @@ class AssetRequestController extends Controller
             // Update review data for each item
             if (isset($validated['details'])) {
                 foreach ($validated['details'] as $item) {
+                    $classification = $item['PropertyClassification'] ?? null;
+                    $assignedDepartmentId = $item['AssignedDepartmentID'] ?? null;
+
+                    // Ensure department isn't left null for accountability grouping.
+                    if (empty($assignedDepartmentId) && in_array($classification, ['ICS', 'PAR'], true)) {
+                        $assignedDepartmentId = $assetRequest->DepartmentID;
+                    }
+
                     $assetRequest->details()
                         ->where('RequestDetailID', $item['RequestDetailID'])
                         ->update([
                             'PropertyClassification' => $item['PropertyClassification'],
                             'AssignedEndUserID' => $item['AssignedEndUserID'],
-                            'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                            'AssignedDepartmentID' => $assignedDepartmentId,
                             'AdminNotes' => $item['AdminNotes'],
                         ]);
                 }
@@ -339,10 +347,17 @@ class AssetRequestController extends Controller
             // Create issuance assignments for each item
             if (isset($validated['details'])) {
                 foreach ($validated['details'] as $item) {
+                    $classification = $item['PropertyClassification'] ?? null;
+                    $assignedDepartmentId = $item['AssignedDepartmentID'] ?? null;
+
+                    if (empty($assignedDepartmentId) && in_array($classification, ['ICS', 'PAR'], true)) {
+                        $assignedDepartmentId = $assetRequest->DepartmentID;
+                    }
+
                     AssetAssignment::create([
                         'AssetRequestDetailID' => $item['RequestDetailID'],
                         'AssignedUserID' => $item['AssignedEndUserID'],
-                        'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                        'AssignedDepartmentID' => $assignedDepartmentId,
                         'AssignmentType' => 'issuance',
                         'PropertyClassification' => $item['PropertyClassification'],
                         'AdminNotes' => $item['AdminNotes'],
@@ -390,7 +405,7 @@ class AssetRequestController extends Controller
             'details' => 'nullable|array',
             'details.*.RequestDetailID' => 'required|integer',
             'details.*.PropertyClassification' => 'nullable|in:ICS,PAR',
-            'details.*.AssignedEndUserID' => 'nullable|exists:user,UserID',
+            'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
             'details.*.AssignedDepartmentID' => 'nullable|integer',
             'details.*.AdminNotes' => 'nullable|string|max:500',
         ]);
@@ -596,7 +611,7 @@ class AssetRequestController extends Controller
             'details' => 'required|array|min:1',
             'details.*.RequestDetailID' => 'required|exists:assetrequestdetail,RequestDetailID',
             'details.*.PropertyClassification' => 'required|in:ICS,PAR',
-            'details.*.AssignedEndUserID' => 'nullable|exists:user,UserID',
+            'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
             'details.*.AssignedDepartmentID' => 'nullable|exists:department,DepartmentID',
             'details.*.AdminNotes' => 'nullable|string|max:1000',
         ]);
@@ -627,14 +642,28 @@ class AssetRequestController extends Controller
         }
 
         // Business logic validation
+        $detailsById = $assetRequest->details->keyBy('RequestDetailID');
         foreach ($validated['details'] as $item) {
-            if ($item['PropertyClassification'] === 'PAR' && empty($item['AssignedEndUserID'])) {
+            $classification = $item['PropertyClassification'] ?? null;
+            $requestDetail = $detailsById->get($item['RequestDetailID']);
+
+            if ($classification === 'PAR') {
+                // PAR uses free-text recipient name (IntendedEndUser) and will resolve/create EndUser at issuance time.
+                // We still require the name to be present for real-world document integrity.
+                if (!$requestDetail || empty(trim((string) $requestDetail->IntendedEndUser))) {
+                    return response()->json([
+                        'message' => 'PAR items must have an individual name (IntendedEndUser)'
+                    ], 422);
+                }
+            }
+
+            if ($classification === 'ICS' && empty($item['AssignedEndUserID'])) {
                 return response()->json([
-                    'message' => 'PAR items must be assigned to an individual'
+                    'message' => 'ICS items must be assigned to an End User'
                 ], 422);
             }
             
-            if ($item['PropertyClassification'] === 'ICS' && empty($item['AssignedDepartmentID'])) {
+            if ($classification === 'ICS' && empty($item['AssignedDepartmentID'])) {
                 return response()->json([
                     'message' => 'ICS items must be assigned to a department'
                 ], 422);
@@ -652,10 +681,17 @@ class AssetRequestController extends Controller
 
             // Create asset assignments for each item
             foreach ($validated['details'] as $item) {
+                $classification = $item['PropertyClassification'] ?? null;
+                $assignedDepartmentId = $item['AssignedDepartmentID'] ?? null;
+
+                if (empty($assignedDepartmentId) && in_array($classification, ['ICS', 'PAR'], true)) {
+                    $assignedDepartmentId = $assetRequest->DepartmentID;
+                }
+
                 AssetAssignment::create([
                     'AssetRequestDetailID' => $item['RequestDetailID'],
                     'AssignedUserID' => $item['AssignedEndUserID'],
-                    'AssignedDepartmentID' => $item['AssignedDepartmentID'],
+                    'AssignedDepartmentID' => $assignedDepartmentId,
                     'AssignmentType' => 'request',
                     'PropertyClassification' => $item['PropertyClassification'],
                     'AdminNotes' => $item['AdminNotes'],

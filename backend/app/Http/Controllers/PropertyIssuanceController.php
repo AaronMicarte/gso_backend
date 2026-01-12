@@ -185,8 +185,11 @@ class PropertyIssuanceController extends Controller
         $issuance = PropertyIssuance::with([
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
+            'request.signatures',
             'issuedBy',
+            'issuedBy.department:DepartmentID,DepartmentName',
             'issuedTo',
+            'issuedTo.department:DepartmentID,DepartmentName',
             'details.inventoryDetail' => function ($query) {
                 $query->withTrashed();
             },
@@ -203,6 +206,7 @@ class PropertyIssuanceController extends Controller
                 $query->withTrashed();
             },
             'details.inventoryDetail.unitOfMeasure',
+            'details.inventoryDetail.qrCode',
         ])->findOrFail($id);
 
         // Transform the issuance data to match frontend expectations
@@ -287,6 +291,14 @@ class PropertyIssuanceController extends Controller
                         ] : null,
                     ] : null,
                     'unitOfMeasure' => $unitName ? ['UnitName' => $unitName] : null,
+                    'qrCode' => $inventoryDetail?->qrCode ? [
+                        'QRCodeID' => $inventoryDetail->qrCode->QRCodeID,
+                        'PropertyID' => $inventoryDetail->qrCode->PropertyID,
+                        'InventoryDetailID' => $inventoryDetail->qrCode->InventoryDetailID,
+                        'DepartmentID' => $inventoryDetail->qrCode->DepartmentID,
+                        'QRCodeData' => $inventoryDetail->qrCode->QRCodeData,
+                        'DateGenerated' => $inventoryDetail->qrCode->DateGenerated,
+                    ] : null,
                     'propertyInventory' => [
                         'ItemName' => $itemName,
                         'ItemDescription' => $technicalDescription,
@@ -385,20 +397,11 @@ class PropertyIssuanceController extends Controller
                     'CreatedDate' => now(),
                 ];
 
-                if ($classification === 'ICS') {
-                    // ICS recipient must be the requester (dept head)
-                    $issuanceData['IssuedTo'] = $assetRequest->RequestedBy;
-                    if (!$issuanceData['IssuedTo']) {
-                        $issuanceData['IssuedToName'] = $assetRequest->requester->FullName
-                            ?? $endUserName
-                            ?? 'Unspecified User';
-                    }
-                } elseif ($endUserId) {
-                    $issuanceData['IssuedTo'] = $endUserId;
-                } else {
-                    $issuanceData['IssuedTo'] = null;
-                    $issuanceData['IssuedToName'] = $endUserName ?? 'Unspecified User';
-                }
+                // IMPORTANT: `propertyissuance.IssuedTo` must reference `enduser.EndUserID`.
+                // Using `assetrequest.RequestedBy` (a `user.UserID`) will break legacy FK constraints
+                // when persisting ICS/PAR records.
+                $issuanceData['IssuedTo'] = (int) $resolvedEndUser->EndUserID;
+                $issuanceData['IssuedToName'] = $resolvedEndUser->FullName ?? ($endUserName ?? $assetRequest->requester?->FullName ?? null);
 
                 // Create the property issuance
                 $issuance = PropertyIssuance::create($issuanceData);
@@ -459,18 +462,6 @@ class PropertyIssuanceController extends Controller
                                 } else {
                                     $assignedProperty = AssignedProperty::create($assignedPayload);
                                 }
-
-                                $qrPayload = $this->buildQrPayloadForProperty((int) $assignedProperty->PropertyID);
-
-                                QrCode::updateOrCreate(
-                                    ['InventoryDetailID' => $invDetail->InventoryDetailID],
-                                    [
-                                        'PropertyID' => (int) $assignedProperty->PropertyID,
-                                        'DepartmentID' => $resolvedDepartmentId,
-                                        'QRCodeData' => $qrPayload,
-                                        'DateGenerated' => now(),
-                                    ]
-                                );
                             }
                         }
                     }
@@ -821,11 +812,11 @@ class PropertyIssuanceController extends Controller
                     'condition.ConditionName',
                     'unitofmeasure.UnitName',
                     'deliveryreceiptdetail.ItemDescription as dr_item_description'
-                )
-                ->whereDoesntHave('assetAssignments');
+                );
 
             // Only include items that are currently marked as available.
-            // (Assigned items may not always have an assetAssignments record depending on legacy data.)
+            // NOTE: `asset_assignments` is deprecated for availability decisions.
+            // The source of truth for availability is the inventory status + issuance/accountability tables.
             $query->where('propertyinventorydetail.PropertyStatusID', 1);
 
             // Filter by search term
@@ -872,10 +863,75 @@ class PropertyIssuanceController extends Controller
             'acknowledged_by' => 'required|integer|exists:user,UserID',
         ]);
 
+        $issuance = PropertyIssuance::with(['details'])->findOrFail($id);
+
+        // Domain validation: acknowledgment should only happen once the issuance
+        // has proper inventory linkage and an AssignedProperty row for each item.
+        // Otherwise QR + PAR/ICS cannot be finalized correctly.
+        $invalidInventoryDetails = [];
+        $missingAssignedProperty = [];
+
+        foreach ($issuance->details as $detail) {
+            $rawInventoryDetailId = $detail->InventoryDetailID;
+            $inventoryDetailId = (int) $rawInventoryDetailId;
+
+            // If InventoryDetailID is null/empty, it becomes 0 — treat as invalid.
+            if (empty($rawInventoryDetailId) || $inventoryDetailId <= 0) {
+                $invalidInventoryDetails[] = [
+                    'InventoryDetailID' => $rawInventoryDetailId,
+                    'IssuanceDetailID' => $detail->IssuanceDetailID ?? null,
+                ];
+                continue;
+            }
+
+            $assignedPropertyExists = AssignedProperty::where('InventoryDetailID', $inventoryDetailId)->exists();
+            if (!$assignedPropertyExists) {
+                $missingAssignedProperty[] = $inventoryDetailId;
+            }
+        }
+
+        if (!empty($invalidInventoryDetails) || !empty($missingAssignedProperty)) {
+            return response()->json([
+                'message' => 'Cannot acknowledge issuance: issuance items are missing required accountability records. Please ensure each issued item is linked to an inventory detail and has an assigned property record before acknowledging.',
+                'invalid_inventory_details' => $invalidInventoryDetails,
+                'missing_assignedproperty_inventory_detail_ids' => array_values(array_unique($missingAssignedProperty)),
+            ], 422);
+        }
+
+        // Resolve and validate the real recipient EndUserID from AssignedProperty.
+        // This is required because legacy tables (`inventorycustodianslip`, `par`) enforce FK/NOT NULL constraints.
+        $issuedToEndUserIds = [];
+        foreach ($issuance->details as $detail) {
+            $inventoryDetailId = (int) $detail->InventoryDetailID;
+            $assignedProperty = AssignedProperty::where('InventoryDetailID', $inventoryDetailId)->first(['EndUserID']);
+            if (!$assignedProperty || empty($assignedProperty->EndUserID)) {
+                return response()->json([
+                    'message' => 'Cannot acknowledge issuance: missing assigned end user for one or more issued items. Please re-issue or fix the assigned property records.',
+                    'missing_assigned_end_user_inventory_detail_id' => $inventoryDetailId,
+                ], 422);
+            }
+            $issuedToEndUserIds[] = (int) $assignedProperty->EndUserID;
+        }
+
+        $issuedToEndUserIds = array_values(array_unique($issuedToEndUserIds));
+        if (count($issuedToEndUserIds) !== 1) {
+            return response()->json([
+                'message' => 'Cannot acknowledge issuance: issued items belong to multiple custodians. Please issue separate PAR/ICS documents per recipient.',
+                'issued_to_end_user_ids' => $issuedToEndUserIds,
+            ], 422);
+        }
+
+        $issuedToEndUserId = (int) $issuedToEndUserIds[0];
+        $issuedToEndUserExists = EndUser::where('EndUserID', $issuedToEndUserId)->exists();
+        if (!$issuedToEndUserExists) {
+            return response()->json([
+                'message' => 'Cannot acknowledge issuance: recipient End User record does not exist. Please create/select a valid End User before issuing/acknowledging.',
+                'issued_to_end_user_id' => $issuedToEndUserId,
+            ], 422);
+        }
+
         try {
             DB::beginTransaction();
-
-            $issuance = PropertyIssuance::findOrFail($id);
 
             $signature = $validated['acknowledgment_signature'] ?? $validated['signature'];
             $notes = $validated['acknowledgment_notes'] ?? $validated['notes'] ?? null;
@@ -888,6 +944,156 @@ class PropertyIssuanceController extends Controller
                 'AcknowledgmentNotes' => $notes,
                 'Status' => 'acknowledged'
             ]);
+
+            // Self-heal bad historical data where `IssuedTo` stored a `user.UserID` instead of `enduser.EndUserID`.
+            if ((int) $issuance->IssuedTo !== $issuedToEndUserId) {
+                $issuance->IssuedTo = $issuedToEndUserId;
+                if (empty($issuance->IssuedToName)) {
+                    $issuance->IssuedToName = EndUser::where('EndUserID', $issuedToEndUserId)->value('FullName');
+                }
+                $issuance->save();
+            }
+
+            // On receipt/acknowledgment, generate QR codes (if missing) and persist PAR/ICS records.
+            // This matches real workflow: accountability is finalized on receipt.
+            $baseRemarks = $issuance->Remarks ?? null;
+            $docNumber = (string) $issuance->DocumentNumber;
+
+            // ICS header and details
+            $icsHeaderId = null;
+            if ($issuance->DocumentType === 'ICS') {
+                $existingHeader = DB::table('inventorycustodianslip')
+                    ->where('ICSNumber', $docNumber)
+                    ->first();
+
+                if ($existingHeader) {
+                    $icsHeaderId = (int) $existingHeader->ICSID;
+                } else {
+                    $icsHeaderId = (int) DB::table('inventorycustodianslip')->insertGetId([
+                        'ICSNumber' => $docNumber,
+                        'IssuedTo' => $issuedToEndUserId,
+                        'IssuedBy' => $issuance->IssuedBy,
+                        'DateIssued' => $issuance->DateIssued,
+                        'TotalCost' => 0,
+                        'Remarks' => $baseRemarks,
+                        'CreatedDate' => now(),
+                    ]);
+                }
+            }
+
+            // PAR header and details
+            $parHeaderId = null;
+            if ($issuance->DocumentType === 'PAR') {
+                $existingPar = DB::table('par')
+                    ->where('PARNumber', $docNumber)
+                    ->first();
+
+                if ($existingPar) {
+                    $parHeaderId = (int) $existingPar->PARID;
+
+                    // Keep header fields in sync (recipient, issuer, date, remarks)
+                    DB::table('par')
+                        ->where('PARID', $parHeaderId)
+                        ->update([
+                            'IssuedTo' => $issuedToEndUserId,
+                            'IssuedBy' => $issuance->IssuedBy,
+                            'DateIssued' => $issuance->DateIssued,
+                            'Remarks' => $baseRemarks,
+                        ]);
+                } else {
+                    // NOTE: `par.PropertyID` is nullable (migrated) to allow a single header per PARNumber.
+                    $parHeaderId = (int) DB::table('par')->insertGetId([
+                        'PARNumber' => $docNumber,
+                        'PropertyID' => null,
+                        'IssuedTo' => $issuedToEndUserId,
+                        'IssuedBy' => $issuance->IssuedBy,
+                        'DateIssued' => $issuance->DateIssued,
+                        'TotalCost' => 0,
+                        'Remarks' => $baseRemarks,
+                        'CreatedDate' => now(),
+                    ]);
+                }
+            }
+
+            $totalCost = 0;
+
+            foreach ($issuance->details as $detail) {
+                $inventoryDetailId = (int) $detail->InventoryDetailID;
+                $qtyIssued = (int) $detail->QuantityIssued;
+
+                // AssignedProperty should already exist from issuance (validated above).
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $inventoryDetailId)->first();
+
+                $qrExisting = QrCode::where('InventoryDetailID', $inventoryDetailId)->first();
+                if (!$qrExisting || empty($qrExisting->QRCodeData)) {
+                    $qrPayload = $this->buildQrPayloadForProperty((int) $assignedProperty->PropertyID);
+
+                    QrCode::updateOrCreate(
+                        ['InventoryDetailID' => $inventoryDetailId],
+                        [
+                            'PropertyID' => (int) $assignedProperty->PropertyID,
+                            'DepartmentID' => (int) $assignedProperty->DepartmentID,
+                            'QRCodeData' => $qrPayload,
+                            'DateGenerated' => now(),
+                        ]
+                    );
+                }
+
+                // PAR / ICS persistence
+                $inventoryDetail = PropertyInventoryDetail::find($inventoryDetailId);
+                $unitCost = $inventoryDetail?->UnitCost ? (float) $inventoryDetail->UnitCost : 0.0;
+                $lineCost = $unitCost * $qtyIssued;
+                $totalCost += $lineCost;
+
+                if ($issuance->DocumentType === 'PAR') {
+                    // PAR must mirror ICS behavior: one header + multiple detail rows.
+                    if ($parHeaderId) {
+                        DB::table('pardetail')->updateOrInsert(
+                            [
+                                'PARID' => $parHeaderId,
+                                'PropertyID' => (int) $assignedProperty->PropertyID,
+                            ],
+                            [
+                                'QuantityIssued' => $qtyIssued,
+                                'UnitCost' => $unitCost,
+                                'TotalCost' => $lineCost,
+                                'Remarks' => $detail->Remarks ?? $baseRemarks,
+                            ]
+                        );
+                    }
+                } elseif ($issuance->DocumentType === 'ICS') {
+                    if ($icsHeaderId) {
+                        DB::table('icsdetail')->updateOrInsert(
+                            [
+                                'ICSID' => $icsHeaderId,
+                                'PropertyID' => (int) $assignedProperty->PropertyID,
+                            ],
+                            [
+                                'QuantityIssued' => $qtyIssued,
+                                'UnitCost' => $unitCost,
+                                'TotalCost' => $lineCost,
+                                'Remarks' => $detail->Remarks ?? $baseRemarks,
+                            ]
+                        );
+                    }
+                }
+            }
+
+            if ($issuance->DocumentType === 'ICS' && $icsHeaderId) {
+                DB::table('inventorycustodianslip')
+                    ->where('ICSID', $icsHeaderId)
+                    ->update([
+                        'TotalCost' => $totalCost,
+                    ]);
+            }
+
+            if ($issuance->DocumentType === 'PAR' && $parHeaderId) {
+                DB::table('par')
+                    ->where('PARID', $parHeaderId)
+                    ->update([
+                        'TotalCost' => $totalCost,
+                    ]);
+            }
 
             // If all issuances for the request have been acknowledged, mark the request as received.
             if ($issuance->RequestID) {
@@ -925,7 +1131,7 @@ class PropertyIssuanceController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Failed to acknowledge issuance',
+                'message' => 'Failed to acknowledge issuance: ' . $e->getMessage(),
                 'error' => $e->getMessage()
             ], 500);
         }

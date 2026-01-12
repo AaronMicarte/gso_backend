@@ -9,7 +9,6 @@ use App\Models\Inventory\PropertyIssuance;
 use App\Models\Inventory\PropertyIssuanceDetail;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\AssignedProperty;
-use App\Models\QrCode;
 use App\Models\EndUser;
 
 class IssuanceController extends Controller
@@ -132,31 +131,10 @@ class IssuanceController extends Controller
                 } else {
                     $assignedProperty = AssignedProperty::create($assignedPayload);
                 }
-
-                $baseUrl = rtrim((string) (config('app.url') ?? env('APP_URL', '')), '/');
-                if ($baseUrl === '') {
-                    $baseUrl = 'http://localhost:3000';
-                }
-
-                $hash = substr(hash_hmac('sha256', (string) $assignedProperty->PropertyID, (string) config('app.key')), 0, 12);
-                $payload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
-
-                // Generate QR for this inventory detail and record department context
-                $payload = rtrim(config('app.url') ?? env('APP_URL'), '/') . '/inventory/scan/' . $inventoryDetail->InventoryDetailID . '?h=' . substr(sha1($inventoryDetail->InventoryDetailID . '|' . now()->timestamp), 0, 12);
-
-                QrCode::updateOrCreate(
-                    ['InventoryDetailID' => $inventoryDetail->InventoryDetailID],
-                    [
-                        'PropertyID' => (int) $assignedProperty->PropertyID,
-                        'DepartmentID' => (int) $departmentId,
-                        'QRCodeData' => $payload,
-                        'DateGenerated' => now(),
-                    ]
-                );
             }
 
             DB::commit();
-            return response()->json(['message' => 'Issuance recorded and QR generated for issued items', 'issuance_id' => $issuance->IssuanceID], 201);
+            return response()->json(['message' => 'Issuance recorded successfully', 'issuance_id' => $issuance->IssuanceID], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Failed to record issuance: ' . $e->getMessage()], 500);

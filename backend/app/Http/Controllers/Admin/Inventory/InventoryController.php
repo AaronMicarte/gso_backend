@@ -192,19 +192,29 @@ class InventoryController extends Controller
         $activeIssuanceStatuses = ['pending_acknowledgment', 'acknowledged'];
 
                 $custodianSql = "(
-                        SELECT COALESCE(eu.FullName, u.FullName, pi.IssuedToName)
-            FROM propertyissuancedetail pidet
-            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
-            JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
-            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                        SELECT COALESCE(
+                                CASE
+                                        WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
+                                        ELSE eu.FullName
+                                END,
+                                u.FullName,
+                                pi.IssuedToName,
+                                reqU.FullName
+                        )
+                        FROM propertyissuancedetail pidet
+                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                        JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+                        LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                        LEFT JOIN user reqU ON reqU.UserID = ar.RequestedBy
+                        LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
                         LEFT JOIN user u ON u.UserID = pi.IssuedTo
-            WHERE invd.InventoryID = propertyinventory.InventoryID
-              AND pi.deleted_at IS NULL
-              AND pidet.deleted_at IS NULL
-              AND pi.Status IN ('pending_acknowledgment','acknowledged')
-            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
-            LIMIT 1
-        )";
+                        WHERE invd.InventoryID = propertyinventory.InventoryID
+                            AND pi.deleted_at IS NULL
+                            AND pidet.deleted_at IS NULL
+                            AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                        LIMIT 1
+                )";
 
                 $locationSql = "(
                         SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
@@ -310,9 +320,19 @@ class InventoryController extends Controller
                               'propertyclassification.ClassificationName', 'propertyclassification.DocumentType'
                       )
                                             ->addSelect(DB::raw("(
-                                                    SELECT COALESCE(eu.FullName, u.FullName, pi.IssuedToName)
+                                                    SELECT COALESCE(
+                                                        CASE
+                                                            WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
+                                                            ELSE eu.FullName
+                                                        END,
+                                                        u.FullName,
+                                                        pi.IssuedToName,
+                                                        reqU.FullName
+                                                    )
                                                     FROM propertyissuancedetail pidet
                                                     JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                                    LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                                                    LEFT JOIN user reqU ON reqU.UserID = ar.RequestedBy
                                                     LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
                                                     LEFT JOIN user u ON u.UserID = pi.IssuedTo
                                                     WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
@@ -472,10 +492,26 @@ class InventoryController extends Controller
                 'deliveryreceiptdetail.SerialNumber as dr_serial'
             )
             ->addSelect([
+                                'qrCodeData' => DB::raw("(
+                                        SELECT q.QRCodeData
+                                        FROM qrcode q
+                                        WHERE q.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                        LIMIT 1
+                                ) as qrCodeData"),
                                 'custodianName' => DB::raw("(
-                                        SELECT COALESCE(eu.FullName, u.FullName, pi.IssuedToName)
+                                        SELECT COALESCE(
+                                            CASE
+                                                WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
+                                                ELSE eu.FullName
+                                            END,
+                                            u.FullName,
+                                            pi.IssuedToName,
+                                            reqU.FullName
+                                        )
                                         FROM propertyissuancedetail pidet
                                         JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                        LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                                        LEFT JOIN user reqU ON reqU.UserID = ar.RequestedBy
                                         LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
                                         LEFT JOIN user u ON u.UserID = pi.IssuedTo
                                         WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
