@@ -10,7 +10,7 @@ use App\Models\AssetAssignment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
+use App\Http\Resources\MasterData\DepartmentResource;
 
 class AssetRequestController extends Controller
 {
@@ -29,12 +29,13 @@ class AssetRequestController extends Controller
         ]);
 
         // Role-based filtering
-        if ($user->RoleID === 3) { // Department Head
+        $roleName = $user->userRole->RoleName ?? '';
+        if (in_array($roleName, ['Admin', 'GSO Staff'])) {
+            // Can see all
+        } else {
+            // All other roles can only see requests from their department
             $query->where('DepartmentID', $user->DepartmentID);
-        } elseif ($user->RoleID === 2) { // Staff (can only see their own)
-            $query->where('RequestedBy', $user->UserID);
         }
-        // Admin/GSO can see all
 
         // Status filter
         if ($request->filled('status')) {
@@ -88,6 +89,21 @@ class AssetRequestController extends Controller
                 ])->orderBy('DateIssued', 'desc');
             },
         ])->findOrFail($id);
+
+        // Role-based access control for viewing
+        $user = Auth::user();
+        $roleName = $user->userRole->RoleName ?? '';
+        $canView = false;
+
+        if (in_array($roleName, ['Admin', 'GSO Staff'])) {
+            $canView = true;
+        } else {
+            $canView = $request->DepartmentID === $user->DepartmentID;
+        }
+
+        if (!$canView) {
+            return response()->json(['message' => 'Unauthorized to view this asset request'], 403);
+        }
 
         // Map propertyIssuance to the frontend's expected `issuances` array
         $requestArr = $request->toArray();
@@ -768,8 +784,8 @@ class AssetRequestController extends Controller
     {
         $departments = \App\Models\Auth\Department::where('IsActive', true)
             ->orderBy('DepartmentName')
-            ->get(['DepartmentID', 'DepartmentName', 'DepartmentCode']);
+            ->get();
 
-        return response()->json($departments);
+        return DepartmentResource::collection($departments);
     }
 }

@@ -26,6 +26,8 @@ return [
     |
     */
 
+    // Frontend base URL used to generate links (e.g., account activation)
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
     'env' => env('APP_ENV', 'production'),
 
     /*

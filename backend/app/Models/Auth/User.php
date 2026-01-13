@@ -32,9 +32,14 @@ class User extends Authenticatable
         'Password',
         'FullName',
         'IsActive',
-        'MFASecret',
         'MFAEnabled',
+        'MFASecret',
         'BackupCodes',
+        'EmailVerifiedAt',
+        'ActivationTokenHash',
+        'ActivationSentAt',
+        'ActivationExpiresAt',
+        'MustChangePassword',
     ];
 
     /**
@@ -43,6 +48,9 @@ class User extends Authenticatable
     protected $hidden = [
         'Password',
         'remember_token',
+        'MFASecret',
+        'BackupCodes',
+        'ActivationTokenHash',
     ];
 
     /**
@@ -60,6 +68,12 @@ class User extends Authenticatable
     {
         return [
             'Password' => 'hashed',
+            'IsActive' => 'boolean',
+            'MFAEnabled' => 'boolean',
+            'MustChangePassword' => 'boolean',
+            'EmailVerifiedAt' => 'datetime',
+            'ActivationSentAt' => 'datetime',
+            'ActivationExpiresAt' => 'datetime',
         ];
     }
 

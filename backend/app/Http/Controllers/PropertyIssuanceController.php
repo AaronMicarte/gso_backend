@@ -35,12 +35,12 @@ class PropertyIssuanceController extends Controller
         ]);
 
         // Role-based filtering
-        if ($user->RoleID === 3) { // Department Head
+        $roleName = $user->userRole->RoleName ?? '';
+        if (in_array($roleName, ['Admin', 'GSO Staff'])) {
+            // Can see all
+        } else {
+            // All other roles can only see issuances from their department
             $query->whereHas('request', function ($q) use ($user) {
-                $q->where('DepartmentID', $user->DepartmentID);
-            });
-        } elseif ($user->RoleID === 2) { // Staff
-            $query->whereHas('issuedTo', function ($q) use ($user) {
                 $q->where('DepartmentID', $user->DepartmentID);
             });
         }
@@ -208,6 +208,21 @@ class PropertyIssuanceController extends Controller
             'details.inventoryDetail.unitOfMeasure',
             'details.inventoryDetail.qrCode',
         ])->findOrFail($id);
+
+        // Role-based access control for viewing
+        $user = Auth::user();
+        $roleName = $user->userRole->RoleName ?? '';
+        $canView = false;
+
+        if (in_array($roleName, ['Admin', 'GSO Staff'])) {
+            $canView = true;
+        } else {
+            $canView = $issuance->request && $issuance->request->DepartmentID === $user->DepartmentID;
+        }
+
+        if (!$canView) {
+            return response()->json(['message' => 'Unauthorized to view this property issuance'], 403);
+        }
 
         // Transform the issuance data to match frontend expectations
         $transformedIssuance = [

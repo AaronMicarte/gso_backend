@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\MFAController;
+use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\MasterData\CategoryController as MasterDataCategoryController;
 use App\Http\Controllers\Admin\MasterData\ClassificationController;
 use App\Http\Controllers\Admin\MasterData\ConditionController;
@@ -40,6 +41,9 @@ Route::get('/test-connection', function () {
     return response()->json(['message' => 'API is working']);
 });
 
+// Public account activation routes
+Route::post('/auth/activate-account', [AuthController::class, 'activateAccount']);
+
 // Public MFA routes (for login flow)
 Route::post('/mfa/verify', [MFAController::class, 'verifyCode']);
 Route::post('/mfa/setup/generate', [AuthController::class, 'generateMFASecretForLogin']);
@@ -70,6 +74,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin routes
     Route::prefix('admin')->group(function () {
+        // User Management (Admin only)
+        Route::get('users', [UserManagementController::class, 'index']);
+        Route::post('users', [UserManagementController::class, 'store']);
+        Route::patch('users/{id}/active', [UserManagementController::class, 'toggleActive']);
+        Route::post('users/{id}/resend-activation', [UserManagementController::class, 'resendActivation']);
+
         // Master Data routes (structured approach)
         Route::prefix('master-data')->group(function () {
             // Categories

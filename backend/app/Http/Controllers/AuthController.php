@@ -11,6 +11,8 @@ use App\Models\Auth\LoginAudit;
 use App\Models\Auth\TrustedDevice;
 use App\Services\MFAService;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class AuthController extends Controller
 {
@@ -52,6 +54,21 @@ class AuthController extends Controller
         // If user not found, return generic error (security best practice to avoid enumeration)
         if (!$user) {
             return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        // 2.1 Account state checks
+        if (!$user->IsActive) {
+            return response()->json([
+                'message' => 'Account is disabled. Please contact your GSO Admin.',
+                'account_disabled' => true,
+            ], 403);
+        }
+
+        if (!$user->EmailVerifiedAt) {
+            return response()->json([
+                'message' => 'Account activation required. Please check your email for the activation link.',
+                'activation_required' => true,
+            ], 403);
         }
 
         // 3. Check Rate Limiting
@@ -225,6 +242,70 @@ class AuthController extends Controller
                     'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
                 ]
             ]
+        ]);
+    }
+
+    /**
+     * Activate account using emailed token, verify email, and set a new password.
+     * Public endpoint.
+     */
+    public function activateAccount(Request $request)
+    {
+        try {
+            $request->validate([
+                'token' => 'required|string|min:20',
+                'password' => [
+                    'required',
+                    'string',
+                    'confirmed',
+                    PasswordRule::min(12)->mixedCase()->numbers()->symbols(),
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $tokenHash = hash('sha256', $request->token);
+
+        $user = User::where('ActivationTokenHash', $tokenHash)->first();
+        if (!$user) {
+            return response()->json(['message' => 'Invalid or expired activation token'], 422);
+        }
+
+        if ($user->ActivationExpiresAt && Carbon::parse($user->ActivationExpiresAt)->isPast()) {
+            return response()->json(['message' => 'Invalid or expired activation token'], 422);
+        }
+
+        if (!$user->IsActive) {
+            return response()->json(['message' => 'Account is disabled. Please contact your GSO Admin.'], 403);
+        }
+
+        // Activate + verify
+        $user->EmailVerifiedAt = Carbon::now();
+        $user->ActivationTokenHash = null;
+        $user->ActivationSentAt = null;
+        $user->ActivationExpiresAt = null;
+        $user->MustChangePassword = 0;
+
+        // Set new password
+        $user->Password = Hash::make($request->password);
+        $user->UpdatedDate = Carbon::now();
+        $user->save();
+
+        // Return info for client to continue with MFA setup if needed
+        $user->load(['userRole']);
+        $userRole = $user->userRole->RoleName ?? '';
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
+        $requiresMFA = in_array($userRole, $mfaRequiredRoles);
+
+        return response()->json([
+            'message' => 'Account activated successfully',
+            'user_id' => $user->UserID,
+            'mfa_setup_required' => $requiresMFA && !$user->MFAEnabled,
+            'mfa_enabled' => (bool) $user->MFAEnabled,
         ]);
     }
 
