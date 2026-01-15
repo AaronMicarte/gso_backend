@@ -122,10 +122,14 @@ class MFAController extends Controller
     {
         $validated = $request->validate([
             'user_id' => 'required|integer',
-            'code' => 'required|string|size:6',
+            // Accept either a 6-digit TOTP code or an 8-character backup code
+            'code' => 'required|string|min:6|max:8|regex:/^[A-Za-z0-9]+$/',
             'trust_device' => 'boolean',
             'device_name' => 'nullable|string|max:255',
         ]);
+
+        // Normalize code (defensive: strip spaces and uppercase)
+        $validated['code'] = strtoupper(preg_replace('/\s+/', '', $validated['code']));
 
         $user = User::find($validated['user_id']);
 
