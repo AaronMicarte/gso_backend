@@ -5,28 +5,49 @@ namespace App\Http\Controllers;
 use App\Models\AssignedProperty;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\QrCode;
+use App\Http\Resources\Qr\QrAssignedPropertyResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class QrCodeController extends Controller
 {
     // GET /api/qr/properties
     public function index(Request $request)
     {
+        $user = Auth::user();
+
         $perPage = max(10, (int) $request->query('per_page', 20));
         $search = trim((string) $request->query('search', ''));
         $withQrOnly = $request->boolean('with_qr_only', false);
         $missingQrOnly = $request->boolean('missing_qr_only', false);
 
-        $query = AssignedProperty::query()
-            ->with([
-                'inventoryDetail.drDetail',
-                'inventoryDetail.unitOfMeasure',
-                'endUser.department',
-                'department',
-                'propertyStatus',
-                'condition',
-                'qrCode',
-            ]);
+        $query = AssignedProperty::query()->select('assignedproperty.*');
+
+        // Add most-recent requester full name as a subquery field.
+        // IMPORTANT: In this DB, `assetrequest.RequestedBy` points to the legacy `user`.`UserID` (with `FullName`),
+        // not the Laravel `users` table.
+        $query->selectRaw('(select u.FullName from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID inner join assetrequest as ar on pi.RequestID = ar.RequestID inner join user as u on ar.RequestedBy = u.UserID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as RequesterFullName');
+
+        // Add most-recent document type as a subquery field
+        $query->selectRaw('(select pi.DocumentType from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as DocumentType');
+
+        $query->with([
+            'inventoryDetail.drDetail',
+            'inventoryDetail.unitOfMeasure',
+            'endUser.department',
+            'department',
+            'propertyStatus',
+            'condition',
+            'qrCode',
+        ]);
+
+        // Role-based filtering
+        $roleName = $user?->userRole?->RoleName ?? '';
+        $isPrivileged = in_array($roleName, ['Admin', 'GSO Staff'], true);
+        if (!$isPrivileged) {
+            $query->where('DepartmentID', $user?->DepartmentID);
+        }
 
         if ($search !== '') {
             $query->where(function ($q) use ($search) {
@@ -52,12 +73,20 @@ class QrCodeController extends Controller
             $query->whereDoesntHave('qrCode');
         }
 
-        return response()->json($query->orderByDesc('PropertyID')->paginate($perPage));
+        $paginated = $query->orderByDesc('PropertyID')->paginate($perPage);
+        return QrAssignedPropertyResource::collection($paginated);
     }
 
     // POST /api/qr/properties/{propertyId}/generate
     public function generate(Request $request, int $propertyId)
     {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        $isPrivileged = in_array($roleName, ['Admin', 'GSO Staff'], true);
+        if (!$isPrivileged) {
+            return response()->json(['message' => 'Unauthorized to generate QR codes'], 403);
+        }
+
         $assignedProperty = AssignedProperty::with(['inventoryDetail'])->findOrFail($propertyId);
 
         $baseUrl = rtrim((string) (config('app.url') ?: env('APP_URL', '')), '/');
@@ -87,7 +116,15 @@ class QrCodeController extends Controller
     // GET /api/qr/scan/{propertyId}
     public function scan(Request $request, int $propertyId)
     {
-        $assignedProperty = AssignedProperty::with([
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        $isPrivileged = in_array($roleName, ['Admin', 'GSO Staff'], true);
+
+        $assignedProperty = AssignedProperty::query()
+            ->select('assignedproperty.*')
+            ->selectRaw('(select u.FullName from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID inner join assetrequest as ar on pi.RequestID = ar.RequestID inner join user as u on ar.RequestedBy = u.UserID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as RequesterFullName')
+            ->selectRaw('(select pi.DocumentType from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as DocumentType')
+            ->with([
             'inventoryDetail.drDetail',
             'inventoryDetail.unitOfMeasure',
             'endUser.department',
@@ -96,6 +133,10 @@ class QrCodeController extends Controller
             'condition',
             'qrCode',
         ])->findOrFail($propertyId);
+
+        if (!$isPrivileged && $assignedProperty->DepartmentID !== $user?->DepartmentID) {
+            return response()->json(['message' => 'Unauthorized to view this property'], 403);
+        }
 
         $latestIssuanceDetail = PropertyIssuanceDetail::with([
             'issuance.issuedBy:UserID,FullName',
@@ -106,7 +147,7 @@ class QrCodeController extends Controller
             ->first();
 
         return response()->json([
-            'property' => $assignedProperty,
+            'property' => (new QrAssignedPropertyResource($assignedProperty))->toArray($request),
             'latest_issuance_detail' => $latestIssuanceDetail,
         ]);
     }
