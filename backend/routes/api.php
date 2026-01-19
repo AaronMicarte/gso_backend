@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
 use App\Http\Controllers\Admin\Procurement\IarSignatureController;
 use App\Http\Controllers\department_head\DashboardController as DepartmentHeadDashboardController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\RequisitionIssueSlipController;
 
 /*
 |--------------------------------------------------------------------------
@@ -198,6 +199,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
         Route::post('{id}/acknowledge', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledge']);
+    });
+
+    // Requisition and Issue Slip (RIS)
+    Route::prefix('requisition-issue-slips')->group(function () {
+        Route::get('', [RequisitionIssueSlipController::class, 'index']);
+        Route::post('', [RequisitionIssueSlipController::class, 'store']);
+        Route::get('by-request/{requestId}', [RequisitionIssueSlipController::class, 'showByRequest']);
+        Route::get('{id}', [RequisitionIssueSlipController::class, 'show']);
     });
 
     // QR management (assignedproperty + qrcode)

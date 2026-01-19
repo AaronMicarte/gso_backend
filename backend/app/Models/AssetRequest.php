@@ -82,6 +82,11 @@ class AssetRequest extends Model
         return $this->hasMany(AssetRequestSignature::class, 'request_id', 'RequestID');
     }
 
+    public function ris()
+    {
+        return $this->hasOne(\App\Models\RequisitionIssueSlip::class, 'asset_request_id', 'RequestID');
+    }
+
     /**
      * Generate next request number
      */

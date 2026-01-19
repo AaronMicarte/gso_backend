@@ -211,10 +211,10 @@ class AssetRequestController extends Controller
         foreach ($validated['items'] as $item) {
             if (!empty($item['PropertyInventoryDetailID'])) {
                 $inventoryDetail = PropertyInventoryDetail::with('propertyInventory')->findOrFail($item['PropertyInventoryDetailID']);
-                if ($inventoryDetail->QuantityOnHand < $item['QuantityRequested']) {
+                if ($inventoryDetail->QuantityAvailable < $item['QuantityRequested']) {
                     return response()->json([
                         'message' => 'Insufficient quantity available for item: ' . ($inventoryDetail->propertyInventory->ItemDescription ?? 'Unknown Item'),
-                        'available' => $inventoryDetail->QuantityOnHand,
+                        'available' => $inventoryDetail->QuantityAvailable,
                         'requested' => $item['QuantityRequested']
                     ], 422);
                 }
@@ -292,10 +292,12 @@ class AssetRequestController extends Controller
             'ReviewNotes' => 'nullable|string|max:500',
             'details' => 'nullable|array',
             'details.*.RequestDetailID' => 'required|integer',
-            'details.*.PropertyClassification' => 'required|in:ICS,PAR',
+            // Allow PropertyClassification to be omitted for items that are NOT approved for issuance.
+            'details.*.PropertyClassification' => 'nullable|in:ICS,PAR',
             'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
             'details.*.AssignedDepartmentID' => 'nullable|integer',
             'details.*.AdminNotes' => 'nullable|string|max:500',
+            'details.*.IsApprovedForIssuance' => 'required|boolean',
             'approverSignature' => 'required|string', // base64 data URL
             'approverSignatureSource' => 'required|in:canvas,upload',
         ]);
@@ -313,6 +315,31 @@ class AssetRequestController extends Controller
             return response()->json([
                 'message' => 'Request cannot be approved',
                 'current_status' => $assetRequest->Status
+            ], 422);
+        }
+
+        // Conditional validation: only require PropertyClassification for items marked
+        // as IsApprovedForIssuance. This prevents forcing classification on unapproved lines.
+        foreach (($validated['details'] ?? []) as $idx => $item) {
+            if (!empty($item['IsApprovedForIssuance'])) {
+                $pc = $item['PropertyClassification'] ?? null;
+                if (empty($pc) || !in_array($pc, ['ICS', 'PAR'], true)) {
+                    return response()->json([
+                        'message' => 'Validation failed',
+                        'errors' => ["details.$idx.PropertyClassification" => ['PropertyClassification is required for items approved for issuance']]
+                    ], 422);
+                }
+            }
+        }
+
+        $approvedDetails = array_filter($validated['details'] ?? [], function ($item) {
+            return !empty($item['IsApprovedForIssuance']);
+        });
+
+        if (empty($approvedDetails)) {
+            return response()->json([
+                'message' => 'At least one item must be approved for issuance.',
+                'error' => 'no_items_approved'
             ], 422);
         }
 
@@ -336,6 +363,7 @@ class AssetRequestController extends Controller
                             'AssignedEndUserID' => $item['AssignedEndUserID'],
                             'AssignedDepartmentID' => $assignedDepartmentId,
                             'AdminNotes' => $item['AdminNotes'],
+                            'IsApprovedForIssuance' => (bool) $item['IsApprovedForIssuance'],
                         ]);
                 }
             }
@@ -363,6 +391,10 @@ class AssetRequestController extends Controller
             // Create issuance assignments for each item
             if (isset($validated['details'])) {
                 foreach ($validated['details'] as $item) {
+                    if (empty($item['IsApprovedForIssuance'])) {
+                        continue;
+                    }
+
                     $classification = $item['PropertyClassification'] ?? null;
                     $assignedDepartmentId = $item['AssignedDepartmentID'] ?? null;
 
@@ -626,10 +658,12 @@ class AssetRequestController extends Controller
             'ReviewNotes' => 'nullable|string|max:1000',
             'details' => 'required|array|min:1',
             'details.*.RequestDetailID' => 'required|exists:assetrequestdetail,RequestDetailID',
-            'details.*.PropertyClassification' => 'required|in:ICS,PAR',
+            // PropertyClassification may be omitted for items that are NOT approved for issuance.
+            'details.*.PropertyClassification' => 'nullable|in:ICS,PAR',
             'details.*.AssignedEndUserID' => 'nullable|exists:enduser,EndUserID',
             'details.*.AssignedDepartmentID' => 'nullable|exists:department,DepartmentID',
             'details.*.AdminNotes' => 'nullable|string|max:1000',
+            'details.*.IsApprovedForIssuance' => 'required|boolean',
         ]);
 
         $user = Auth::user();
@@ -660,6 +694,12 @@ class AssetRequestController extends Controller
         // Business logic validation
         $detailsById = $assetRequest->details->keyBy('RequestDetailID');
         foreach ($validated['details'] as $item) {
+            // Only enforce classification-specific business rules for items that were
+            // approved for issuance. Unapproved lines may omit classification.
+            if (empty($item['IsApprovedForIssuance'])) {
+                continue;
+            }
+
             $classification = $item['PropertyClassification'] ?? null;
             $requestDetail = $detailsById->get($item['RequestDetailID']);
 
@@ -749,19 +789,39 @@ class AssetRequestController extends Controller
      */
     public function getAvailableInventory()
     {
-        $items = PropertyInventoryDetail::with([
-            'inventory:InventoryID,ItemDescription,Brand,ModelNumber,SerialNumber',
-            'propertyType:PropertyTypeID,PropertyName,PropertyClassificationID',
-            'propertyType.propertyClassification:PropertyClassificationID,ClassificationName,DocumentType',
-            'condition:ConditionID,ConditionName',
-            'unitOfMeasure:UnitOfMeasureID,UnitName'
-        ])
-        ->where('QuantityOnHand', '>', 0)
-        ->where('ConditionID', '!=', 4) // Exclude unserviceable items
-        ->orderBy('InventoryDetailID', 'desc')
-        ->get();
+        try {
+            $query = PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
+                ->leftJoin('propertyinventory', 'propertyinventorydetail.InventoryID', '=', 'propertyinventory.InventoryID')
+                ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
+                ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
+                ->leftJoin('unitofmeasure', 'propertyinventorydetail.UnitOfMeasureID', '=', 'unitofmeasure.UnitOfMeasureID')
+                ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                ->select(
+                    'propertyinventorydetail.*',
+                    'propertytype.PropertyName',
+                    'propertyinventory.InventoryNumber',
+                    'propertyinventory.DateReceived',
+                    'propertystatus.StatusName',
+                    'condition.ConditionName',
+                    'unitofmeasure.UnitName',
+                    'deliveryreceiptdetail.ItemDescription as dr_item_description'
+                )
+                ->where('propertyinventorydetail.QuantityAvailable', '>', 0)
+                ->where(function($q) {
+                    $q->whereNull('propertyinventorydetail.ConditionID')->orWhere('propertyinventorydetail.ConditionID', '!=', 4);
+                });
 
-        return response()->json($items);
+            $items = $query->orderBy('propertyinventorydetail.PropertyNumber', 'asc')->get();
+
+            return response()->json($items);
+        } catch (\Throwable $e) {
+            // Log for server-side debugging and return a clearer JSON error for dev/testing
+            \Log::error('getAvailableInventory failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'Error retrieving available inventory. Check server logs for details.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -782,10 +842,13 @@ class AssetRequestController extends Controller
      */
     public function getDepartments()
     {
-        $departments = \App\Models\Auth\Department::where('IsActive', true)
+        $departments = \App\Models\Auth\Department::query()
+            ->where('IsActive', true)
             ->orderBy('DepartmentName')
-            ->get();
+            ->get(['DepartmentID', 'DepartmentCode', 'DepartmentName']);
 
-        return DepartmentResource::collection($departments);
+        // Keep this endpoint stable for the asset issuance workflow.
+        // Use the column names the frontend already consumes.
+        return response()->json($departments);
     }
 }

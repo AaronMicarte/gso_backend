@@ -111,10 +111,10 @@ class AssetIssuanceController extends Controller
 
         // Check inventory availability again
         $inventoryDetail = PropertyInventoryDetail::findOrFail($assetRequest->PropertyInventoryDetailID);
-        if ($inventoryDetail->QuantityOnHand < $assetRequest->QuantityRequested) {
+        if ($inventoryDetail->QuantityAvailable < $assetRequest->QuantityRequested) {
             return response()->json([
                 'message' => 'Insufficient quantity in inventory',
-                'available' => $inventoryDetail->QuantityOnHand,
+                'available' => $inventoryDetail->QuantityAvailable,
                 'requested' => $assetRequest->QuantityRequested
             ], 422);
         }
@@ -139,7 +139,7 @@ class AssetIssuanceController extends Controller
             ]);
 
             // Deduct from inventory
-            $inventoryDetail->decrement('QuantityOnHand', $assetRequest->QuantityRequested);
+            $inventoryDetail->decrement('QuantityAvailable', $assetRequest->QuantityRequested);
 
             // Update request status
             $assetRequest->update([
@@ -377,7 +377,7 @@ class AssetIssuanceController extends Controller
 
             // Return to inventory
             $inventoryDetail = PropertyInventoryDetail::findOrFail($issuance->PropertyInventoryDetailID);
-            $inventoryDetail->increment('QuantityOnHand', $issuance->QuantityIssued);
+            $inventoryDetail->increment('QuantityAvailable', $issuance->QuantityIssued);
 
             // Create audit log
             AssetAuditLog::createLog(
@@ -441,9 +441,9 @@ class AssetIssuanceController extends Controller
             ]);
 
             // If it was returned, we need to remove it from inventory again
-            if ($issuance->Status === 'returned') {
+                if ($issuance->Status === 'returned') {
                 $inventoryDetail = PropertyInventoryDetail::findOrFail($issuance->PropertyInventoryDetailID);
-                $inventoryDetail->decrement('QuantityOnHand', $issuance->QuantityIssued);
+                $inventoryDetail->decrement('QuantityAvailable', $issuance->QuantityIssued);
             }
 
             // Create audit log

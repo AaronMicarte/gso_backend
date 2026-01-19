@@ -10,6 +10,9 @@ use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\AssignedProperty;
 use App\Models\QrCode;
 use App\Models\EndUser;
+use App\Models\RequisitionIssueSlip;
+use App\Models\RequisitionIssueSlipItem;
+use App\Models\RequisitionIssueSlipSignature;
 use App\Services\AssetRequestSignatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -360,6 +363,45 @@ class PropertyIssuanceController extends Controller
             // Get the asset request with its details
             $assetRequest = AssetRequest::with(['details', 'requester'])->findOrFail($validated['request_id']);
 
+            // HARD RULE (Real-life): RIS must exist before issuance.
+            // The RIS control number is prepared by Supply/Property prior to releasing items.
+            $ris = RequisitionIssueSlip::where('asset_request_id', (int) $assetRequest->RequestID)->first();
+            if (!$ris) {
+                return response()->json([
+                    'message' => 'Cannot issue without a prepared RIS. Please prepare the Requisition and Issue Slip (RIS) first.',
+                    'error' => 'missing_ris'
+                ], 422);
+            }
+            if (in_array($ris->status, ['cancelled'])) {
+                return response()->json([
+                    'message' => 'Cannot issue: RIS is cancelled.',
+                    'error' => 'ris_cancelled'
+                ], 422);
+            }
+
+            $risDetailIds = $ris->items()->pluck('asset_request_detail_id')->map(function ($id) {
+                return (int) $id;
+            })->values()->all();
+
+            if (empty($risDetailIds)) {
+                return response()->json([
+                    'message' => 'RIS has no approved items for issuance.',
+                    'error' => 'ris_empty'
+                ], 422);
+            }
+
+            $invalidIssuanceDetails = array_filter(array_keys($inventoryMap), function ($detailId) use ($risDetailIds) {
+                return !in_array((int) $detailId, $risDetailIds, true);
+            });
+
+            if (!empty($invalidIssuanceDetails)) {
+                return response()->json([
+                    'message' => 'Issuance items must match RIS-approved items only.',
+                    'error' => 'invalid_ris_items',
+                    'invalid_request_detail_ids' => array_values($invalidIssuanceDetails)
+                ], 422);
+            }
+
             // Verify the request is approved
             if ($assetRequest->Status !== 'approved') {
                 return response()->json([
@@ -371,7 +413,11 @@ class PropertyIssuanceController extends Controller
             // Group items by recipient and classification
             // - PAR: group by assigned end user (ID or Name)
             // - ICS: always group to the request requester (dept head)
-            $groupedItems = $assetRequest->details->groupBy(function ($detail) use ($assetRequest) {
+            $groupedItems = $assetRequest->details
+                ->filter(function ($detail) use ($risDetailIds) {
+                    return in_array((int) $detail->RequestDetailID, $risDetailIds, true);
+                })
+                ->groupBy(function ($detail) use ($assetRequest) {
                 $classification = $detail->PropertyClassification ?? 'ICS';
 
                 if ($classification === 'ICS') {
@@ -446,7 +492,8 @@ class PropertyIssuanceController extends Controller
                             $detailHasInventory = true;
 
                             // Update Inventory Status
-                            $invDetail = PropertyInventoryDetail::find($inventoryItem['inventory_detail_id']);
+                            // Lock the inventory row to prevent concurrent allocation races
+                            $invDetail = PropertyInventoryDetail::where('InventoryDetailID', $inventoryItem['inventory_detail_id'])->lockForUpdate()->first();
                             if ($invDetail) {
                                 // Decrease available quantity
                                 $invDetail->decrement('QuantityAvailable', $qtyIssued);
@@ -501,6 +548,51 @@ class PropertyIssuanceController extends Controller
                 'IssuedAt' => now()
             ]);
 
+            // Sync RIS issuance metadata (single source of truth for RIS form)
+            $ris->issued_by_user_id = (int) Auth::id();
+            $ris->issued_at = now();
+            $ris->status = 'issued';
+            $ris->save();
+
+            // Update RIS line items based on what was actually issued.
+            $issuedCounts = [];
+            foreach ($validated['inventory_items'] as $invItem) {
+                $rd = (int) $invItem['request_detail_id'];
+                $issuedCounts[$rd] = ($issuedCounts[$rd] ?? 0) + (int) $invItem['quantity_issued'];
+            }
+
+            $risItems = RequisitionIssueSlipItem::where('ris_id', (int) $ris->id)->get();
+            foreach ($risItems as $risItem) {
+                $reqDetailId = (int) $risItem->asset_request_detail_id;
+                $qtyIssued = (int) ($issuedCounts[$reqDetailId] ?? 0);
+                $qtyReq = (int) $risItem->quantity_requested;
+
+                $risItem->quantity_issued = $qtyIssued;
+                $risItem->stock_available = $qtyIssued > 0;
+                $risItem->issue_remarks = $qtyIssued >= $qtyReq && $qtyReq > 0
+                    ? 'Issued in full'
+                    : ($qtyIssued > 0 ? 'Partially issued' : 'For issuance');
+                $risItem->save();
+            }
+
+            // Persist allocated inventory_detail_id & stock_no back to the RIS items so
+            // the RIS remains the single source of truth for printed forms.
+            foreach ($validated['inventory_items'] as $invItem) {
+                $rdId = (int) $invItem['request_detail_id'];
+                $invDetailId = (int) $invItem['inventory_detail_id'];
+
+                $invDetail = PropertyInventoryDetail::find($invDetailId);
+                $stockNo = trim((string) ($invDetail?->PropertyNumber ?? '')) ?: 'N/A';
+
+                RequisitionIssueSlipItem::where('ris_id', (int) $ris->id)
+                    ->where('asset_request_detail_id', $rdId)
+                    ->whereNull('inventory_detail_id')
+                    ->update([
+                        'inventory_detail_id' => $invDetailId,
+                        'stock_no' => $stockNo
+                    ]);
+            }
+
             // Create audit log
             AssetAuditLog::create([
                 'EntityType' => 'asset_request',
@@ -536,6 +628,8 @@ class PropertyIssuanceController extends Controller
                             'request',
                             'issuedBy:UserID,FullName',
                             'issuedTo:EndUserID,FullName',
+                            // include inventoryDetail with PropertyNumber so client can show assigned numbers
+                            'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
                             'details'
                         ]);
                     })
@@ -782,7 +876,7 @@ class PropertyIssuanceController extends Controller
             $query = AssetRequest::where('Status', 'approved')
                 ->with([
                     'requester:UserID,FullName',
-                    'department:DepartmentID,DepartmentName',
+                    'department:DepartmentID,DepartmentName,DepartmentCode',
                     'details:RequestDetailID,RequestID,ItemDescription,Unit,QuantityRequested,Purpose,IntendedEndUser,PropertyClassification,AssignedEndUserID,AssignedDepartmentID'
                 ]);
 
@@ -959,6 +1053,36 @@ class PropertyIssuanceController extends Controller
                 'AcknowledgmentNotes' => $notes,
                 'Status' => 'acknowledged'
             ]);
+
+            // Sync RIS receipt metadata (if a RIS exists for this request)
+            $ris = RequisitionIssueSlip::where('asset_request_id', (int) $issuance->RequestID)->first();
+            if ($ris) {
+                $ris->received_by_user_id = (int) $validated['acknowledged_by'];
+                $ris->received_at = now();
+                $ris->status = 'received';
+                $ris->save();
+
+                // Optional: persist the receiver signature as a linked/inline record.
+                // NOTE: acknowledgment signature is stored as base64 in `propertyissuance` (not a file).
+                // We store an auditable placeholder path + hash so the RIS signature slot is not blank in DB.
+                RequisitionIssueSlipSignature::updateOrCreate(
+                    ['ris_id' => (int) $ris->id, 'role' => 'received_by'],
+                    [
+                        'signed_by_user_id' => (int) $validated['acknowledged_by'],
+                        'source' => 'linked',
+                        'storage_disk' => 'inline',
+                        'storage_path' => 'inline:propertyissuance:' . (int) $issuance->IssuanceID . ':AcknowledgmentSignature',
+                        'url' => null,
+                        'mime' => 'image/png',
+                        'width' => null,
+                        'height' => null,
+                        'size_bytes' => null,
+                        'sha256_hash' => hash('sha256', (string) $signature),
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ]
+                );
+            }
 
             // Self-heal bad historical data where `IssuedTo` stored a `user.UserID` instead of `enduser.EndUserID`.
             if ((int) $issuance->IssuedTo !== $issuedToEndUserId) {

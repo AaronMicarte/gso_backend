@@ -31,12 +31,14 @@ class AssetRequestDetail extends Model
         'AssignedEndUserID',
         'AssignedDepartmentID',
         'AdminNotes',
+        'IsApprovedForIssuance',
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'IsApprovedForIssuance' => 'boolean',
     ];
 
     public function request(): BelongsTo
