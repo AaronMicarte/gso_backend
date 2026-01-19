@@ -99,9 +99,9 @@ class RequisitionIssueSlipController extends Controller
         // Unchecked / not-approved items must still appear, but with Stock Available? = No.
         $allDetails = $assetRequest->details;
 
-        if (!in_array($assetRequest->Status, ['approved', 'issued', 'received'], true)) {
+        if (!in_array($assetRequest->Status, ['approved', 'waiting_for_issuance', 'issued', 'received'], true)) {
             return response()->json([
-                'message' => 'RIS can only be prepared for approved/issued/received requests.',
+                'message' => 'RIS can only be prepared for approved/waiting_for_issuance/issued/received requests.',
                 'current_status' => $assetRequest->Status,
             ], 422);
         }

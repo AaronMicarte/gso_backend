@@ -303,7 +303,7 @@ class AssetIssuanceController extends Controller
             'details.inventoryDetail.propertyInventory',
             'reviewer:UserID,FirstName,LastName'
         ])
-        ->where('Status', 'approved')
+        ->whereIn('Status', ['approved', 'waiting_for_issuance'])
         ->whereNull('IssuedBy'); // Not yet issued
 
         $requests = $query->orderBy('RequestDate', 'asc')

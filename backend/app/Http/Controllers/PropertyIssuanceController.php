@@ -402,10 +402,10 @@ class PropertyIssuanceController extends Controller
                 ], 422);
             }
 
-            // Verify the request is approved
-            if ($assetRequest->Status !== 'approved') {
+            // Verify the request is approved / waiting for issuance
+            if (!in_array($assetRequest->Status, ['approved', 'waiting_for_issuance'], true)) {
                 return response()->json([
-                    'message' => 'Only approved requests can be issued',
+                    'message' => 'Only approved requests (waiting for issuance) can be issued',
                     'error' => 'Invalid request status'
                 ], 422);
             }
@@ -724,7 +724,7 @@ class PropertyIssuanceController extends Controller
             $user = Auth::user();
             
             // Get approved requests that haven't been issued yet
-            $query = AssetRequest::where('Status', 'approved')
+            $query = AssetRequest::whereIn('Status', ['approved', 'waiting_for_issuance'])
                 ->whereNotExists(function ($subquery) {
                     $subquery->select(DB::raw(1))
                         ->from('propertyissuance')
@@ -873,7 +873,7 @@ class PropertyIssuanceController extends Controller
         try {
             $user = Auth::user();
             
-            $query = AssetRequest::where('Status', 'approved')
+            $query = AssetRequest::whereIn('Status', ['approved', 'waiting_for_issuance'])
                 ->with([
                     'requester:UserID,FullName',
                     'department:DepartmentID,DepartmentName,DepartmentCode',
@@ -912,6 +912,10 @@ class PropertyIssuanceController extends Controller
                 ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
                 ->leftJoin('unitofmeasure', 'propertyinventorydetail.UnitOfMeasureID', '=', 'unitofmeasure.UnitOfMeasureID')
                 ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                // Join to assignment and request detail tables so we can exclude inventory that is reserved
+                ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
+                ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
+                ->leftJoin('assetrequest', 'assetrequestdetail.RequestID', '=', 'assetrequest.RequestID')
                 ->select(
                     'propertyinventorydetail.*',
                     'propertytype.PropertyName',
@@ -924,9 +928,15 @@ class PropertyIssuanceController extends Controller
                 );
 
             // Only include items that are currently marked as available.
-            // NOTE: `asset_assignments` is deprecated for availability decisions.
-            // The source of truth for availability is the inventory status + issuance/accountability tables.
-            $query->where('propertyinventorydetail.PropertyStatusID', 1);
+            // Exclude details already assigned specifically for issuance and exclude inventory tied to requests
+            // that are already approved/waiting for issuance (they're reserved for that request).
+            $query->where('propertyinventorydetail.PropertyStatusID', 1)
+                ->where(function($q) {
+                    $q->whereNull('asset_assignments.AssignmentID')->orWhere('asset_assignments.AssignmentType', '<>', 'issuance');
+                })
+                ->where(function($q) {
+                    $q->whereNull('assetrequest.RequestID')->orWhereNotIn('assetrequest.Status', ['approved', 'waiting_for_issuance']);
+                });
 
             // Filter by search term
             if ($request->filled('search')) {

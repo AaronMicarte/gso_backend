@@ -369,7 +369,8 @@ class AssetRequestController extends Controller
             }
 
             $assetRequest->update([
-                'Status' => 'approved',
+                // Use a distinct status to indicate the request is approved and awaiting issuance
+                'Status' => 'waiting_for_issuance',
                 'ReviewedBy' => $user->UserID,
                 'ReviewedAt' => now(),
                 'ReviewNotes' => $validated['ReviewNotes'] ?? null,
@@ -796,6 +797,10 @@ class AssetRequestController extends Controller
                 ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
                 ->leftJoin('unitofmeasure', 'propertyinventorydetail.UnitOfMeasureID', '=', 'unitofmeasure.UnitOfMeasureID')
                 ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                // Exclude inventory which is already assigned for issuance or reserved by a request that is approved/waiting for issuance
+                ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
+                ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
+                ->leftJoin('assetrequest', 'assetrequestdetail.RequestID', '=', 'assetrequest.RequestID')
                 ->select(
                     'propertyinventorydetail.*',
                     'propertytype.PropertyName',
@@ -809,6 +814,14 @@ class AssetRequestController extends Controller
                 ->where('propertyinventorydetail.QuantityAvailable', '>', 0)
                 ->where(function($q) {
                     $q->whereNull('propertyinventorydetail.ConditionID')->orWhere('propertyinventorydetail.ConditionID', '!=', 4);
+                })
+                ->where(function($q) {
+                    // Exclude details already assigned for issuance
+                    $q->whereNull('asset_assignments.AssignmentID')->orWhere('asset_assignments.AssignmentType', '<>', 'issuance');
+                })
+                ->where(function($q) {
+                    // Exclude inventory tied to requests that are approved or waiting for issuance
+                    $q->whereNull('assetrequest.RequestID')->orWhereNotIn('assetrequest.Status', ['approved', 'waiting_for_issuance']);
                 });
 
             $items = $query->orderBy('propertyinventorydetail.PropertyNumber', 'asc')->get();

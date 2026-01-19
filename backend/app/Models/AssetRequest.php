@@ -130,7 +130,8 @@ class AssetRequest extends Model
      */
     public function canBeIssued(): bool
     {
-        return $this->Status === 'approved';
+        // Accept both legacy 'approved' and new 'waiting_for_issuance' statuses
+        return in_array($this->Status, ['approved', 'waiting_for_issuance'], true);
     }
 
     /**
@@ -138,6 +139,7 @@ class AssetRequest extends Model
      */
     public function canBeCancelled(): bool
     {
-        return in_array($this->Status, ['pending', 'approved']);
+        // Allow cancelling while pending, approved, or waiting for issuance
+        return in_array($this->Status, ['pending', 'approved', 'waiting_for_issuance']);
     }
 }
