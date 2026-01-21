@@ -19,6 +19,26 @@ class DashboardController extends Controller
             $now = Carbon::now('Asia/Manila');
 
             // Get total counts from database
+            // Count pending requests using both assetrequest and assetrequestdetail context —
+            // include requests that are still pending or approved/waiting for issuance so
+            // the admin dashboard reflects items that still need action.
+            $pendingRequests = DB::table('assetrequest')
+                ->leftJoin('assetrequestdetail', 'assetrequest.RequestID', '=', 'assetrequestdetail.RequestID')
+                ->whereNull('assetrequest.deleted_at')
+                ->where(function ($q) {
+                    $q->whereIn('assetrequest.Status', ['pending', 'approved', 'waiting_for_issuance'])
+                      ->orWhere(function ($q2) {
+                          // Include requests that have details not approved yet and are not finalized
+                          $q2->whereNotIn('assetrequest.Status', ['received', 'cancelled', 'rejected'])
+                             ->where(function ($q3) {
+                                 $q3->whereNull('assetrequestdetail.IsApprovedForIssuance')
+                                    ->orWhere('assetrequestdetail.IsApprovedForIssuance', false);
+                             });
+                      });
+                })
+                ->distinct()
+                ->count('assetrequest.RequestID');
+
             $stats = [
                 'totalAssets' => DB::table('assignedproperty')->count(),
                 'totalInventory' => DB::table('propertyinventorydetail')->count(),
@@ -30,7 +50,7 @@ class DashboardController extends Controller
                 'totalDeliveryReceipts' => DB::table('deliveryreceipt')->count(),
                 'totalUsers' => DB::table('user')->where('IsActive', 1)->count(),
                 'totalDepartments' => DB::table('department')->where('IsActive', 1)->count(),
-                'pendingRequests' => DB::table('assetrequest')->where('Status', 'pending')->count(),
+                'pendingRequests' => $pendingRequests,
                 'forDisposal' => DB::table('assignedproperty')
                     ->where('PropertyStatusID', 4) // For Disposal status
                     ->count(),
