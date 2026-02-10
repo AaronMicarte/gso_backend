@@ -116,6 +116,91 @@ class InspectionAcceptanceReportController extends Controller
                 'details.*.remarks' => 'nullable|string',
             ]);
 
+            $validator->after(function ($validator) use ($request) {
+                $details = $request->input('details', []);
+                $totalsByDrDetail = [];
+                $conditionKeys = [];
+                $drDetailIds = [];
+
+                foreach ($details as $index => $detail) {
+                    $drDetailId = $detail['dr_detail_id'] ?? null;
+                    if (!$drDetailId) {
+                        continue;
+                    }
+
+                    $drDetailIds[] = $drDetailId;
+
+                    $conditionId = $detail['condition_id'] ?? null;
+                    $conditionKey = $drDetailId . ':' . ($conditionId ?? '');
+                    if (isset($conditionKeys[$conditionKey])) {
+                        $validator->errors()->add("details.$index.condition_id", 'Duplicate condition for the same item is not allowed');
+                    }
+                    $conditionKeys[$conditionKey] = true;
+
+                    $accepted = (int) ($detail['quantity_accepted'] ?? 0);
+                    $rejected = (int) ($detail['quantity_rejected'] ?? 0);
+
+                    if (!isset($totalsByDrDetail[$drDetailId])) {
+                        $totalsByDrDetail[$drDetailId] = ['accepted' => 0, 'rejected' => 0];
+                    }
+                    $totalsByDrDetail[$drDetailId]['accepted'] += $accepted;
+                    $totalsByDrDetail[$drDetailId]['rejected'] += $rejected;
+                }
+
+                $drDetails = DeliveryReceiptDetail::whereIn('DRDetailID', array_values(array_unique($drDetailIds)))
+                    ->get()
+                    ->keyBy('DRDetailID');
+
+                foreach ($totalsByDrDetail as $drDetailId => $totals) {
+                    $drDetail = $drDetails->get($drDetailId);
+                    if (!$drDetail) {
+                        continue;
+                    }
+                    $delivered = (int) $drDetail->QuantityDelivered;
+                    if ($totals['accepted'] + $totals['rejected'] !== $delivered) {
+                        $validator->errors()->add('details', 'Accepted + Rejected must equal Delivered for all items');
+                        break;
+                    }
+                }
+
+                foreach ($details as $index => $detail) {
+                    $drDetailId = $detail['dr_detail_id'] ?? null;
+                    if (!$drDetailId) {
+                        continue;
+                    }
+                    $drDetail = $drDetails->get($drDetailId);
+                    if (!$drDetail) {
+                        continue;
+                    }
+
+                    $drBrand = trim((string) ($drDetail->Brand ?? ''));
+                    $drModel = trim((string) ($drDetail->ModelNumber ?? ''));
+                    $drSerial = trim((string) ($drDetail->SerialNumber ?? ''));
+
+                    if ($drBrand === '' && $drModel === '' && $drSerial === '') {
+                        continue;
+                    }
+
+                    $verifiedBrand = trim((string) ($detail['verified_brand'] ?? ''));
+                    $verifiedModel = trim((string) ($detail['verified_model'] ?? ''));
+                    $verifiedSerial = trim((string) ($detail['verified_serial'] ?? ''));
+
+                    $hasAllVerified =
+                        ($drBrand === '' || $verifiedBrand !== '') &&
+                        ($drModel === '' || $verifiedModel !== '') &&
+                        ($drSerial === '' || $verifiedSerial !== '');
+
+                    $matches =
+                        ($drBrand === '' || strcasecmp($drBrand, $verifiedBrand) === 0) &&
+                        ($drModel === '' || strcasecmp($drModel, $verifiedModel) === 0) &&
+                        ($drSerial === '' || strcasecmp($drSerial, $verifiedSerial) === 0);
+
+                    if (!$hasAllVerified || !$matches) {
+                        $validator->errors()->add("details.$index.verified_brand", 'Verified brand/model/serial must match the delivery receipt. Edit the DR if actual items differ.');
+                    }
+                }
+            });
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,

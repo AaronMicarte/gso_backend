@@ -16,10 +16,6 @@ class PropertyTypeService extends BaseMasterDataService
 
     protected function applyFilters($query, array $params): void
     {
-        if (!empty($params['classification_id'])) {
-            $query->where('ClassificationID', $params['classification_id']);
-        }
-
         if (!empty($params['property_classification_id'])) {
             $query->where('PropertyClassificationID', $params['property_classification_id']);
         }

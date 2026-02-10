@@ -333,6 +333,9 @@ CREATE TABLE `deliveryreceipt` (
   `DRID` int(11) NOT NULL,
   `DRNumber` varchar(50) NOT NULL,
   `SupplierName` varchar(255) DEFAULT NULL COMMENT 'Supplier name (manual entry or from supplier table)',
+  `RequestedBy` varchar(255) DEFAULT NULL COMMENT 'Manual requester name',
+  `DepartmentID` int(11) DEFAULT NULL COMMENT 'Requesting department (manual selection)',
+  `PRNumber` varchar(50) DEFAULT NULL COMMENT 'Manual PR Number reference',
   `PONumber` varchar(50) DEFAULT NULL COMMENT 'Manual PO Number reference (optional)',
   `InvoiceNumber` varchar(50) DEFAULT NULL COMMENT 'Invoice number from supplier',
   `ReceivedBy` int(11) NOT NULL,
@@ -347,9 +350,9 @@ CREATE TABLE `deliveryreceipt` (
 -- Dumping data for table `deliveryreceipt`
 --
 
-INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
-(15, 'DR-2026-010', 'TechnoWorld Inc.', 'PO-2026-010', 'INV-2026-010', 1, '2026-01-11', 'All items for PAR', '', '2026-01-11 09:00:00', NULL),
-(16, 'DR-2026-011', 'OfficePro Supplies', 'PO-2026-011', 'INV-2026-011', 1, '2026-01-11', 'Mixed PAR and ICS', '', '2026-01-11 10:30:00', NULL);
+INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `RequestedBy`, `DepartmentID`, `PRNumber`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
+(15, 'DR-2026-010', 'TechnoWorld Inc.', NULL, NULL, NULL, 'PO-2026-010', 'INV-2026-010', 1, '2026-01-11', 'All items for PAR', '', '2026-01-11 09:00:00', NULL),
+(16, 'DR-2026-011', 'OfficePro Supplies', NULL, NULL, NULL, 'PO-2026-011', 'INV-2026-011', 1, '2026-01-11', 'Mixed PAR and ICS', '', '2026-01-11 10:30:00', NULL);
 
 -- --------------------------------------------------------
 

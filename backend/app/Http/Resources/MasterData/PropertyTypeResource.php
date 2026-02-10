@@ -11,7 +11,6 @@ class PropertyTypeResource extends JsonResource
     {
         return [
             'id' => $this->PropertyTypeID,
-            'classification_id' => $this->ClassificationID,
             'property_classification_id' => $this->PropertyClassificationID,
             'name' => $this->PropertyName,
             'description' => $this->Description,
@@ -19,7 +18,6 @@ class PropertyTypeResource extends JsonResource
             'updated_at' => $this->UpdatedDate?->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
             'is_deleted' => $this->trashed(),
-            'classification' => $this->whenLoaded('classification'),
             'property_classification' => $this->whenLoaded('propertyClassification'),
         ];
     }

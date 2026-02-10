@@ -16,7 +16,6 @@ class PropertyType extends Model
     const DELETED_AT = 'deleted_at';
 
     protected $fillable = [
-        'ClassificationID',
         'PropertyClassificationID',
         'PropertyName',
         'Description',
@@ -42,11 +41,6 @@ class PropertyType extends Model
         static::updating(function ($model) {
             $model->UpdatedDate = now();
         });
-    }
-
-    public function classification()
-    {
-        return $this->belongsTo(\App\Models\MasterData\Classification::class, 'ClassificationID', 'ClassificationID');
     }
 
     public function propertyClassification()

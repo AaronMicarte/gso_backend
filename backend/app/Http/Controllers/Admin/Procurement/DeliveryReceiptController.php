@@ -21,7 +21,7 @@ class DeliveryReceiptController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'iar'])
+            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'iar', 'department'])
                 ->leftJoin('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->select('deliveryreceipt.*', 'user.FullName as received_by_name')
                 ->withCount('iar as hasIAR');
@@ -100,16 +100,19 @@ class DeliveryReceiptController extends Controller
             $validator = Validator::make($request->all(), [
                 'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
                 'supplier_name' => 'required|string|max:255',
+                'requested_by' => 'required|string|max:255',
+                'department_id' => 'required|integer|exists:department,DepartmentID',
+                'pr_number' => 'required|string|max:50',
                 'po_number' => [
-                    'nullable',
+                    'required',
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
                         return $q->where('SupplierName', $request->supplier_name);
                     }),
-                ], // OPTIONAL - unique per supplier
+                ],
                 'invoice_number' => [
-                    'nullable',
+                    'required',
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
@@ -139,6 +142,17 @@ class DeliveryReceiptController extends Controller
                 'dr_picture.max' => 'DR picture must not exceed 2MB',
             ]);
 
+            $validator->after(function ($validator) use ($request) {
+                $details = $request->input('details', []);
+                foreach ($details as $index => $detail) {
+                    $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                    $quantity = (int) ($detail['quantity_delivered'] ?? 0);
+                    if ($serial !== '' && $quantity > 1) {
+                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must be 1 when a serial number is provided');
+                    }
+                }
+            });
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -165,6 +179,9 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt = DeliveryReceipt::create([
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
+                'RequestedBy' => $request->requested_by,
+                'DepartmentID' => $request->department_id,
+                'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
                 'InvoiceNumber' => $request->invoice_number,
                 'ReceivedBy' => Auth::user()->UserID,
@@ -192,7 +209,7 @@ class DeliveryReceiptController extends Controller
             DB::commit();
 
             // Load relationships
-            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure']);
+            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department']);
             // Set receivedByUser manually
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
@@ -219,7 +236,7 @@ class DeliveryReceiptController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure'])
+            $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'department'])
                 ->findOrFail($id);
 
             // Load IAR count
@@ -296,16 +313,19 @@ class DeliveryReceiptController extends Controller
                     Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
                 'supplier_name' => 'required|string|max:255',
+                'requested_by' => 'required|string|max:255',
+                'department_id' => 'required|integer|exists:department,DepartmentID',
+                'pr_number' => 'required|string|max:50',
                 'po_number' => [
-                    'nullable',
+                    'required',
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
                         return $q->where('SupplierName', $request->supplier_name);
                     })->ignore($deliveryReceipt->DRID, 'DRID'),
-                ], // OPTIONAL - unique per supplier (ignore current record on update)
+                ],
                 'invoice_number' => [
-                    'nullable',
+                    'required',
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
@@ -335,6 +355,17 @@ class DeliveryReceiptController extends Controller
                 'dr_picture.max' => 'DR picture must not exceed 2MB',
             ]);
 
+            $validator->after(function ($validator) use ($request) {
+                $details = $request->input('details', []);
+                foreach ($details as $index => $detail) {
+                    $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                    $quantity = (int) ($detail['quantity_delivered'] ?? 0);
+                    if ($serial !== '' && $quantity > 1) {
+                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must be 1 when a serial number is provided');
+                    }
+                }
+            });
+
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
@@ -362,6 +393,9 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->update([
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
+                'RequestedBy' => $request->requested_by,
+                'DepartmentID' => $request->department_id,
+                'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
                 'InvoiceNumber' => $request->invoice_number,
                 'DateReceived' => $request->date_received,
@@ -408,7 +442,7 @@ class DeliveryReceiptController extends Controller
             DB::commit();
 
             // Load relationships
-            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure']);
+            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department']);
             // Set receivedByUser manually
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
