@@ -142,6 +142,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('delivery-receipts/{id}/restore', [DeliveryReceiptController::class, 'restore']);
             Route::get('delivery-receipts-helpers/suppliers', [DeliveryReceiptController::class, 'getSuppliers']);
             Route::get('delivery-receipts-helpers/property-types', [DeliveryReceiptController::class, 'getPropertyTypes']);
+            Route::get('delivery-receipts-helpers/requesters', [DeliveryReceiptController::class, 'getRequesters']);
 
             // IAR routes (Inspection & Acceptance Report)
             Route::apiResource('inspection-acceptance-reports', InspectionAcceptanceReportController::class)->parameters(['inspection-acceptance-reports' => 'id']);
@@ -195,6 +196,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('', [\App\Http\Controllers\PropertyIssuanceController::class, 'store']);
         Route::get('stats', [\App\Http\Controllers\PropertyIssuanceController::class, 'getStats']);
         Route::get('available-inventory', [\App\Http\Controllers\PropertyIssuanceController::class, 'getAvailableInventory']);
+        Route::get('delivery-receipts', [\App\Http\Controllers\PropertyIssuanceController::class, 'getDeliveryReceiptsForIssuance']);
         Route::get('requests-for-issuance', [\App\Http\Controllers\PropertyIssuanceController::class, 'getRequestsForIssuance']);
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);

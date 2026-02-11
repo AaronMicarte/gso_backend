@@ -23,6 +23,7 @@ class DeliveryReceipt extends Model
         'DRNumber',
         'SupplierName',
         'RequestedBy',
+        'RequestedByUserID',
         'DepartmentID',
         'PRNumber',
         'PONumber',
@@ -42,6 +43,11 @@ class DeliveryReceipt extends Model
     public function receivedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'ReceivedBy', 'UserID');
+    }
+
+    public function requestedByUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'RequestedByUserID', 'UserID');
     }
 
     public function department(): BelongsTo

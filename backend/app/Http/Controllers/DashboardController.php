@@ -18,45 +18,22 @@ class DashboardController extends Controller
             // Set timezone to Manila (PH)
             $now = Carbon::now('Asia/Manila');
 
-            // Get total counts from database
-            // Count pending requests using both assetrequest and assetrequestdetail context —
-            // include requests that are still pending or approved/waiting for issuance so
-            // the admin dashboard reflects items that still need action.
-            $pendingRequests = DB::table('assetrequest')
-                ->leftJoin('assetrequestdetail', 'assetrequest.RequestID', '=', 'assetrequestdetail.RequestID')
-                ->whereNull('assetrequest.deleted_at')
-                ->where(function ($q) {
-                    $q->whereIn('assetrequest.Status', ['pending', 'approved', 'waiting_for_issuance'])
-                      ->orWhere(function ($q2) {
-                          // Include requests that have details not approved yet and are not finalized
-                          $q2->whereNotIn('assetrequest.Status', ['received', 'cancelled', 'rejected'])
-                             ->where(function ($q3) {
-                                 $q3->whereNull('assetrequestdetail.IsApprovedForIssuance')
-                                    ->orWhere('assetrequestdetail.IsApprovedForIssuance', false);
-                             });
-                      });
-                })
-                ->distinct()
-                ->count('assetrequest.RequestID');
+            $statusCounts = function (array $names): int {
+                return DB::table('propertyinventorydetail')
+                    ->join('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
+                    ->whereIn('propertystatus.StatusName', $names)
+                    ->count();
+            };
 
             $stats = [
-                'totalAssets' => DB::table('assignedproperty')->count(),
                 'totalInventory' => DB::table('propertyinventorydetail')->count(),
-                'availableInventory' => DB::table('propertyinventorydetail')->whereNotExists(function ($query) {
-                    $query->select(DB::raw(1))
-                          ->from('assignedproperty')
-                          ->whereRaw('propertyinventorydetail.InventoryDetailID = assignedproperty.InventoryDetailID');
-                })->count(),
-                'totalDeliveryReceipts' => DB::table('deliveryreceipt')->count(),
+                'forIssuanceInventory' => $statusCounts(['For issuance', 'For Issuance', 'To be issued', 'Available']),
+                'issuedInventory' => $statusCounts(['Issued', 'Assigned']),
+                'totalDeliveryReceipts' => DB::table('deliveryreceipt')->whereNull('deleted_at')->count(),
                 'totalUsers' => DB::table('user')->where('IsActive', 1)->count(),
                 'totalDepartments' => DB::table('department')->where('IsActive', 1)->count(),
-                'pendingRequests' => $pendingRequests,
-                'forDisposal' => DB::table('assignedproperty')
-                    ->where('PropertyStatusID', 4) // For Disposal status
-                    ->count(),
-                'forRepair' => DB::table('assignedproperty')
-                    ->where('PropertyStatusID', 3) // For Repair status
-                    ->count(),
+                'forDisposal' => $statusCounts(['For Disposal', 'Disposed']),
+                'forRepair' => $statusCounts(['For Repair']),
             ];
 
             return response()->json([

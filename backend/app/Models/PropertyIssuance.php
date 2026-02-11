@@ -21,7 +21,10 @@ class PropertyIssuance extends Model
 
     protected $fillable = [
         'RequestID',
+        'DRID',
         'IssuedBy',
+        'IssuerSignature',
+        'IssuerSignatureSource',
         'IssuedTo',
         'IssuedToName',
         'DocumentType',
@@ -53,6 +56,11 @@ class PropertyIssuance extends Model
     public function request(): BelongsTo
     {
         return $this->belongsTo(AssetRequest::class, 'RequestID', 'RequestID');
+    }
+
+    public function deliveryReceipt(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Procurement\DeliveryReceipt::class, 'DRID', 'DRID');
     }
 
     public function issuedBy(): BelongsTo

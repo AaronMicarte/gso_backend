@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             PurchaseOrderStatusSeeder::class,
             ClassificationSeeder::class,
             PropertyTypeSeeder::class,
+            \Database\Seeders\DeliveryReceiptSeeder::class,
         ]);
     }
 }

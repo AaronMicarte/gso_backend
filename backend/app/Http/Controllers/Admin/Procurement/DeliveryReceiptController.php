@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Procurement\DeliveryReceipt;
 use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\MasterData\PropertyType;
+use App\Models\Auth\User;
 use App\Models\MasterData\Supplier;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ class DeliveryReceiptController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'iar', 'department'])
+            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'iar', 'department', 'requestedByUser:UserID,FullName,DepartmentID'])
                 ->leftJoin('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->select('deliveryreceipt.*', 'user.FullName as received_by_name')
                 ->withCount('iar as hasIAR');
@@ -100,7 +101,7 @@ class DeliveryReceiptController extends Controller
             $validator = Validator::make($request->all(), [
                 'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
                 'supplier_name' => 'required|string|max:255',
-                'requested_by' => 'required|string|max:255',
+                'requested_by_user_id' => 'required|integer|exists:user,UserID',
                 'department_id' => 'required|integer|exists:department,DepartmentID',
                 'pr_number' => 'required|string|max:50',
                 'po_number' => [
@@ -176,10 +177,28 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
+            $requestedByUser = User::find((int) $request->requested_by_user_id);
+            if (!$requestedByUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['requested_by_user_id' => ['Requested by user not found.']]
+                ], 422);
+            }
+
+            if ((int) $requestedByUser->DepartmentID !== (int) $request->department_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['requested_by_user_id' => ['Requested by user must belong to the selected department.']]
+                ], 422);
+            }
+
             $deliveryReceipt = DeliveryReceipt::create([
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
-                'RequestedBy' => $request->requested_by,
+                'RequestedBy' => $requestedByUser->FullName,
+                'RequestedByUserID' => (int) $requestedByUser->UserID,
                 'DepartmentID' => $request->department_id,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
@@ -209,7 +228,7 @@ class DeliveryReceiptController extends Controller
             DB::commit();
 
             // Load relationships
-            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department']);
+            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department', 'requestedByUser:UserID,FullName,DepartmentID']);
             // Set receivedByUser manually
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
@@ -236,7 +255,7 @@ class DeliveryReceiptController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'department'])
+            $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'department', 'requestedByUser:UserID,FullName,DepartmentID'])
                 ->findOrFail($id);
 
             // Load IAR count
@@ -313,7 +332,7 @@ class DeliveryReceiptController extends Controller
                     Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
                 'supplier_name' => 'required|string|max:255',
-                'requested_by' => 'required|string|max:255',
+                'requested_by_user_id' => 'required|integer|exists:user,UserID',
                 'department_id' => 'required|integer|exists:department,DepartmentID',
                 'pr_number' => 'required|string|max:50',
                 'po_number' => [
@@ -390,10 +409,28 @@ class DeliveryReceiptController extends Controller
                     'errors' => ['date_received' => ['Date received cannot be in the future.']]
                 ], 422);
             }
+            $requestedByUser = User::find((int) $request->requested_by_user_id);
+            if (!$requestedByUser) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['requested_by_user_id' => ['Requested by user not found.']]
+                ], 422);
+            }
+
+            if ((int) $requestedByUser->DepartmentID !== (int) $request->department_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['requested_by_user_id' => ['Requested by user must belong to the selected department.']]
+                ], 422);
+            }
+
             $deliveryReceipt->update([
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
-                'RequestedBy' => $request->requested_by,
+                'RequestedBy' => $requestedByUser->FullName,
+                'RequestedByUserID' => (int) $requestedByUser->UserID,
                 'DepartmentID' => $request->department_id,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
@@ -442,7 +479,7 @@ class DeliveryReceiptController extends Controller
             DB::commit();
 
             // Load relationships
-            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department']);
+            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department', 'requestedByUser:UserID,FullName,DepartmentID']);
             // Set receivedByUser manually
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
@@ -520,6 +557,36 @@ class DeliveryReceiptController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch property types',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getRequesters(Request $request): JsonResponse
+    {
+        try {
+            $query = User::query()
+                ->leftJoin('department', 'user.DepartmentID', '=', 'department.DepartmentID')
+                ->select('user.UserID', 'user.FullName', 'user.DepartmentID', 'department.DepartmentName')
+                ->where('user.IsActive', 1)
+                ->whereHas('userRole', function ($q) {
+                    $q->where('RoleName', 'Department Head');
+                });
+
+            if ($request->filled('department_id')) {
+                $query->where('DepartmentID', (int) $request->department_id);
+            }
+
+            $users = $query->orderBy('user.FullName')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $users
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch requesters',
                 'error' => $e->getMessage()
             ], 500);
         }

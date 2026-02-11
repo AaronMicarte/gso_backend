@@ -13,6 +13,7 @@ use App\Models\EndUser;
 use App\Models\RequisitionIssueSlip;
 use App\Models\RequisitionIssueSlipItem;
 use App\Models\RequisitionIssueSlipSignature;
+use App\Models\Procurement\DeliveryReceipt;
 use App\Services\AssetRequestSignatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,7 @@ class PropertyIssuanceController extends Controller
         $query = PropertyIssuance::with([
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName',
+            'deliveryReceipt.department:DepartmentID,DepartmentName',
             'issuedBy',
             'issuedTo',
             'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
@@ -59,12 +61,31 @@ class PropertyIssuanceController extends Controller
             ->paginate($request->get('per_page', 15));
 
         // Transform data to group by request
-        $requestGroups = $issuances->getCollection()->groupBy('RequestID');
+        $requestGroups = $issuances->getCollection()->groupBy(function ($issuance) {
+            if (!empty($issuance->RequestID)) {
+                return 'REQ_' . $issuance->RequestID;
+            }
+
+            return 'DR_' . ($issuance->DRID ?? 'UNKNOWN');
+        });
         $transformedData = [];
 
-        foreach ($requestGroups as $requestId => $requestIssuances) {
+        foreach ($requestGroups as $groupKey => $requestIssuances) {
             $firstIssuance = $requestIssuances->first();
             $request = $firstIssuance->request;
+            $dr = $firstIssuance->deliveryReceipt;
+
+            $groupId = $request ? (int) $request->RequestID : (int) ($dr->DRID ?? 0);
+            $groupNumber = $request ? ($request->RequestNumber ?? 'N/A') : ($dr->DRNumber ?? 'DR');
+            $groupDate = $request ? ($request->RequestDate ?? null) : ($dr->DateReceived ?? null);
+
+            $requesterName = $request
+                ? ($request->requester->FullName ?? 'Unknown User')
+                : ($dr->RequestedBy ?? 'Unknown Requester');
+
+            $departmentName = $request
+                ? ($request->department->DepartmentName ?? ($request->requester->department->DepartmentName ?? 'Unknown Department'))
+                : ($dr->department->DepartmentName ?? 'Unknown Department');
 
             // Transform each issuance in the group
             $transformedIssuances = $requestIssuances->map(function ($issuance) {
@@ -153,20 +174,15 @@ class PropertyIssuanceController extends Controller
             });
 
             $transformedData[] = [
-                'RequestID' => $requestId,
-                'RequestNumber' => $request->RequestNumber ?? 'N/A',
-                'RequestDate' => $request->RequestDate ?? null,
-                'requester' => $request->requester ? [
-                    'FullName' => $request->requester->FullName ?? 'Unknown User',
-                    'Department' => $request->requester->department->DepartmentName ?? 'Unknown Department'
-                ] : [
-                    'FullName' => 'Unknown User',
-                    'Department' => 'Unknown Department'
+                'RequestID' => $groupId,
+                'RequestNumber' => $groupNumber,
+                'RequestDate' => $groupDate,
+                'requester' => [
+                    'FullName' => $requesterName,
+                    'Department' => $departmentName,
                 ],
-                'department' => $request->department ? [
-                    'DepartmentName' => $request->department->DepartmentName ?? 'Unknown Department'
-                ] : [
-                    'DepartmentName' => 'Unknown Department'
+                'department' => [
+                    'DepartmentName' => $departmentName,
                 ],
                 'issuances' => $transformedIssuances->values(),
                 'totalItems' => $transformedIssuances->sum(function ($issuance) {
@@ -189,6 +205,7 @@ class PropertyIssuanceController extends Controller
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
             'request.signatures',
+            'deliveryReceipt.department:DepartmentID,DepartmentName',
             'issuedBy',
             'issuedBy.department:DepartmentID,DepartmentName',
             'issuedTo',
@@ -231,6 +248,7 @@ class PropertyIssuanceController extends Controller
         $transformedIssuance = [
             'IssuanceID' => $issuance->IssuanceID,
             'RequestID' => $issuance->RequestID,
+            'DRID' => $issuance->DRID,
             'DocumentType' => $issuance->DocumentType,
             'DocumentNumber' => $issuance->DocumentNumber,
             'IssuedTo' => $issuance->IssuedTo,
@@ -239,6 +257,8 @@ class PropertyIssuanceController extends Controller
             'IssuanceDate' => $issuance->DateIssued,
             'Status' => $issuance->Status,
             'Remarks' => $issuance->Remarks,
+            'IssuerSignature' => $issuance->IssuerSignature,
+            'IssuerSignatureSource' => $issuance->IssuerSignatureSource,
             'AcknowledgedBy' => $issuance->AcknowledgedBy,
             'AcknowledgedAt' => $issuance->AcknowledgedAt,
             'AcknowledgmentSignature' => $issuance->AcknowledgmentSignature,
@@ -250,6 +270,14 @@ class PropertyIssuanceController extends Controller
 
         // Add relationships
         $transformedIssuance['request'] = $issuance->request;
+        $transformedIssuance['deliveryReceipt'] = $issuance->deliveryReceipt ? [
+            'DRID' => $issuance->deliveryReceipt->DRID,
+            'DRNumber' => $issuance->deliveryReceipt->DRNumber,
+            'RequestedBy' => $issuance->deliveryReceipt->RequestedBy,
+            'DepartmentID' => $issuance->deliveryReceipt->DepartmentID,
+            'DepartmentName' => $issuance->deliveryReceipt->department->DepartmentName ?? null,
+            'DateReceived' => $issuance->deliveryReceipt->DateReceived,
+        ] : null;
         $transformedIssuance['issuer'] = $issuance->issuedBy;
 
         // Handle issuedTo relationship
@@ -260,9 +288,10 @@ class PropertyIssuanceController extends Controller
         } elseif ($issuance->issuedTo) {
             $transformedIssuance['issuedToUser'] = $issuance->issuedTo;
         } else {
+            $fallbackDepartment = $issuance->deliveryReceipt?->department?->DepartmentName ?? null;
             $transformedIssuance['issuedToUser'] = [
                 'FullName' => $issuance->IssuedToName ?? 'External Recipient',
-                'department' => null
+                'department' => $fallbackDepartment ? ['DepartmentName' => $fallbackDepartment] : null
             ];
         }
 
@@ -337,19 +366,47 @@ class PropertyIssuanceController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'request_id' => 'required|exists:assetrequest,RequestID',
+            'request_id' => 'nullable|exists:assetrequest,RequestID',
+            'dr_id' => 'nullable|exists:deliveryreceipt,DRID',
             'date_issued' => 'required|date',
             'remarks' => 'nullable|string',
-            'issuerSignature' => 'required|string', // base64 data URL
-            'issuerSignatureSource' => 'required|in:canvas,upload',
-            'inventory_items' => 'required|array',
-            'inventory_items.*.request_detail_id' => 'required|integer',
+            'issuerSignature' => 'nullable|string', // base64 data URL
+            'issuerSignatureSource' => 'nullable|in:canvas,upload',
+            'inventory_items' => 'required|array|min:1',
+            'inventory_items.*.request_detail_id' => 'nullable|integer',
             'inventory_items.*.inventory_detail_id' => 'required|integer|exists:propertyinventorydetail,InventoryDetailID',
             'inventory_items.*.quantity_issued' => 'required|numeric|min:1',
         ]);
 
+        if (empty($validated['request_id']) && empty($validated['dr_id'])) {
+            return response()->json([
+                'message' => 'Either request_id or dr_id is required for issuance.',
+                'error' => 'missing_source'
+            ], 422);
+        }
+
+        $issuerSignature = $validated['issuerSignature'] ?? null;
+        $issuerSignatureSource = $validated['issuerSignatureSource'] ?? null;
+
+        if (($issuerSignature && !$issuerSignatureSource) || (!$issuerSignature && $issuerSignatureSource)) {
+            return response()->json([
+                'message' => 'Issuer signature source is required when a signature is provided.',
+                'error' => 'invalid_signature'
+            ], 422);
+        }
+
         try {
             DB::beginTransaction();
+
+            if (!empty($validated['request_id'])) {
+                foreach ($validated['inventory_items'] as $item) {
+                    if (empty($item['request_detail_id'])) {
+                        return response()->json([
+                            'message' => 'request_detail_id is required for request-based issuance items.',
+                            'error' => 'missing_request_detail_id'
+                        ], 422);
+                    }
+                }
 
             // Map request details to inventory items
             $inventoryMap = [];
@@ -450,6 +507,8 @@ class PropertyIssuanceController extends Controller
                 $issuanceData = [
                     'RequestID' => $validated['request_id'],
                     'IssuedBy' => Auth::id(),
+                    'IssuerSignature' => $issuerSignature,
+                    'IssuerSignatureSource' => $issuerSignatureSource,
                     'DocumentType' => $classification,
                     'DocumentNumber' => $documentNumber,
                     'DateIssued' => $validated['date_issued'],
@@ -609,14 +668,16 @@ class PropertyIssuanceController extends Controller
             ]);
 
             // Process issuer signature
-            $signatureService = new AssetRequestSignatureService();
-            $signatureService->processAndStore(
-                $validated['request_id'],
-                'issuer',
-                $validated['issuerSignature'],
-                $validated['issuerSignatureSource'],
-                Auth::id()
-            );
+            if ($issuerSignature && $issuerSignatureSource) {
+                $signatureService = new AssetRequestSignatureService();
+                $signatureService->processAndStore(
+                    $validated['request_id'],
+                    'issuer',
+                    $issuerSignature,
+                    $issuerSignatureSource,
+                    Auth::id()
+                );
+            }
 
             DB::commit();
 
@@ -629,6 +690,153 @@ class PropertyIssuanceController extends Controller
                             'issuedBy:UserID,FullName',
                             'issuedTo:EndUserID,FullName',
                             // include inventoryDetail with PropertyNumber so client can show assigned numbers
+                            'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
+                            'details'
+                        ]);
+                    })
+                ]
+            ], 201);
+
+            }
+
+            // Delivery Receipt-based issuance (no Asset Request / RIS)
+            $deliveryReceipt = DeliveryReceipt::with('department')->findOrFail((int) $validated['dr_id']);
+            $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
+
+            $inventoryItems = collect($validated['inventory_items'])->map(function ($item) {
+                return [
+                    'inventory_detail_id' => (int) $item['inventory_detail_id'],
+                    'quantity_issued' => (int) $item['quantity_issued'],
+                ];
+            });
+
+            $inventoryDetailIds = $inventoryItems->pluck('inventory_detail_id')->unique()->values()->all();
+            $inventoryDetails = PropertyInventoryDetail::with([
+                    'drDetail.deliveryReceipt',
+                    'propertyType.propertyClassification',
+                    'unitOfMeasure',
+                ])
+                ->whereIn('InventoryDetailID', $inventoryDetailIds)
+                ->lockForUpdate()
+                ->get();
+
+            if ($inventoryDetails->count() !== count($inventoryDetailIds)) {
+                return response()->json([
+                    'message' => 'One or more inventory items could not be found.',
+                    'error' => 'invalid_inventory_items'
+                ], 422);
+            }
+
+            foreach ($inventoryDetails as $detail) {
+                $detailDrId = (int) ($detail->drDetail?->DRID ?? 0);
+                if ($detailDrId !== (int) $deliveryReceipt->DRID) {
+                    return response()->json([
+                        'message' => 'All selected items must come from the same Delivery Receipt.',
+                        'error' => 'mixed_delivery_receipts'
+                    ], 422);
+                }
+
+                if ((int) $detail->PropertyStatusID !== 1) {
+                    return response()->json([
+                        'message' => 'Only available items can be issued.',
+                        'error' => 'inventory_not_available'
+                    ], 422);
+                }
+            }
+
+            // Group items by document type (PAR/ICS)
+            $groupedByType = $inventoryDetails->groupBy(function ($detail) {
+                $docType = $detail->propertyType?->propertyClassification?->DocumentType ?? null;
+                return $docType ?: 'ICS';
+            });
+
+            $issuances = [];
+
+            foreach ($groupedByType as $documentType => $details) {
+                $documentNumber = $this->generateDocumentNumber($documentType);
+
+                $issuanceData = [
+                    'RequestID' => null,
+                    'DRID' => (int) $deliveryReceipt->DRID,
+                    'IssuedBy' => Auth::id(),
+                    'IssuerSignature' => $issuerSignature,
+                    'IssuerSignatureSource' => $issuerSignatureSource,
+                    'IssuedTo' => (int) $resolvedEndUser->EndUserID,
+                    'IssuedToName' => $deliveryReceipt->RequestedBy ?? $resolvedEndUser->FullName,
+                    'DocumentType' => $documentType,
+                    'DocumentNumber' => $documentNumber,
+                    'DateIssued' => $validated['date_issued'],
+                    'Remarks' => $validated['remarks'] ?? null,
+                    'Status' => 'pending_acknowledgment',
+                    'CreatedDate' => now(),
+                ];
+
+                $issuance = PropertyIssuance::create($issuanceData);
+
+                foreach ($details as $detail) {
+                    $requestedQty = (int) ($inventoryItems->firstWhere('inventory_detail_id', $detail->InventoryDetailID)['quantity_issued'] ?? 1);
+                    if ($requestedQty !== 1) {
+                        throw new \Exception('Issuance quantities must be 1 per InventoryDetailID for QR/accountability tracking.');
+                    }
+
+                    $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
+                    $unitName = $detail->unitOfMeasure?->UnitName ?? null;
+
+                    PropertyIssuanceDetail::create([
+                        'IssuanceID' => $issuance->IssuanceID,
+                        'RequestDetailID' => null,
+                        'InventoryDetailID' => $detail->InventoryDetailID,
+                        'ItemDescription' => $itemDescription,
+                        'Unit' => $unitName,
+                        'QuantityIssued' => $requestedQty,
+                        'Remarks' => $validated['remarks'] ?? null,
+                    ]);
+
+                    // Update inventory availability and status
+                    $availableQty = (int) ($detail->QuantityAvailable ?? 0);
+                    if ($availableQty < $requestedQty) {
+                        throw new \Exception('Insufficient available quantity for selected inventory item.');
+                    }
+                    $detail->decrement('QuantityAvailable', $requestedQty);
+                    if ($detail->fresh()->QuantityAvailable <= 0) {
+                        $detail->update(['PropertyStatusID' => 2]);
+                    }
+
+                    // Create/update AssignedProperty for accountability
+                    $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+                    $assignedPayload = [
+                        'InventoryDetailID' => $detail->InventoryDetailID,
+                        'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                        'DepartmentID' => (int) $deliveryReceipt->DepartmentID,
+                        'PropertyCardNumber' => $issuance->DocumentNumber,
+                        'Description' => $detail->Description ?? $itemDescription,
+                        'AssignedDate' => $validated['date_issued'],
+                        'PropertyStatusID' => 2,
+                        'ConditionID' => (int) ($detail->ConditionID ?? 1),
+                        'Remarks' => $validated['remarks'] ?? null,
+                    ];
+
+                    if ($assignedProperty) {
+                        $assignedProperty->fill($assignedPayload);
+                        $assignedProperty->save();
+                    } else {
+                        AssignedProperty::create($assignedPayload);
+                    }
+                }
+
+                $issuances[] = $issuance;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Assets issued successfully',
+                'data' => [
+                    'issuances' => collect($issuances)->map(function ($issuance) {
+                        return $issuance->load([
+                            'issuedBy:UserID,FullName',
+                            'issuedTo:EndUserID,FullName',
+                            'deliveryReceipt',
                             'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
                             'details'
                         ]);
@@ -698,6 +906,41 @@ class PropertyIssuanceController extends Controller
             'PositionID' => 2, // Staff (safe default)
             'DepartmentID' => $departmentId,
             'FullName' => $nameToUse,
+            'IsActive' => 1,
+        ]);
+    }
+
+    private function resolveEndUserForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): EndUser
+    {
+        $departmentId = (int) ($deliveryReceipt->DepartmentID ?? 0);
+        if ($departmentId <= 0) {
+            throw new \Exception('Delivery receipt has no department assigned.');
+        }
+
+        $requestedBy = trim((string) ($deliveryReceipt->RequestedBy ?? ''));
+        if ($requestedBy !== '') {
+            $existing = EndUser::where('FullName', $requestedBy)
+                ->where('DepartmentID', $departmentId)
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+        }
+
+        $fallbackName = 'Department Custodian';
+        $fallback = EndUser::where('FullName', $fallbackName)
+            ->where('DepartmentID', $departmentId)
+            ->first();
+
+        if ($fallback) {
+            return $fallback;
+        }
+
+        return EndUser::create([
+            'PositionID' => 2,
+            'DepartmentID' => $departmentId,
+            'FullName' => $fallbackName,
             'IsActive' => 1,
         ]);
     }
@@ -901,17 +1144,82 @@ class PropertyIssuanceController extends Controller
     }
 
     /**
+     * Get delivery receipts that still have available inventory items for issuance
+     */
+    public function getDeliveryReceiptsForIssuance(Request $request)
+    {
+        try {
+            $query = DB::table('deliveryreceipt')
+                ->join('deliveryreceiptdetail', 'deliveryreceipt.DRID', '=', 'deliveryreceiptdetail.DRID')
+                ->join('propertyinventorydetail', 'deliveryreceiptdetail.DRDetailID', '=', 'propertyinventorydetail.SourceDRDetailID')
+                ->leftJoin('department', 'deliveryreceipt.DepartmentID', '=', 'department.DepartmentID')
+                ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
+                ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
+                ->leftJoin('assetrequest', 'assetrequestdetail.RequestID', '=', 'assetrequest.RequestID')
+                ->where('propertyinventorydetail.PropertyStatusID', 1)
+                ->where(function ($q) {
+                    $q->whereNull('asset_assignments.AssignmentID')
+                        ->orWhere('asset_assignments.AssignmentType', '<>', 'issuance');
+                })
+                ->where(function ($q) {
+                    $q->whereNull('assetrequest.RequestID')
+                        ->orWhereNotIn('assetrequest.Status', ['approved', 'waiting_for_issuance']);
+                })
+                ->select(
+                    'deliveryreceipt.DRID',
+                    'deliveryreceipt.DRNumber',
+                    'deliveryreceipt.RequestedBy',
+                    'deliveryreceipt.DepartmentID',
+                    'deliveryreceipt.DateReceived',
+                    'department.DepartmentName',
+                    DB::raw('COUNT(DISTINCT propertyinventorydetail.InventoryDetailID) as AvailableItems')
+                )
+                ->groupBy(
+                    'deliveryreceipt.DRID',
+                    'deliveryreceipt.DRNumber',
+                    'deliveryreceipt.RequestedBy',
+                    'deliveryreceipt.DepartmentID',
+                    'deliveryreceipt.DateReceived',
+                    'department.DepartmentName'
+                )
+                ->orderBy('deliveryreceipt.DateReceived', 'desc');
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('deliveryreceipt.DRNumber', 'like', "%{$search}%")
+                        ->orWhere('deliveryreceipt.RequestedBy', 'like', "%{$search}%")
+                        ->orWhere('department.DepartmentName', 'like', "%{$search}%");
+                });
+            }
+
+            $perPage = (int) $request->get('per_page', 15);
+            $results = $query->paginate($perPage);
+
+            return response()->json($results);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error retrieving delivery receipts for issuance: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
+    }
+
+    /**
      * Get available inventory items for issuance
      */
     public function getAvailableInventory(Request $request)
     {
         try {
             $query = \App\Models\Inventory\PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
+                ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
                 ->leftJoin('propertyinventory', 'propertyinventorydetail.InventoryID', '=', 'propertyinventory.InventoryID')
                 ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
                 ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
                 ->leftJoin('unitofmeasure', 'propertyinventorydetail.UnitOfMeasureID', '=', 'unitofmeasure.UnitOfMeasureID')
                 ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                ->leftJoin('deliveryreceipt', 'deliveryreceiptdetail.DRID', '=', 'deliveryreceipt.DRID')
+                ->leftJoin('department', 'deliveryreceipt.DepartmentID', '=', 'department.DepartmentID')
                 // Join to assignment and request detail tables so we can exclude inventory that is reserved
                 ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
                 ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
@@ -919,12 +1227,18 @@ class PropertyIssuanceController extends Controller
                 ->select(
                     'propertyinventorydetail.*',
                     'propertytype.PropertyName',
+                    'propertyclassification.DocumentType',
                     'propertyinventory.InventoryNumber',
                     'propertyinventory.DateReceived',
                     'propertystatus.StatusName',
                     'condition.ConditionName',
                     'unitofmeasure.UnitName',
-                    'deliveryreceiptdetail.ItemDescription as dr_item_description'
+                    'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                    'deliveryreceipt.DRID',
+                    'deliveryreceipt.DRNumber',
+                    'deliveryreceipt.RequestedBy',
+                    'deliveryreceipt.DepartmentID',
+                    'department.DepartmentName'
                 );
 
             // Only include items that are currently marked as available.
@@ -954,6 +1268,10 @@ class PropertyIssuanceController extends Controller
             // Filter by property type
             if ($request->filled('property_type')) {
                 $query->where('propertyinventorydetail.PropertyTypeID', $request->property_type);
+            }
+
+            if ($request->filled('dr_id')) {
+                $query->where('deliveryreceipt.DRID', (int) $request->dr_id);
             }
 
             $items = $query->orderBy('propertyinventorydetail.PropertyNumber', 'asc')
