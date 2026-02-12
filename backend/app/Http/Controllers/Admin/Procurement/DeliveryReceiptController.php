@@ -22,7 +22,13 @@ class DeliveryReceiptController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'iar', 'department', 'requestedByUser:UserID,FullName,DepartmentID'])
+            $query = DeliveryReceipt::with([
+                    'details.propertyType',
+                    'details.unitOfMeasure',
+                    'iar',
+                    'requestedByUser:UserID,FullName,DepartmentID',
+                    'requestedByUser.department:DepartmentID,DepartmentName',
+                ])
                 ->leftJoin('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->select('deliveryreceipt.*', 'user.FullName as received_by_name')
                 ->withCount('iar as hasIAR');
@@ -65,6 +71,11 @@ class DeliveryReceiptController extends Controller
                     'UserID' => $dr->ReceivedBy,
                     'FullName' => $dr->received_by_name
                 ] : null;
+
+                // Convenience fields for legacy frontend usage
+                $dr->RequestedByName = $dr->requestedByUser->FullName ?? null;
+                $dr->DepartmentName = $dr->requestedByUser->department->DepartmentName ?? null;
+                $dr->DepartmentID = $dr->requestedByUser->DepartmentID ?? null;
                 // Remove the temporary field
                 unset($dr->received_by_name);
                 return $dr;
@@ -102,7 +113,6 @@ class DeliveryReceiptController extends Controller
                 'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
                 'supplier_name' => 'required|string|max:255',
                 'requested_by_user_id' => 'required|integer|exists:user,UserID',
-                'department_id' => 'required|integer|exists:department,DepartmentID',
                 'pr_number' => 'required|string|max:50',
                 'po_number' => [
                     'required',
@@ -186,20 +196,10 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
-            if ((int) $requestedByUser->DepartmentID !== (int) $request->department_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['requested_by_user_id' => ['Requested by user must belong to the selected department.']]
-                ], 422);
-            }
-
             $deliveryReceipt = DeliveryReceipt::create([
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
-                'RequestedBy' => $requestedByUser->FullName,
-                'RequestedByUserID' => (int) $requestedByUser->UserID,
-                'DepartmentID' => $request->department_id,
+                'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
                 'InvoiceNumber' => $request->invoice_number,
@@ -228,13 +228,23 @@ class DeliveryReceiptController extends Controller
             DB::commit();
 
             // Load relationships
-            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department', 'requestedByUser:UserID,FullName,DepartmentID']);
+            $deliveryReceipt->load([
+                'details.propertyType',
+                'details.unitOfMeasure',
+                'requestedByUser:UserID,FullName,DepartmentID',
+                'requestedByUser.department:DepartmentID,DepartmentName',
+            ]);
             // Set receivedByUser manually
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
                 'UserID' => $user->UserID,
                 'FullName' => $user->FullName
             ] : null;
+
+            // Convenience fields for legacy frontend usage
+            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
+            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
+            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
 
             return response()->json([
                 'success' => true,
@@ -255,7 +265,12 @@ class DeliveryReceiptController extends Controller
     public function show($id): JsonResponse
     {
         try {
-            $deliveryReceipt = DeliveryReceipt::with(['details.propertyType', 'details.unitOfMeasure', 'department', 'requestedByUser:UserID,FullName,DepartmentID'])
+            $deliveryReceipt = DeliveryReceipt::with([
+                    'details.propertyType',
+                    'details.unitOfMeasure',
+                    'requestedByUser:UserID,FullName,DepartmentID',
+                    'requestedByUser.department:DepartmentID,DepartmentName',
+                ])
                 ->findOrFail($id);
 
             // Load IAR count
@@ -276,6 +291,11 @@ class DeliveryReceiptController extends Controller
                 'UserID' => $user->UserID,
                 'FullName' => $user->FullName
             ] : null;
+
+            // Convenience fields for legacy frontend usage
+            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
+            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
+            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
 
             // Normalize relationship keys for frontend by converting the model to an array
             $data = $deliveryReceipt->toArray();
@@ -333,7 +353,6 @@ class DeliveryReceiptController extends Controller
                 ],
                 'supplier_name' => 'required|string|max:255',
                 'requested_by_user_id' => 'required|integer|exists:user,UserID',
-                'department_id' => 'required|integer|exists:department,DepartmentID',
                 'pr_number' => 'required|string|max:50',
                 'po_number' => [
                     'required',
@@ -418,20 +437,10 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
-            if ((int) $requestedByUser->DepartmentID !== (int) $request->department_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['requested_by_user_id' => ['Requested by user must belong to the selected department.']]
-                ], 422);
-            }
-
             $deliveryReceipt->update([
                 'DRNumber' => $request->dr_number,
                 'SupplierName' => $request->supplier_name,
-                'RequestedBy' => $requestedByUser->FullName,
-                'RequestedByUserID' => (int) $requestedByUser->UserID,
-                'DepartmentID' => $request->department_id,
+                'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
                 'InvoiceNumber' => $request->invoice_number,
@@ -479,13 +488,23 @@ class DeliveryReceiptController extends Controller
             DB::commit();
 
             // Load relationships
-            $deliveryReceipt->load(['details.propertyType', 'details.unitOfMeasure', 'department', 'requestedByUser:UserID,FullName,DepartmentID']);
+            $deliveryReceipt->load([
+                'details.propertyType',
+                'details.unitOfMeasure',
+                'requestedByUser:UserID,FullName,DepartmentID',
+                'requestedByUser.department:DepartmentID,DepartmentName',
+            ]);
             // Set receivedByUser manually
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
             $deliveryReceipt->receivedByUser = $user ? [
                 'UserID' => $user->UserID,
                 'FullName' => $user->FullName
             ] : null;
+
+            // Convenience fields for legacy frontend usage
+            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
+            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
+            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
 
             return response()->json([
                 'success' => true,
@@ -574,7 +593,7 @@ class DeliveryReceiptController extends Controller
                 });
 
             if ($request->filled('department_id')) {
-                $query->where('DepartmentID', (int) $request->department_id);
+                $query->where('user.DepartmentID', (int) $request->department_id);
             }
 
             $users = $query->orderBy('user.FullName')->get();

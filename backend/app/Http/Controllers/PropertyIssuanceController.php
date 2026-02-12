@@ -31,7 +31,8 @@ class PropertyIssuanceController extends Controller
         $query = PropertyIssuance::with([
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName',
-            'deliveryReceipt.department:DepartmentID,DepartmentName',
+            'deliveryReceipt.requestedByUser:UserID,FullName,DepartmentID',
+            'deliveryReceipt.requestedByUser.department:DepartmentID,DepartmentName',
             'issuedBy',
             'issuedTo',
             'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
@@ -81,11 +82,11 @@ class PropertyIssuanceController extends Controller
 
             $requesterName = $request
                 ? ($request->requester->FullName ?? 'Unknown User')
-                : ($dr->RequestedBy ?? 'Unknown Requester');
+                : ($dr->requestedByUser->FullName ?? 'Unknown Requester');
 
             $departmentName = $request
                 ? ($request->department->DepartmentName ?? ($request->requester->department->DepartmentName ?? 'Unknown Department'))
-                : ($dr->department->DepartmentName ?? 'Unknown Department');
+                : ($dr->requestedByUser->department->DepartmentName ?? 'Unknown Department');
 
             // Transform each issuance in the group
             $transformedIssuances = $requestIssuances->map(function ($issuance) {
@@ -205,7 +206,8 @@ class PropertyIssuanceController extends Controller
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
             'request.signatures',
-            'deliveryReceipt.department:DepartmentID,DepartmentName',
+            'deliveryReceipt.requestedByUser:UserID,FullName,DepartmentID',
+            'deliveryReceipt.requestedByUser.department:DepartmentID,DepartmentName',
             'issuedBy',
             'issuedBy.department:DepartmentID,DepartmentName',
             'issuedTo',
@@ -273,9 +275,9 @@ class PropertyIssuanceController extends Controller
         $transformedIssuance['deliveryReceipt'] = $issuance->deliveryReceipt ? [
             'DRID' => $issuance->deliveryReceipt->DRID,
             'DRNumber' => $issuance->deliveryReceipt->DRNumber,
-            'RequestedBy' => $issuance->deliveryReceipt->RequestedBy,
-            'DepartmentID' => $issuance->deliveryReceipt->DepartmentID,
-            'DepartmentName' => $issuance->deliveryReceipt->department->DepartmentName ?? null,
+            'RequestedBy' => $issuance->deliveryReceipt->requestedByUser->FullName ?? null,
+            'DepartmentID' => $issuance->deliveryReceipt->requestedByUser->DepartmentID ?? null,
+            'DepartmentName' => $issuance->deliveryReceipt->requestedByUser->department->DepartmentName ?? null,
             'DateReceived' => $issuance->deliveryReceipt->DateReceived,
         ] : null;
         $transformedIssuance['issuer'] = $issuance->issuedBy;
@@ -288,7 +290,7 @@ class PropertyIssuanceController extends Controller
         } elseif ($issuance->issuedTo) {
             $transformedIssuance['issuedToUser'] = $issuance->issuedTo;
         } else {
-            $fallbackDepartment = $issuance->deliveryReceipt?->department?->DepartmentName ?? null;
+            $fallbackDepartment = $issuance->deliveryReceipt?->requestedByUser?->department?->DepartmentName ?? null;
             $transformedIssuance['issuedToUser'] = [
                 'FullName' => $issuance->IssuedToName ?? 'External Recipient',
                 'department' => $fallbackDepartment ? ['DepartmentName' => $fallbackDepartment] : null
@@ -700,7 +702,8 @@ class PropertyIssuanceController extends Controller
             }
 
             // Delivery Receipt-based issuance (no Asset Request / RIS)
-            $deliveryReceipt = DeliveryReceipt::with('department')->findOrFail((int) $validated['dr_id']);
+            $deliveryReceipt = DeliveryReceipt::with(['requestedByUser:UserID,FullName,DepartmentID', 'requestedByUser.department:DepartmentID,DepartmentName'])
+                ->findOrFail((int) $validated['dr_id']);
             $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
 
             $inventoryItems = collect($validated['inventory_items'])->map(function ($item) {
@@ -912,12 +915,12 @@ class PropertyIssuanceController extends Controller
 
     private function resolveEndUserForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): EndUser
     {
-        $departmentId = (int) ($deliveryReceipt->DepartmentID ?? 0);
+        $departmentId = (int) ($deliveryReceipt->requestedByUser->DepartmentID ?? 0);
         if ($departmentId <= 0) {
             throw new \Exception('Delivery receipt has no department assigned.');
         }
 
-        $requestedBy = trim((string) ($deliveryReceipt->RequestedBy ?? ''));
+        $requestedBy = trim((string) ($deliveryReceipt->requestedByUser->FullName ?? ''));
         if ($requestedBy !== '') {
             $existing = EndUser::where('FullName', $requestedBy)
                 ->where('DepartmentID', $departmentId)
@@ -1152,7 +1155,8 @@ class PropertyIssuanceController extends Controller
             $query = DB::table('deliveryreceipt')
                 ->join('deliveryreceiptdetail', 'deliveryreceipt.DRID', '=', 'deliveryreceiptdetail.DRID')
                 ->join('propertyinventorydetail', 'deliveryreceiptdetail.DRDetailID', '=', 'propertyinventorydetail.SourceDRDetailID')
-                ->leftJoin('department', 'deliveryreceipt.DepartmentID', '=', 'department.DepartmentID')
+                ->leftJoin('user as reqU', 'deliveryreceipt.RequestedBy', '=', 'reqU.UserID')
+                ->leftJoin('department', 'reqU.DepartmentID', '=', 'department.DepartmentID')
                 ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
                 ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
                 ->leftJoin('assetrequest', 'assetrequestdetail.RequestID', '=', 'assetrequest.RequestID')
@@ -1168,8 +1172,8 @@ class PropertyIssuanceController extends Controller
                 ->select(
                     'deliveryreceipt.DRID',
                     'deliveryreceipt.DRNumber',
-                    'deliveryreceipt.RequestedBy',
-                    'deliveryreceipt.DepartmentID',
+                    'reqU.FullName as RequestedBy',
+                    'reqU.DepartmentID as DepartmentID',
                     'deliveryreceipt.DateReceived',
                     'department.DepartmentName',
                     DB::raw('COUNT(DISTINCT propertyinventorydetail.InventoryDetailID) as AvailableItems')
@@ -1177,8 +1181,8 @@ class PropertyIssuanceController extends Controller
                 ->groupBy(
                     'deliveryreceipt.DRID',
                     'deliveryreceipt.DRNumber',
-                    'deliveryreceipt.RequestedBy',
-                    'deliveryreceipt.DepartmentID',
+                    'reqU.FullName',
+                    'reqU.DepartmentID',
                     'deliveryreceipt.DateReceived',
                     'department.DepartmentName'
                 )
@@ -1188,7 +1192,7 @@ class PropertyIssuanceController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('deliveryreceipt.DRNumber', 'like', "%{$search}%")
-                        ->orWhere('deliveryreceipt.RequestedBy', 'like', "%{$search}%")
+                        ->orWhere('reqU.FullName', 'like', "%{$search}%")
                         ->orWhere('department.DepartmentName', 'like', "%{$search}%");
                 });
             }
@@ -1219,7 +1223,8 @@ class PropertyIssuanceController extends Controller
                 ->leftJoin('unitofmeasure', 'propertyinventorydetail.UnitOfMeasureID', '=', 'unitofmeasure.UnitOfMeasureID')
                 ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
                 ->leftJoin('deliveryreceipt', 'deliveryreceiptdetail.DRID', '=', 'deliveryreceipt.DRID')
-                ->leftJoin('department', 'deliveryreceipt.DepartmentID', '=', 'department.DepartmentID')
+                ->leftJoin('user as reqU', 'deliveryreceipt.RequestedBy', '=', 'reqU.UserID')
+                ->leftJoin('department', 'reqU.DepartmentID', '=', 'department.DepartmentID')
                 // Join to assignment and request detail tables so we can exclude inventory that is reserved
                 ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
                 ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
@@ -1236,8 +1241,8 @@ class PropertyIssuanceController extends Controller
                     'deliveryreceiptdetail.ItemDescription as dr_item_description',
                     'deliveryreceipt.DRID',
                     'deliveryreceipt.DRNumber',
-                    'deliveryreceipt.RequestedBy',
-                    'deliveryreceipt.DepartmentID',
+                    'reqU.FullName as RequestedBy',
+                    'reqU.DepartmentID as DepartmentID',
                     'department.DepartmentName'
                 );
 

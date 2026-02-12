@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::table('deliveryreceipt', function (Blueprint $table) {
             if (!Schema::hasColumn('deliveryreceipt', 'RequestedByUserID')) {
-                $table->unsignedInteger('RequestedByUserID')->nullable()->after('RequestedBy');
+                // Keep as signed INTEGER to match existing `user.UserID` (int(11)).
+                $table->integer('RequestedByUserID')->nullable()->after('RequestedBy');
                 $table->index('RequestedByUserID');
                 $table->foreign('RequestedByUserID')
                     ->references('UserID')

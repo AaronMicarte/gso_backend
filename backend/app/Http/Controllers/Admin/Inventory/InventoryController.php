@@ -226,7 +226,7 @@ class InventoryController extends Controller
                     LIMIT 1
                 ),
                 (
-                    SELECT COALESCE(drReqU.FullName, dr.RequestedBy)
+                    SELECT COALESCE(drReqU.FullName, 'Unknown Requester')
                     FROM propertyinventorydetail invd
                     JOIN deliveryreceiptdetail drd ON drd.DRDetailID = invd.SourceDRDetailID
                     JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
@@ -261,7 +261,8 @@ class InventoryController extends Controller
                     FROM propertyinventorydetail invd
                     JOIN deliveryreceiptdetail drd ON drd.DRDetailID = invd.SourceDRDetailID
                     JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
-                    LEFT JOIN department dep ON dep.DepartmentID = dr.DepartmentID
+                    LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                    LEFT JOIN department dep ON dep.DepartmentID = drReqU.DepartmentID
                     WHERE invd.InventoryID = propertyinventory.InventoryID
                     ORDER BY drd.DRDetailID ASC
                     LIMIT 1
@@ -372,7 +373,7 @@ class InventoryController extends Controller
                             LIMIT 1
                         ),
                         (
-                            SELECT COALESCE(drReqU.FullName, dr.RequestedBy)
+                            SELECT COALESCE(drReqU.FullName, 'Unknown Requester')
                             FROM deliveryreceiptdetail drd
                             JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
                             LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
@@ -402,7 +403,8 @@ class InventoryController extends Controller
                             SELECT depDR.DepartmentName
                             FROM deliveryreceiptdetail drd
                             JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
-                            LEFT JOIN department depDR ON depDR.DepartmentID = dr.DepartmentID
+                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                            LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
                             WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
                             LIMIT 1
                         )
