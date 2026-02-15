@@ -204,7 +204,12 @@ class InventoryController extends Controller
             ->with([
                 'details' => function($query) {
                     $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
-                          ->select('propertyinventorydetail.*', 'deliveryreceiptdetail.ItemDescription as dr_item_description');
+                          ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID')
+                          ->select(
+                              'propertyinventorydetail.*',
+                              'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                              'articles.ArticleName as dr_article_name'
+                          );
                 },
                 'details.propertyType',
                 'iar.deliveryReceipt'
@@ -252,12 +257,14 @@ class InventoryController extends Controller
         $inventory = PropertyInventory::with([
             'details' => function($query) {
                 $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+                      ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID')
                       ->leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
                       ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
                       ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
                       ->select(
                               'propertyinventorydetail.*',
                               'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                          'articles.ArticleName as dr_article_name',
                               'propertytype.PropertyName', 'propertytype.Description as property_type_description',
                               'propertyclassification.ClassificationName', 'propertyclassification.DocumentType',
                               'propertystatus.StatusName'
@@ -501,6 +508,7 @@ class InventoryController extends Controller
             ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
             ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
             ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+            ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID')
             ->select(
                 'propertyinventorydetail.*',
                 'propertytype.PropertyName',
@@ -510,6 +518,7 @@ class InventoryController extends Controller
                 'propertystatus.StatusName',
                 'condition.ConditionName',
                 'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                'articles.ArticleName as dr_article_name',
                 'deliveryreceiptdetail.Brand as dr_brand',
                 'deliveryreceiptdetail.ModelNumber as dr_model',
                 'deliveryreceiptdetail.SerialNumber as dr_serial'
@@ -603,7 +612,8 @@ class InventoryController extends Controller
                   ->orWhere('propertyinventorydetail.PropertyNumber', 'like', '%' . $search . '%')
                   ->orWhere('propertyinventory.InventoryNumber', 'like', '%' . $search . '%')
                   ->orWhere('propertytype.PropertyName', 'like', '%' . $search . '%')
-                  ->orWhere('deliveryreceiptdetail.ItemDescription', 'like', '%' . $search . '%');
+                  ->orWhere('deliveryreceiptdetail.ItemDescription', 'like', '%' . $search . '%')
+                  ->orWhere('articles.ArticleName', 'like', '%' . $search . '%');
             });
         }
 

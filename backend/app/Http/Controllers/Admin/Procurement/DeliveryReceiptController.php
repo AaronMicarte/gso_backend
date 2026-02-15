@@ -23,6 +23,7 @@ class DeliveryReceiptController extends Controller
     {
         try {
             $query = DeliveryReceipt::with([
+                    'details.article',
                     'details.propertyType',
                     'details.unitOfMeasure',
                     'requestedByUser:UserID,FullName,DepartmentID',
@@ -160,6 +161,7 @@ class DeliveryReceiptController extends Controller
                 'remarks' => 'nullable|string',
                 'dr_picture' => 'required|file|mimes:jpeg,png,jpg,gif|max:2048',
                 'details' => 'required|array|min:1',
+                'details.*.article_id' => 'required|integer|exists:articles,ArticleID',
                 'details.*.item_description' => 'required|string|max:255',
                 'details.*.brand' => 'nullable|string|max:100',
                 'details.*.model_number' => 'nullable|string|max:100',
@@ -238,6 +240,7 @@ class DeliveryReceiptController extends Controller
             foreach ($request->details as $detail) {
                 DeliveryReceiptDetail::create([
                     'DRID' => $deliveryReceipt->DRID,
+                    'ArticleID' => $detail['article_id'],
                     'ItemDescription' => $detail['item_description'],
                     'Brand' => $detail['brand'] ?? null,
                     'ModelNumber' => $detail['model_number'] ?? null,

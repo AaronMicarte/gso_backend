@@ -18,6 +18,7 @@ class DeliveryReceiptDetail extends Model
 
     protected $fillable = [
         'DRID',
+        'ArticleID',
         'ItemDescription',
         'Brand',
         'ModelNumber',
@@ -37,7 +38,7 @@ class DeliveryReceiptDetail extends Model
         'UnitOfMeasureID' => 'integer',
     ];
 
-    protected $with = ['propertyType', 'unitOfMeasure'];
+    protected $with = ['propertyType', 'unitOfMeasure', 'article'];
 
     public function deliveryReceipt(): BelongsTo
     {
@@ -52,5 +53,10 @@ class DeliveryReceiptDetail extends Model
     public function unitOfMeasure(): BelongsTo
     {
         return $this->belongsTo(\App\Models\MasterData\UnitOfMeasure::class, 'UnitOfMeasureID', 'UnitOfMeasureID');
+    }
+
+    public function article(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\Article::class, 'ArticleID', 'ArticleID');
     }
 }

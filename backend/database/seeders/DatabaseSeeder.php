@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             PurchaseRequestStatusSeeder::class,
             PurchaseOrderStatusSeeder::class,
             ClassificationSeeder::class,
+            ArticleSeeder::class,
             PropertyTypeSeeder::class,
             \Database\Seeders\DeliveryReceiptSeeder::class,
         ]);

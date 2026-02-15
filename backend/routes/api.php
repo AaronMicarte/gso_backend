@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\MFAController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\MasterData\CategoryController as MasterDataCategoryController;
+use App\Http\Controllers\Admin\MasterData\ArticleController;
 use App\Http\Controllers\Admin\MasterData\ClassificationController;
 use App\Http\Controllers\Admin\MasterData\ConditionController;
 use App\Http\Controllers\Admin\MasterData\DepartmentController as MasterDataDepartmentController;
@@ -88,6 +89,11 @@ Route::middleware('auth:sanctum')->group(function () {
             // Categories
             Route::apiResource('categories', MasterDataCategoryController::class)->parameters(['categories' => 'id']);
             Route::post('categories/{id}/restore', [MasterDataCategoryController::class, 'restore']);
+
+            // Articles
+            Route::apiResource('articles', ArticleController::class)->parameters(['articles' => 'id']);
+            Route::post('articles/{id}/restore', [ArticleController::class, 'restore']);
+            Route::get('articles-active', [ArticleController::class, 'active']);
 
             // Classifications
             Route::apiResource('classifications', ClassificationController::class)->parameters(['classifications' => 'id']);

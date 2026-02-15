@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 13, 2026 at 09:28 AM
+-- Generation Time: Feb 15, 2026 at 10:32 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,48 @@ SET time_zone = "+00:00";
 --
 -- Database: `gso_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `articles`
+--
+
+CREATE TABLE `articles` (
+  `ArticleID` bigint(20) UNSIGNED NOT NULL,
+  `ArticleName` varchar(255) NOT NULL,
+  `Description` text DEFAULT NULL,
+  `IsActive` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `articles`
+--
+
+INSERT INTO `articles` (`ArticleID`, `ArticleName`, `Description`, `IsActive`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Desktop Computer', 'Non-expendable desktop computer hardware', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(2, 'Laptop Computer', 'Non-expendable laptop computer', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(3, 'Printer/Scanner', 'Non-expendable printing and scanning equipment', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(4, 'Office Desk', 'Non-expendable office furniture - desk', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(5, 'Office Chair', 'Non-expendable office furniture - chair', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(6, 'Filing Cabinet', 'Non-expendable office storage furniture', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(7, 'Air Conditioner', 'Non-expendable cooling equipment', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(8, 'Projector', 'Non-expendable presentation equipment', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(9, 'Telephone Set', 'Non-expendable communication equipment', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(10, 'Server Equipment', 'Non-expendable server hardware', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(11, 'Calculator', 'Semi-expendable calculation device', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(12, 'Stapler', 'Semi-expendable office tool', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(13, 'Hole Puncher', 'Semi-expendable office tool', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(14, 'Office Supplies Set', 'Semi-expendable office supplies bundle', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(15, 'Table Fan', 'Semi-expendable ventilation equipment', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(16, 'Extension Cord', 'Semi-expendable electrical accessory', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(17, 'Office Lamp', 'Semi-expendable lighting equipment', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(18, 'Waste Basket', 'Semi-expendable office accessory', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(19, 'Clock/Watch', 'Semi-expendable timekeeping device', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL),
+(20, 'Hand Tools Set', 'Semi-expendable maintenance tools', 1, '2026-02-15 07:04:29', '2026-02-15 07:04:29', NULL);
 
 -- --------------------------------------------------------
 
@@ -163,31 +205,20 @@ CREATE TABLE `assignedproperty` (
 --
 
 INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, `DepartmentID`, `PropertyCardNumber`, `Description`, `AssignedDate`, `PropertyStatusID`, `ConditionID`, `Remarks`, `CreatedDate`, `UpdatedDate`) VALUES
-(1, 1, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:41', '2026-02-13 12:24:41'),
-(2, 2, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:41', '2026-02-13 12:24:41'),
-(3, 3, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:41', '2026-02-13 12:24:41'),
-(4, 4, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(5, 5, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(6, 6, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(7, 7, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(8, 8, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(9, 9, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(10, 10, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(11, 11, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(12, 12, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(13, 13, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(14, 14, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(15, 15, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(16, 16, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(17, 17, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(18, 18, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(19, 19, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(20, 20, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(21, 21, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(22, 22, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(23, 26, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(24, 27, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42'),
-(25, 28, 2, 5, 'PAR-2026-0001', 'good', '2026-02-13', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 12:24:42', '2026-02-13 12:24:42');
+(26, 1, 2, 5, 'PAR-2026-0001', 'good', '2026-02-14', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-14 03:03:37', '2026-02-14 03:03:37'),
+(27, 2, 2, 5, 'PAR-2026-0001', 'good', '2026-02-14', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-14 03:03:37', '2026-02-14 03:03:37'),
+(28, 3, 2, 5, NULL, 'Monitor 24\"', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(29, 4, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(30, 5, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(31, 6, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(32, 7, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(33, 8, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(34, 9, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(35, 10, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(36, 11, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(37, 12, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(38, 13, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
+(39, 14, 2, 5, NULL, 'maka bugnaw', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 17:28:48', '2026-02-15 17:28:48');
 
 -- --------------------------------------------------------
 
@@ -266,7 +297,14 @@ CREATE TABLE `deliveryreceipt` (
 --
 
 INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `RequestedBy`, `PRNumber`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `InspectionStatus`, `InspectionCompletedAt`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
-(6, 'DR-GSO-2026-003', 'Government Procurement Services', 3, 'PR-GSO-2026-047', 'PO-GSO-2026-080', 'INV-GPS-2026-9012', 1, '2026-02-12', 'Non-expendable property items for GSO operations', 'inspected', '2026-02-13 04:20:31', 'dr_pictures/zja8fbxkPYAqiK0Z7jrYf4jemGU4ZAaSJ2aNIBKB.png', '2026-02-12 16:19:09', NULL);
+(7, 'DR-2026-002', 'Tech Supplies Inc.', 3, 'PR-002', 'PO-002', 'INV-002', 3, '2026-02-14', 'Wireless peripherals for office use', 'inspected', '2026-02-13 18:03:36', 'dr_pictures/sample1.png', '2026-02-14 02:00:49', NULL),
+(8, 'DR-2026-003', 'Office Depot', 3, 'PR-003', 'PO-003', 'INV-003', 3, '2026-02-13', 'Stationery and office supplies', 'inspected', '2026-02-13 19:07:37', 'dr_pictures/sample2.png', '2026-02-14 02:00:49', NULL),
+(9, 'DR-2026-004', 'Global Electronics', 3, 'PR-004', 'PO-004', 'INV-004', 3, '2026-02-12', 'IT equipment for department', 'inspected', '2026-02-13 19:23:16', 'dr_pictures/sample3.png', '2026-02-14 02:00:49', NULL),
+(10, 'DR-2026-005', 'Stationery World', 3, 'PR-005', 'PO-005', 'INV-005', 3, '2026-02-11', 'Office furniture', 'pending', NULL, 'dr_pictures/sample4.png', '2026-02-14 02:00:49', NULL),
+(11, 'DR-2026-006', 'Furniture Co.', 3, 'PR-006', 'PO-006', 'INV-006', 3, '2026-02-10', 'Filing cabinets and whiteboards', 'pending', NULL, 'dr_pictures/sample5.png', '2026-02-14 02:00:49', NULL),
+(12, 'DR-2026-007', 'IT Solutions Ltd.', 3, 'PR-007', 'PO-007', 'INV-007', 3, '2026-02-09', 'Laptop accessories', 'pending', NULL, 'dr_pictures/sample6.png', '2026-02-14 02:00:49', NULL),
+(13, 'dr21', 'as', 3, '1', '1', '1', 1, '2026-02-14', 'good', 'pending', NULL, 'dr_pictures/kjFLcgwgy0GWHXrIO1KdwSGSjQc6leDTT9ezmBls.jpg', '2026-02-14 14:14:58', NULL),
+(14, 'dr123', 'Cyron Suppliers', 3, '3', '3', '3', 1, '2026-02-15', 'goods', 'inspected', '2026-02-15 09:28:48', 'dr_pictures/4IhAGiGgGk8S5e37H1egfX4tnY0UhS5lz3q8Zys6.jpg', '2026-02-15 17:27:07', NULL);
 
 -- --------------------------------------------------------
 
@@ -277,6 +315,7 @@ INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `RequestedBy`
 CREATE TABLE `deliveryreceiptdetail` (
   `DRDetailID` int(11) NOT NULL,
   `DRID` int(11) NOT NULL,
+  `ArticleID` bigint(20) UNSIGNED DEFAULT NULL,
   `ItemDescription` varchar(255) NOT NULL COMMENT 'Manual item description',
   `Brand` varchar(100) DEFAULT NULL,
   `ModelNumber` varchar(100) DEFAULT NULL,
@@ -294,10 +333,21 @@ CREATE TABLE `deliveryreceiptdetail` (
 -- Dumping data for table `deliveryreceiptdetail`
 --
 
-INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ItemDescription`, `Brand`, `ModelNumber`, `SerialNumber`, `PropertyTypeID`, `QuantityDelivered`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `InspectionStatus`, `deleted_at`) VALUES
-(12, 6, 'All-in-One Printer', 'Canon', 'imageCLASS MF644Cdw', 'CAN-MF644-001', 7, 1, 2, 35000.00, 35000.00, 'inspected', NULL),
-(13, 6, 'Executive Desk', 'Steelcase', 'Series 1', 'STLC-S1-002', 6, 1, 2, 25000.00, 25000.00, 'inspected', NULL),
-(14, 6, 'Projector', 'Epson', 'EB-S41', 'EPS-EBS41-003', 7, 1, 2, 40000.00, 40000.00, 'inspected', NULL);
+INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ArticleID`, `ItemDescription`, `Brand`, `ModelNumber`, `SerialNumber`, `PropertyTypeID`, `QuantityDelivered`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `InspectionStatus`, `deleted_at`) VALUES
+(15, 7, NULL, 'Wireless Mouse', 'Logitech', 'MX Master 3', 'LOG-MX3-001', 7, 1, 2, 500.00, 500.00, 'inspected', NULL),
+(16, 7, NULL, 'Keyboard', 'Logitech', 'MX Keys', 'LOG-MXK-002', 7, 1, 2, 800.00, 800.00, 'inspected', NULL),
+(17, 8, NULL, 'Printer Paper', 'Staples', 'A4-80GSM', NULL, 8, 20, 5, 200.00, 4000.00, 'inspected', NULL),
+(18, 8, NULL, 'Ink Cartridges', 'HP', 'HP-564', NULL, 8, 15, 2, 300.00, 4500.00, 'inspected', NULL),
+(19, 9, NULL, 'Monitor 24\"', 'Dell', 'S2421H', 'DEL-S2421H-001', 7, 1, 2, 15000.00, 15000.00, 'inspected', NULL),
+(20, 9, NULL, 'HDMI Cable', 'Belkin', 'AV10115', NULL, 7, 10, 2, 200.00, 2000.00, 'inspected', NULL),
+(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 2, 5000.00, 5000.00, 'pending', NULL),
+(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 2, 1000.00, 6000.00, 'pending', NULL),
+(23, 11, NULL, 'Filing Cabinet', 'Hon', 'HFC42', 'HON-HFC42-001', 6, 1, 2, 8000.00, 8000.00, 'pending', NULL),
+(24, 11, NULL, 'Whiteboard', 'Quartet', 'QRT-792', NULL, 6, 2, 2, 3000.00, 6000.00, 'pending', NULL),
+(25, 12, NULL, 'Laptop Stand', 'Rain Design', 'mStand', 'RD-MST-001', 7, 1, 2, 1500.00, 1500.00, 'pending', NULL),
+(26, 12, NULL, 'USB Hub', 'Anker', '7-in-1', NULL, 7, 9, 2, 400.00, 3600.00, 'pending', NULL),
+(27, 13, NULL, 'Table', NULL, NULL, NULL, 6, 10, 7, 100.00, 1000.00, 'pending', NULL),
+(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 6, 1, 2, 200.00, 200.00, 'inspected', NULL);
 
 -- --------------------------------------------------------
 
@@ -325,7 +375,8 @@ INSERT INTO `department` (`DepartmentID`, `DepartmentName`, `Description`, `Depa
 (2, 'Administrative Office', NULL, 'ADMIN', 1, '2025-12-05 02:07:27', NULL, NULL),
 (3, 'Finance Department', NULL, 'FIN', 1, '2025-12-05 02:07:27', '2025-12-11 22:27:05', '2025-12-11 14:27:05'),
 (4, 'Human Resources', NULL, 'HR', 1, '2025-12-05 02:07:27', NULL, NULL),
-(5, 'IT Department', NULL, 'IT', 1, '2025-12-05 02:07:27', NULL, NULL);
+(5, 'IT Department', NULL, 'IT', 1, '2025-12-05 02:07:27', NULL, NULL),
+(17, 'Department of Health', 'Health responsible', 'DOH', 1, '2026-02-14 12:19:13', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -405,9 +456,13 @@ CREATE TABLE `iardetail` (
 --
 
 INSERT INTO `iardetail` (`IARDetailID`, `IARID`, `DRDetailID`, `PropertyTypeID`, `ConditionID`, `QuantityAccepted`, `QuantityRejected`, `VerifiedBrand`, `VerifiedModel`, `VerifiedSerial`, `NoSerial`, `Remarks`, `change_reason`) VALUES
-(1, 13, 12, 7, 1, 1, 0, 'Canon', 'imageCLASS MF644Cdw', 'CAN-MF644-001', 0, 'good', NULL),
-(2, 13, 13, 6, 1, 1, 0, 'Steelcase', 'Series 1', 'STLC-S1-002', 0, 'good', NULL),
-(3, 13, 14, 7, 1, 1, 0, 'Epson', 'EB-S41', 'EPS-EBS41-003', 0, 'good', NULL);
+(1, 1, 15, 7, 1, 1, 0, 'Logitech', 'MX Master 3', 'LOG-MX3-001', 0, 'good', NULL),
+(2, 1, 16, 7, 1, 1, 0, 'Logitech', 'MX Keys', 'LOG-MXK-002', 0, 'good', NULL),
+(3, 2, 17, 8, 1, 20, 0, 'Staples', 'A4-80GSM', NULL, 1, 'good', NULL),
+(4, 2, 18, 8, 1, 15, 0, 'HP', 'HP-564', NULL, 1, 'good', NULL),
+(5, 3, 19, 7, 1, 1, 0, 'Dell', 'S2421H', 'DEL-S2421H-001', 0, 'good', NULL),
+(6, 3, 20, 7, 1, 10, 0, 'Belkin', 'AV10115', NULL, 1, 'good', NULL),
+(7, 4, 28, 6, 1, 1, 0, 'ambot', 'ambotnumber', '123', 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -541,7 +596,10 @@ CREATE TABLE `inspectionacceptancereport` (
 --
 
 INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `InspectedBy`, `AcceptedBy`, `DateInspected`, `DateAccepted`, `Remarks`, `CreatedDate`, `deleted_at`) VALUES
-(13, 'IAR-2026-0001', 6, 7, 3, '2026-02-13', '2026-02-13', 'good', '2026-02-13 12:20:10', NULL);
+(1, 'IAR-2026-0001', 7, 7, 3, '2026-02-14', '2026-02-14', 'good', '2026-02-14 02:03:34', NULL),
+(2, 'IAR-2026-0002', 8, 7, NULL, '2026-02-14', NULL, 'good', '2026-02-14 03:07:34', NULL),
+(3, 'IAR-2026-0003', 9, 7, NULL, '2026-02-14', NULL, 'good', '2026-02-14 03:23:14', NULL),
+(4, 'IAR-2026-0004', 14, 7, NULL, '2026-02-15', NULL, 'a', '2026-02-15 17:28:46', NULL);
 
 -- --------------------------------------------------------
 
@@ -638,7 +696,27 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (57, 7, '2026-02-13 01:48:41', 'Login', '127.0.0.1'),
 (58, 1, '2026-02-13 01:52:50', 'Login', '127.0.0.1'),
 (59, 1, '2026-02-13 12:07:39', 'Login', '127.0.0.1'),
-(60, 7, '2026-02-13 12:07:56', 'Login', '127.0.0.1');
+(60, 7, '2026-02-13 12:07:56', 'Login', '127.0.0.1'),
+(61, 1, '2026-02-13 16:33:57', 'Login', '127.0.0.1'),
+(62, 7, '2026-02-13 16:55:24', 'Login', '127.0.0.1'),
+(63, 7, '2026-02-13 18:28:45', 'Logout', '127.0.0.1'),
+(64, 3, '2026-02-13 18:29:08', 'Login', '127.0.0.1'),
+(65, 1, '2026-02-13 22:53:24', 'Login', '127.0.0.1'),
+(66, 3, '2026-02-13 23:15:52', 'Login', '127.0.0.1'),
+(67, 3, '2026-02-14 01:47:23', 'Login', '127.0.0.1'),
+(68, 1, '2026-02-14 01:47:33', 'Login', '127.0.0.1'),
+(69, 3, '2026-02-14 02:02:12', 'Logout', '127.0.0.1'),
+(70, 7, '2026-02-14 02:02:31', 'Login', '127.0.0.1'),
+(71, 7, '2026-02-14 02:18:50', 'Logout', '127.0.0.1'),
+(72, 3, '2026-02-14 02:19:13', 'Login', '127.0.0.1'),
+(73, 3, '2026-02-14 03:05:42', 'Logout', '127.0.0.1'),
+(74, 7, '2026-02-14 03:06:09', 'Login', '127.0.0.1'),
+(75, 1, '2026-02-14 12:08:42', 'Login', '127.0.0.1'),
+(76, 1, '2026-02-14 13:08:14', 'Logout', '127.0.0.1'),
+(77, 1, '2026-02-14 14:10:38', 'Login', '127.0.0.1'),
+(78, 1, '2026-02-15 13:49:55', 'Login', '127.0.0.1'),
+(79, 1, '2026-02-15 16:55:03', 'Login', '127.0.0.1'),
+(80, 7, '2026-02-15 17:27:48', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -776,7 +854,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (123, '2026_02_12_000004_ensure_inspection_officer_role', 36),
 (124, '2026_02_12_000005_add_no_serial_to_inspection_report_items', 37),
 (125, '2026_02_12_000006_add_no_serial_to_iardetail', 37),
-(126, '2026_02_13_000001_add_acknowledged_by_to_propertyissuance_table', 37);
+(126, '2026_02_13_000001_add_acknowledged_by_to_propertyissuance_table', 37),
+(127, '2026_02_15_000001_create_articles_table', 38),
+(128, '2026_02_15_000002_add_article_id_to_deliveryreceiptdetail', 38);
 
 -- --------------------------------------------------------
 
@@ -984,8 +1064,9 @@ CREATE TABLE `propertyinventory` (
 --
 
 INSERT INTO `propertyinventory` (`InventoryID`, `PropertyTypeID`, `UnitOfMeasureID`, `DRID`, `IARID`, `DateReceived`, `UnitCost`, `Remarks`, `CreatedDate`, `UpdatedDate`, `InventoryNumber`, `deleted_at`) VALUES
-(1, NULL, NULL, NULL, 1, '2026-02-10', NULL, 'Auto-ingested from IAR #IAR-2026-0001', '2026-02-10 22:24:23', NULL, 'INV-20260210-222423-1', NULL),
-(3, NULL, NULL, NULL, 13, '2026-02-13', NULL, 'Auto-ingested from IAR #IAR-2026-0001', '2026-02-13 12:24:41', NULL, 'INV-20260213-122441-13', NULL);
+(1, NULL, NULL, NULL, 1, '2026-02-14', NULL, 'Auto-ingested from IAR #IAR-2026-0001', '2026-02-14 03:03:36', NULL, 'INV-20260214-030336-1', NULL),
+(2, NULL, NULL, NULL, 3, '2026-02-14', NULL, 'Auto-ingested from IAR #IAR-2026-0003', '2026-02-14 03:23:17', NULL, 'INV-20260214-032317-3', NULL),
+(3, NULL, NULL, NULL, 4, '2026-02-15', NULL, 'Auto-ingested from IAR #IAR-2026-0004', '2026-02-15 17:28:48', NULL, 'INV-20260215-172848-4', NULL);
 
 -- --------------------------------------------------------
 
@@ -1023,31 +1104,20 @@ CREATE TABLE `propertyinventorydetail` (
 --
 
 INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `PropertyTypeID`, `ReceivedID`, `Description`, `PropertyNumber`, `SerialNumber`, `Quantity`, `QuantityAvailable`, `PropertyStatusID`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `SourceIARDetailID`, `SourceDRDetailID`, `ConditionID`, `Brand`, `ModelNumber`, `Remarks`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
-(1, 1, 7, NULL, 'good', '2026-000001', 'SN123', 1, 0, 2, 2, 50000.00, 50000.00, 1, 2, 1, 'Dell', 'OptiPlex7090', 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:41', NULL),
-(2, 1, 7, NULL, 'good', '2026-000002', 'SN321', 1, 0, 2, 2, 50000.00, 50000.00, 2, 3, 1, 'Dell', 'OptiPlex7090', 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:41', NULL),
-(3, 1, 6, NULL, 'good', '2026-000003', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:41', NULL),
-(4, 1, 6, NULL, 'good', '2026-000004', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(5, 1, 6, NULL, 'good', '2026-000005', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(6, 1, 6, NULL, 'good', '2026-000006', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(7, 1, 6, NULL, 'good', '2026-000007', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(8, 1, 6, NULL, 'good', '2026-000008', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(9, 1, 6, NULL, 'good', '2026-000009', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(10, 1, 6, NULL, 'good', '2026-000010', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(11, 1, 6, NULL, 'good', '2026-000011', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(12, 1, 6, NULL, 'good', '2026-000012', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(13, 1, 6, NULL, 'good', '2026-000013', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(14, 1, 6, NULL, 'good', '2026-000014', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(15, 1, 6, NULL, 'good', '2026-000015', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(16, 1, 6, NULL, 'good', '2026-000016', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(17, 1, 6, NULL, 'good', '2026-000017', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(18, 1, 6, NULL, 'good', '2026-000018', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(19, 1, 6, NULL, 'good', '2026-000019', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(20, 1, 6, NULL, 'good', '2026-000020', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(21, 1, 6, NULL, 'good', '2026-000021', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(22, 1, 6, NULL, 'good', '2026-000022', NULL, 1, 0, 2, 3, 120.00, 120.00, 3, 1, 1, NULL, NULL, 'good', '2026-02-10 22:24:23', '2026-02-13 12:24:42', NULL),
-(26, 3, 7, NULL, 'good', '2026-000023', 'CAN-MF644-001', 1, 0, 2, 2, 35000.00, 35000.00, 1, 12, 1, 'Canon', 'imageCLASS MF644Cdw', 'good', '2026-02-13 12:24:41', '2026-02-13 12:24:42', NULL),
-(27, 3, 6, NULL, 'good', '2026-000024', 'STLC-S1-002', 1, 0, 2, 2, 25000.00, 25000.00, 2, 13, 1, 'Steelcase', 'Series 1', 'good', '2026-02-13 12:24:41', '2026-02-13 12:24:42', NULL),
-(28, 3, 7, NULL, 'good', '2026-000025', 'EPS-EBS41-003', 1, 0, 2, 2, 40000.00, 40000.00, 3, 14, 1, 'Epson', 'EB-S41', 'good', '2026-02-13 12:24:41', '2026-02-13 12:24:42', NULL);
+(1, 1, 7, NULL, 'good', '2026-000001', 'LOG-MX3-001', 1, 0, 2, 2, 500.00, 500.00, 1, 15, 1, 'Logitech', 'MX Master 3', 'good', '2026-02-14 03:03:36', '2026-02-14 03:03:36', NULL),
+(2, 1, 7, NULL, 'good', '2026-000002', 'LOG-MXK-002', 1, 0, 2, 2, 800.00, 800.00, 2, 16, 1, 'Logitech', 'MX Keys', 'good', '2026-02-14 03:03:36', '2026-02-14 03:03:37', NULL),
+(3, 2, 7, NULL, 'Monitor 24\"', '2026-000003', 'DEL-S2421H-001', 1, 1, 1, 2, 15000.00, 15000.00, 5, 19, 1, 'Dell', 'S2421H', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(4, 2, 7, NULL, 'HDMI Cable', '2026-000004', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(5, 2, 7, NULL, 'HDMI Cable', '2026-000005', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(6, 2, 7, NULL, 'HDMI Cable', '2026-000006', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(7, 2, 7, NULL, 'HDMI Cable', '2026-000007', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(8, 2, 7, NULL, 'HDMI Cable', '2026-000008', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(9, 2, 7, NULL, 'HDMI Cable', '2026-000009', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(10, 2, 7, NULL, 'HDMI Cable', '2026-000010', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(11, 2, 7, NULL, 'HDMI Cable', '2026-000011', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(12, 2, 7, NULL, 'HDMI Cable', '2026-000012', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(13, 2, 7, NULL, 'HDMI Cable', '2026-000013', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
+(14, 3, 6, NULL, 'maka bugnaw', '2026-000014', '123', 1, 1, 1, 2, 200.00, 200.00, 7, 28, 1, 'ambot', 'ambotnumber', NULL, '2026-02-15 17:28:48', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1082,7 +1152,7 @@ CREATE TABLE `propertyissuance` (
 --
 
 INSERT INTO `propertyissuance` (`IssuanceID`, `RequestID`, `DRID`, `IssuedBy`, `IssuerSignature`, `IssuerSignatureSource`, `IssuedTo`, `IssuedToName`, `DocumentType`, `DocumentNumber`, `Status`, `DateIssued`, `Remarks`, `AcknowledgmentSignature`, `AcknowledgedAt`, `AcknowledgedBy`, `AcknowledgmentNotes`, `deleted_at`, `CreatedDate`) VALUES
-(2, NULL, 6, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0001', 'acknowledged', '2026-02-13', 'Auto-created from IAR acknowledgement', NULL, '2026-02-13 00:00:00', 3, NULL, NULL, '2026-02-13 12:24:41');
+(1, NULL, 7, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0001', 'acknowledged', '2026-02-14', 'Auto-created from IAR acknowledgement', NULL, '2026-02-14 00:00:00', 3, NULL, NULL, '2026-02-14 03:03:36');
 
 -- --------------------------------------------------------
 
@@ -1109,31 +1179,8 @@ CREATE TABLE `propertyissuancedetail` (
 --
 
 INSERT INTO `propertyissuancedetail` (`IssuanceDetailID`, `IssuanceID`, `RequestDetailID`, `ItemDescription`, `Unit`, `InventoryDetailID`, `QuantityIssued`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(2, 2, NULL, 'good', 'unit', 1, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:41', '2026-02-13 04:24:41', NULL),
-(3, 2, NULL, 'good', 'unit', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:41', '2026-02-13 04:24:41', NULL),
-(4, 2, NULL, 'good', 'set', 3, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:41', '2026-02-13 04:24:41', NULL),
-(5, 2, NULL, 'good', 'set', 4, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:41', '2026-02-13 04:24:41', NULL),
-(6, 2, NULL, 'good', 'set', 5, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(7, 2, NULL, 'good', 'set', 6, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(8, 2, NULL, 'good', 'set', 7, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(9, 2, NULL, 'good', 'set', 8, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(10, 2, NULL, 'good', 'set', 9, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(11, 2, NULL, 'good', 'set', 10, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(12, 2, NULL, 'good', 'set', 11, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(13, 2, NULL, 'good', 'set', 12, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(14, 2, NULL, 'good', 'set', 13, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(15, 2, NULL, 'good', 'set', 14, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(16, 2, NULL, 'good', 'set', 15, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(17, 2, NULL, 'good', 'set', 16, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(18, 2, NULL, 'good', 'set', 17, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(19, 2, NULL, 'good', 'set', 18, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(20, 2, NULL, 'good', 'set', 19, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(21, 2, NULL, 'good', 'set', 20, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(22, 2, NULL, 'good', 'set', 21, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(23, 2, NULL, 'good', 'set', 22, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(24, 2, NULL, 'All-in-One Printer', 'unit', 26, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(25, 2, NULL, 'Executive Desk', 'unit', 27, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL),
-(26, 2, NULL, 'Projector', 'unit', 28, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 04:24:42', '2026-02-13 04:24:42', NULL);
+(1, 1, NULL, 'Wireless Mouse', 'unit', 1, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 19:03:36', '2026-02-13 19:03:36', NULL),
+(2, 1, NULL, 'Keyboard', 'unit', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 19:03:37', '2026-02-13 19:03:37', NULL);
 
 -- --------------------------------------------------------
 
@@ -1151,13 +1198,6 @@ CREATE TABLE `propertyreceived` (
   `Remarks` text DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `propertyreceived`
---
-
-INSERT INTO `propertyreceived` (`ReceivedID`, `IARID`, `ReceivedBy`, `ReleasedBy`, `DateReceived`, `TotalCost`, `Remarks`, `CreatedDate`) VALUES
-(1, 1, 1, 1, '2026-02-10', 102400.00, 'Auto-created on acceptance', '2026-02-10 22:24:03');
 
 -- --------------------------------------------------------
 
@@ -1252,7 +1292,8 @@ INSERT INTO `propertytype` (`PropertyTypeID`, `PropertyClassificationID`, `Prope
 (11, 2, 'Office Equipment', 'Non-IT office machines such as typewriters, calculators, shredders', '2026-02-10 18:35:54', '2026-02-10 20:14:24', NULL),
 (12, 2, 'Other Machinery and Equipment', 'Miscellaneous machinery not classified elsewhere', '2026-02-10 18:35:54', '2026-02-10 20:14:24', NULL),
 (13, 2, 'Other Property, Plant and Equipment', 'Other tangible assets with long useful life', '2026-02-10 18:35:54', '2026-02-10 20:14:24', NULL),
-(14, 2, 'Technical and Scientific Equipment', 'Specialized equipment for technical, laboratory, or scientific work', '2026-02-10 18:35:54', '2026-02-10 20:57:37', NULL);
+(14, 2, 'Technical and Scientific Equipment', 'Specialized equipment for technical, laboratory, or scientific work', '2026-02-10 18:35:54', '2026-02-10 20:57:37', NULL),
+(15, 1, 'test - 1', 'test', '2026-02-14 12:56:17', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1268,6 +1309,26 @@ CREATE TABLE `qrcode` (
   `QRCodeData` varchar(255) DEFAULT NULL,
   `DateGenerated` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `qrcode`
+--
+
+INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `DepartmentID`, `QRCodeData`, `DateGenerated`) VALUES
+(1, 28, 3, 5, 'http://localhost:3000/qr/scan/28?h=582856aaeb93', '2026-02-14 03:23:17'),
+(2, 29, 4, 5, 'http://localhost:3000/qr/scan/29?h=67b7e9a4b1f3', '2026-02-14 03:23:17'),
+(3, 30, 5, 5, 'http://localhost:3000/qr/scan/30?h=d6896e269f53', '2026-02-14 03:23:17'),
+(4, 31, 6, 5, 'http://localhost:3000/qr/scan/31?h=ec40047ce8f9', '2026-02-14 03:23:17'),
+(5, 32, 7, 5, 'http://localhost:3000/qr/scan/32?h=f7d1d50763e3', '2026-02-14 03:23:17'),
+(6, 33, 8, 5, 'http://localhost:3000/qr/scan/33?h=1fd2068b4c4b', '2026-02-14 03:23:17'),
+(7, 34, 9, 5, 'http://localhost:3000/qr/scan/34?h=c54deffee3ca', '2026-02-14 03:23:17'),
+(8, 35, 10, 5, 'http://localhost:3000/qr/scan/35?h=c4d4216993be', '2026-02-14 03:23:17'),
+(9, 36, 11, 5, 'http://localhost:3000/qr/scan/36?h=ce464a891374', '2026-02-14 03:23:17'),
+(10, 37, 12, 5, 'http://localhost:3000/qr/scan/37?h=aec340323004', '2026-02-14 03:23:17'),
+(11, 38, 13, 5, 'http://localhost:3000/qr/scan/38?h=ebab3c505b56', '2026-02-14 03:23:17'),
+(12, 26, 1, 5, 'http://localhost:3000/qr/scan/26?h=3d36c6fca545', '2026-02-15 14:24:06'),
+(13, 27, 2, 5, 'http://localhost:3000/qr/scan/27?h=0a46d32f47b3', '2026-02-15 14:24:06'),
+(14, 39, 14, 5, 'http://localhost:3000/qr/scan/39?h=dcf9cac0f3f6', '2026-02-15 17:28:48');
 
 -- --------------------------------------------------------
 
@@ -1370,9 +1431,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('OB0UjaxvrFUufGe11FCNmnrVjvLAkxDGaS6fxy9T', 7, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoibGVUU2Jkb3VabWhUblNEZ1NiU3RmU0Y5eGJ3V2lxdGtkRGpod3NQaSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvaW5zcGVjdGlvbi9yZXBvcnRzP3BhZ2U9MSZwZXJfcGFnZT0xMCZzdGF0dXM9aW5zcGVjdGVkIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo3O3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZmVwU0I2SUdiT1hmN25XdndVRGIydUpqcjJGSk8wN2NrYmUxY0hGRGtOOS9oU3FudS5xUWUiO30=', 1770959849),
-('Uuej2Fll6jXPwpw128IhZ0fU0QH9lBQWvXekJkhH', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZHVRWkU0ZTRXbk1NNXBXQzhpU0YxWlBiamtYTXlvN0pteWN1Rk1DTyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvaW5zcGVjdGlvbi9jb25kaXRpb25zIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1770955664),
-('xwOSQfASmDJQVwKHkWfqEXbvkkwJAmqlzIE1WP6f', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiTEFwZ1dXZXpQRzZ0V3FYSkpqUXdoWUJ4aXpvSUp0c3l1UG5LOHNFSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktaXNzdWFuY2VzL2RlbGl2ZXJ5LXJlY2VpcHRzP3BhZ2U9MSZwZXJfcGFnZT0xNSI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1770958208);
+('8ePVN3r9whJrl85hZNjlAtF9josP7d7hoIII4aFv', 7, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiVERKdVFSSm5YSGFxbnl6RTdrdTBSMUNrWlh0NzZaR09sRW9vVnFraSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NztzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZlcFNCNklHYk9YZjduV3Z3VURiMnVKanIyRkpPMDdja2JlMWNIRkRrTjkvaFNxbnUucVFlIjt9', 1771147743),
+('Yrhqz3WBZCngqeJkhwbL6osdgLoQascMi9VJYOIx', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNGV4QThjRURFYlRhcWxOejlhUWNzbkw0ck9wQ0tIRDJqeXdtWjhOdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvdW5pdHMtb2YtbWVhc3VyZT9wZXJfcGFnZT1hbGwiO3M6NToicm91dGUiO3M6MjI6InVuaXRzLW9mLW1lYXN1cmUuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1771147826);
 
 -- --------------------------------------------------------
 
@@ -1450,12 +1510,17 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (60, 3, 'Trusted Device', 'd70b1db8c799585ba7e837c7da7e4f8e3aab0ca3239316f10a9a260f53b79a03', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '127.0.0.1', NULL, '2026-02-14 13:46:50', '2026-01-15 13:46:50', NULL),
 (61, 1, 'Trusted Device', '8d5213b0804c6ef80465e9ea7d97261311891c509bfd0addd22f02d7c1e5c928', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-14 13:47:35', '2026-01-15 13:47:35', NULL),
 (62, 5, 'Trusted Device', 'e51948396fbedb111750410a126b66113dc57fc9becd9cbaad47c8d3192d09c2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-14 13:48:52', '2026-01-15 13:48:52', NULL),
-(63, 1, 'Trusted Device', 'b6c42f2eda845d004d7deb90648db69686d53f5e8bf13d9a23bcc16527ae91ad', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-13 12:07:39', '2026-02-14 13:49:39', '2026-01-15 13:49:39', '2026-02-13 12:07:39'),
+(63, 1, 'Trusted Device', 'b6c42f2eda845d004d7deb90648db69686d53f5e8bf13d9a23bcc16527ae91ad', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-13 22:53:24', '2026-02-14 13:49:39', '2026-01-15 13:49:39', '2026-02-13 22:53:24'),
 (64, 6, 'Trusted Device', '60d00027d78271c9f4f8829bbddd7f4ff2809f91a764ffcf743af8f8979ef0e2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '127.0.0.1', NULL, '2026-02-14 14:03:26', '2026-01-15 14:03:26', NULL),
 (65, 3, 'Trusted Device', '07b75eea3cf03f22c7bf3f161a0c1947288c024a43583abd50dce6b369869d42', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '127.0.0.1', '2026-01-16 02:03:54', '2026-02-14 14:04:57', '2026-01-15 14:04:57', '2026-01-16 02:03:54'),
-(66, 1, 'Trusted Device', '8520aa5965d0204554a2dd4341f98b72f0966e38e3e06044ad274a7001f0a2b9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-03-12 16:08:29', '2026-02-10 16:08:29', NULL),
+(66, 1, 'Trusted Device', '8520aa5965d0204554a2dd4341f98b72f0966e38e3e06044ad274a7001f0a2b9', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-14 12:08:42', '2026-03-12 16:08:29', '2026-02-10 16:08:29', '2026-02-14 12:08:42'),
 (67, 3, 'Trusted Device', '16a1c8dc24c61cb974dff59feb7a25039e0b2e253c3e8eebe6bc1304dc515e83', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', NULL, '2026-03-14 15:08:58', '2026-02-12 15:08:58', NULL),
-(68, 7, 'Trusted Device', 'a909e93b619a57e608ae297aee479a95ef6dad1b7a8d1ec4c07f17a6594d1c78', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', '2026-02-13 12:07:56', '2026-03-14 18:33:59', '2026-02-12 18:33:59', '2026-02-13 12:07:56');
+(68, 7, 'Trusted Device', 'a909e93b619a57e608ae297aee479a95ef6dad1b7a8d1ec4c07f17a6594d1c78', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', '2026-02-13 16:55:24', '2026-03-14 18:33:59', '2026-02-12 18:33:59', '2026-02-13 16:55:24'),
+(69, 3, 'Trusted Device', '3b2cde6c2b953b9c278f7a1d84273a4628c6d2b7d5a4bbce49733c0c60e080c4', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', '2026-02-14 01:47:23', '2026-03-15 18:29:08', '2026-02-13 18:29:08', '2026-02-14 01:47:23'),
+(70, 7, 'Trusted Device', '2c0525b19f7270a6e7f3657a158b285e01996b4edf204d627b46defae1b3ae6d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', NULL, '2026-03-16 02:02:31', '2026-02-14 02:02:31', NULL),
+(71, 3, 'Trusted Device', '82746d46bbd7ce40036f8f295e288bcdb3227d5e7191d8d0d05f1b5d1d7cc054', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', NULL, '2026-03-16 02:19:13', '2026-02-14 02:19:13', NULL),
+(72, 7, 'Trusted Device', '642de790709ab5971be725309f5f512eaba73a0ba03652b2273ad5afa1a101ca', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', '2026-02-15 17:27:48', '2026-03-16 03:06:09', '2026-02-14 03:06:09', '2026-02-15 17:27:48'),
+(73, 1, 'Trusted Device', 'cfd5365b942e96cf46e6f5e8874a318ecf0425ea20d81ccfadf29081d23c1539', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-15 16:55:03', '2026-03-16 14:10:38', '2026-02-14 14:10:38', '2026-02-15 16:55:03');
 
 -- --------------------------------------------------------
 
@@ -1547,7 +1612,8 @@ INSERT INTO `userrole` (`UserRoleID`, `RoleName`, `Description`, `CreatedDate`, 
 (3, 'Property Custodian', 'Manages property inventory', '2025-12-05 02:07:28', NULL, NULL),
 (4, 'Department Head', 'Can approve requests', '2025-12-05 02:07:28', NULL, NULL),
 (5, 'End User', 'Regular property accountable user', '2025-12-05 02:07:28', NULL, NULL),
-(6, 'Inspection Officer', 'Performs inspection and verification of delivered items', '2026-02-12 18:12:43', NULL, NULL);
+(6, 'Inspection Officer', 'Performs inspection and verification of delivered items', '2026-02-12 18:12:43', NULL, NULL),
+(11, 'admin-1', 'test', '2026-02-14 12:19:53', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1602,6 +1668,15 @@ CREATE TABLE `wastematerialreport` (
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `articles`
+--
+ALTER TABLE `articles`
+  ADD PRIMARY KEY (`ArticleID`),
+  ADD UNIQUE KEY `articles_articlename_unique` (`ArticleName`),
+  ADD KEY `articles_articlename_index` (`ArticleName`),
+  ADD KEY `articles_isactive_index` (`IsActive`);
 
 --
 -- Indexes for table `assetrequest`
@@ -1698,7 +1773,8 @@ ALTER TABLE `deliveryreceiptdetail`
   ADD KEY `DRID` (`DRID`),
   ADD KEY `PODetailID` (`ItemDescription`),
   ADD KEY `PropertyTypeID` (`PropertyTypeID`),
-  ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`);
+  ADD KEY `UnitOfMeasureID` (`UnitOfMeasureID`),
+  ADD KEY `deliveryreceiptdetail_articleid_index` (`ArticleID`);
 
 --
 -- Indexes for table `department`
@@ -2095,6 +2171,12 @@ ALTER TABLE `wastematerialreport`
 --
 
 --
+-- AUTO_INCREMENT for table `articles`
+--
+ALTER TABLE `articles`
+  MODIFY `ArticleID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
 -- AUTO_INCREMENT for table `assetrequest`
 --
 ALTER TABLE `assetrequest`
@@ -2128,7 +2210,7 @@ ALTER TABLE `asset_request_signatures`
 -- AUTO_INCREMENT for table `assignedproperty`
 --
 ALTER TABLE `assignedproperty`
-  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
 
 --
 -- AUTO_INCREMENT for table `condition`
@@ -2140,19 +2222,19 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
-  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `department`
 --
 ALTER TABLE `department`
-  MODIFY `DepartmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `DepartmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `disposalmethod`
@@ -2170,7 +2252,7 @@ ALTER TABLE `enduser`
 -- AUTO_INCREMENT for table `iardetail`
 --
 ALTER TABLE `iardetail`
-  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `iar_signatures`
@@ -2206,7 +2288,7 @@ ALTER TABLE `iiruprecommendation`
 -- AUTO_INCREMENT for table `inspectionacceptancereport`
 --
 ALTER TABLE `inspectionacceptancereport`
-  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `inventorycustodianslip`
@@ -2218,13 +2300,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=127;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=129;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -2290,25 +2372,25 @@ ALTER TABLE `propertyinventory`
 -- AUTO_INCREMENT for table `propertyinventorydetail`
 --
 ALTER TABLE `propertyinventorydetail`
-  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `propertyissuance`
 --
 ALTER TABLE `propertyissuance`
-  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `propertyissuancedetail`
 --
 ALTER TABLE `propertyissuancedetail`
-  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `propertyreceived`
 --
 ALTER TABLE `propertyreceived`
-  MODIFY `ReceivedID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `ReceivedID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `propertystatus`
@@ -2332,13 +2414,13 @@ ALTER TABLE `propertytransferdetail`
 -- AUTO_INCREMENT for table `propertytype`
 --
 ALTER TABLE `propertytype`
-  MODIFY `PropertyTypeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `PropertyTypeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `qrcode`
 --
 ALTER TABLE `qrcode`
-  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `requisition_issue_slips`
@@ -2368,7 +2450,7 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=69;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -2386,7 +2468,7 @@ ALTER TABLE `user`
 -- AUTO_INCREMENT for table `userrole`
 --
 ALTER TABLE `userrole`
-  MODIFY `UserRoleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `UserRoleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -2466,6 +2548,7 @@ ALTER TABLE `deliveryreceipt`
 -- Constraints for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
+  ADD CONSTRAINT `deliveryreceiptdetail_articleid_foreign` FOREIGN KEY (`ArticleID`) REFERENCES `articles` (`ArticleID`) ON DELETE SET NULL,
   ADD CONSTRAINT `deliveryreceiptdetail_ibfk_1` FOREIGN KEY (`DRID`) REFERENCES `deliveryreceipt` (`DRID`),
   ADD CONSTRAINT `deliveryreceiptdetail_ibfk_3` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
   ADD CONSTRAINT `fk_drdetail_unitofmeasure` FOREIGN KEY (`UnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`) ON UPDATE CASCADE;
