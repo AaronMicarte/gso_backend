@@ -39,102 +39,10 @@ class InventoryController extends Controller
             ], 200);
         }
 
-        // Fetch IAR and its details
-        $iar = InspectionAcceptanceReport::with(['details'])->find($iarId);
-        if (!$iar) {
-            return response()->json(['message' => 'IAR not found.'], 404);
-        }
-        if ($iar->details->isEmpty()) {
-            return response()->json(['message' => 'No IAR details to ingest.'], 422);
-        }
-
-        // Start transaction for safety
-        DB::beginTransaction();
-        try {
-            // Create PropertyInventory record
-            $inventory = PropertyInventory::create([
-                'InventoryNumber' => 'INV-' . date('Ymd-His') . '-' . $iar->IARID,
-                'IARID' => $iar->IARID,
-                'DateReceived' => $iar->DateAccepted ?? now(),
-                'Remarks' => 'Auto-ingested from IAR #' . $iar->IARNumber,
-                'CreatedDate' => now(),
-            ]);
-
-            $toBeIssuedStatusId = PropertyStatus::where('StatusName', 'To be issued')
-                ->orWhere('StatusName', 'For issuance')
-                ->orWhere('StatusName', 'For Issuance')
-                ->value('PropertyStatusID');
-
-            if (!$toBeIssuedStatusId) {
-                $toBeIssuedStatusId = PropertyStatus::where('StatusName', 'Available')
-                    ->value('PropertyStatusID') ?? 1;
-            }
-
-            // Initialize Property Number Sequence
-            $year = date('Y');
-            $prefix = $year . '-';
-            // Find the highest existing number for this year
-            $latestItem = PropertyInventoryDetail::where('PropertyNumber', 'like', $prefix . '%')
-                ->orderBy('PropertyNumber', 'desc')
-                ->withTrashed()
-                ->first();
-            
-            $currentSequence = 0;
-            if ($latestItem && preg_match('/-(\d+)$/', $latestItem->PropertyNumber, $matches)) {
-                $currentSequence = intval($matches[1]);
-            }
-
-            // For each IAR detail, create individual PropertyInventoryDetail records
-            foreach ($iar->details as $detail) {
-                // Get DR detail for cost/unit info
-                $drDetail = DeliveryReceiptDetail::find($detail->DRDetailID);
-                if (!$drDetail) continue;
-
-                // Determine Brand, Model, Serial (Prefer Verified from IAR, fallback to DR)
-                $brand = $detail->VerifiedBrand ?? $drDetail->Brand;
-                $model = $detail->VerifiedModel ?? $drDetail->ModelNumber;
-                $serial = $detail->VerifiedSerial ?? $drDetail->SerialNumber;
-
-                // Create individual records for each accepted quantity
-                for ($i = 0; $i < $detail->QuantityAccepted; $i++) {
-                    // For serial numbers, if we have multiple items but only one serial,
-                    // we'll use the same serial for all (common for bulk items)
-                    // In a real system, you'd want separate serials for each item
-                    $itemSerial = $serial;
-
-                    // Assign Property Number
-                    $currentSequence++;
-                    $propertyNumber = $prefix . str_pad($currentSequence, 6, '0', STR_PAD_LEFT);
-
-                    PropertyInventoryDetail::create([
-                        'InventoryID' => $inventory->InventoryID,
-                        'PropertyTypeID' => $detail->PropertyTypeID,
-                        'PropertyNumber' => $propertyNumber,
-                        'ConditionID' => $detail->ConditionID,
-                        'Brand' => $brand,
-                        'ModelNumber' => $model,
-                        'SerialNumber' => $itemSerial,
-                        'Description' => $detail->Remarks,
-                        'Quantity' => 1, // Each record represents one physical item
-                        'QuantityAvailable' => 1,
-                        'PropertyStatusID' => $toBeIssuedStatusId,
-                        'UnitOfMeasureID' => $drDetail->UnitOfMeasureID,
-                        'UnitCost' => $drDetail->UnitCost,
-                        'TotalCost' => $drDetail->UnitCost, // Cost per individual item
-                        'SourceIARDetailID' => $detail->IARDetailID,
-                        'SourceDRDetailID' => $detail->DRDetailID,
-                        'Remarks' => $detail->Remarks,
-                        'CreatedDate' => now(),
-                    ]);
-                }
-            }
-
-            DB::commit();
-            return response()->json(['message' => 'Inventory ingestion successful.','inventory_id' => $inventory->InventoryID], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['message' => 'Ingestion failed: ' . $e->getMessage()], 500);
-        }
+        return response()->json([
+            'message' => 'Inventory ingestion is handled during inspection. Complete the inspection report to generate inventory and property numbers.',
+            'error' => 'inventory_not_ready'
+        ], 409);
     }
 
     // GET /api/admin/inventory/pending-ingestion
@@ -515,6 +423,67 @@ class InventoryController extends Controller
         $detail->save();
 
         return response()->json(['message' => 'Inventory detail updated successfully', 'detail' => $detail]);
+    }
+
+    // POST /api/admin/inventory/backfill-qr-codes - Generate QR codes for issued items that don't have them
+    public function backfillQrCodes(Request $request)
+    {
+        try {
+            // Find all issued items (PropertyStatusID = 2) that have AssignedProperty but no QR code
+            $issuedItemsWithoutQr = PropertyInventoryDetail::where('PropertyStatusID', 2)
+                ->whereHas('assignedProperties', function($q) {
+                    $q->where('PropertyStatusID', 2); // Issued
+                })
+                ->whereDoesntHave('qrCode')
+                ->with(['assignedProperties' => function($q) {
+                    $q->where('PropertyStatusID', 2)->latest();
+                }])
+                ->get();
+
+            $created = 0;
+            $errors = [];
+
+            foreach ($issuedItemsWithoutQr as $detail) {
+                try {
+                    $assignedProperty = $detail->assignedProperties->first();
+                    if (!$assignedProperty) continue;
+
+                    $baseUrl = rtrim((string) config('gso.frontend_url'), '/');
+                    if ($baseUrl === '') {
+                        $baseUrl = 'http://localhost:3000';
+                    }
+
+                    $key = (string) config('app.key');
+                    $hash = substr(hash_hmac('sha256', (string) $assignedProperty->PropertyID, $key), 0, 12);
+                    $qrPayload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
+
+                    QrCode::create([
+                        'InventoryDetailID' => $detail->InventoryDetailID,
+                        'PropertyID' => (int) $assignedProperty->PropertyID,
+                        'DepartmentID' => (int) $assignedProperty->DepartmentID,
+                        'QRCodeData' => $qrPayload,
+                        'DateGenerated' => now(),
+                    ]);
+
+                    $created++;
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to create QR for InventoryDetailID {$detail->InventoryDetailID}: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'message' => "QR codes backfilled successfully. Created $created QR codes.",
+                'created' => $created,
+                'errors' => $errors,
+                'total_processed' => count($issuedItemsWithoutQr)
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to backfill QR codes',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     // GET /api/admin/inventory/all-items

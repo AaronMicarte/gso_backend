@@ -160,6 +160,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::prefix('inventory')->group(function () {
                 Route::get('pending-ingestion', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'pendingIngestion']);
                 Route::post('ingest-from-iar', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'ingestFromIar']);
+                Route::post('backfill-qr-codes', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'backfillQrCodes']);
                 Route::get('all-items', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'allItems']);
                 Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
                 Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);

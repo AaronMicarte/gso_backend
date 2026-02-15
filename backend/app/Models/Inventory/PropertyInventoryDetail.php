@@ -80,4 +80,9 @@ class PropertyInventoryDetail extends Model
     {
         return $this->hasMany(\App\Models\AssetAssignment::class, 'PropertyInventoryDetailID', 'InventoryDetailID');
     }
+
+    public function assignedProperties()
+    {
+        return $this->hasMany(\App\Models\AssignedProperty::class, 'InventoryDetailID', 'InventoryDetailID');
+    }
 }

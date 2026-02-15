@@ -591,6 +591,8 @@ class PropertyIssuanceController extends Controller
                                 } else {
                                     $assignedProperty = AssignedProperty::create($assignedPayload);
                                 }
+
+                                $this->ensureQrCodeForDetail($invDetail, $assignedProperty);
                             }
                         }
                     }
@@ -714,6 +716,13 @@ class PropertyIssuanceController extends Controller
 
             $iar = InspectionAcceptanceReport::with(['details'])->where('DRID', (int) $deliveryReceipt->DRID)->first();
             if ($iar) {
+                if (!PropertyInventory::where('IARID', $iar->IARID)->exists()) {
+                    return response()->json([
+                        'message' => 'Cannot issue yet. Inventory and property numbers are generated during inspection. Please complete inspection first.',
+                        'error' => 'inventory_not_ready'
+                    ], 409);
+                }
+
                 $issueDate = $validated['date_issued'];
                 $requestedBy = (int) ($deliveryReceipt->RequestedBy ?? 0);
 
@@ -723,10 +732,6 @@ class PropertyIssuanceController extends Controller
 
                 $iar->DateAccepted = $issueDate;
                 $iar->save();
-
-                if (!empty($iar->DateAccepted) && !PropertyInventory::where('IARID', $iar->IARID)->exists()) {
-                    $this->ingestIarToInventory($iar);
-                }
             }
 
             $inventoryItems = collect($validated['inventory_items'])->map(function ($item) {
@@ -846,8 +851,10 @@ class PropertyIssuanceController extends Controller
                         $assignedProperty->fill($assignedPayload);
                         $assignedProperty->save();
                     } else {
-                        AssignedProperty::create($assignedPayload);
+                        $assignedProperty = AssignedProperty::create($assignedPayload);
                     }
+
+                    $this->ensureQrCodeForDetail($detail, $assignedProperty);
                 }
 
                 $issuances[] = $issuance;
@@ -1026,6 +1033,26 @@ class PropertyIssuanceController extends Controller
         $hash = substr(hash_hmac('sha256', (string) $propertyId, $key), 0, 12);
 
         return $baseUrl . '/qr/scan/' . $propertyId . '?h=' . $hash;
+    }
+
+    private function ensureQrCodeForDetail(PropertyInventoryDetail $detail, AssignedProperty $assignedProperty): void
+    {
+        $existing = QrCode::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+        if ($existing && !empty($existing->QRCodeData)) {
+            return;
+        }
+
+        $qrPayload = $this->buildQrPayloadForProperty((int) $assignedProperty->PropertyID);
+
+        QrCode::updateOrCreate(
+            ['InventoryDetailID' => $detail->InventoryDetailID],
+            [
+                'PropertyID' => (int) $assignedProperty->PropertyID,
+                'DepartmentID' => (int) $assignedProperty->DepartmentID,
+                'QRCodeData' => $qrPayload,
+                'DateGenerated' => now(),
+            ]
+        );
     }
 
     /**
@@ -1371,15 +1398,18 @@ class PropertyIssuanceController extends Controller
 
         $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
 
+        if (!PropertyInventory::where('IARID', $iar->IARID)->exists()) {
+            return response()->json([
+                'message' => 'Cannot acknowledge IAR yet. Inventory and property numbers are generated during inspection. Please complete inspection first.',
+                'error' => 'inventory_not_ready'
+            ], 409);
+        }
+
         DB::beginTransaction();
         try {
             $iar->AcceptedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
             $iar->DateAccepted = now();
             $iar->save();
-
-            if (!PropertyInventory::where('IARID', $iar->IARID)->exists()) {
-                $this->ingestIarToInventory($iar);
-            }
 
             $issuances = $this->createIssuancesFromIar($iar, $deliveryReceipt, $resolvedEndUser);
 
@@ -1596,8 +1626,10 @@ class PropertyIssuanceController extends Controller
                     $assignedProperty->fill($assignedPayload);
                     $assignedProperty->save();
                 } else {
-                    AssignedProperty::create($assignedPayload);
+                    $assignedProperty = AssignedProperty::create($assignedPayload);
                 }
+
+                $this->ensureQrCodeForDetail($detail, $assignedProperty);
 
                 $existingDetailIds[] = (int) $detail->InventoryDetailID;
             }
