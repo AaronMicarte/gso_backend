@@ -25,6 +25,7 @@ class IARDetail extends Model
         'VerifiedSerial',
         'NoSerial',
         'Remarks',
+        'change_reason',
     ];
 
     protected $casts = [

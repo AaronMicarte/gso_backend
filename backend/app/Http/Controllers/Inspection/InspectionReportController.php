@@ -65,6 +65,18 @@ class InspectionReportController extends Controller
         return $trimmed === '' ? null : $trimmed;
     }
 
+    private function resolveConditionMode(?string $conditionName): string
+    {
+        $name = strtolower(trim((string) $conditionName));
+        if (str_contains($name, 'unserviceable') || str_contains($name, 'unservicable')) {
+            return 'reject';
+        }
+        if (str_contains($name, 'serviceable')) {
+            return 'accept';
+        }
+        return 'reject';
+    }
+
     public function pendingItems(Request $request): JsonResponse
     {
         if ($resp = $this->requireInspectionOfficer()) {
@@ -223,7 +235,7 @@ class InspectionReportController extends Controller
         }
 
         $detailIds = $dr->details->pluck('DRDetailID')->all();
-        $incomingIds = collect($request->items)->pluck('dr_detail_id')->all();
+        $incomingIds = collect($request->items)->pluck('dr_detail_id')->unique()->all();
 
         $missing = array_diff($detailIds, $incomingIds);
         $extra = array_diff($incomingIds, $detailIds);
@@ -237,6 +249,14 @@ class InspectionReportController extends Controller
 
         $detailsById = $dr->details->keyBy('DRDetailID');
         $validationErrors = [];
+        $conditionIds = collect($request->items)->pluck('condition_id')->filter()->unique()->all();
+        $conditionMap = Condition::whereIn('ConditionID', $conditionIds)->pluck('ConditionName', 'ConditionID');
+
+        $totalsByDetail = [];
+        $verificationByDetail = [];
+
+        $totalsByDetail = [];
+        $verificationByDetail = [];
 
         foreach ($request->items as $index => $item) {
             $detail = $detailsById->get($item['dr_detail_id']);
@@ -259,8 +279,43 @@ class InspectionReportController extends Controller
             $accepted = (int) ($item['quantity_accepted'] ?? 0);
             $rejected = (int) ($item['quantity_rejected'] ?? 0);
             $delivered = (int) $detail->QuantityDelivered;
-            if ($accepted + $rejected !== $delivered) {
-                $validationErrors["items.$index"][] = 'Accepted + rejected must equal delivered quantity.';
+
+            $mode = $this->resolveConditionMode($conditionMap->get($item['condition_id']) ?? null);
+            if ($accepted + $rejected <= 0) {
+                $validationErrors["items.$index.quantity_accepted"][] = 'Quantity must be greater than 0.';
+            }
+            if ($mode === 'accept') {
+                if ($rejected > 0) {
+                    $validationErrors["items.$index.quantity_rejected"][] = 'Rejected quantity must be 0 for acceptable conditions.';
+                }
+                if ($accepted <= 0) {
+                    $validationErrors["items.$index.quantity_accepted"][] = 'Accepted quantity is required for acceptable conditions.';
+                }
+            } else {
+                if ($accepted > 0) {
+                    $validationErrors["items.$index.quantity_accepted"][] = 'Accepted quantity must be 0 for reject-only conditions.';
+                }
+                if ($rejected <= 0) {
+                    $validationErrors["items.$index.quantity_rejected"][] = 'Rejected quantity is required for reject-only conditions.';
+                }
+            }
+
+            if ($rejected > 0 && $this->normalizeField($item['remarks'] ?? null) === null) {
+                $validationErrors["items.$index.remarks"][] = 'Reject reason is required when rejecting quantity.';
+            }
+
+            $detailId = (int) $detail->DRDetailID;
+            if (! isset($totalsByDetail[$detailId])) {
+                $totalsByDetail[$detailId] = ['accepted' => 0, 'rejected' => 0, 'delivered' => $delivered];
+            }
+            $totalsByDetail[$detailId]['accepted'] += $accepted;
+            $totalsByDetail[$detailId]['rejected'] += $rejected;
+
+            $verificationKey = [$brand, $modelNumber, $serialNumber, $noSerial ? 1 : 0];
+            if (! isset($verificationByDetail[$detailId])) {
+                $verificationByDetail[$detailId] = $verificationKey;
+            } elseif ($verificationByDetail[$detailId] !== $verificationKey) {
+                $validationErrors["items.$index"][] = 'Verified brand/model/serial must be consistent for the same item.';
             }
 
             $changes = [];
@@ -282,6 +337,12 @@ class InspectionReportController extends Controller
             }
         }
 
+        foreach ($totalsByDetail as $detailId => $totals) {
+            if (($totals['accepted'] + $totals['rejected']) !== $totals['delivered']) {
+                $validationErrors["items.$detailId"][] = 'Accepted + rejected must equal delivered quantity.';
+            }
+        }
+
         if (! empty($validationErrors)) {
             return response()->json([
                 'success' => false,
@@ -293,6 +354,8 @@ class InspectionReportController extends Controller
         DB::beginTransaction();
         try {
             $iarNumber = 'IAR-' . date('Y') . '-' . str_pad(InspectionAcceptanceReport::count() + 1, 4, '0', STR_PAD_LEFT);
+            $conditionIds = collect($request->items)->pluck('condition_id')->filter()->unique()->all();
+            $conditionMap = Condition::whereIn('ConditionID', $conditionIds)->pluck('ConditionName', 'ConditionID');
             $report = InspectionAcceptanceReport::create([
                 'IARNumber' => $iarNumber,
                 'DRID' => $dr->DRID,
@@ -322,6 +385,7 @@ class InspectionReportController extends Controller
                     'VerifiedSerial' => $serialNumber,
                     'NoSerial' => $noSerial,
                     'Remarks' => $item['remarks'] ?? null,
+                    'change_reason' => $this->normalizeField($item['change_reason'] ?? null),
                 ]);
 
                 if ($detail) {
@@ -407,12 +471,14 @@ class InspectionReportController extends Controller
             'remarks' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.dr_detail_id' => 'required|integer|exists:deliveryreceiptdetail,DRDetailID',
-            'items.*.status' => 'required|in:pending,inspected',
-            'items.*.remarks' => 'nullable|string',
-            'items.*.brand' => 'nullable|string|max:100',
-            'items.*.model_number' => 'nullable|string|max:100',
-            'items.*.serial_number' => 'nullable|string|max:100',
+            'items.*.condition_id' => 'required|integer|exists:condition,ConditionID',
+            'items.*.quantity_accepted' => 'required|integer|min:0',
+            'items.*.quantity_rejected' => 'required|integer|min:0',
+            'items.*.verified_brand' => 'nullable|string|max:100',
+            'items.*.verified_model' => 'nullable|string|max:100',
+            'items.*.verified_serial' => 'nullable|string|max:100',
             'items.*.no_serial' => 'boolean',
+            'items.*.remarks' => 'nullable|string',
             'items.*.change_reason' => 'nullable|string|max:255',
         ]);
 
@@ -424,11 +490,10 @@ class InspectionReportController extends Controller
             ], 422);
         }
 
-        $itemsById = $report->details->keyBy('DRDetailID');
         $dr = DeliveryReceipt::with('details')->findOrFail($report->DRID);
         $detailsById = $dr->details->keyBy('DRDetailID');
         $detailIds = $dr->details->pluck('DRDetailID')->all();
-        $incomingIds = collect($request->items)->pluck('dr_detail_id')->all();
+        $incomingIds = collect($request->items)->pluck('dr_detail_id')->unique()->all();
 
         $missing = array_diff($detailIds, $incomingIds);
         $extra = array_diff($incomingIds, $detailIds);
@@ -440,6 +505,10 @@ class InspectionReportController extends Controller
             ], 422);
         }
         $validationErrors = [];
+        $conditionIds = collect($request->items)->pluck('condition_id')->filter()->unique()->all();
+        $conditionMap = Condition::whereIn('ConditionID', $conditionIds)->pluck('ConditionName', 'ConditionID');
+        $totalsByDetail = [];
+        $verificationByDetail = [];
 
         foreach ($request->items as $index => $item) {
             $detail = $detailsById->get($item['dr_detail_id']);
@@ -462,8 +531,43 @@ class InspectionReportController extends Controller
             $accepted = (int) ($item['quantity_accepted'] ?? 0);
             $rejected = (int) ($item['quantity_rejected'] ?? 0);
             $delivered = (int) $detail->QuantityDelivered;
-            if ($accepted + $rejected !== $delivered) {
-                $validationErrors["items.$index"][] = 'Accepted + rejected must equal delivered quantity.';
+
+            $mode = $this->resolveConditionMode($conditionMap->get($item['condition_id']) ?? null);
+            if ($accepted + $rejected <= 0) {
+                $validationErrors["items.$index.quantity_accepted"][] = 'Quantity must be greater than 0.';
+            }
+            if ($mode === 'accept') {
+                if ($rejected > 0) {
+                    $validationErrors["items.$index.quantity_rejected"][] = 'Rejected quantity must be 0 for acceptable conditions.';
+                }
+                if ($accepted <= 0) {
+                    $validationErrors["items.$index.quantity_accepted"][] = 'Accepted quantity is required for acceptable conditions.';
+                }
+            } else {
+                if ($accepted > 0) {
+                    $validationErrors["items.$index.quantity_accepted"][] = 'Accepted quantity must be 0 for reject-only conditions.';
+                }
+                if ($rejected <= 0) {
+                    $validationErrors["items.$index.quantity_rejected"][] = 'Rejected quantity is required for reject-only conditions.';
+                }
+            }
+
+            if ($rejected > 0 && $this->normalizeField($item['remarks'] ?? null) === null) {
+                $validationErrors["items.$index.remarks"][] = 'Reject reason is required when rejecting quantity.';
+            }
+
+            $detailId = (int) $detail->DRDetailID;
+            if (! isset($totalsByDetail[$detailId])) {
+                $totalsByDetail[$detailId] = ['accepted' => 0, 'rejected' => 0, 'delivered' => $delivered];
+            }
+            $totalsByDetail[$detailId]['accepted'] += $accepted;
+            $totalsByDetail[$detailId]['rejected'] += $rejected;
+
+            $verificationKey = [$brand, $modelNumber, $serialNumber, $noSerial ? 1 : 0];
+            if (! isset($verificationByDetail[$detailId])) {
+                $verificationByDetail[$detailId] = $verificationKey;
+            } elseif ($verificationByDetail[$detailId] !== $verificationKey) {
+                $validationErrors["items.$index"][] = 'Verified brand/model/serial must be consistent for the same item.';
             }
 
             $changes = [];
@@ -485,6 +589,12 @@ class InspectionReportController extends Controller
             }
         }
 
+        foreach ($totalsByDetail as $detailId => $totals) {
+            if (($totals['accepted'] + $totals['rejected']) !== $totals['delivered']) {
+                $validationErrors["items.$detailId"][] = 'Accepted + rejected must equal delivered quantity.';
+            }
+        }
+
         if (! empty($validationErrors)) {
             return response()->json([
                 'success' => false,
@@ -498,18 +608,19 @@ class InspectionReportController extends Controller
                 'Remarks' => $request->remarks,
             ]);
 
+            $report->details()->delete();
+
             foreach ($request->items as $item) {
-                $existing = $itemsById->get($item['dr_detail_id']);
-                if (! $existing) {
-                    continue;
-                }
                 $detail = $detailsById->get($item['dr_detail_id']);
                 $brand = $this->normalizeField($item['verified_brand'] ?? $detail?->Brand);
                 $modelNumber = $this->normalizeField($item['verified_model'] ?? $detail?->ModelNumber);
                 $serialNumber = $this->normalizeField($item['verified_serial'] ?? $detail?->SerialNumber);
                 $noSerial = filter_var($item['no_serial'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-                $existing->update([
+                IARDetail::create([
+                    'IARID' => $report->IARID,
+                    'DRDetailID' => $item['dr_detail_id'],
+                    'PropertyTypeID' => $detail?->PropertyTypeID,
                     'ConditionID' => $item['condition_id'],
                     'QuantityAccepted' => $item['quantity_accepted'],
                     'QuantityRejected' => $item['quantity_rejected'],
@@ -518,6 +629,7 @@ class InspectionReportController extends Controller
                     'VerifiedSerial' => $serialNumber,
                     'NoSerial' => $noSerial,
                     'Remarks' => $item['remarks'] ?? null,
+                    'change_reason' => $this->normalizeField($item['change_reason'] ?? null),
                 ]);
 
                 if ($detail) {
@@ -590,10 +702,14 @@ class InspectionReportController extends Controller
             ], 409);
         }
 
-        $missingDetails = $report->details->contains(function ($item) {
+        $completionErrors = [];
+        $totalsByDrDetail = [];
+        $iarIdsByDrDetail = [];
+        foreach ($report->details as $item) {
             $detail = $item->drDetail;
             if (! $detail) {
-                return true;
+                $completionErrors[$item->IARDetailID][] = 'Missing DR detail reference.';
+                continue;
             }
 
             $brand = $this->normalizeField($item->VerifiedBrand ?? $detail->Brand);
@@ -601,31 +717,46 @@ class InspectionReportController extends Controller
             $serialNumber = $this->normalizeField($item->VerifiedSerial ?? $detail->SerialNumber);
             $noSerial = (bool) $item->NoSerial;
 
-            if (! $brand || ! $modelNumber) {
-                return true;
+            if (! $brand) {
+                $completionErrors[$item->IARDetailID][] = 'Brand is required.';
             }
-
+            if (! $modelNumber) {
+                $completionErrors[$item->IARDetailID][] = 'Model number is required.';
+            }
             if (! $noSerial && ! $serialNumber) {
-                return true;
-            }
-
-            $delivered = (int) $detail->QuantityDelivered;
-            if ((int) $item->QuantityAccepted + (int) $item->QuantityRejected !== $delivered) {
-                return true;
+                $completionErrors[$item->IARDetailID][] = 'Serial number is required or mark no serial.';
             }
 
             if (! $item->ConditionID) {
-                return true;
+                $completionErrors[$item->IARDetailID][] = 'Condition is required.';
             }
 
-            return false;
-        });
+            $drDetailId = (int) $item->DRDetailID;
+            $iarIdsByDrDetail[$drDetailId][] = (int) $item->IARDetailID;
+            if (! isset($totalsByDrDetail[$drDetailId])) {
+                $totalsByDrDetail[$drDetailId] = [
+                    'accepted' => 0,
+                    'rejected' => 0,
+                    'delivered' => (int) $detail->QuantityDelivered,
+                ];
+            }
+            $totalsByDrDetail[$drDetailId]['accepted'] += (int) $item->QuantityAccepted;
+            $totalsByDrDetail[$drDetailId]['rejected'] += (int) $item->QuantityRejected;
+        }
 
-        if ($missingDetails) {
+        foreach ($totalsByDrDetail as $drDetailId => $totals) {
+            if ($totals['accepted'] + $totals['rejected'] !== $totals['delivered']) {
+                foreach ($iarIdsByDrDetail[$drDetailId] as $iarDetailId) {
+                    $completionErrors[$iarDetailId][] = 'Accepted + rejected must equal delivered quantity for the DR item.';
+                }
+            }
+        }
+
+        if (! empty($completionErrors)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Brand, model, and serial number must be confirmed before completion',
-                'errors' => ['items' => ['Brand, model, and serial number must be confirmed before completion']],
+                'message' => 'Inspection items are incomplete. Fix the errors before completion.',
+                'errors' => ['items' => $completionErrors],
             ], 422);
         }
 
