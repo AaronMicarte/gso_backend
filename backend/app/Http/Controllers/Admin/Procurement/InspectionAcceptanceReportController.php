@@ -28,7 +28,10 @@ class InspectionAcceptanceReportController extends Controller
                 'details.condition',
                 'details.drDetail.unitOfMeasure',
                 'deliveryReceipt' => function ($query) {
-                    $query->withTrashed();
+                    $query->withTrashed()->with([
+                        'requestedByUser:UserID,FullName,DepartmentID',
+                        'requestedByUser.department:DepartmentID,DepartmentName',
+                    ]);
                 },
                 'inspectedByUser',
                 'acceptedByUser'
@@ -70,7 +73,15 @@ class InspectionAcceptanceReportController extends Controller
                 // Eager loading returns snake_case keys in JSON; add camelCase duplicates for frontend compatibility
                 $iar->inspectedByUser = $iar->InspectedBy ? \App\Models\Auth\User::find($iar->InspectedBy) : null;
                 $iar->acceptedByUser = $iar->AcceptedBy ? \App\Models\Auth\User::find($iar->AcceptedBy) : null;
-                $iar->deliveryReceipt = $iar->deliveryReceipt ?? ($iar->DRID ? \App\Models\Procurement\DeliveryReceipt::withTrashed()->find($iar->DRID) : null);
+                $iar->deliveryReceipt = $iar->deliveryReceipt ?? ($iar->DRID
+                    ? \App\Models\Procurement\DeliveryReceipt::withTrashed()
+                        ->with([
+                            'requestedByUser:UserID,FullName,DepartmentID',
+                            'requestedByUser.department:DepartmentID,DepartmentName',
+                        ])
+                        ->find($iar->DRID)
+                    : null
+                );
                 return $iar;
             });
 
@@ -380,7 +391,12 @@ class InspectionAcceptanceReportController extends Controller
                 'details.propertyType',
                 'details.condition',
                 'details.drDetail.unitOfMeasure',
-                'deliveryReceipt' => function ($q) { $q->withTrashed(); }
+                'deliveryReceipt' => function ($q) {
+                    $q->withTrashed()->with([
+                        'requestedByUser:UserID,FullName,DepartmentID',
+                        'requestedByUser.department:DepartmentID,DepartmentName',
+                    ]);
+                }
             ])->findOrFail($id);
 
             // Load additional relationships
@@ -444,6 +460,11 @@ class InspectionAcceptanceReportController extends Controller
 
             // Ensure deliveryReceipt is exposed in camelCase for frontend
             $data['deliveryReceipt'] = $iar->deliveryReceipt ? $iar->deliveryReceipt->toArray() : null;
+            if (!empty($data['deliveryReceipt']) && $iar->deliveryReceipt) {
+                $data['deliveryReceipt']['requestedByUser'] = $iar->deliveryReceipt->requestedByUser
+                    ? $iar->deliveryReceipt->requestedByUser->toArray()
+                    : null;
+            }
 
             if (!empty($data['details']) && is_array($data['details'])) {
                 foreach ($data['details'] as &$d) {
@@ -451,6 +472,9 @@ class InspectionAcceptanceReportController extends Controller
                     $d['drDetail'] = $d['dr_detail'] ?? null;
                     $d['condition'] = $d['condition'] ?? null;
                     $d['propertyType'] = $d['property_type'] ?? null;
+                    if (!empty($d['drDetail']) && is_array($d['drDetail'])) {
+                        $d['drDetail']['unitOfMeasure'] = $d['drDetail']['unit_of_measure'] ?? null;
+                    }
                 }
             }
 

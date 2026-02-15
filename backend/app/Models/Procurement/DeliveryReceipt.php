@@ -29,12 +29,15 @@ class DeliveryReceipt extends Model
         'DateReceived',
         'Remarks',
         'CreatedDate',
-        'dr_picture'
+        'dr_picture',
+        'InspectionStatus',
+        'InspectionCompletedAt'
     ];
 
     protected $casts = [
         'DateReceived' => 'date',
         'CreatedDate' => 'datetime',
+        'InspectionCompletedAt' => 'datetime',
     ];
 
     public function receivedByUser(): BelongsTo
@@ -56,4 +59,5 @@ class DeliveryReceipt extends Model
     {
         return $this->hasOne(InspectionAcceptanceReport::class, 'DRID', 'DRID');
     }
+
 }

@@ -25,13 +25,12 @@ class DeliveryReceiptController extends Controller
             $query = DeliveryReceipt::with([
                     'details.propertyType',
                     'details.unitOfMeasure',
-                    'iar',
                     'requestedByUser:UserID,FullName,DepartmentID',
                     'requestedByUser.department:DepartmentID,DepartmentName',
                 ])
                 ->leftJoin('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->select('deliveryreceipt.*', 'user.FullName as received_by_name')
-                ->withCount('iar as hasIAR');
+                ;
 
             // Filter by date range
             if ($request->has('start_date') && $request->has('end_date')) {
@@ -52,19 +51,45 @@ class DeliveryReceiptController extends Controller
 
             // Transform to include IAR info
             $deliveryReceipts->getCollection()->transform(function ($dr) {
-                $dr->hasIAR = $dr->hasIAR > 0;
+                $dr->inspection_status = $dr->InspectionStatus ?? 'pending';
 
-                // Determine IAR status: Pending IAR, Inspected, Accepted
-                if ($dr->hasIAR) {
-                    $iar = $dr->iar ?? $dr->iar()->first();
-                    if ($iar && !empty($iar->DateAccepted)) {
-                        $dr->iar_status = 'Accepted';
-                    } else {
-                        $dr->iar_status = 'Inspected';
-                    }
-                } else {
-                    $dr->iar_status = 'Pending IAR';
+                $workflowStatus = ($dr->InspectionStatus ?? 'pending') === 'inspected'
+                    ? 'to_be_accepted'
+                    : 'pending_inspection';
+
+                $iar = DB::table('inspectionacceptancereport')
+                    ->where('DRID', $dr->DRID)
+                    ->whereNull('deleted_at')
+                    ->first(['IARID', 'DateAccepted']);
+
+                if ($iar && !empty($iar->DateAccepted)) {
+                    $workflowStatus = 'to_be_issued';
                 }
+
+                $issuance = DB::table('propertyissuance')
+                    ->where('DRID', $dr->DRID)
+                    ->whereNull('deleted_at')
+                    ->orderByDesc('IssuanceID')
+                    ->first(['Status']);
+
+                if ($issuance) {
+                    if ($issuance->Status === 'acknowledged') {
+                        $workflowStatus = 'acknowledged';
+                    } elseif ($issuance->Status === 'pending_acknowledgment') {
+                        $workflowStatus = 'issued';
+                    }
+                }
+
+                $workflowLabels = [
+                    'pending_inspection' => 'Pending inspection',
+                    'to_be_accepted' => 'To be accepted',
+                    'to_be_issued' => 'To be issued',
+                    'issued' => 'Issued',
+                    'acknowledged' => 'Acknowledged',
+                ];
+
+                $dr->workflow_status = $workflowStatus;
+                $dr->workflow_status_label = $workflowLabels[$workflowStatus] ?? 'Pending inspection';
 
                 // Set receivedByUser from the joined data
                 $dr->receivedByUser = $dr->received_by_name ? [
@@ -273,17 +298,7 @@ class DeliveryReceiptController extends Controller
                 ])
                 ->findOrFail($id);
 
-            // Load IAR count
-            $deliveryReceipt->loadCount('iar as hasIAR');
-            $deliveryReceipt->hasIAR = $deliveryReceipt->hasIAR > 0;
-
-            // Determine IAR status
-            if ($deliveryReceipt->hasIAR) {
-                $iar = $deliveryReceipt->iar()->first();
-                $deliveryReceipt->iar_status = ($iar && !empty($iar->DateAccepted)) ? 'Accepted' : 'Inspected';
-            } else {
-                $deliveryReceipt->iar_status = 'Pending IAR';
-            }
+            $deliveryReceipt->inspection_status = $deliveryReceipt->InspectionStatus ?? 'pending';
 
             // Set receivedByUser explicitly
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
@@ -325,9 +340,7 @@ class DeliveryReceiptController extends Controller
         try {
             $deliveryReceipt = DeliveryReceipt::findOrFail($id);
 
-            // Check if DR has been inspected (has IAR)
-            $deliveryReceipt->loadCount('iar as hasIAR');
-            if ($deliveryReceipt->hasIAR > 0) {
+            if (($deliveryReceipt->InspectionStatus ?? 'pending') === 'inspected') {
                 return response()->json([
                     'success' => false,
                     'message' => 'Cannot edit delivery receipt that has already been inspected.',

@@ -22,7 +22,9 @@ use App\Http\Controllers\Admin\MasterData\UserRoleController;
 use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
 use App\Http\Controllers\Admin\Procurement\InspectionAcceptanceReportController;
 use App\Http\Controllers\Admin\Procurement\IarSignatureController;
+use App\Http\Controllers\Inspection\InspectionReportController;
 use App\Http\Controllers\department_head\DashboardController as DepartmentHeadDashboardController;
+use App\Http\Controllers\department_head\ReceivedItemsController as DepartmentHeadReceivedItemsController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RequisitionIssueSlipController;
 
@@ -172,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('auth:sanctum')->prefix('department-head')->group(function () {
         Route::get('dashboard/stats', [DepartmentHeadDashboardController::class, 'getStats']);
         Route::get('dashboard/activities', [DepartmentHeadDashboardController::class, 'getActivities']);
+        Route::get('received-items', [DepartmentHeadReceivedItemsController::class, 'index']);
     });
 
     // Asset Request & Issuance routes (available to all authenticated users with role-based access)
@@ -197,6 +200,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('stats', [\App\Http\Controllers\PropertyIssuanceController::class, 'getStats']);
         Route::get('available-inventory', [\App\Http\Controllers\PropertyIssuanceController::class, 'getAvailableInventory']);
         Route::get('delivery-receipts', [\App\Http\Controllers\PropertyIssuanceController::class, 'getDeliveryReceiptsForIssuance']);
+    Route::post('acknowledge-iar', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledgeIarFromInspection']);
         Route::get('requests-for-issuance', [\App\Http\Controllers\PropertyIssuanceController::class, 'getRequestsForIssuance']);
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
@@ -216,6 +220,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('properties', [QrCodeController::class, 'index']);
         Route::post('properties/{propertyId}/generate', [QrCodeController::class, 'generate']);
         Route::get('scan/{propertyId}', [QrCodeController::class, 'scan']);
+    });
+
+    // Inspection Officer routes
+    Route::prefix('inspection')->group(function () {
+        Route::get('pending-items', [InspectionReportController::class, 'pendingItems']);
+        Route::get('conditions', [InspectionReportController::class, 'conditions']);
+        Route::get('reports', [InspectionReportController::class, 'index']);
+        Route::get('reports/{id}', [InspectionReportController::class, 'show']);
+        Route::post('reports', [InspectionReportController::class, 'store']);
+        Route::patch('reports/{id}', [InspectionReportController::class, 'update']);
+        Route::post('reports/{id}/complete', [InspectionReportController::class, 'complete']);
     });
 });
 

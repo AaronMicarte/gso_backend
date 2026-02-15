@@ -33,6 +33,12 @@ class InventoryController extends Controller
 
         $iarId = $request->input('iar_id');
 
+        if (PropertyInventory::where('IARID', $iarId)->exists()) {
+            return response()->json([
+                'message' => 'Inventory already exists for this IAR.',
+            ], 200);
+        }
+
         // Fetch IAR and its details
         $iar = InspectionAcceptanceReport::with(['details'])->find($iarId);
         if (!$iar) {
@@ -601,7 +607,8 @@ class InventoryController extends Controller
                                             SELECT depDR.DepartmentName
                                             FROM deliveryreceiptdetail drd
                                             JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
-                                            LEFT JOIN department depDR ON depDR.DepartmentID = dr.DepartmentID
+                                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                                            LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
                                             WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
                                             LIMIT 1
                                         )

@@ -23,12 +23,14 @@ class IARDetail extends Model
         'VerifiedBrand',
         'VerifiedModel',
         'VerifiedSerial',
+        'NoSerial',
         'Remarks',
     ];
 
     protected $casts = [
         'QuantityAccepted' => 'integer',
         'QuantityRejected' => 'integer',
+        'NoSerial' => 'boolean',
     ];
 
     public function iar(): BelongsTo

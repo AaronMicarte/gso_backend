@@ -33,6 +33,7 @@ class PropertyIssuance extends Model
         'DateIssued',
         'Remarks',
         'AcknowledgmentSignature',
+        'AcknowledgedBy',
         'AcknowledgedAt',
         'AcknowledgmentNotes',
         'CreatedDate',

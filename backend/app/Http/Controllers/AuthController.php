@@ -123,7 +123,7 @@ class AuthController extends Controller
 
         // 6. Check MFA Requirement
         // Roles that REQUIRE MFA (government security policy)
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
         $userRole = $user->userRole->RoleName ?? '';
         $requiresMFA = in_array($userRole, $mfaRequiredRoles);
 
@@ -298,7 +298,7 @@ class AuthController extends Controller
         // Return info for client to continue with MFA setup if needed
         $user->load(['userRole']);
         $userRole = $user->userRole->RoleName ?? '';
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
         $requiresMFA = in_array($userRole, $mfaRequiredRoles);
 
         return response()->json([
@@ -568,7 +568,7 @@ class AuthController extends Controller
         }
 
         // Verify this user's role actually requires MFA
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
         $userRole = $user->userRole->RoleName ?? '';
 
         if (!in_array($userRole, $mfaRequiredRoles)) {
@@ -616,7 +616,7 @@ class AuthController extends Controller
         }
 
         // Verify role requires MFA
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head'];
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
         $userRole = $user->userRole->RoleName ?? '';
 
         if (!in_array($userRole, $mfaRequiredRoles)) {

@@ -6,6 +6,7 @@ use App\Models\AssetRequest;
 use App\Models\PropertyIssuance;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\AssetAuditLog;
+use App\Models\Inventory\PropertyInventory;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\AssignedProperty;
 use App\Models\QrCode;
@@ -14,14 +15,19 @@ use App\Models\RequisitionIssueSlip;
 use App\Models\RequisitionIssueSlipItem;
 use App\Models\RequisitionIssueSlipSignature;
 use App\Models\Procurement\DeliveryReceipt;
+use App\Models\Procurement\DeliveryReceiptDetail;
+use App\Models\Procurement\InspectionAcceptanceReport;
+use App\Models\MasterData\PropertyStatus;
 use App\Services\AssetRequestSignatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PropertyIssuanceController extends Controller
 {
+    private const ROLE_ADMIN = 1;
+    private const ROLE_GSO_STAFF = 2;
     /**
      * Get all property issuances
      */
@@ -706,6 +712,23 @@ class PropertyIssuanceController extends Controller
                 ->findOrFail((int) $validated['dr_id']);
             $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
 
+            $iar = InspectionAcceptanceReport::with(['details'])->where('DRID', (int) $deliveryReceipt->DRID)->first();
+            if ($iar) {
+                $issueDate = $validated['date_issued'];
+                $requestedBy = (int) ($deliveryReceipt->RequestedBy ?? 0);
+
+                if ($requestedBy > 0) {
+                    $iar->AcceptedBy = $requestedBy;
+                }
+
+                $iar->DateAccepted = $issueDate;
+                $iar->save();
+
+                if (!empty($iar->DateAccepted) && !PropertyInventory::where('IARID', $iar->IARID)->exists()) {
+                    $this->ingestIarToInventory($iar);
+                }
+            }
+
             $inventoryItems = collect($validated['inventory_items'])->map(function ($item) {
                 return [
                     'inventory_detail_id' => (int) $item['inventory_detail_id'],
@@ -856,6 +879,85 @@ class PropertyIssuanceController extends Controller
         }
     }
 
+    private function ingestIarToInventory(InspectionAcceptanceReport $iar): void
+    {
+        if ($iar->details->isEmpty()) {
+            throw new \Exception('No IAR details to ingest.');
+        }
+
+        $inventory = PropertyInventory::create([
+            'InventoryNumber' => 'INV-' . date('Ymd-His') . '-' . $iar->IARID,
+            'IARID' => $iar->IARID,
+            'DateReceived' => $iar->DateAccepted ?? now(),
+            'Remarks' => 'Auto-ingested from IAR #' . $iar->IARNumber,
+            'CreatedDate' => now(),
+        ]);
+
+        $toBeIssuedStatusId = PropertyStatus::where('StatusName', 'To be issued')
+            ->orWhere('StatusName', 'For issuance')
+            ->orWhere('StatusName', 'For Issuance')
+            ->value('PropertyStatusID');
+
+        if (!$toBeIssuedStatusId) {
+            $toBeIssuedStatusId = PropertyStatus::where('StatusName', 'Available')
+                ->value('PropertyStatusID') ?? 1;
+        }
+
+        $year = date('Y');
+        $prefix = $year . '-';
+        $latestItem = PropertyInventoryDetail::where('PropertyNumber', 'like', $prefix . '%')
+            ->orderBy('PropertyNumber', 'desc')
+            ->withTrashed()
+            ->first();
+
+        $currentSequence = 0;
+        if ($latestItem && preg_match('/-(\d+)$/', (string) $latestItem->PropertyNumber, $matches)) {
+            $currentSequence = (int) $matches[1];
+        }
+
+        foreach ($iar->details as $detail) {
+            $acceptedQty = (int) ($detail->QuantityAccepted ?? 0);
+            if ($acceptedQty <= 0) {
+                continue;
+            }
+
+            $drDetail = DeliveryReceiptDetail::find($detail->DRDetailID);
+            if (!$drDetail) {
+                continue;
+            }
+
+            $brand = $detail->VerifiedBrand ?? $drDetail->Brand;
+            $model = $detail->VerifiedModel ?? $drDetail->ModelNumber;
+            $serial = $detail->NoSerial ? null : ($detail->VerifiedSerial ?? $drDetail->SerialNumber);
+
+            for ($i = 0; $i < $acceptedQty; $i++) {
+                $currentSequence++;
+                $propertyNumber = $prefix . str_pad((string) $currentSequence, 6, '0', STR_PAD_LEFT);
+
+                PropertyInventoryDetail::create([
+                    'InventoryID' => $inventory->InventoryID,
+                    'PropertyTypeID' => $detail->PropertyTypeID,
+                    'PropertyNumber' => $propertyNumber,
+                    'ConditionID' => $detail->ConditionID,
+                    'Brand' => $brand,
+                    'ModelNumber' => $model,
+                    'SerialNumber' => $serial,
+                    'Description' => $detail->Remarks,
+                    'Quantity' => 1,
+                    'QuantityAvailable' => 1,
+                    'PropertyStatusID' => $toBeIssuedStatusId,
+                    'UnitOfMeasureID' => $drDetail->UnitOfMeasureID,
+                    'UnitCost' => $drDetail->UnitCost,
+                    'TotalCost' => $drDetail->UnitCost,
+                    'SourceIARDetailID' => $detail->IARDetailID,
+                    'SourceDRDetailID' => $detail->DRDetailID,
+                    'Remarks' => $detail->Remarks,
+                    'CreatedDate' => now(),
+                ]);
+            }
+        }
+    }
+
     /**
      * Generate document number for PAR/ICS
      */
@@ -909,41 +1011,6 @@ class PropertyIssuanceController extends Controller
             'PositionID' => 2, // Staff (safe default)
             'DepartmentID' => $departmentId,
             'FullName' => $nameToUse,
-            'IsActive' => 1,
-        ]);
-    }
-
-    private function resolveEndUserForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): EndUser
-    {
-        $departmentId = (int) ($deliveryReceipt->requestedByUser->DepartmentID ?? 0);
-        if ($departmentId <= 0) {
-            throw new \Exception('Delivery receipt has no department assigned.');
-        }
-
-        $requestedBy = trim((string) ($deliveryReceipt->requestedByUser->FullName ?? ''));
-        if ($requestedBy !== '') {
-            $existing = EndUser::where('FullName', $requestedBy)
-                ->where('DepartmentID', $departmentId)
-                ->first();
-
-            if ($existing) {
-                return $existing;
-            }
-        }
-
-        $fallbackName = 'Department Custodian';
-        $fallback = EndUser::where('FullName', $fallbackName)
-            ->where('DepartmentID', $departmentId)
-            ->first();
-
-        if ($fallback) {
-            return $fallback;
-        }
-
-        return EndUser::create([
-            'PositionID' => 2,
-            'DepartmentID' => $departmentId,
-            'FullName' => $fallbackName,
             'IsActive' => 1,
         ]);
     }
@@ -1152,31 +1219,28 @@ class PropertyIssuanceController extends Controller
     public function getDeliveryReceiptsForIssuance(Request $request)
     {
         try {
-            $query = DB::table('deliveryreceipt')
-                ->join('deliveryreceiptdetail', 'deliveryreceipt.DRID', '=', 'deliveryreceiptdetail.DRID')
-                ->join('propertyinventorydetail', 'deliveryreceiptdetail.DRDetailID', '=', 'propertyinventorydetail.SourceDRDetailID')
+            $query = DB::table('inspectionacceptancereport as iar')
+                ->join('deliveryreceipt', 'iar.DRID', '=', 'deliveryreceipt.DRID')
+                ->leftJoin('iardetail', 'iar.IARID', '=', 'iardetail.IARID')
                 ->leftJoin('user as reqU', 'deliveryreceipt.RequestedBy', '=', 'reqU.UserID')
                 ->leftJoin('department', 'reqU.DepartmentID', '=', 'department.DepartmentID')
-                ->leftJoin('asset_assignments', 'propertyinventorydetail.InventoryDetailID', '=', 'asset_assignments.PropertyInventoryDetailID')
-                ->leftJoin('assetrequestdetail', 'propertyinventorydetail.InventoryDetailID', '=', 'assetrequestdetail.PropertyInventoryDetailID')
-                ->leftJoin('assetrequest', 'assetrequestdetail.RequestID', '=', 'assetrequest.RequestID')
-                ->where('propertyinventorydetail.PropertyStatusID', 1)
-                ->where(function ($q) {
-                    $q->whereNull('asset_assignments.AssignmentID')
-                        ->orWhere('asset_assignments.AssignmentType', '<>', 'issuance');
-                })
-                ->where(function ($q) {
-                    $q->whereNull('assetrequest.RequestID')
-                        ->orWhereNotIn('assetrequest.Status', ['approved', 'waiting_for_issuance']);
-                })
+                ->whereNull('iar.deleted_at')
+                ->where('deliveryreceipt.InspectionStatus', 'inspected')
                 ->select(
                     'deliveryreceipt.DRID',
                     'deliveryreceipt.DRNumber',
                     'reqU.FullName as RequestedBy',
                     'reqU.DepartmentID as DepartmentID',
                     'deliveryreceipt.DateReceived',
+                    'deliveryreceipt.InspectionStatus',
                     'department.DepartmentName',
-                    DB::raw('COUNT(DISTINCT propertyinventorydetail.InventoryDetailID) as AvailableItems')
+                    'iar.IARID',
+                    'iar.IARNumber',
+                    'iar.DateInspected',
+                    'iar.DateAccepted as IARDateAccepted',
+                    'iar.AcceptedBy as IARAcceptedBy',
+                    DB::raw('CASE WHEN iar.DateAccepted IS NOT NULL THEN 1 ELSE 0 END as IsAccepted'),
+                    DB::raw('SUM(COALESCE(iardetail.QuantityAccepted, 0)) as AcceptedQuantity')
                 )
                 ->groupBy(
                     'deliveryreceipt.DRID',
@@ -1184,7 +1248,13 @@ class PropertyIssuanceController extends Controller
                     'reqU.FullName',
                     'reqU.DepartmentID',
                     'deliveryreceipt.DateReceived',
-                    'department.DepartmentName'
+                    'deliveryreceipt.InspectionStatus',
+                    'department.DepartmentName',
+                    'iar.IARID',
+                    'iar.IARNumber',
+                    'iar.DateInspected',
+                    'iar.DateAccepted',
+                    'iar.AcceptedBy'
                 )
                 ->orderBy('deliveryreceipt.DateReceived', 'desc');
 
@@ -1200,6 +1270,52 @@ class PropertyIssuanceController extends Controller
             $perPage = (int) $request->get('per_page', 15);
             $results = $query->paginate($perPage);
 
+            $results->getCollection()->transform(function ($row) {
+                $iarId = (int) ($row->IARID ?? 0);
+                $itemsByType = [
+                    'PAR' => [],
+                    'ICS' => [],
+                ];
+
+                if ($iarId > 0) {
+                    $items = DB::table('iardetail as iard')
+                        ->leftJoin('deliveryreceiptdetail as drd', 'iard.DRDetailID', '=', 'drd.DRDetailID')
+                        ->leftJoin('propertytype as pt', 'iard.PropertyTypeID', '=', 'pt.PropertyTypeID')
+                        ->leftJoin('propertyclassification as pc', 'pt.PropertyClassificationID', '=', 'pc.PropertyClassificationID')
+                        ->where('iard.IARID', $iarId)
+                        ->select(
+                            'iard.IARDetailID',
+                            'iard.QuantityAccepted',
+                            'drd.ItemDescription',
+                            'drd.Brand',
+                            'drd.ModelNumber',
+                            'drd.SerialNumber',
+                            'pc.DocumentType'
+                        )
+                        ->get();
+
+                    foreach ($items as $item) {
+                        $docType = $item->DocumentType ?: 'ICS';
+                        if (!isset($itemsByType[$docType])) {
+                            $itemsByType[$docType] = [];
+                        }
+
+                        $itemsByType[$docType][] = [
+                            'IARDetailID' => $item->IARDetailID,
+                            'ItemDescription' => $item->ItemDescription,
+                            'Brand' => $item->Brand,
+                            'ModelNumber' => $item->ModelNumber,
+                            'SerialNumber' => $item->SerialNumber,
+                            'QuantityAccepted' => $item->QuantityAccepted,
+                            'DocumentType' => $docType,
+                        ];
+                    }
+                }
+
+                $row->items_by_document_type = $itemsByType;
+                return $row;
+            });
+
             return response()->json($results);
         } catch (\Exception $e) {
             return response()->json([
@@ -1207,6 +1323,289 @@ class PropertyIssuanceController extends Controller
                 'error' => true
             ], 500);
         }
+    }
+
+    public function acknowledgeIarFromInspection(Request $request)
+    {
+        Log::info('Starting acknowledgeIarFromInspection', ['request' => $request->all()]);
+
+        $request->validate([
+            'dr_id' => 'nullable|integer|exists:deliveryreceipt,DRID',
+            'iar_id' => 'nullable|integer|exists:inspectionacceptancereport,IARID',
+        ]);
+
+        if (! $request->filled('dr_id') && ! $request->filled('iar_id')) {
+            return response()->json([
+                'message' => 'dr_id or iar_id is required',
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $roleId = (int) ($user->UserRoleID ?? 0);
+        if (! in_array($roleId, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF], true)) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $iar = null;
+        if ($request->filled('iar_id')) {
+            $iar = InspectionAcceptanceReport::with(['details'])->findOrFail((int) $request->iar_id);
+        } else {
+            $iar = InspectionAcceptanceReport::with(['details'])
+                ->where('DRID', (int) $request->dr_id)
+                ->firstOrFail();
+        }
+
+        if (! empty($iar->DateAccepted)) {
+            return response()->json([
+                'message' => 'IAR is already acknowledged.',
+            ], 409);
+        }
+
+        $deliveryReceipt = DeliveryReceipt::with(['requestedByUser:UserID,FullName,DepartmentID'])
+            ->find($iar->DRID);
+        if (! $deliveryReceipt || ($deliveryReceipt->InspectionStatus ?? 'pending') !== 'inspected') {
+            return response()->json([
+                'message' => 'Delivery receipt is not inspected yet.',
+            ], 409);
+        }
+
+        $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
+
+        DB::beginTransaction();
+        try {
+            $iar->AcceptedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
+            $iar->DateAccepted = now();
+            $iar->save();
+
+            if (!PropertyInventory::where('IARID', $iar->IARID)->exists()) {
+                $this->ingestIarToInventory($iar);
+            }
+
+            $issuances = $this->createIssuancesFromIar($iar, $deliveryReceipt, $resolvedEndUser);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error in acknowledgeIarFromInspection: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+            return response()->json([
+                'message' => 'Failed to acknowledge IAR: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'IAR acknowledged and inventory updated',
+            'data' => [
+                'IARID' => $iar->IARID,
+                'DateAccepted' => $iar->DateAccepted,
+                'AcceptedBy' => $iar->AcceptedBy,
+                'issuances_created' => count($issuances ?? []),
+            ]
+        ]);
+    }
+
+    /**
+     * Ensure we have an EndUser row that matches the DR requester.
+     * If one does not exist, create a lightweight record so downstream issuance/assignment flows have a valid FK.
+     */
+    private function resolveEndUserForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): EndUser
+    {
+        $requester = $deliveryReceipt->requestedByUser;
+        if ($requester) {
+            $existing = EndUser::where(function ($q) use ($requester) {
+                    $hasCondition = false;
+
+                    if (!empty($requester->Email)) {
+                        $q->where('Email', $requester->Email);
+                        $hasCondition = true;
+                    }
+
+                    if (!empty($requester->FullName)) {
+                        if ($hasCondition) {
+                            $q->orWhere('FullName', $requester->FullName);
+                        } else {
+                            $q->where('FullName', $requester->FullName);
+                        }
+                    }
+                })
+                ->when(!empty($requester->DepartmentID), function ($q) use ($requester) {
+                    $q->where('DepartmentID', $requester->DepartmentID);
+                })
+                ->first();
+
+            if ($existing) {
+                return $existing;
+            }
+
+            return EndUser::create([
+                'DepartmentID' => $requester->DepartmentID,
+                'FullName' => $requester->FullName ?? 'Unknown Requester',
+                'Email' => $requester->Email,
+                'IsActive' => true,
+                'PositionID' => 2,
+                'ContactNumber' => null,
+            ]);
+        }
+
+        // Fallback: create a generic recipient if the requester record is missing.
+        return EndUser::create([
+            'DepartmentID' => null,
+            'FullName' => 'Unknown Requester',
+            'Email' => null,
+            'IsActive' => true,
+            'PositionID' => 2,
+            'ContactNumber' => null,
+        ]);
+    }
+
+    private function createIssuancesFromIar(InspectionAcceptanceReport $iar, DeliveryReceipt $deliveryReceipt, EndUser $resolvedEndUser): array
+    {
+        $iarDetailIds = $iar->details->pluck('IARDetailID')->filter()->values()->all();
+        if (empty($iarDetailIds)) {
+            return [];
+        }
+
+        $inventoryDetails = PropertyInventoryDetail::with([
+                'drDetail',
+                'propertyType.propertyClassification',
+                'unitOfMeasure',
+            ])
+            ->whereIn('SourceIARDetailID', $iarDetailIds)
+            ->lockForUpdate()
+            ->get();
+
+        if ($inventoryDetails->isEmpty()) {
+            return [];
+        }
+
+        $existingIssuances = PropertyIssuance::with(['details'])
+            ->where('DRID', (int) $deliveryReceipt->DRID)
+            ->get()
+            ->keyBy(function ($issuance) {
+                return (string) $issuance->DocumentType;
+            });
+
+        $groupedByType = $inventoryDetails->groupBy(function ($detail) {
+            $docType = $detail->propertyType?->propertyClassification?->DocumentType ?? null;
+            return $docType ?: 'ICS';
+        });
+
+        $issuances = [];
+        $issuedToName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? null;
+        $departmentId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0) ?: null;
+        $issuedAt = $iar->DateAccepted ?? now();
+
+        foreach ($groupedByType as $documentType => $details) {
+            $documentType = (string) $documentType;
+            $issuance = $existingIssuances->get($documentType);
+
+            if (! $issuance) {
+                $documentNumber = $this->generateDocumentNumber($documentType);
+
+                $issuanceData = [
+                    'RequestID' => null,
+                    'DRID' => (int) $deliveryReceipt->DRID,
+                    'IssuedBy' => Auth::id(),
+                    'IssuerSignature' => null,
+                    'IssuerSignatureSource' => null,
+                    'IssuedTo' => (int) $resolvedEndUser->EndUserID,
+                    'IssuedToName' => $issuedToName,
+                    'DocumentType' => $documentType,
+                    'DocumentNumber' => $documentNumber,
+                    'DateIssued' => $issuedAt,
+                    'Remarks' => 'Auto-created from IAR acknowledgement',
+                    'Status' => 'acknowledged',
+                    'AcknowledgedBy' => (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null,
+                    'AcknowledgedAt' => $issuedAt,
+                    'CreatedDate' => now(),
+                ];
+
+                $issuance = PropertyIssuance::create($issuanceData);
+                $issuance->AcknowledgedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
+                $issuance->AcknowledgedAt = $issuedAt;
+                $issuance->Status = 'acknowledged';
+                $issuance->save();
+
+                $existingDetailIds = [];
+            } else {
+                $issuance->AcknowledgedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
+                $issuance->AcknowledgedAt = $issuedAt;
+                $issuance->Status = 'acknowledged';
+                $issuance->save();
+
+                $existingDetailIds = $issuance->details
+                    ->pluck('InventoryDetailID')
+                    ->filter()
+                    ->map(function ($id) {
+                        return (int) $id;
+                    })
+                    ->values()
+                    ->all();
+            }
+
+            foreach ($details as $detail) {
+                if (in_array((int) $detail->InventoryDetailID, $existingDetailIds, true)) {
+                    continue;
+                }
+
+                $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
+                $unitName = $detail->unitOfMeasure?->UnitName ?? null;
+
+                PropertyIssuanceDetail::create([
+                    'IssuanceID' => $issuance->IssuanceID,
+                    'RequestDetailID' => null,
+                    'InventoryDetailID' => $detail->InventoryDetailID,
+                    'ItemDescription' => $itemDescription,
+                    'Unit' => $unitName,
+                    'QuantityIssued' => 1,
+                    'Remarks' => $issuance->Remarks,
+                ]);
+
+                $availableQty = (int) ($detail->QuantityAvailable ?? 0);
+                if ($availableQty < 1) {
+                    $alreadyAssigned = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->exists();
+                    if ($alreadyAssigned) {
+                        throw new \Exception('Insufficient available quantity for IAR issuance item.');
+                    }
+
+                    $detail->QuantityAvailable = 1;
+                    $detail->save();
+                    $availableQty = 1;
+                }
+
+                $detail->decrement('QuantityAvailable', 1);
+                if ($detail->fresh()->QuantityAvailable <= 0) {
+                    $detail->update(['PropertyStatusID' => 2]);
+                }
+
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+                $assignedPayload = [
+                    'InventoryDetailID' => $detail->InventoryDetailID,
+                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                    'DepartmentID' => $departmentId,
+                    'PropertyCardNumber' => $issuance->DocumentNumber,
+                    'Description' => $detail->Description ?? $itemDescription,
+                    'AssignedDate' => $issuedAt,
+                    'PropertyStatusID' => 2,
+                    'ConditionID' => (int) ($detail->ConditionID ?? 1),
+                    'Remarks' => $issuance->Remarks,
+                ];
+
+                if ($assignedProperty) {
+                    $assignedProperty->fill($assignedPayload);
+                    $assignedProperty->save();
+                } else {
+                    AssignedProperty::create($assignedPayload);
+                }
+
+                $existingDetailIds[] = (int) $detail->InventoryDetailID;
+            }
+
+            $issuances[] = $issuance;
+        }
+
+        return $issuances;
     }
 
     /**
@@ -1250,6 +1649,7 @@ class PropertyIssuanceController extends Controller
             // Exclude details already assigned specifically for issuance and exclude inventory tied to requests
             // that are already approved/waiting for issuance (they're reserved for that request).
             $query->where('propertyinventorydetail.PropertyStatusID', 1)
+                ->where('deliveryreceipt.InspectionStatus', 'inspected')
                 ->where(function($q) {
                     $q->whereNull('asset_assignments.AssignmentID')->orWhere('asset_assignments.AssignmentType', '<>', 'issuance');
                 })
@@ -1298,8 +1698,8 @@ class PropertyIssuanceController extends Controller
     {
         // Accept both the canonical payload keys and legacy keys used by older frontend code.
         $validated = $request->validate([
-            'acknowledgment_signature' => 'required_without:signature|string',
-            'signature' => 'required_without:acknowledgment_signature|string',
+            'acknowledgment_signature' => 'nullable|string',
+            'signature' => 'nullable|string',
             'acknowledgment_notes' => 'nullable|string',
             'notes' => 'nullable|string',
             'acknowledged_by' => 'required|integer|exists:user,UserID',
@@ -1375,7 +1775,7 @@ class PropertyIssuanceController extends Controller
         try {
             DB::beginTransaction();
 
-            $signature = $validated['acknowledgment_signature'] ?? $validated['signature'];
+            $signature = $validated['acknowledgment_signature'] ?? $validated['signature'] ?? null;
             $notes = $validated['acknowledgment_notes'] ?? $validated['notes'] ?? null;
             
             // Update acknowledgment info
@@ -1398,23 +1798,25 @@ class PropertyIssuanceController extends Controller
                 // Optional: persist the receiver signature as a linked/inline record.
                 // NOTE: acknowledgment signature is stored as base64 in `propertyissuance` (not a file).
                 // We store an auditable placeholder path + hash so the RIS signature slot is not blank in DB.
-                RequisitionIssueSlipSignature::updateOrCreate(
-                    ['ris_id' => (int) $ris->id, 'role' => 'received_by'],
-                    [
-                        'signed_by_user_id' => (int) $validated['acknowledged_by'],
-                        'source' => 'linked',
-                        'storage_disk' => 'inline',
-                        'storage_path' => 'inline:propertyissuance:' . (int) $issuance->IssuanceID . ':AcknowledgmentSignature',
-                        'url' => null,
-                        'mime' => 'image/png',
-                        'width' => null,
-                        'height' => null,
-                        'size_bytes' => null,
-                        'sha256_hash' => hash('sha256', (string) $signature),
-                        'ip_address' => $request->ip(),
-                        'user_agent' => $request->userAgent(),
-                    ]
-                );
+                if ($signature) {
+                    RequisitionIssueSlipSignature::updateOrCreate(
+                        ['ris_id' => (int) $ris->id, 'role' => 'received_by'],
+                        [
+                            'signed_by_user_id' => (int) $validated['acknowledged_by'],
+                            'source' => 'linked',
+                            'storage_disk' => 'inline',
+                            'storage_path' => 'inline:propertyissuance:' . (int) $issuance->IssuanceID . ':AcknowledgmentSignature',
+                            'url' => null,
+                            'mime' => 'image/png',
+                            'width' => null,
+                            'height' => null,
+                            'size_bytes' => null,
+                            'sha256_hash' => hash('sha256', (string) $signature),
+                            'ip_address' => $request->ip(),
+                            'user_agent' => $request->userAgent(),
+                        ]
+                    );
+                }
             }
 
             // Self-heal bad historical data where `IssuedTo` stored a `user.UserID` instead of `enduser.EndUserID`.

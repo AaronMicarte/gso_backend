@@ -26,7 +26,8 @@ class DeliveryReceiptDetail extends Model
         'QuantityDelivered',
         'UnitOfMeasureID',
         'UnitCost',
-        'TotalCost'
+        'TotalCost',
+        'InspectionStatus'
     ];
 
     protected $casts = [
