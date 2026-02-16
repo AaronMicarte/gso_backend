@@ -207,7 +207,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('stats', [\App\Http\Controllers\PropertyIssuanceController::class, 'getStats']);
         Route::get('available-inventory', [\App\Http\Controllers\PropertyIssuanceController::class, 'getAvailableInventory']);
         Route::get('delivery-receipts', [\App\Http\Controllers\PropertyIssuanceController::class, 'getDeliveryReceiptsForIssuance']);
-    Route::post('acknowledge-iar', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledgeIarFromInspection']);
+        Route::post('acknowledge-iar', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledgeIarFromInspection']);
+        Route::post('ensure-issuances', [\App\Http\Controllers\PropertyIssuanceController::class, 'ensureIssuancesForInspection']);
         Route::get('requests-for-issuance', [\App\Http\Controllers\PropertyIssuanceController::class, 'getRequestsForIssuance']);
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);

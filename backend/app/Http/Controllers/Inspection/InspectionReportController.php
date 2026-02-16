@@ -12,6 +12,8 @@ use App\Models\Inventory\PropertyInventory;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\MasterData\PropertyStatus;
 use App\Models\AssignedProperty;
+use App\Models\PropertyIssuance;
+use App\Models\PropertyIssuanceDetail;
 use App\Models\EndUser;
 use App\Models\QrCode;
 use App\Models\AssetAuditLog;
@@ -771,6 +773,7 @@ class InspectionReportController extends Controller
                 ->update(['InspectionStatus' => 'inspected']);
 
             $this->ingestInventoryFromInspection($report);
+            $this->createIssuancesFromInspection($report);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -915,6 +918,98 @@ class InspectionReportController extends Controller
         }
     }
 
+    private function createIssuancesFromInspection(InspectionAcceptanceReport $report): void
+    {
+        $iarDetailIds = $report->details->pluck('IARDetailID')->filter()->values()->all();
+        if (empty($iarDetailIds)) {
+            return;
+        }
+
+        $deliveryReceipt = $report->deliveryReceipt;
+        if (! $deliveryReceipt) {
+            return;
+        }
+
+        $inventoryDetails = PropertyInventoryDetail::with([
+                'drDetail',
+                'propertyType.propertyClassification',
+                'unitOfMeasure',
+            ])
+            ->whereIn('SourceIARDetailID', $iarDetailIds)
+            ->get();
+
+        if ($inventoryDetails->isEmpty()) {
+            return;
+        }
+
+        $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
+        $existingIssuances = PropertyIssuance::query()
+            ->where('DRID', (int) $deliveryReceipt->DRID)
+            ->get()
+            ->keyBy(function ($issuance) {
+                return (string) $issuance->DocumentType;
+            });
+
+        $groupedByType = $inventoryDetails->groupBy(function ($detail) {
+            $docType = $detail->propertyType?->propertyClassification?->DocumentType ?? null;
+            return $docType ?: 'ICS';
+        });
+
+        $issuedToName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? null;
+        $issuedAt = $report->DateInspected ?? now();
+
+        foreach ($groupedByType as $documentType => $details) {
+            $documentType = (string) $documentType;
+            $issuance = $existingIssuances->get($documentType);
+
+            if (! $issuance) {
+                $documentNumber = $this->generateDocumentNumber($documentType);
+                $issuance = PropertyIssuance::create([
+                    'RequestID' => null,
+                    'DRID' => (int) $deliveryReceipt->DRID,
+                    'IssuedBy' => Auth::id() ?: (int) ($report->InspectedBy ?? 0),
+                    'IssuerSignature' => null,
+                    'IssuerSignatureSource' => null,
+                    'IssuedTo' => (int) $resolvedEndUser->EndUserID,
+                    'IssuedToName' => $issuedToName,
+                    'DocumentType' => $documentType,
+                    'DocumentNumber' => $documentNumber,
+                    'DateIssued' => $issuedAt,
+                    'Remarks' => 'Auto-created from inspection completion',
+                    'Status' => 'pending_acknowledgment',
+                    'AcknowledgedBy' => null,
+                    'AcknowledgedAt' => null,
+                    'CreatedDate' => now(),
+                ]);
+
+                $existingIssuances->put($documentType, $issuance);
+            }
+
+            foreach ($details as $detail) {
+                $alreadyExists = PropertyIssuanceDetail::where('IssuanceID', $issuance->IssuanceID)
+                    ->where('InventoryDetailID', $detail->InventoryDetailID)
+                    ->exists();
+
+                if ($alreadyExists) {
+                    continue;
+                }
+
+                $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
+                $unitName = $detail->unitOfMeasure?->UnitName ?? null;
+
+                PropertyIssuanceDetail::create([
+                    'IssuanceID' => $issuance->IssuanceID,
+                    'RequestDetailID' => null,
+                    'InventoryDetailID' => $detail->InventoryDetailID,
+                    'ItemDescription' => $itemDescription,
+                    'Unit' => $unitName,
+                    'QuantityIssued' => 1,
+                    'Remarks' => $issuance->Remarks,
+                ]);
+            }
+        }
+    }
+
     private function resolveEndUserForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): EndUser
     {
         $requester = $deliveryReceipt->requestedByUser;
@@ -952,6 +1047,26 @@ class InspectionReportController extends Controller
         $hash = substr(hash_hmac('sha256', (string) $propertyId, $key), 0, 12);
 
         return $baseUrl . '/qr/scan/' . $propertyId . '?h=' . $hash;
+    }
+
+    private function generateDocumentNumber(string $type): string
+    {
+        $year = date('Y');
+        $prefix = $type === 'PAR' ? "PAR-{$year}-" : "ICS-{$year}-";
+
+        $lastIssuance = PropertyIssuance::where('DocumentType', $type)
+            ->where('DocumentNumber', 'like', $prefix . '%')
+            ->orderBy('IssuanceID', 'desc')
+            ->first();
+
+        if ($lastIssuance) {
+            $lastNumber = (int) substr($lastIssuance->DocumentNumber, -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . str_pad((string) $newNumber, 4, '0', STR_PAD_LEFT);
     }
 
     public function conditions(): JsonResponse
