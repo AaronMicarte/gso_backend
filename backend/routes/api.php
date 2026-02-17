@@ -223,6 +223,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('helpers/departments', [\App\Http\Controllers\PropertyTransferController::class, 'helperDepartments']);
         Route::get('helpers/end-users', [\App\Http\Controllers\PropertyTransferController::class, 'helperEndUsers']);
         Route::get('{id}', [\App\Http\Controllers\PropertyTransferController::class, 'show']);
+        Route::post('{id}/releasing-review', [\App\Http\Controllers\PropertyTransferController::class, 'releasingReview']);
+        Route::post('{id}/sign-releasing', [\App\Http\Controllers\PropertyTransferController::class, 'signReleasing']);
+        Route::post('{id}/sign-receiving', [\App\Http\Controllers\PropertyTransferController::class, 'signReceiving']);
         Route::post('{id}/approve', [\App\Http\Controllers\PropertyTransferController::class, 'approve']);
         Route::post('{id}/reject', [\App\Http\Controllers\PropertyTransferController::class, 'reject']);
         Route::post('{id}/complete', [\App\Http\Controllers\PropertyTransferController::class, 'complete']);

@@ -26,6 +26,12 @@ class PropertyTransfer extends Model
         'FromEndUserID',
         'ToEndUserID',
         'Reason',
+        'RequestedItemsCount',
+        'ReleasingDecision',
+        'ReleasingApprovedCount',
+        'ReleasingDecisionReason',
+        'ReleasingReviewedByUserID',
+        'ReleasingReviewedAt',
         'Status',
         'ApprovedByUserID',
         'ApprovedAt',
@@ -37,7 +43,10 @@ class PropertyTransfer extends Model
     ];
 
     protected $casts = [
+        'RequestedItemsCount' => 'integer',
+        'ReleasingApprovedCount' => 'integer',
         'ApprovedAt' => 'datetime',
+        'ReleasingReviewedAt' => 'datetime',
         'CompletedAt' => 'datetime',
         'BorrowerSignedAt' => 'datetime',
         'BorrowingSignedAt' => 'datetime',
@@ -59,6 +68,11 @@ class PropertyTransfer extends Model
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'ApprovedByUserID', 'UserID');
+    }
+
+    public function releasingReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'ReleasingReviewedByUserID', 'UserID');
     }
 
     public function completedBy(): BelongsTo

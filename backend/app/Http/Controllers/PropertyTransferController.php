@@ -34,6 +34,7 @@ class PropertyTransferController extends Controller
             'fromEndUser.department:DepartmentID,DepartmentName',
             'toEndUser:EndUserID,FullName,DepartmentID',
             'toEndUser.department:DepartmentID,DepartmentName',
+            'releasingReviewedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
             'completedBy:UserID,FullName',
         ])->withCount('items');
@@ -101,11 +102,13 @@ class PropertyTransferController extends Controller
             'fromEndUser.department:DepartmentID,DepartmentName',
             'toEndUser:EndUserID,FullName,DepartmentID',
             'toEndUser.department:DepartmentID,DepartmentName',
+            'releasingReviewedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
             'completedBy:UserID,FullName',
             'items.inventoryDetail.unitOfMeasure',
             'items.inventoryDetail.propertyType',
             'items.inventoryDetail.inventory',
+            'items.inventoryDetail.drDetail.article',
         ])->findOrFail($id);
 
         if (!$this->isPrivileged($roleName)) {
@@ -216,6 +219,8 @@ class PropertyTransferController extends Controller
                 'FromEndUserID' => (int) $validated['from_end_user_id'],
                 'ToEndUserID' => (int) $validated['to_end_user_id'],
                 'Reason' => $validated['reason'] ?? null,
+                'RequestedItemsCount' => (int) $inventoryDetailIds->count(),
+                'ReleasingDecision' => 'pending',
                 'Status' => 'pending',
             ]);
 
@@ -250,8 +255,10 @@ class PropertyTransferController extends Controller
                 'fromEndUser.department:DepartmentID,DepartmentName',
                 'toEndUser:EndUserID,FullName,DepartmentID',
                 'toEndUser.department:DepartmentID,DepartmentName',
+                'releasingReviewedBy:UserID,FullName',
                 'items.inventoryDetail.unitOfMeasure',
                 'items.inventoryDetail.inventory',
+                'items.inventoryDetail.drDetail.article',
             ]);
 
             return response()->json([
@@ -275,6 +282,10 @@ class PropertyTransferController extends Controller
             return response()->json(['message' => 'Only pending transfers can be approved'], 422);
         }
 
+        if (($transfer->ReleasingDecision ?? 'pending') !== 'approved') {
+            return response()->json(['message' => 'Releasing department must approve first before GSO/Admin approval'], 422);
+        }
+
         $transfer->update([
             'Status' => 'approved',
             'ApprovedByUserID' => (int) $user->UserID,
@@ -290,6 +301,223 @@ class PropertyTransferController extends Controller
         );
 
         return response()->json(['message' => 'Transfer approved', 'transfer' => $transfer]);
+    }
+
+    public function releasingReview(Request $request, int $id)
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if ($roleName !== self::ROLE_DEPARTMENT_HEAD) {
+            return response()->json(['message' => 'Only Department Head can perform releasing review'], 403);
+        }
+
+        return DB::transaction(function () use ($request, $id, $user) {
+            $transfer = PropertyTransfer::with(['items.inventoryDetail'])->lockForUpdate()->findOrFail($id);
+
+            if ((int) ($user?->DepartmentID ?? 0) !== (int) $transfer->FromDepartmentID) {
+                return response()->json(['message' => 'Only releasing department can review this request'], 403);
+            }
+
+            if ($transfer->Status !== 'pending') {
+                return response()->json(['message' => 'Only pending transfers can be reviewed by releasing department'], 422);
+            }
+
+            if (($transfer->ReleasingDecision ?? 'pending') !== 'pending') {
+                return response()->json(['message' => 'Releasing review already completed for this transfer'], 422);
+            }
+
+            $validated = $request->validate([
+                'decision' => 'required|in:approved,rejected',
+                'approved_quantities' => 'nullable|array',
+                'approved_quantities.*' => 'integer|min:0',
+                'reason' => 'nullable|string|max:2000',
+            ]);
+
+            $reason = trim((string) ($validated['reason'] ?? ''));
+            $requestedCount = (int) $transfer->items->sum(function ($item) {
+                return (int) ($item->Quantity ?? 0);
+            });
+
+            if ($validated['decision'] === 'rejected') {
+                if ($reason === '') {
+                    return response()->json(['message' => 'Reason is required when releasing department rejects the request'], 422);
+                }
+
+                $transfer->update([
+                    'ReleasingDecision' => 'rejected',
+                    'ReleasingApprovedCount' => 0,
+                    'ReleasingDecisionReason' => $reason,
+                    'ReleasingReviewedByUserID' => (int) $user->UserID,
+                    'ReleasingReviewedAt' => now(),
+                    'Status' => 'rejected',
+                ]);
+
+                AssetAuditLog::createLog(
+                    'property_transfer',
+                    (int) $transfer->TransferID,
+                    'releasing_rejected',
+                    (int) $user->UserID,
+                    [
+                        'transfer_number' => $transfer->TransferNumber,
+                        'requested_count' => $requestedCount,
+                        'approved_count' => 0,
+                        'reason' => $reason,
+                    ]
+                );
+
+                return response()->json([
+                    'message' => 'Transfer rejected by releasing department',
+                    'transfer' => $transfer->fresh([
+                        'requestedBy:UserID,FullName,DepartmentID',
+                        'requestedBy.department:DepartmentID,DepartmentName',
+                        'fromDepartment:DepartmentID,DepartmentName',
+                        'toDepartment:DepartmentID,DepartmentName',
+                        'fromEndUser:EndUserID,FullName,DepartmentID',
+                        'fromEndUser.department:DepartmentID,DepartmentName',
+                        'toEndUser:EndUserID,FullName,DepartmentID',
+                        'toEndUser.department:DepartmentID,DepartmentName',
+                        'releasingReviewedBy:UserID,FullName',
+                        'approvedBy:UserID,FullName',
+                        'completedBy:UserID,FullName',
+                        'items.inventoryDetail.unitOfMeasure',
+                        'items.inventoryDetail.propertyType',
+                        'items.inventoryDetail.inventory',
+                        'items.inventoryDetail.drDetail.article',
+                    ]),
+                ]);
+            }
+
+            $approvedQuantitiesRaw = collect($validated['approved_quantities'] ?? [])
+                ->mapWithKeys(fn ($qty, $itemId) => [(int) $itemId => (int) $qty]);
+
+            $approvedCount = 0;
+            $hasShortfall = false;
+            foreach ($transfer->items as $item) {
+                $itemId = (int) $item->TransferItemID;
+                $requestedQty = (int) ($item->Quantity ?? 0);
+                $approvedQty = $approvedQuantitiesRaw->has($itemId)
+                    ? (int) $approvedQuantitiesRaw->get($itemId)
+                    : $requestedQty;
+
+                $assignedCount = AssignedProperty::where('InventoryDetailID', (int) $item->InventoryDetailID)
+                    ->where('DepartmentID', (int) $transfer->FromDepartmentID)
+                    ->where('EndUserID', (int) $transfer->FromEndUserID)
+                    ->count();
+
+                $availableFromInventory = (int) (($item->inventoryDetail?->QuantityAvailable
+                    ?? $item->inventoryDetail?->Quantity
+                    ?? 0));
+
+                $maxByInventory = $availableFromInventory > 0 ? $availableFromInventory : $assignedCount;
+                $maxReleasable = $assignedCount > 0
+                    ? min($requestedQty, $assignedCount, $maxByInventory)
+                    : 0;
+
+                if ($approvedQty < 0) {
+                    return response()->json(['message' => 'Approved quantity cannot be negative'], 422);
+                }
+
+                if ($approvedQty > $requestedQty) {
+                    return response()->json(['message' => 'Approved quantity cannot exceed requested quantity for any item'], 422);
+                }
+
+                if ($approvedQty > $maxReleasable) {
+                    return response()->json([
+                        'message' => 'Approved quantity exceeds releasable inventory for one or more requested items'
+                    ], 422);
+                }
+
+                $approvedCount += $approvedQty;
+                if ($approvedQty < $requestedQty) {
+                    $hasShortfall = true;
+                }
+            }
+
+            if ($approvedCount < 1) {
+                return response()->json(['message' => 'Approved quantity must be at least 1'], 422);
+            }
+
+            if ($approvedCount > $requestedCount) {
+                return response()->json(['message' => 'Approved count cannot exceed requested count'], 422);
+            }
+
+            if ($hasShortfall && $reason === '') {
+                return response()->json(['message' => 'Reason is required when approved count is less than requested count'], 422);
+            }
+
+            foreach ($transfer->items as $item) {
+                $itemId = (int) $item->TransferItemID;
+                $requestedQty = (int) ($item->Quantity ?? 0);
+                $approvedQty = $approvedQuantitiesRaw->has($itemId)
+                    ? (int) $approvedQuantitiesRaw->get($itemId)
+                    : $requestedQty;
+
+                if ($approvedQty === $requestedQty) {
+                    continue;
+                }
+
+                $existingRemarks = trim((string) ($item->Remarks ?? ''));
+                $newRemarks = $existingRemarks;
+                if ($reason !== '') {
+                    $newRemarks = trim(($existingRemarks !== '' ? $existingRemarks . ' | ' : '') . 'Shortfall reason: ' . $reason);
+                }
+
+                if ($approvedQty <= 0) {
+                    $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
+                    $item->save();
+                    $item->delete();
+                    continue;
+                }
+
+                $item->Quantity = $approvedQty;
+                $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
+                $item->save();
+            }
+
+            $transfer->update([
+                'ReleasingDecision' => 'approved',
+                'ReleasingApprovedCount' => $approvedCount,
+                'ReleasingDecisionReason' => $reason !== '' ? $reason : null,
+                'ReleasingReviewedByUserID' => (int) $user->UserID,
+                'ReleasingReviewedAt' => now(),
+            ]);
+
+            AssetAuditLog::createLog(
+                'property_transfer',
+                (int) $transfer->TransferID,
+                'releasing_approved',
+                (int) $user->UserID,
+                [
+                    'transfer_number' => $transfer->TransferNumber,
+                    'requested_count' => $requestedCount,
+                    'approved_count' => $approvedCount,
+                    'approved_quantities' => $approvedQuantitiesRaw->all(),
+                    'reason' => $reason !== '' ? $reason : null,
+                ]
+            );
+
+            return response()->json([
+                'message' => 'Transfer reviewed by releasing department',
+                'transfer' => $transfer->fresh([
+                    'requestedBy:UserID,FullName,DepartmentID',
+                    'requestedBy.department:DepartmentID,DepartmentName',
+                    'fromDepartment:DepartmentID,DepartmentName',
+                    'toDepartment:DepartmentID,DepartmentName',
+                    'fromEndUser:EndUserID,FullName,DepartmentID',
+                    'fromEndUser.department:DepartmentID,DepartmentName',
+                    'toEndUser:EndUserID,FullName,DepartmentID',
+                    'toEndUser.department:DepartmentID,DepartmentName',
+                    'releasingReviewedBy:UserID,FullName',
+                    'approvedBy:UserID,FullName',
+                    'completedBy:UserID,FullName',
+                    'items.inventoryDetail.unitOfMeasure',
+                    'items.inventoryDetail.propertyType',
+                    'items.inventoryDetail.inventory',
+                    'items.inventoryDetail.drDetail.article',
+                ]),
+            ]);
+        });
     }
 
     public function reject(Request $request, int $id)
@@ -328,6 +556,86 @@ class PropertyTransferController extends Controller
         return response()->json(['message' => 'Transfer rejected', 'transfer' => $transfer]);
     }
 
+    public function signReleasing(int $id)
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if (!$this->isPrivileged($roleName)) {
+            return response()->json(['message' => 'Only GSO/Admin can confirm releasing signature'], 403);
+        }
+
+        return DB::transaction(function () use ($id, $user) {
+            $transfer = PropertyTransfer::lockForUpdate()->findOrFail($id);
+
+            if ($transfer->Status !== 'approved') {
+                return response()->json(['message' => 'Releasing signature is only allowed for approved transfers'], 422);
+            }
+
+            if ($transfer->BorrowerSignedAt) {
+                return response()->json(['message' => 'Releasing signature already confirmed'], 422);
+            }
+
+            $transfer->update([
+                'BorrowerSignedAt' => now(),
+            ]);
+
+            AssetAuditLog::createLog(
+                'property_transfer',
+                (int) $transfer->TransferID,
+                'releasing_signed',
+                (int) $user->UserID,
+                ['transfer_number' => $transfer->TransferNumber]
+            );
+
+            return response()->json(['message' => 'Releasing signature confirmed', 'transfer' => $transfer]);
+        });
+    }
+
+    public function signReceiving(int $id)
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if ($roleName !== self::ROLE_DEPARTMENT_HEAD) {
+            return response()->json(['message' => 'Only receiving department can confirm receipt'], 403);
+        }
+
+        return DB::transaction(function () use ($id, $user) {
+            $transfer = PropertyTransfer::lockForUpdate()->findOrFail($id);
+
+            if ((int) ($user?->DepartmentID ?? 0) !== (int) $transfer->ToDepartmentID) {
+                return response()->json(['message' => 'Only the receiving department can confirm receipt'], 403);
+            }
+
+            if ($transfer->Status !== 'approved') {
+                return response()->json(['message' => 'Receiving signature is only allowed for approved transfers'], 422);
+            }
+
+            if (!$transfer->BorrowerSignedAt) {
+                return response()->json(['message' => 'GSO releasing signature is required before receiving can sign'], 422);
+            }
+
+            if ($transfer->BorrowingSignedAt) {
+                return response()->json(['message' => 'Receiving signature already confirmed'], 422);
+            }
+
+            $transfer->update([
+                'BorrowingSignedAt' => now(),
+            ]);
+
+            AssetAuditLog::createLog(
+                'property_transfer',
+                (int) $transfer->TransferID,
+                'receiving_signed',
+                (int) $user->UserID,
+                ['transfer_number' => $transfer->TransferNumber]
+            );
+
+            return response()->json(['message' => 'Receiving signature confirmed', 'transfer' => $transfer]);
+        });
+    }
+
     public function complete(Request $request, int $id)
     {
         $user = Auth::user();
@@ -350,13 +658,17 @@ class PropertyTransferController extends Controller
                 return response()->json(['message' => 'Only approved transfers can be completed'], 422);
             }
 
+            if (!$transfer->BorrowerSignedAt) {
+                return response()->json(['message' => 'GSO releasing signature must be confirmed before completion'], 422);
+            }
+
+            if (!$transfer->BorrowingSignedAt) {
+                return response()->json(['message' => 'Receiving signature must be confirmed before completion'], 422);
+            }
+
             $completionTime = now();
-            $borrowerSignedAt = $validated['borrower_signed_at']
-                ? Carbon::parse($validated['borrower_signed_at'])
-                : $completionTime;
-            $borrowingSignedAt = $validated['borrowing_signed_at']
-                ? Carbon::parse($validated['borrowing_signed_at'])
-                : $completionTime;
+            $borrowerSignedAt = Carbon::parse((string) $transfer->BorrowerSignedAt);
+            $borrowingSignedAt = Carbon::parse((string) $transfer->BorrowingSignedAt);
 
             foreach ($transfer->items as $item) {
                 $assignedProperty = AssignedProperty::where('InventoryDetailID', $item->InventoryDetailID)
