@@ -44,17 +44,20 @@ class PropertyTransferController extends Controller
             }
 
             $departmentId = (int) ($user?->DepartmentID ?? 0);
-            $query->where(function ($q) use ($user, $departmentId) {
-                $q->where('RequestedByUserID', (int) $user->UserID)
-                    ->orWhere('FromDepartmentID', $departmentId)
-                    ->orWhere('ToDepartmentID', $departmentId);
-            });
+            $userId = (int) ($user?->UserID ?? 0);
 
             $scope = $request->query('scope');
             if ($scope === 'incoming') {
-                $query->where('ToDepartmentID', $departmentId);
+                $query->where('FromDepartmentID', $departmentId)
+                    ->where('RequestedByUserID', '!=', $userId);
             } elseif ($scope === 'outgoing') {
-                $query->where('FromDepartmentID', $departmentId);
+                $query->where('RequestedByUserID', $userId);
+            } else {
+                $query->where(function ($q) use ($userId, $departmentId) {
+                    $q->where('RequestedByUserID', $userId)
+                        ->orWhere('FromDepartmentID', $departmentId)
+                        ->orWhere('ToDepartmentID', $departmentId);
+                });
             }
         }
 
