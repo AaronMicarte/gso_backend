@@ -24,6 +24,10 @@ class EndUser extends Model
         'IsActive',
     ];
 
+    protected $appends = [
+        'DepartmentName',
+    ];
+
     protected $casts = [
         'IsActive' => 'boolean',
         'CreatedDate' => 'datetime',
@@ -37,6 +41,11 @@ class EndUser extends Model
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'DepartmentID', 'DepartmentID');
+    }
+
+    public function getDepartmentNameAttribute(): ?string
+    {
+        return $this->department?->DepartmentName;
     }
 
     public function position(): BelongsTo

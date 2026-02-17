@@ -215,6 +215,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}/acknowledge', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledge']);
     });
 
+    // Property Transfer (PTR)
+    Route::prefix('property-transfers')->group(function () {
+        Route::get('', [\App\Http\Controllers\PropertyTransferController::class, 'index']);
+        Route::post('', [\App\Http\Controllers\PropertyTransferController::class, 'store']);
+        Route::get('available-items', [\App\Http\Controllers\PropertyTransferController::class, 'availableItems']);
+        Route::get('helpers/departments', [\App\Http\Controllers\PropertyTransferController::class, 'helperDepartments']);
+        Route::get('helpers/end-users', [\App\Http\Controllers\PropertyTransferController::class, 'helperEndUsers']);
+        Route::get('{id}', [\App\Http\Controllers\PropertyTransferController::class, 'show']);
+        Route::post('{id}/approve', [\App\Http\Controllers\PropertyTransferController::class, 'approve']);
+        Route::post('{id}/reject', [\App\Http\Controllers\PropertyTransferController::class, 'reject']);
+        Route::post('{id}/complete', [\App\Http\Controllers\PropertyTransferController::class, 'complete']);
+    });
+
     // Requisition and Issue Slip (RIS)
     Route::prefix('requisition-issue-slips')->group(function () {
         Route::get('', [RequisitionIssueSlipController::class, 'index']);

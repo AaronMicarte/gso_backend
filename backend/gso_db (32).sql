@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 15, 2026 at 12:41 PM
+-- Generation Time: Feb 16, 2026 at 07:26 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -153,6 +153,15 @@ CREATE TABLE `asset_audit_logs` (
   `CreatedAt` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `asset_audit_logs`
+--
+
+INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `PerformedBy`, `Details`, `IPAddress`, `UserAgent`, `CreatedAt`) VALUES
+(1, 'deliveryreceiptdetail', 27, 'Inspection update', 7, '{\"dr_id\":13,\"iar_id\":5,\"reason\":\"forgot to input maybe\",\"changes\":{\"Brand\":[null,\"BrandX\"],\"ModelNumber\":[null,\"ModelX\"]}}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '2026-02-15 11:53:12'),
+(2, 'property_transfer', 2, 'created', 6, '{\"transfer_number\":\"PTR-2026-0001\",\"from_department_id\":5,\"to_department_id\":3,\"items\":[14]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-16 13:59:30'),
+(3, 'property_transfer', 2, 'approved', 1, '{\"transfer_number\":\"PTR-2026-0001\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '2026-02-16 17:39:20');
+
 -- --------------------------------------------------------
 
 --
@@ -205,7 +214,7 @@ CREATE TABLE `assignedproperty` (
 --
 
 INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, `DepartmentID`, `PropertyCardNumber`, `Description`, `AssignedDate`, `PropertyStatusID`, `ConditionID`, `Remarks`, `CreatedDate`, `UpdatedDate`) VALUES
-(26, 1, 2, 5, 'PAR-2026-0001', 'good', '2026-02-14', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-14 03:03:37', '2026-02-14 03:03:37'),
+(26, 1, 2, 5, 'PAR-2026-0001', 'good', '2026-02-14', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-14 03:03:37', '2026-02-16 20:57:23'),
 (27, 2, 2, 5, 'PAR-2026-0001', 'good', '2026-02-14', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-14 03:03:37', '2026-02-14 03:03:37'),
 (28, 3, 2, 5, NULL, 'Monitor 24\"', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
 (29, 4, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
@@ -218,7 +227,16 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (36, 11, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
 (37, 12, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
 (38, 13, 2, 5, NULL, 'HDMI Cable', '2026-02-14', 1, 1, 'Auto-created on inspection', '2026-02-14 03:23:17', '2026-02-14 03:23:17'),
-(39, 14, 2, 5, NULL, 'maka bugnaw', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 17:28:48', '2026-02-15 17:28:48');
+(39, 14, 2, 5, 'PAR-2026-0002', 'maka bugnaw sa egg', '2026-02-16', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-15 17:28:48', '2026-02-16 15:26:49'),
+(40, 15, 2, 5, NULL, 'Office Chair', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 21:00:58', '2026-02-15 21:00:58'),
+(41, 16, 2, 5, NULL, 'Desk Lamp', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 21:00:58', '2026-02-15 21:00:58'),
+(42, 17, 2, 5, NULL, 'Desk Lamp', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 21:00:58', '2026-02-15 21:00:58'),
+(43, 18, 2, 5, NULL, 'Desk Lamp', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 21:00:58', '2026-02-15 21:00:58'),
+(44, 19, 2, 5, NULL, 'Desk Lamp', '2026-02-15', 1, 1, 'Auto-created on inspection', '2026-02-15 21:00:58', '2026-02-15 21:00:58'),
+(45, 20, 4, 3, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-16 21:47:19'),
+(46, 21, 4, 3, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-16 21:47:19'),
+(47, 22, 4, 3, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-16 21:47:19'),
+(48, 23, 4, 3, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-16 21:47:19');
 
 -- --------------------------------------------------------
 
@@ -297,11 +315,12 @@ INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `RequestedBy`
 (7, 'DR-2026-002', 'Tech Supplies Inc.', 3, 'PR-002', 'PO-002', 'INV-002', 3, '2026-02-14', 'Wireless peripherals for office use', 'inspected', '2026-02-13 18:03:36', 'dr_pictures/sample1.png', '2026-02-14 02:00:49', NULL),
 (8, 'DR-2026-003', 'Office Depot', 3, 'PR-003', 'PO-003', 'INV-003', 3, '2026-02-13', 'Stationery and office supplies', 'inspected', '2026-02-13 19:07:37', 'dr_pictures/sample2.png', '2026-02-14 02:00:49', NULL),
 (9, 'DR-2026-004', 'Global Electronics', 3, 'PR-004', 'PO-004', 'INV-004', 3, '2026-02-12', 'IT equipment for department', 'inspected', '2026-02-13 19:23:16', 'dr_pictures/sample3.png', '2026-02-14 02:00:49', NULL),
-(10, 'DR-2026-005', 'Stationery World', 3, 'PR-005', 'PO-005', 'INV-005', 3, '2026-02-11', 'Office furniture', 'pending', NULL, 'dr_pictures/sample4.png', '2026-02-14 02:00:49', NULL),
+(10, 'DR-2026-005', 'Stationery World', 3, 'PR-005', 'PO-005', 'INV-005', 3, '2026-02-11', 'Office furniture', 'inspected', '2026-02-15 13:00:58', 'dr_pictures/sample4.png', '2026-02-14 02:00:49', NULL),
 (11, 'DR-2026-006', 'Furniture Co.', 3, 'PR-006', 'PO-006', 'INV-006', 3, '2026-02-10', 'Filing cabinets and whiteboards', 'pending', NULL, 'dr_pictures/sample5.png', '2026-02-14 02:00:49', NULL),
 (12, 'DR-2026-007', 'IT Solutions Ltd.', 3, 'PR-007', 'PO-007', 'INV-007', 3, '2026-02-09', 'Laptop accessories', 'pending', NULL, 'dr_pictures/sample6.png', '2026-02-14 02:00:49', NULL),
 (13, 'dr21', 'as', 3, '1', '1', '1', 1, '2026-02-14', 'good', 'pending', NULL, 'dr_pictures/kjFLcgwgy0GWHXrIO1KdwSGSjQc6leDTT9ezmBls.jpg', '2026-02-14 14:14:58', NULL),
-(14, 'dr123', 'Cyron Suppliers', 3, '3', '3', '3', 1, '2026-02-15', 'goods', 'inspected', '2026-02-15 09:28:48', 'dr_pictures/4IhAGiGgGk8S5e37H1egfX4tnY0UhS5lz3q8Zys6.jpg', '2026-02-15 17:27:07', NULL);
+(14, 'dr123', 'Cyron Suppliers', 3, '3', '3', '3', 1, '2026-02-15', 'goods', 'inspected', '2026-02-15 09:28:48', 'dr_pictures/4IhAGiGgGk8S5e37H1egfX4tnY0UhS5lz3q8Zys6.jpg', '2026-02-15 17:27:07', NULL),
+(15, 'DR321', 'Cyron Suppliers', 6, '123', '123', '123', 1, '2026-02-16', 'good', 'inspected', '2026-02-16 13:47:19', 'dr_pictures/EB4Z6EMSxmPRtZvKuFfmICLI0gsADI6XWFFEdvzA.jpg', '2026-02-16 21:44:27', NULL);
 
 -- --------------------------------------------------------
 
@@ -337,14 +356,15 @@ INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ArticleID`, `ItemDes
 (18, 8, NULL, 'Ink Cartridges', 'HP', 'HP-564', NULL, 8, 15, 2, 300.00, 4500.00, 'inspected', NULL),
 (19, 9, NULL, 'Monitor 24\"', 'Dell', 'S2421H', 'DEL-S2421H-001', 7, 1, 2, 15000.00, 15000.00, 'inspected', NULL),
 (20, 9, NULL, 'HDMI Cable', 'Belkin', 'AV10115', NULL, 7, 10, 2, 200.00, 2000.00, 'inspected', NULL),
-(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 2, 5000.00, 5000.00, 'pending', NULL),
-(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 2, 1000.00, 6000.00, 'pending', NULL),
+(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 2, 5000.00, 5000.00, 'inspected', NULL),
+(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 2, 1000.00, 6000.00, 'inspected', NULL),
 (23, 11, NULL, 'Filing Cabinet', 'Hon', 'HFC42', 'HON-HFC42-001', 6, 1, 2, 8000.00, 8000.00, 'pending', NULL),
 (24, 11, NULL, 'Whiteboard', 'Quartet', 'QRT-792', NULL, 6, 2, 2, 3000.00, 6000.00, 'pending', NULL),
 (25, 12, NULL, 'Laptop Stand', 'Rain Design', 'mStand', 'RD-MST-001', 7, 1, 2, 1500.00, 1500.00, 'pending', NULL),
 (26, 12, NULL, 'USB Hub', 'Anker', '7-in-1', NULL, 7, 9, 2, 400.00, 3600.00, 'pending', NULL),
-(27, 13, NULL, 'Table', NULL, NULL, NULL, 6, 10, 7, 100.00, 1000.00, 'pending', NULL),
-(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 6, 1, 2, 200.00, 200.00, 'inspected', NULL);
+(27, 13, NULL, 'Table', 'BrandX', 'ModelX', NULL, 6, 10, 7, 100.00, 1000.00, 'pending', NULL),
+(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 6, 1, 2, 200.00, 200.00, 'inspected', NULL),
+(29, 15, 11, 'basta', 'haha', 'hehe', NULL, 11, 4, 2, 999.00, 3996.00, 'inspected', NULL);
 
 -- --------------------------------------------------------
 
@@ -423,8 +443,8 @@ CREATE TABLE `enduser` (
 --
 
 INSERT INTO `enduser` (`EndUserID`, `PositionID`, `DepartmentID`, `FullName`, `ContactNumber`, `Email`, `IsActive`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
-(1, 2, 5, 'Department Custodian', NULL, NULL, 1, '2026-02-11 22:25:58', '2026-02-11 22:25:58', NULL),
-(2, 2, 5, 'Chokoy Covid', NULL, NULL, 1, '2026-02-13 12:21:18', '2026-02-13 12:21:18', NULL);
+(2, 2, 5, 'Chokoy Covid', NULL, NULL, 1, '2026-02-13 12:21:18', '2026-02-13 12:21:18', NULL),
+(4, 2, 3, 'Cyron Micarte', NULL, NULL, 1, '2026-02-16 21:47:19', '2026-02-16 21:47:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -459,7 +479,13 @@ INSERT INTO `iardetail` (`IARDetailID`, `IARID`, `DRDetailID`, `PropertyTypeID`,
 (4, 2, 18, 8, 1, 15, 0, 'HP', 'HP-564', NULL, 1, 'good', NULL),
 (5, 3, 19, 7, 1, 1, 0, 'Dell', 'S2421H', 'DEL-S2421H-001', 0, 'good', NULL),
 (6, 3, 20, 7, 1, 10, 0, 'Belkin', 'AV10115', NULL, 1, 'good', NULL),
-(7, 4, 28, 6, 1, 1, 0, 'ambot', 'ambotnumber', '123', 0, NULL, NULL);
+(7, 4, 28, 6, 1, 1, 0, 'ambot', 'ambotnumber', '123', 0, NULL, NULL),
+(8, 5, 27, 6, 1, 9, 0, 'BrandX', 'ModelX', NULL, 1, NULL, 'forgot to input maybe'),
+(9, 5, 27, 6, 2, 0, 1, 'BrandX', 'ModelX', NULL, 1, 'putol isa ka tiil XD', 'forgot to input maybe'),
+(19, 6, 21, 6, 1, 1, 0, 'Herman Miller', 'Aeron', 'HM-AERON-001', 0, NULL, NULL),
+(20, 6, 22, 6, 1, 4, 0, 'IKEA', 'FLEKKE', NULL, 1, NULL, NULL),
+(21, 6, 22, 6, 2, 0, 2, 'IKEA', 'FLEKKE', NULL, 1, 'guba ang hehe', NULL),
+(22, 7, 29, 11, 1, 4, 0, 'haha', 'hehe', NULL, 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -596,7 +622,10 @@ INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `Inspect
 (1, 'IAR-2026-0001', 7, 7, 3, '2026-02-14', '2026-02-14', 'good', '2026-02-14 02:03:34', NULL),
 (2, 'IAR-2026-0002', 8, 7, NULL, '2026-02-14', NULL, 'good', '2026-02-14 03:07:34', NULL),
 (3, 'IAR-2026-0003', 9, 7, NULL, '2026-02-14', NULL, 'good', '2026-02-14 03:23:14', NULL),
-(4, 'IAR-2026-0004', 14, 7, NULL, '2026-02-15', NULL, 'a', '2026-02-15 17:28:46', NULL);
+(4, 'IAR-2026-0004', 14, 7, 3, '2026-02-15', '2026-02-16', 'a', '2026-02-15 17:28:46', NULL),
+(5, 'IAR-2026-0005', 13, 7, NULL, '2026-02-15', NULL, 'good', '2026-02-15 19:53:12', NULL),
+(6, 'IAR-2026-0006', 10, 7, NULL, '2026-02-15', NULL, 'good', '2026-02-15 19:55:03', NULL),
+(7, 'IAR-2026-0007', 15, 7, NULL, '2026-02-16', NULL, 'good', '2026-02-16 21:47:18', NULL);
 
 -- --------------------------------------------------------
 
@@ -713,7 +742,22 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (77, 1, '2026-02-14 14:10:38', 'Login', '127.0.0.1'),
 (78, 1, '2026-02-15 13:49:55', 'Login', '127.0.0.1'),
 (79, 1, '2026-02-15 16:55:03', 'Login', '127.0.0.1'),
-(80, 7, '2026-02-15 17:27:48', 'Login', '127.0.0.1');
+(80, 7, '2026-02-15 17:27:48', 'Login', '127.0.0.1'),
+(81, 1, '2026-02-16 14:46:00', 'Login', '127.0.0.1'),
+(82, 3, '2026-02-16 15:23:26', 'Login', '127.0.0.1'),
+(83, 1, '2026-02-16 16:23:43', 'Login', '127.0.0.1'),
+(84, 3, '2026-02-16 16:28:20', 'Login', '127.0.0.1'),
+(85, 1, '2026-02-16 17:23:38', 'Login', '127.0.0.1'),
+(86, 3, '2026-02-16 17:23:55', 'Login', '127.0.0.1'),
+(87, 3, '2026-02-16 21:44:35', 'Logout', '127.0.0.1'),
+(88, 7, '2026-02-16 21:44:41', 'FailedLogin', '127.0.0.1'),
+(89, 7, '2026-02-16 21:45:14', 'Login', '127.0.0.1'),
+(90, 7, '2026-02-16 21:47:33', 'Logout', '127.0.0.1'),
+(91, 6, '2026-02-16 21:48:28', 'Login', '127.0.0.1'),
+(92, 1, '2026-02-17 01:36:34', 'Login', '127.0.0.1'),
+(93, 3, '2026-02-17 01:37:10', 'Login', '127.0.0.1'),
+(94, 3, '2026-02-17 01:39:45', 'Logout', '127.0.0.1'),
+(95, 6, '2026-02-17 01:40:18', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -853,7 +897,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (125, '2026_02_12_000006_add_no_serial_to_iardetail', 37),
 (126, '2026_02_13_000001_add_acknowledged_by_to_propertyissuance_table', 37),
 (127, '2026_02_15_000001_create_articles_table', 38),
-(128, '2026_02_15_000002_add_article_id_to_deliveryreceiptdetail', 38);
+(128, '2026_02_15_000002_add_article_id_to_deliveryreceiptdetail', 38),
+(129, '2026_02_16_000010_create_property_transfer_tables', 39),
+(130, '2026_02_16_000020_rename_property_transfer_tables', 39),
+(131, '2026_02_17_000001_backfill_property_transfer_custodians', 40);
 
 -- --------------------------------------------------------
 
@@ -1063,7 +1110,9 @@ CREATE TABLE `propertyinventory` (
 INSERT INTO `propertyinventory` (`InventoryID`, `PropertyTypeID`, `UnitOfMeasureID`, `DRID`, `IARID`, `DateReceived`, `UnitCost`, `Remarks`, `CreatedDate`, `UpdatedDate`, `InventoryNumber`, `deleted_at`) VALUES
 (1, NULL, NULL, NULL, 1, '2026-02-14', NULL, 'Auto-ingested from IAR #IAR-2026-0001', '2026-02-14 03:03:36', NULL, 'INV-20260214-030336-1', NULL),
 (2, NULL, NULL, NULL, 3, '2026-02-14', NULL, 'Auto-ingested from IAR #IAR-2026-0003', '2026-02-14 03:23:17', NULL, 'INV-20260214-032317-3', NULL),
-(3, NULL, NULL, NULL, 4, '2026-02-15', NULL, 'Auto-ingested from IAR #IAR-2026-0004', '2026-02-15 17:28:48', NULL, 'INV-20260215-172848-4', NULL);
+(3, NULL, NULL, NULL, 4, '2026-02-15', NULL, 'Auto-ingested from IAR #IAR-2026-0004', '2026-02-15 17:28:48', NULL, 'INV-20260215-172848-4', NULL),
+(4, NULL, NULL, NULL, 6, '2026-02-15', NULL, 'Auto-ingested from IAR #IAR-2026-0006', '2026-02-15 21:00:58', NULL, 'INV-20260215-210058-6', NULL),
+(5, NULL, NULL, NULL, 7, '2026-02-16', NULL, 'Auto-ingested from IAR #IAR-2026-0007', '2026-02-16 21:47:19', NULL, 'INV-20260216-214719-7', NULL);
 
 -- --------------------------------------------------------
 
@@ -1114,7 +1163,16 @@ INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `Prop
 (11, 2, 7, NULL, 'HDMI Cable', '2026-000011', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
 (12, 2, 7, NULL, 'HDMI Cable', '2026-000012', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
 (13, 2, 7, NULL, 'HDMI Cable', '2026-000013', NULL, 1, 1, 1, 2, 200.00, 200.00, 6, 20, 1, 'Belkin', 'AV10115', 'good', '2026-02-14 03:23:17', NULL, NULL),
-(14, 3, 6, NULL, 'maka bugnaw', '2026-000014', '123', 1, 1, 1, 2, 200.00, 200.00, 7, 28, 1, 'ambot', 'ambotnumber', NULL, '2026-02-15 17:28:48', NULL, NULL);
+(14, 3, 6, NULL, 'maka bugnaw sa egg', '2026-000014', '123', 1, 0, 2, 2, 200.00, 200.00, 7, 28, 1, 'ambot', 'ambotnumber', NULL, '2026-02-15 17:28:48', '2026-02-16 15:26:49', NULL),
+(15, 4, 6, NULL, 'Office Chair', '2026-000015', 'HM-AERON-001', 1, 1, 1, 2, 5000.00, 5000.00, 19, 21, 1, 'Herman Miller', 'Aeron', NULL, '2026-02-15 21:00:58', NULL, NULL),
+(16, 4, 6, NULL, 'Desk Lamp', '2026-000016', NULL, 1, 1, 1, 2, 1000.00, 1000.00, 20, 22, 1, 'IKEA', 'FLEKKE', NULL, '2026-02-15 21:00:58', NULL, NULL),
+(17, 4, 6, NULL, 'Desk Lamp', '2026-000017', NULL, 1, 1, 1, 2, 1000.00, 1000.00, 20, 22, 1, 'IKEA', 'FLEKKE', NULL, '2026-02-15 21:00:58', NULL, NULL),
+(18, 4, 6, NULL, 'Desk Lamp', '2026-000018', NULL, 1, 1, 1, 2, 1000.00, 1000.00, 20, 22, 1, 'IKEA', 'FLEKKE', NULL, '2026-02-15 21:00:58', NULL, NULL),
+(19, 4, 6, NULL, 'Desk Lamp', '2026-000019', NULL, 1, 1, 1, 2, 1000.00, 1000.00, 20, 22, 1, 'IKEA', 'FLEKKE', NULL, '2026-02-15 21:00:58', NULL, NULL),
+(20, 5, 11, NULL, 'basta', '2026-000020', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
+(21, 5, 11, NULL, 'basta', '2026-000021', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
+(22, 5, 11, NULL, 'basta', '2026-000022', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
+(23, 5, 11, NULL, 'basta', '2026-000023', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1149,7 +1207,10 @@ CREATE TABLE `propertyissuance` (
 --
 
 INSERT INTO `propertyissuance` (`IssuanceID`, `RequestID`, `DRID`, `IssuedBy`, `IssuerSignature`, `IssuerSignatureSource`, `IssuedTo`, `IssuedToName`, `DocumentType`, `DocumentNumber`, `Status`, `DateIssued`, `Remarks`, `AcknowledgmentSignature`, `AcknowledgedAt`, `AcknowledgedBy`, `AcknowledgmentNotes`, `deleted_at`, `CreatedDate`) VALUES
-(1, NULL, 7, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0001', 'acknowledged', '2026-02-14', 'Auto-created from IAR acknowledgement', NULL, '2026-02-14 00:00:00', 3, NULL, NULL, '2026-02-14 03:03:36');
+(1, NULL, 7, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0001', 'acknowledged', '2026-02-14', 'Auto-created from IAR acknowledgement', NULL, '2026-02-14 00:00:00', 3, NULL, NULL, '2026-02-14 03:03:36'),
+(2, NULL, 14, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0002', 'acknowledged', '2026-02-16', 'Auto-created from IAR acknowledgement', NULL, '2026-02-16 00:00:00', 3, NULL, NULL, '2026-02-16 15:26:49'),
+(3, NULL, 8, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0003', 'pending_acknowledgment', '2026-02-14', 'Auto-created from inspection completion', NULL, NULL, NULL, NULL, NULL, '2026-02-16 17:51:05'),
+(4, NULL, 15, 7, NULL, NULL, 4, 'Cyron Micarte', 'PAR', 'PAR-2026-0004', 'pending_acknowledgment', '2026-02-16', 'Auto-created from inspection completion', NULL, NULL, NULL, NULL, NULL, '2026-02-16 21:47:19');
 
 -- --------------------------------------------------------
 
@@ -1177,7 +1238,14 @@ CREATE TABLE `propertyissuancedetail` (
 
 INSERT INTO `propertyissuancedetail` (`IssuanceDetailID`, `IssuanceID`, `RequestDetailID`, `ItemDescription`, `Unit`, `InventoryDetailID`, `QuantityIssued`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 1, NULL, 'Wireless Mouse', 'unit', 1, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 19:03:36', '2026-02-13 19:03:36', NULL),
-(2, 1, NULL, 'Keyboard', 'unit', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 19:03:37', '2026-02-13 19:03:37', NULL);
+(2, 1, NULL, 'Keyboard', 'unit', 2, 1, 'Auto-created from IAR acknowledgement', '2026-02-13 19:03:37', '2026-02-13 19:03:37', NULL),
+(3, 2, NULL, 'maka bugnaw', 'unit', 14, 1, 'Auto-created from IAR acknowledgement', '2026-02-16 07:26:49', '2026-02-16 07:26:49', NULL),
+(4, 3, NULL, 'Printer Paper', NULL, NULL, 20, 'Auto-created from inspection completion', '2026-02-16 09:51:05', '2026-02-16 09:51:05', NULL),
+(5, 3, NULL, 'Ink Cartridges', NULL, NULL, 15, 'Auto-created from inspection completion', '2026-02-16 09:51:05', '2026-02-16 09:51:05', NULL),
+(6, 4, NULL, 'basta', 'unit', 20, 1, 'Auto-created from inspection completion', '2026-02-16 13:47:19', '2026-02-16 13:47:19', NULL),
+(7, 4, NULL, 'basta', 'unit', 21, 1, 'Auto-created from inspection completion', '2026-02-16 13:47:19', '2026-02-16 13:47:19', NULL),
+(8, 4, NULL, 'basta', 'unit', 22, 1, 'Auto-created from inspection completion', '2026-02-16 13:47:19', '2026-02-16 13:47:19', NULL),
+(9, 4, NULL, 'basta', 'unit', 23, 1, 'Auto-created from inspection completion', '2026-02-16 13:47:20', '2026-02-16 13:47:20', NULL);
 
 -- --------------------------------------------------------
 
@@ -1227,32 +1295,110 @@ INSERT INTO `propertystatus` (`PropertyStatusID`, `StatusName`, `Description`, `
 --
 
 CREATE TABLE `propertytransfer` (
-  `TransferID` int(11) NOT NULL,
-  `TransferNumber` varchar(50) DEFAULT NULL,
-  `RequestedBy` int(11) NOT NULL,
-  `ApprovedBy` int(11) DEFAULT NULL,
-  `TransferDate` date NOT NULL,
-  `Status` varchar(50) DEFAULT 'Pending',
+  `TransferID` bigint(20) UNSIGNED NOT NULL,
+  `TransferNumber` varchar(50) NOT NULL,
+  `RequestedByUserID` int(11) NOT NULL,
+  `FromDepartmentID` int(11) NOT NULL,
+  `ToDepartmentID` int(11) NOT NULL,
+  `FromEndUserID` int(11) DEFAULT NULL,
+  `ToEndUserID` int(11) DEFAULT NULL,
+  `Reason` text DEFAULT NULL,
+  `Status` enum('pending','approved','rejected','completed','cancelled') NOT NULL DEFAULT 'pending',
+  `ApprovedByUserID` int(11) DEFAULT NULL,
+  `ApprovedAt` timestamp NULL DEFAULT NULL,
+  `CompletedByUserID` int(11) DEFAULT NULL,
+  `CompletedAt` timestamp NULL DEFAULT NULL,
+  `BorrowerSignedAt` timestamp NULL DEFAULT NULL,
+  `BorrowingSignedAt` timestamp NULL DEFAULT NULL,
+  `GsoNotes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `propertytransfer`
+--
+
+INSERT INTO `propertytransfer` (`TransferID`, `TransferNumber`, `RequestedByUserID`, `FromDepartmentID`, `ToDepartmentID`, `FromEndUserID`, `ToEndUserID`, `Reason`, `Status`, `ApprovedByUserID`, `ApprovedAt`, `CompletedByUserID`, `CompletedAt`, `BorrowerSignedAt`, `BorrowingSignedAt`, `GsoNotes`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(6, 'PTR-2026-0001', 3, 5, 2, 2, 2, 'Office relocation and equipment redistribution for improved workflow efficiency', 'approved', 1, '2026-02-15 18:16:18', NULL, NULL, NULL, NULL, 'Transfer approved pending completion of physical handover documentation', '2026-02-14 18:16:18', '2026-02-15 18:16:18', NULL),
+(7, 'PTR-2026-0002', 1, 2, 17, 2, 2, 'Equipment transfer to support health department operations and compliance requirements', 'completed', 1, '2026-02-13 18:16:18', 1, '2026-02-15 18:16:18', '2026-02-15 19:16:18', '2026-02-15 20:16:18', 'Transfer completed successfully with all required signatures obtained and inventory updated', '2026-02-12 18:16:18', '2026-02-15 18:16:18', NULL),
+(8, 'PTR-2026-0003', 2, 17, 1, 2, 2, 'IT equipment consolidation for better maintenance and technical support coverage', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2026-02-15 18:16:18', '2026-02-15 18:16:18', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `propertytransferdetails`
+--
+
+CREATE TABLE `propertytransferdetails` (
+  `TransferItemID` bigint(20) UNSIGNED NOT NULL,
+  `TransferID` bigint(20) UNSIGNED NOT NULL,
+  `InventoryDetailID` int(11) NOT NULL,
+  `Quantity` int(11) NOT NULL DEFAULT 1,
   `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp()
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `propertytransferdetails`
+--
+
+INSERT INTO `propertytransferdetails` (`TransferItemID`, `TransferID`, `InventoryDetailID`, `Quantity`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 6, 1, 1, 'Working condition, includes original packaging and documentation', '2026-02-14 18:16:18', '2026-02-14 18:16:18', NULL),
+(2, 6, 2, 1, 'Excellent condition, all keys functional, includes USB receiver', '2026-02-14 18:16:18', '2026-02-14 18:16:18', NULL),
+(3, 7, 3, 1, 'Perfect working condition with stand and all cables included', '2026-02-12 18:16:18', '2026-02-15 18:16:18', NULL),
+(4, 7, 4, 1, 'New condition, 6ft length, supports 4K resolution', '2026-02-12 18:16:18', '2026-02-15 18:16:18', NULL),
+(5, 7, 5, 1, 'Good condition, tested and verified working properly', '2026-02-12 18:16:18', '2026-02-15 18:16:18', NULL),
+(6, 8, 6, 1, 'Standard condition, functional with no visible damage', '2026-02-15 18:16:18', '2026-02-15 18:16:18', NULL),
+(7, 8, 7, 1, 'Serviceable condition, requires careful handling during transport', '2026-02-15 18:16:18', '2026-02-15 18:16:18', NULL),
+(8, 8, 14, 1, 'Operational condition, includes warranty documentation and service manual', '2026-02-15 18:16:18', '2026-02-15 18:16:18', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `propertytransferdetails_test_tmp`
+--
+
+CREATE TABLE `propertytransferdetails_test_tmp` (
+  `TransferItemID` bigint(20) UNSIGNED NOT NULL,
+  `TransferID` bigint(20) UNSIGNED NOT NULL,
+  `InventoryDetailID` int(11) DEFAULT NULL,
+  `Quantity` int(11) DEFAULT 1,
+  `Remarks` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `propertytransferdetail`
+-- Table structure for table `propertytransfer_test_tmp`
 --
 
-CREATE TABLE `propertytransferdetail` (
-  `TransferDetailID` int(11) NOT NULL,
-  `TransferID` int(11) NOT NULL,
-  `PropertyID` int(11) NOT NULL,
+CREATE TABLE `propertytransfer_test_tmp` (
+  `TransferID` bigint(20) UNSIGNED NOT NULL,
+  `TransferNumber` varchar(50) NOT NULL,
+  `RequestedByUserID` int(11) NOT NULL,
   `FromDepartmentID` int(11) NOT NULL,
   `ToDepartmentID` int(11) NOT NULL,
-  `FromEndUserID` int(11) NOT NULL,
-  `ToEndUserID` int(11) NOT NULL,
-  `ConditionID` int(11) NOT NULL,
-  `Remarks` text DEFAULT NULL
+  `FromEndUserID` int(11) DEFAULT NULL,
+  `ToEndUserID` int(11) DEFAULT NULL,
+  `Reason` text DEFAULT NULL,
+  `Status` enum('pending','approved','rejected','completed','cancelled') DEFAULT 'pending',
+  `ApprovedByUserID` int(11) DEFAULT NULL,
+  `ApprovedAt` timestamp NULL DEFAULT NULL,
+  `CompletedByUserID` int(11) DEFAULT NULL,
+  `CompletedAt` timestamp NULL DEFAULT NULL,
+  `BorrowerSignedAt` timestamp NULL DEFAULT NULL,
+  `BorrowingSignedAt` timestamp NULL DEFAULT NULL,
+  `GsoNotes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -1325,7 +1471,16 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 (11, 38, 13, 5, 'http://localhost:3000/qr/scan/38?h=ebab3c505b56', '2026-02-14 03:23:17'),
 (12, 26, 1, 5, 'http://localhost:3000/qr/scan/26?h=3d36c6fca545', '2026-02-15 14:24:06'),
 (13, 27, 2, 5, 'http://localhost:3000/qr/scan/27?h=0a46d32f47b3', '2026-02-15 14:24:06'),
-(14, 39, 14, 5, 'http://localhost:3000/qr/scan/39?h=dcf9cac0f3f6', '2026-02-15 17:28:48');
+(14, 39, 14, 5, 'http://localhost:3000/qr/scan/39?h=dcf9cac0f3f6', '2026-02-15 17:28:48'),
+(15, 40, 15, 5, 'http://localhost:3000/qr/scan/40?h=116f7c7f1e62', '2026-02-15 21:00:58'),
+(16, 41, 16, 5, 'http://localhost:3000/qr/scan/41?h=bd121e766ed1', '2026-02-15 21:00:58'),
+(17, 42, 17, 5, 'http://localhost:3000/qr/scan/42?h=479c8d8c55ce', '2026-02-15 21:00:58'),
+(18, 43, 18, 5, 'http://localhost:3000/qr/scan/43?h=3b97c4650685', '2026-02-15 21:00:58'),
+(19, 44, 19, 5, 'http://localhost:3000/qr/scan/44?h=4c2eebf5b925', '2026-02-15 21:00:58'),
+(20, 45, 20, 3, 'http://localhost:3000/qr/scan/45?h=c4807b78f58a', '2026-02-16 21:47:19'),
+(21, 46, 21, 3, 'http://localhost:3000/qr/scan/46?h=46cc4d5d18b8', '2026-02-16 21:47:19'),
+(22, 47, 22, 3, 'http://localhost:3000/qr/scan/47?h=8193cece10b6', '2026-02-16 21:47:19'),
+(23, 48, 23, 3, 'http://localhost:3000/qr/scan/48?h=f858bdc6ffb7', '2026-02-16 21:47:19');
 
 -- --------------------------------------------------------
 
@@ -1428,8 +1583,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('8ePVN3r9whJrl85hZNjlAtF9josP7d7hoIII4aFv', 7, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiVERKdVFSSm5YSGFxbnl6RTdrdTBSMUNrWlh0NzZaR09sRW9vVnFraSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NztzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZlcFNCNklHYk9YZjduV3Z3VURiMnVKanIyRkpPMDdja2JlMWNIRkRrTjkvaFNxbnUucVFlIjt9', 1771155527),
-('Yrhqz3WBZCngqeJkhwbL6osdgLoQascMi9VJYOIx', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiNGV4QThjRURFYlRhcWxOejlhUWNzbkw0ck9wQ0tIRDJqeXdtWjhOdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1771155520);
+('croMkKZCKfGjnuear2ZEdxsNS7tE754CMADUtXS3', 6, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiaGFxeEo2VG53YXNBRVkyQjN2QjhQT1FRYlZDdjNqV2N3WGhNTWN3NCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Nzg6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktdHJhbnNmZXJzP3BhZ2U9MSZwZXJfcGFnZT0xNSZzY29wZT1vdXRnb2luZyI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NjtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJEEvWENxcDhsWHJOQ2VZdlE2bE95VXU2RFh4Ylh0SjNaN0ZKLjVxMzlxOXlBU3pBMUVZSUtTIjt9', 1771266280),
+('IBbV9iUoaa9FSgIH8tEIAkNtIQFT5aRXthk3QdGQ', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiZm0wamVOV2pRU09VWE13bzJkU1lEOTNXNDFvSkg3TXhTeU53VkV3bSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjM6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktdHJhbnNmZXJzP3BhZ2U9MSZwZXJfcGFnZT0xNSI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZ0Z0dSaEpPUG8uNUZXbXliZUxMdi5aOHdYOC9ILkJpZlpOWnNLNTF1UUlzSkhVQi9rLmg2Ijt9', 1771266337);
 
 -- --------------------------------------------------------
 
@@ -1517,7 +1672,12 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (70, 7, 'Trusted Device', '2c0525b19f7270a6e7f3657a158b285e01996b4edf204d627b46defae1b3ae6d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', NULL, '2026-03-16 02:02:31', '2026-02-14 02:02:31', NULL),
 (71, 3, 'Trusted Device', '82746d46bbd7ce40036f8f295e288bcdb3227d5e7191d8d0d05f1b5d1d7cc054', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', NULL, '2026-03-16 02:19:13', '2026-02-14 02:19:13', NULL),
 (72, 7, 'Trusted Device', '642de790709ab5971be725309f5f512eaba73a0ba03652b2273ad5afa1a101ca', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', '2026-02-15 17:27:48', '2026-03-16 03:06:09', '2026-02-14 03:06:09', '2026-02-15 17:27:48'),
-(73, 1, 'Trusted Device', 'cfd5365b942e96cf46e6f5e8874a318ecf0425ea20d81ccfadf29081d23c1539', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-15 16:55:03', '2026-03-16 14:10:38', '2026-02-14 14:10:38', '2026-02-15 16:55:03');
+(73, 1, 'Trusted Device', 'cfd5365b942e96cf46e6f5e8874a318ecf0425ea20d81ccfadf29081d23c1539', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-17 01:36:34', '2026-03-16 14:10:38', '2026-02-14 14:10:38', '2026-02-17 01:36:34'),
+(74, 3, 'Trusted Device', '6e3bdf8e9a3935ad9c927d30414a029fca01aec8b5ff079e4b53a11622133b83', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', '2026-02-16 17:23:55', '2026-03-18 15:23:26', '2026-02-16 15:23:26', '2026-02-16 17:23:55'),
+(75, 7, 'Trusted Device', '893427bf27a08ffa4fb82a1cda655b1480802abcbd45f4f1984c1fda7378771d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-18 21:45:14', '2026-02-16 21:45:14', NULL),
+(76, 6, 'Trusted Device', 'c224bbf6d2ebacb016811f062d9bd7783290b02044ea36684305cae16415c45b', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-18 21:48:28', '2026-02-16 21:48:28', NULL),
+(77, 3, 'Trusted Device', '26c14e5e8e09721d3b47658d66741052aaceef50c58d394bcdef833ab2e50462', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-19 01:37:10', '2026-02-17 01:37:10', NULL),
+(78, 6, 'Trusted Device', '1e20d0b1d2b88c1e4f4b9c7964be85f9a4658559c3823c96720b550f496490da', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-19 01:40:18', '2026-02-17 01:40:18', NULL);
 
 -- --------------------------------------------------------
 
@@ -2027,22 +2187,38 @@ ALTER TABLE `propertystatus`
 --
 ALTER TABLE `propertytransfer`
   ADD PRIMARY KEY (`TransferID`),
-  ADD UNIQUE KEY `TransferNumber` (`TransferNumber`),
-  ADD KEY `RequestedBy` (`RequestedBy`),
-  ADD KEY `ApprovedBy` (`ApprovedBy`);
+  ADD UNIQUE KEY `propertytransfer_transfernumber_unique` (`TransferNumber`),
+  ADD KEY `propertytransfer_status_fromdepartmentid_index` (`Status`,`FromDepartmentID`),
+  ADD KEY `propertytransfer_status_todepartmentid_index` (`Status`,`ToDepartmentID`),
+  ADD KEY `propertytransfer_requestedbyuserid_index` (`RequestedByUserID`),
+  ADD KEY `propertytransfer_fromdepartmentid_foreign` (`FromDepartmentID`),
+  ADD KEY `propertytransfer_todepartmentid_foreign` (`ToDepartmentID`),
+  ADD KEY `propertytransfer_fromenduserid_foreign` (`FromEndUserID`),
+  ADD KEY `propertytransfer_toenduserid_foreign` (`ToEndUserID`),
+  ADD KEY `propertytransfer_approvedbyuserid_foreign` (`ApprovedByUserID`),
+  ADD KEY `propertytransfer_completedbyuserid_foreign` (`CompletedByUserID`);
 
 --
--- Indexes for table `propertytransferdetail`
+-- Indexes for table `propertytransferdetails`
 --
-ALTER TABLE `propertytransferdetail`
-  ADD PRIMARY KEY (`TransferDetailID`),
-  ADD KEY `TransferID` (`TransferID`),
-  ADD KEY `PropertyID` (`PropertyID`),
-  ADD KEY `FromDepartmentID` (`FromDepartmentID`),
-  ADD KEY `ToDepartmentID` (`ToDepartmentID`),
-  ADD KEY `FromEndUserID` (`FromEndUserID`),
-  ADD KEY `ToEndUserID` (`ToEndUserID`),
-  ADD KEY `ConditionID` (`ConditionID`);
+ALTER TABLE `propertytransferdetails`
+  ADD PRIMARY KEY (`TransferItemID`),
+  ADD KEY `propertytransferdetails_inventorydetailid_index` (`InventoryDetailID`),
+  ADD KEY `propertytransferdetails_transferid_foreign` (`TransferID`);
+
+--
+-- Indexes for table `propertytransferdetails_test_tmp`
+--
+ALTER TABLE `propertytransferdetails_test_tmp`
+  ADD PRIMARY KEY (`TransferItemID`),
+  ADD KEY `InventoryDetailID` (`InventoryDetailID`),
+  ADD KEY `fk_ptd_transfer` (`TransferID`);
+
+--
+-- Indexes for table `propertytransfer_test_tmp`
+--
+ALTER TABLE `propertytransfer_test_tmp`
+  ADD PRIMARY KEY (`TransferID`);
 
 --
 -- Indexes for table `propertytype`
@@ -2195,7 +2371,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -2207,7 +2383,7 @@ ALTER TABLE `asset_request_signatures`
 -- AUTO_INCREMENT for table `assignedproperty`
 --
 ALTER TABLE `assignedproperty`
-  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 --
 -- AUTO_INCREMENT for table `condition`
@@ -2219,13 +2395,13 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
-  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `department`
@@ -2243,13 +2419,13 @@ ALTER TABLE `disposalmethod`
 -- AUTO_INCREMENT for table `enduser`
 --
 ALTER TABLE `enduser`
-  MODIFY `EndUserID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `EndUserID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `iardetail`
 --
 ALTER TABLE `iardetail`
-  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `IARDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `iar_signatures`
@@ -2285,7 +2461,7 @@ ALTER TABLE `iiruprecommendation`
 -- AUTO_INCREMENT for table `inspectionacceptancereport`
 --
 ALTER TABLE `inspectionacceptancereport`
-  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `inventorycustodianslip`
@@ -2297,13 +2473,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=129;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=132;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -2363,25 +2539,25 @@ ALTER TABLE `propertydisposaldetail`
 -- AUTO_INCREMENT for table `propertyinventory`
 --
 ALTER TABLE `propertyinventory`
-  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `propertyinventorydetail`
 --
 ALTER TABLE `propertyinventorydetail`
-  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `propertyissuance`
 --
 ALTER TABLE `propertyissuance`
-  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `propertyissuancedetail`
 --
 ALTER TABLE `propertyissuancedetail`
-  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `propertyreceived`
@@ -2399,13 +2575,25 @@ ALTER TABLE `propertystatus`
 -- AUTO_INCREMENT for table `propertytransfer`
 --
 ALTER TABLE `propertytransfer`
-  MODIFY `TransferID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT for table `propertytransferdetail`
+-- AUTO_INCREMENT for table `propertytransferdetails`
 --
-ALTER TABLE `propertytransferdetail`
-  MODIFY `TransferDetailID` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `propertytransferdetails`
+  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- AUTO_INCREMENT for table `propertytransferdetails_test_tmp`
+--
+ALTER TABLE `propertytransferdetails_test_tmp`
+  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `propertytransfer_test_tmp`
+--
+ALTER TABLE `propertytransfer_test_tmp`
+  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `propertytype`
@@ -2417,7 +2605,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `qrcode`
 --
 ALTER TABLE `qrcode`
-  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `requisition_issue_slips`
@@ -2447,7 +2635,7 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -2572,6 +2760,32 @@ ALTER TABLE `iardetail`
 ALTER TABLE `icsdetail`
   ADD CONSTRAINT `icsdetail_ibfk_1` FOREIGN KEY (`ICSID`) REFERENCES `inventorycustodianslip` (`ICSID`),
   ADD CONSTRAINT `icsdetail_ibfk_2` FOREIGN KEY (`PropertyID`) REFERENCES `assignedproperty` (`PropertyID`);
+
+--
+-- Constraints for table `propertytransfer`
+--
+ALTER TABLE `propertytransfer`
+  ADD CONSTRAINT `propertytransfer_approvedbyuserid_foreign` FOREIGN KEY (`ApprovedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertytransfer_completedbyuserid_foreign` FOREIGN KEY (`CompletedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertytransfer_fromdepartmentid_foreign` FOREIGN KEY (`FromDepartmentID`) REFERENCES `department` (`DepartmentID`),
+  ADD CONSTRAINT `propertytransfer_fromenduserid_foreign` FOREIGN KEY (`FromEndUserID`) REFERENCES `enduser` (`EndUserID`),
+  ADD CONSTRAINT `propertytransfer_requestedbyuserid_foreign` FOREIGN KEY (`RequestedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertytransfer_todepartmentid_foreign` FOREIGN KEY (`ToDepartmentID`) REFERENCES `department` (`DepartmentID`),
+  ADD CONSTRAINT `propertytransfer_toenduserid_foreign` FOREIGN KEY (`ToEndUserID`) REFERENCES `enduser` (`EndUserID`);
+
+--
+-- Constraints for table `propertytransferdetails`
+--
+ALTER TABLE `propertytransferdetails`
+  ADD CONSTRAINT `propertytransferdetails_inventorydetailid_foreign` FOREIGN KEY (`InventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`),
+  ADD CONSTRAINT `propertytransferdetails_transferid_foreign` FOREIGN KEY (`TransferID`) REFERENCES `propertytransfer` (`TransferID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `propertytransferdetails_test_tmp`
+--
+ALTER TABLE `propertytransferdetails_test_tmp`
+  ADD CONSTRAINT `fk_ptd_inv` FOREIGN KEY (`InventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`),
+  ADD CONSTRAINT `fk_ptd_transfer` FOREIGN KEY (`TransferID`) REFERENCES `propertytransfer_test_tmp` (`TransferID`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
