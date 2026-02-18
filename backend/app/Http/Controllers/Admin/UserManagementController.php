@@ -160,6 +160,32 @@ class UserManagementController extends Controller
         ]);
     }
 
+    public function toggleMfa(Request $request, int $id)
+    {
+        $this->assertAdmin($request);
+
+        $validated = $request->validate([
+            'MFAEnabled' => 'required|boolean',
+        ]);
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $user->MFAEnabled = $validated['MFAEnabled'] ? 1 : 0;
+        $user->UpdatedDate = Carbon::now();
+        $user->save();
+
+        return response()->json([
+            'message' => 'User MFA updated',
+            'user' => [
+                'UserID' => $user->UserID,
+                'MFAEnabled' => (bool) $user->MFAEnabled,
+            ],
+        ]);
+    }
+
     public function resendActivation(Request $request, int $id)
     {
         $this->assertAdmin($request);

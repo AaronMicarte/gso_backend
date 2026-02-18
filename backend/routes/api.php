@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('users', [UserManagementController::class, 'index']);
         Route::post('users', [UserManagementController::class, 'store']);
         Route::patch('users/{id}/active', [UserManagementController::class, 'toggleActive']);
+        Route::patch('users/{id}/mfa', [UserManagementController::class, 'toggleMfa']);
         Route::post('users/{id}/resend-activation', [UserManagementController::class, 'resendActivation']);
 
         // Master Data routes (structured approach)
