@@ -19,6 +19,8 @@ class PropertyTransferController extends Controller
     private const ROLE_ADMIN = 'Admin';
     private const ROLE_GSO_STAFF = 'GSO Staff';
     private const ROLE_DEPARTMENT_HEAD = 'Department Head';
+    private const PROPERTY_STATUS_FOR_ISSUANCE = 1;
+    private const PROPERTY_STATUS_ISSUED = 2;
 
     public function index(Request $request)
     {
@@ -194,8 +196,14 @@ class PropertyTransferController extends Controller
         }
 
         return DB::transaction(function () use ($validated, $user, $inventoryDetailIds) {
-            $assignedProperties = AssignedProperty::whereIn('InventoryDetailID', $inventoryDetailIds)
+            $assignedProperties = AssignedProperty::query()
+                ->join('propertyinventorydetail as pid', 'assignedproperty.InventoryDetailID', '=', 'pid.InventoryDetailID')
+                ->whereIn('assignedproperty.InventoryDetailID', $inventoryDetailIds)
                 ->lockForUpdate()
+                ->select([
+                    'assignedproperty.*',
+                    'pid.PropertyStatusID as InventoryPropertyStatusID',
+                ])
                 ->get();
 
             if ($assignedProperties->count() !== $inventoryDetailIds->count()) {
@@ -208,6 +216,10 @@ class PropertyTransferController extends Controller
                 }
                 if ((int) $assignedProperty->EndUserID !== (int) $validated['from_end_user_id']) {
                     return response()->json(['message' => 'All items must belong to the selected borrower (current holder)'], 422);
+                }
+                if ((int) $assignedProperty->PropertyStatusID !== self::PROPERTY_STATUS_ISSUED
+                    || (int) ($assignedProperty->InventoryPropertyStatusID ?? 0) !== self::PROPERTY_STATUS_ISSUED) {
+                    return response()->json(['message' => 'Only issued items can be transferred'], 422);
                 }
             }
 
@@ -403,6 +415,7 @@ class PropertyTransferController extends Controller
                 $assignedCount = AssignedProperty::where('InventoryDetailID', (int) $item->InventoryDetailID)
                     ->where('DepartmentID', (int) $transfer->FromDepartmentID)
                     ->where('EndUserID', (int) $transfer->FromEndUserID)
+                    ->where('PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
                     ->count();
 
                 $availableFromInventory = (int) (($item->inventoryDetail?->QuantityAvailable
@@ -672,15 +685,23 @@ class PropertyTransferController extends Controller
 
             foreach ($transfer->items as $item) {
                 $assignedProperty = AssignedProperty::where('InventoryDetailID', $item->InventoryDetailID)
+                    ->where('DepartmentID', (int) $transfer->FromDepartmentID)
+                    ->where('EndUserID', (int) $transfer->FromEndUserID)
+                    ->where('PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$assignedProperty) {
-                    return response()->json(['message' => 'Assigned property missing for an item'], 422);
+                    return response()->json(['message' => 'Assigned issued property missing for an item or custody mismatch'], 422);
                 }
 
-                if ((int) $assignedProperty->DepartmentID !== (int) $transfer->FromDepartmentID) {
-                    return response()->json(['message' => 'Assigned property department mismatch'], 422);
+                $inventoryDetail = DB::table('propertyinventorydetail')
+                    ->where('InventoryDetailID', (int) $item->InventoryDetailID)
+                    ->lockForUpdate()
+                    ->first(['InventoryDetailID', 'PropertyStatusID']);
+
+                if (!$inventoryDetail || (int) ($inventoryDetail->PropertyStatusID ?? 0) !== self::PROPERTY_STATUS_ISSUED) {
+                    return response()->json(['message' => 'Only issued items can be transferred'], 422);
                 }
 
                 $assignedProperty->fill([
@@ -688,9 +709,13 @@ class PropertyTransferController extends Controller
                     'DepartmentID' => (int) $transfer->ToDepartmentID,
                     'PropertyCardNumber' => $transfer->TransferNumber,
                     'AssignedDate' => $completionTime->toDateString(),
-                    'PropertyStatusID' => 2,
+                    'PropertyStatusID' => self::PROPERTY_STATUS_ISSUED,
                 ]);
                 $assignedProperty->save();
+
+                DB::table('propertyinventorydetail')
+                    ->where('InventoryDetailID', (int) $item->InventoryDetailID)
+                    ->update(['PropertyStatusID' => self::PROPERTY_STATUS_ISSUED]);
 
                 $this->updateQrCodeForAssignedProperty($assignedProperty);
 
@@ -774,6 +799,8 @@ class PropertyTransferController extends Controller
                 'd.DepartmentName',
                 'eu.FullName as EndUserName',
             ])
+            ->where('assignedproperty.PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
+            ->where('pid.PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
             ->whereNotIn('assignedproperty.InventoryDetailID', $openTransferIds);
 
         if ($departmentId) {
