@@ -18,6 +18,8 @@ class Article extends Model
     protected $fillable = [
         'ArticleName',
         'Description',
+        'PropertyTypeID',
+        'DefaultUnitOfMeasureID',
         'IsActive',
     ];
 
@@ -27,6 +29,16 @@ class Article extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
     ];
+
+    public function propertyType()
+    {
+        return $this->belongsTo(\App\Models\MasterData\PropertyType::class, 'PropertyTypeID', 'PropertyTypeID');
+    }
+
+    public function defaultUnitOfMeasure()
+    {
+        return $this->belongsTo(\App\Models\MasterData\UnitOfMeasure::class, 'DefaultUnitOfMeasureID', 'UnitOfMeasureID');
+    }
 
     /**
      * Scope for active articles only

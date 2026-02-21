@@ -11,6 +11,7 @@ use App\Models\Procurement\IarSignature;
 use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\MasterData\Condition;
 use App\Models\Auth\User;
+use App\Models\AssetAuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -265,8 +266,9 @@ class InspectionAcceptanceReportController extends Controller
             ]);
 
             // Create details
+            $iarDetailIds = [];
             foreach ($request->details as $detail) {
-                IARDetail::create([
+                $createdDetail = IARDetail::create([
                     'IARID' => $iar->IARID,
                     'DRDetailID' => $detail['dr_detail_id'],
                     'PropertyTypeID' => $detail['property_type_id'],
@@ -278,6 +280,8 @@ class InspectionAcceptanceReportController extends Controller
                     'VerifiedSerial' => $detail['verified_serial'] ?? null,
                     'Remarks' => $detail['remarks'] ?? null,
                 ]);
+
+                $iarDetailIds[] = (int) $createdDetail->IARDetailID;
             }
 
             // Require inspected signature when InspectedBy is provided
@@ -361,6 +365,36 @@ class InspectionAcceptanceReportController extends Controller
             }
 
             DB::commit();
+
+            $actorId = (int) (AuthFacade::id() ?? 0);
+            if ($actorId > 0) {
+                AssetAuditLog::createLog(
+                    'inspection_acceptance_report',
+                    (int) $iar->IARID,
+                    'created',
+                    $actorId,
+                    [
+                        'iar_number' => $iar->IARNumber,
+                        'dr_id' => (int) $iar->DRID,
+                        'inspected_by' => (int) ($iar->InspectedBy ?? 0),
+                        'accepted_by' => (int) ($iar->AcceptedBy ?? 0),
+                        'details' => $iarDetailIds,
+                    ]
+                );
+
+                foreach ($iarDetailIds as $iarDetailId) {
+                    AssetAuditLog::createLog(
+                        'iar_detail',
+                        (int) $iarDetailId,
+                        'created',
+                        $actorId,
+                        [
+                            'iar_id' => (int) $iar->IARID,
+                            'iar_number' => $iar->IARNumber,
+                        ]
+                    );
+                }
+            }
 
             return response()->json([
                 'success' => true,

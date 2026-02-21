@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Inventory\PropertyInventory;
 use App\Models\Inventory\PropertyInventoryDetail;
+use App\Models\PropertyIssuanceDetail;
+use App\Models\PropertyTransferItem;
+use App\Models\AssetAuditLog;
 use App\Models\Procurement\InspectionAcceptanceReport;
+use App\Models\Procurement\IARDetail;
 use App\Models\Procurement\PropertyReceived;
 use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\MasterData\PropertyStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 use App\Models\AssignedProperty;
 use App\Models\QrCode;
 
@@ -414,6 +419,8 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Inventory detail not found'], 404);
         }
 
+        $beforeDescription = $detail->Description;
+
         $validator = Validator::make($request->all(), [
             'Description' => 'nullable|string|max:255',
         ]);
@@ -429,7 +436,372 @@ class InventoryController extends Controller
         $detail->UpdatedDate = now();
         $detail->save();
 
+        $afterDescription = $detail->Description;
+        if ($beforeDescription !== $afterDescription) {
+            $userId = (int) (Auth::id() ?? 0);
+            if ($userId > 0) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $detail->InventoryDetailID,
+                    'description_updated',
+                    $userId,
+                    [
+                        'before' => $beforeDescription,
+                        'after' => $afterDescription,
+                    ]
+                );
+            }
+        }
+
         return response()->json(['message' => 'Inventory detail updated successfully', 'detail' => $detail]);
+    }
+
+    // GET /api/admin/inventory/details/{id}/history
+    public function detailHistory($id)
+    {
+        $detail = PropertyInventoryDetail::with([
+            'inventory',
+            'drDetail.deliveryReceipt.requestedByUser',
+            'drDetail.deliveryReceipt.receivedByUser',
+            'propertyType',
+            'propertyStatus',
+            'condition',
+        ])->find($id);
+
+        if (!$detail) {
+            return response()->json(['message' => 'Inventory detail not found'], 404);
+        }
+
+        $history = [];
+
+        $pushEvent = function (
+            string $type,
+            string $action,
+            string $title,
+            ?string $description,
+            ?string $occurredAt,
+            ?array $actor,
+            ?array $meta = null
+        ) use (&$history) {
+            if (!$occurredAt) {
+                return;
+            }
+
+            $history[] = [
+                'type' => $type,
+                'action' => $action,
+                'title' => $title,
+                'description' => $description,
+                'occurred_at' => $occurredAt,
+                'actor' => $actor,
+                'meta' => $meta,
+            ];
+        };
+
+        $drDetail = $detail->drDetail;
+        if ($drDetail && $drDetail->deliveryReceipt) {
+            $dr = $drDetail->deliveryReceipt;
+            $drActor = $dr->receivedByUser
+                ? ['id' => (int) $dr->receivedByUser->UserID, 'name' => (string) $dr->receivedByUser->FullName]
+                : null;
+            $drDescriptionParts = array_filter([
+                $dr->DRNumber ? 'DR ' . $dr->DRNumber : null,
+                $dr->SupplierName ? 'Supplier: ' . $dr->SupplierName : null,
+                $dr->DateReceived ? 'Date received: ' . $dr->DateReceived : null,
+            ]);
+            $pushEvent(
+                'delivery_receipt',
+                'created',
+                'Delivery receipt recorded',
+                implode(' | ', $drDescriptionParts) ?: null,
+                $dr->CreatedDate ?? $dr->DateReceived,
+                $drActor,
+                [
+                    'dr_id' => (int) $dr->DRID,
+                    'dr_number' => $dr->DRNumber,
+                    'supplier' => $dr->SupplierName,
+                ]
+            );
+        }
+
+        $iarDetail = null;
+        if (!empty($detail->SourceIARDetailID)) {
+            $iarDetail = IARDetail::with(['iar.inspectedByUser', 'iar.acceptedByUser'])
+                ->find((int) $detail->SourceIARDetailID);
+        }
+
+        if (!$iarDetail && !empty($detail->SourceDRDetailID)) {
+            $iarDetail = IARDetail::with(['iar.inspectedByUser', 'iar.acceptedByUser'])
+                ->where('DRDetailID', (int) $detail->SourceDRDetailID)
+                ->orderByDesc('IARDetailID')
+                ->first();
+        }
+
+        if ($iarDetail && $iarDetail->iar) {
+            $iar = $iarDetail->iar;
+            if (!empty($iar->DateInspected)) {
+                $inspectedBy = $iar->inspectedByUser
+                    ? ['id' => (int) $iar->inspectedByUser->UserID, 'name' => (string) $iar->inspectedByUser->FullName]
+                    : null;
+                $pushEvent(
+                    'inspection',
+                    'inspected',
+                    'Inspection completed',
+                    $iar->IARNumber ? 'IAR ' . $iar->IARNumber : null,
+                    (string) $iar->DateInspected,
+                    $inspectedBy,
+                    [
+                        'iar_id' => (int) $iar->IARID,
+                        'iar_number' => $iar->IARNumber,
+                    ]
+                );
+            }
+
+            if (!empty($iar->DateAccepted)) {
+                $acceptedBy = $iar->acceptedByUser
+                    ? ['id' => (int) $iar->acceptedByUser->UserID, 'name' => (string) $iar->acceptedByUser->FullName]
+                    : null;
+                $pushEvent(
+                    'inspection',
+                    'accepted',
+                    'Inspection accepted',
+                    $iar->IARNumber ? 'IAR ' . $iar->IARNumber : null,
+                    (string) $iar->DateAccepted,
+                    $acceptedBy,
+                    [
+                        'iar_id' => (int) $iar->IARID,
+                        'iar_number' => $iar->IARNumber,
+                    ]
+                );
+            }
+        }
+
+        $inventoryCreatedAt = $detail->CreatedDate ?? $detail->inventory?->CreatedDate;
+        $inventoryDescriptionParts = array_filter([
+            $detail->inventory?->InventoryNumber ? 'Inventory ' . $detail->inventory->InventoryNumber : null,
+            $detail->PropertyNumber ? 'Property # ' . $detail->PropertyNumber : null,
+        ]);
+        $pushEvent(
+            'inventory',
+            'created',
+            'Inventory item created',
+            implode(' | ', $inventoryDescriptionParts) ?: null,
+            $inventoryCreatedAt,
+            null,
+            [
+                'inventory_id' => (int) $detail->InventoryID,
+                'inventory_detail_id' => (int) $detail->InventoryDetailID,
+            ]
+        );
+
+        $issuanceDetails = PropertyIssuanceDetail::with([
+            'issuance.issuedBy',
+            'issuance.issuedTo',
+            'issuance.deliveryReceipt',
+            'issuance.request',
+        ])
+            ->where('InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->orderBy('IssuanceDetailID')
+            ->get();
+
+        foreach ($issuanceDetails as $issuanceDetail) {
+            $issuance = $issuanceDetail->issuance;
+            if (!$issuance) {
+                continue;
+            }
+
+            $issuedBy = $issuance->issuedBy
+                ? ['id' => (int) $issuance->issuedBy->UserID, 'name' => (string) $issuance->issuedBy->FullName]
+                : null;
+            $issuedToName = $issuance->issuedTo?->FullName ?? $issuance->IssuedToName ?? null;
+            $issueDescriptionParts = array_filter([
+                $issuance->DocumentNumber ? $issuance->DocumentNumber : null,
+                $issuance->DocumentType ? $issuance->DocumentType : null,
+                $issuedToName ? 'Issued to: ' . $issuedToName : null,
+            ]);
+
+            $pushEvent(
+                'issuance',
+                'issued',
+                'Issued for accountability',
+                implode(' | ', $issueDescriptionParts) ?: null,
+                $issuance->DateIssued ? (string) $issuance->DateIssued : $issuance->CreatedDate,
+                $issuedBy,
+                [
+                    'issuance_id' => (int) $issuance->IssuanceID,
+                    'document_number' => $issuance->DocumentNumber,
+                    'document_type' => $issuance->DocumentType,
+                    'status' => $issuance->Status,
+                ]
+            );
+
+            if (!empty($issuance->AcknowledgedAt)) {
+                $acknowledgedBy = $issuance->AcknowledgedBy
+                    ? ['id' => (int) $issuance->AcknowledgedBy, 'name' => (string) ($issuedToName ?? 'Acknowledged')]
+                    : null;
+                $pushEvent(
+                    'issuance',
+                    'acknowledged',
+                    'Acknowledged by custodian',
+                    $issuance->DocumentNumber ? $issuance->DocumentNumber : null,
+                    (string) $issuance->AcknowledgedAt,
+                    $acknowledgedBy,
+                    [
+                        'issuance_id' => (int) $issuance->IssuanceID,
+                        'document_number' => $issuance->DocumentNumber,
+                    ]
+                );
+            }
+        }
+
+        $transferItems = PropertyTransferItem::with([
+            'transfer.requestedBy',
+            'transfer.fromDepartment',
+            'transfer.toDepartment',
+            'transfer.fromEndUser',
+            'transfer.toEndUser',
+            'transfer.releasingReviewedBy',
+            'transfer.approvedBy',
+            'transfer.completedBy',
+        ])
+            ->where('InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->orderBy('TransferItemID')
+            ->get();
+
+        foreach ($transferItems as $transferItem) {
+            $transfer = $transferItem->transfer;
+            if (!$transfer) {
+                continue;
+            }
+
+            $transferBaseMeta = [
+                'transfer_id' => (int) $transfer->TransferID,
+                'transfer_number' => $transfer->TransferNumber,
+                'from_department' => $transfer->fromDepartment?->DepartmentName,
+                'to_department' => $transfer->toDepartment?->DepartmentName,
+                'from_end_user' => $transfer->fromEndUser?->FullName,
+                'to_end_user' => $transfer->toEndUser?->FullName,
+            ];
+
+            if (!empty($transfer->created_at)) {
+                $requestedBy = $transfer->requestedBy
+                    ? ['id' => (int) $transfer->requestedBy->UserID, 'name' => (string) $transfer->requestedBy->FullName]
+                    : null;
+                $pushEvent(
+                    'transfer',
+                    'requested',
+                    'Transfer requested',
+                    $transfer->TransferNumber ? 'PTR ' . $transfer->TransferNumber : null,
+                    (string) $transfer->created_at,
+                    $requestedBy,
+                    $transferBaseMeta
+                );
+            }
+
+            if (!empty($transfer->ReleasingReviewedAt)) {
+                $reviewedBy = $transfer->releasingReviewedBy
+                    ? ['id' => (int) $transfer->releasingReviewedBy->UserID, 'name' => (string) $transfer->releasingReviewedBy->FullName]
+                    : null;
+                $decision = $transfer->ReleasingDecision ?? 'reviewed';
+                $pushEvent(
+                    'transfer',
+                    'releasing_' . $decision,
+                    'Releasing review ' . $decision,
+                    $transfer->ReleasingDecisionReason ? 'Reason: ' . $transfer->ReleasingDecisionReason : null,
+                    (string) $transfer->ReleasingReviewedAt,
+                    $reviewedBy,
+                    $transferBaseMeta
+                );
+            }
+
+            if (!empty($transfer->ApprovedAt)) {
+                $approvedBy = $transfer->approvedBy
+                    ? ['id' => (int) $transfer->approvedBy->UserID, 'name' => (string) $transfer->approvedBy->FullName]
+                    : null;
+                $action = $transfer->Status === 'rejected' ? 'rejected' : 'approved';
+                $pushEvent(
+                    'transfer',
+                    $action,
+                    $transfer->Status === 'rejected' ? 'Transfer rejected' : 'Transfer approved',
+                    $transfer->GsoNotes ?? null,
+                    (string) $transfer->ApprovedAt,
+                    $approvedBy,
+                    $transferBaseMeta
+                );
+            }
+
+            if (!empty($transfer->BorrowerSignedAt)) {
+                $pushEvent(
+                    'transfer',
+                    'releasing_signed',
+                    'Releasing signature confirmed',
+                    null,
+                    (string) $transfer->BorrowerSignedAt,
+                    null,
+                    $transferBaseMeta
+                );
+            }
+
+            if (!empty($transfer->BorrowingSignedAt)) {
+                $pushEvent(
+                    'transfer',
+                    'receiving_signed',
+                    'Receiving signature confirmed',
+                    null,
+                    (string) $transfer->BorrowingSignedAt,
+                    null,
+                    $transferBaseMeta
+                );
+            }
+
+            if (!empty($transfer->CompletedAt)) {
+                $completedBy = $transfer->completedBy
+                    ? ['id' => (int) $transfer->completedBy->UserID, 'name' => (string) $transfer->completedBy->FullName]
+                    : null;
+                $pushEvent(
+                    'transfer',
+                    'completed',
+                    'Transfer completed',
+                    null,
+                    (string) $transfer->CompletedAt,
+                    $completedBy,
+                    $transferBaseMeta
+                );
+            }
+        }
+
+        $auditLogs = AssetAuditLog::with('performer')
+            ->where('EntityType', 'inventory_detail')
+            ->where('EntityID', (int) $detail->InventoryDetailID)
+            ->orderBy('CreatedAt')
+            ->get();
+
+        foreach ($auditLogs as $log) {
+            $performer = $log->performer
+                ? ['id' => (int) $log->performer->UserID, 'name' => (string) $log->performer->FullName]
+                : null;
+
+            $actionLabel = ucwords(str_replace('_', ' ', (string) $log->Action));
+
+            $pushEvent(
+                'audit',
+                (string) $log->Action,
+                $actionLabel !== '' ? $actionLabel : 'Audit entry',
+                null,
+                $log->CreatedAt ? $log->CreatedAt->toISOString() : null,
+                $performer,
+                is_array($log->Details) ? $log->Details : null
+            );
+        }
+
+        usort($history, function (array $a, array $b) {
+            return strcmp((string) $a['occurred_at'], (string) $b['occurred_at']);
+        });
+
+        return response()->json([
+            'inventory_detail_id' => (int) $detail->InventoryDetailID,
+            'history' => $history,
+        ]);
     }
 
     // POST /api/admin/inventory/backfill-qr-codes - Generate QR codes for issued items that don't have them

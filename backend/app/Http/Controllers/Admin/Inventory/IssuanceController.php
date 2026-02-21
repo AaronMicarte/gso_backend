@@ -10,6 +10,7 @@ use App\Models\Inventory\PropertyIssuanceDetail;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\AssignedProperty;
 use App\Models\EndUser;
+use App\Models\AssetAuditLog;
 
 class IssuanceController extends Controller
 {
@@ -130,6 +131,22 @@ class IssuanceController extends Controller
                     $assignedProperty->save();
                 } else {
                     $assignedProperty = AssignedProperty::create($assignedPayload);
+                }
+
+                $actorId = (int) ($request->input('issued_by') ?? 0);
+                if ($actorId > 0) {
+                    AssetAuditLog::createLog(
+                        'inventory_detail',
+                        (int) $inventoryDetail->InventoryDetailID,
+                        'issued',
+                        $actorId,
+                        [
+                            'issuance_id' => (int) $issuance->IssuanceID,
+                            'document_number' => $issuance->IssuanceID,
+                            'issued_to' => (int) $issuedTo,
+                            'issued_to_type' => $issuedToType,
+                        ]
+                    );
                 }
             }
 

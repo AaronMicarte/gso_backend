@@ -13,11 +13,15 @@ class ArticleResource extends JsonResource
             'id' => $this->ArticleID,
             'name' => $this->ArticleName,
             'description' => $this->Description,
+            'property_type_id' => $this->PropertyTypeID,
+            'default_unit_of_measure_id' => $this->DefaultUnitOfMeasureID,
             'is_active' => $this->IsActive,
             'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
             'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
             'is_deleted' => $this->trashed(),
+            'property_type' => $this->whenLoaded('propertyType'),
+            'default_unit_of_measure' => $this->whenLoaded('defaultUnitOfMeasure'),
         ];
     }
 }

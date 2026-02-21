@@ -258,6 +258,23 @@ class PropertyTransferController extends Controller
                 ]
             );
 
+            foreach ($inventoryDetailIds as $inventoryDetailId) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $inventoryDetailId,
+                    'transfer_requested',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                        'from_department_id' => (int) $transfer->FromDepartmentID,
+                        'to_department_id' => (int) $transfer->ToDepartmentID,
+                        'from_end_user_id' => (int) $transfer->FromEndUserID,
+                        'to_end_user_id' => (int) $transfer->ToEndUserID,
+                    ]
+                );
+            }
+
             $transfer->load([
                 'requestedBy:UserID,FullName,DepartmentID',
                 'requestedBy.department:DepartmentID,DepartmentName',
@@ -311,6 +328,20 @@ class PropertyTransferController extends Controller
             (int) $user->UserID,
             ['transfer_number' => $transfer->TransferNumber]
         );
+
+            $transfer->loadMissing('items');
+            foreach ($transfer->items as $item) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_approved',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                    ]
+                );
+            }
 
         return response()->json(['message' => 'Transfer approved', 'transfer' => $transfer]);
     }
@@ -377,6 +408,20 @@ class PropertyTransferController extends Controller
                         'reason' => $reason,
                     ]
                 );
+
+                foreach ($transfer->items as $item) {
+                    AssetAuditLog::createLog(
+                        'inventory_detail',
+                        (int) $item->InventoryDetailID,
+                        'transfer_releasing_rejected',
+                        (int) $user->UserID,
+                        [
+                            'transfer_id' => (int) $transfer->TransferID,
+                            'transfer_number' => $transfer->TransferNumber,
+                            'reason' => $reason,
+                        ]
+                    );
+                }
 
                 return response()->json([
                     'message' => 'Transfer rejected by releasing department',
@@ -510,6 +555,20 @@ class PropertyTransferController extends Controller
                 ]
             );
 
+            foreach ($transfer->items as $item) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_releasing_approved',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                        'approved_count' => $approvedCount,
+                    ]
+                );
+            }
+
             return response()->json([
                 'message' => 'Transfer reviewed by releasing department',
                 'transfer' => $transfer->fresh([
@@ -566,6 +625,21 @@ class PropertyTransferController extends Controller
             ['transfer_number' => $transfer->TransferNumber]
         );
 
+            $transfer->loadMissing('items');
+            foreach ($transfer->items as $item) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_rejected',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                        'notes' => $validated['notes'] ?? null,
+                    ]
+                );
+            }
+
         return response()->json(['message' => 'Transfer rejected', 'transfer' => $transfer]);
     }
 
@@ -600,6 +674,20 @@ class PropertyTransferController extends Controller
                 (int) $user->UserID,
                 ['transfer_number' => $transfer->TransferNumber]
             );
+
+            $transfer->loadMissing('items');
+            foreach ($transfer->items as $item) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_releasing_signed',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                    ]
+                );
+            }
 
             return response()->json(['message' => 'Releasing signature confirmed', 'transfer' => $transfer]);
         });
@@ -644,6 +732,20 @@ class PropertyTransferController extends Controller
                 (int) $user->UserID,
                 ['transfer_number' => $transfer->TransferNumber]
             );
+
+            $transfer->loadMissing('items');
+            foreach ($transfer->items as $item) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_receiving_signed',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                    ]
+                );
+            }
 
             return response()->json(['message' => 'Receiving signature confirmed', 'transfer' => $transfer]);
         });
@@ -730,6 +832,21 @@ class PropertyTransferController extends Controller
                         'inventory_detail_id' => (int) $item->InventoryDetailID,
                         'from_department_id' => (int) $transfer->FromDepartmentID,
                         'to_department_id' => (int) $transfer->ToDepartmentID,
+                    ]
+                );
+
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_completed',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                        'from_department_id' => (int) $transfer->FromDepartmentID,
+                        'to_department_id' => (int) $transfer->ToDepartmentID,
+                        'from_end_user_id' => (int) $transfer->FromEndUserID,
+                        'to_end_user_id' => (int) $transfer->ToEndUserID,
                     ]
                 );
             }

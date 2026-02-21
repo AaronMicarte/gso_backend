@@ -593,6 +593,23 @@ class PropertyIssuanceController extends Controller
                                 }
 
                                 $this->ensureQrCodeForDetail($invDetail, $assignedProperty);
+
+                                $actorId = (int) (Auth::id() ?? 0);
+                                if ($actorId > 0) {
+                                    AssetAuditLog::createLog(
+                                        'inventory_detail',
+                                        (int) $invDetail->InventoryDetailID,
+                                        'issued',
+                                        $actorId,
+                                        [
+                                            'issuance_id' => (int) $issuance->IssuanceID,
+                                            'document_number' => $issuance->DocumentNumber,
+                                            'document_type' => $issuance->DocumentType,
+                                            'issued_to' => $resolvedEndUser->FullName ?? null,
+                                            'request_id' => (int) $assetRequest->RequestID,
+                                        ]
+                                    );
+                                }
                             }
                         }
                     }
@@ -855,6 +872,23 @@ class PropertyIssuanceController extends Controller
                     }
 
                     $this->ensureQrCodeForDetail($detail, $assignedProperty);
+
+                    $actorId = (int) (Auth::id() ?? 0);
+                    if ($actorId > 0) {
+                        AssetAuditLog::createLog(
+                            'inventory_detail',
+                            (int) $detail->InventoryDetailID,
+                            'issued',
+                            $actorId,
+                            [
+                                'issuance_id' => (int) $issuance->IssuanceID,
+                                'document_number' => $issuance->DocumentNumber,
+                                'document_type' => $issuance->DocumentType,
+                                'issued_to' => $resolvedEndUser->FullName ?? null,
+                                'dr_id' => (int) $deliveryReceipt->DRID,
+                            ]
+                        );
+                    }
                 }
 
                 $issuances[] = $issuance;
@@ -2251,6 +2285,21 @@ class PropertyIssuanceController extends Controller
                 'IPAddress' => $request->ip(),
                 'UserAgent' => $request->userAgent(),
             ]);
+
+            $issuedDetails = PropertyIssuanceDetail::where('IssuanceID', (int) $issuance->IssuanceID)->get();
+            foreach ($issuedDetails as $detail) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $detail->InventoryDetailID,
+                    'acknowledged',
+                    (int) (Auth::id() ?? 0),
+                    [
+                        'issuance_id' => (int) $issuance->IssuanceID,
+                        'document_number' => $issuance->DocumentNumber,
+                        'acknowledged_by' => (int) $validated['acknowledged_by'],
+                    ]
+                );
+            }
 
             DB::commit();
 

@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\Procurement\DeliveryReceipt;
 use App\Models\Procurement\DeliveryReceiptDetail;
+use App\Models\MasterData\Article;
 use App\Models\MasterData\PropertyType;
 use App\Models\Auth\User;
 use App\Models\MasterData\Supplier;
+use App\Models\AssetAuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -126,14 +128,9 @@ class DeliveryReceiptController extends Controller
             // determine min allowed date (configurable years back) in Asia/Manila
             $backdateYears = (int) config('gso.dr_backdate_years', 5);
             $minDate = Carbon::now('Asia/Manila')->subYears($backdateYears)->toDateString();
-            $isAdmin = Auth::user() && (Auth::user()->UserRoleID ?? null) == 1;
 
-            $dateRules = 'required|date|before_or_equal:today';
-            // allow admin override via request flag 'override_past_limit'
-            $overrideRequested = $request->boolean('override_past_limit', false);
-            if (!($isAdmin && $overrideRequested)) {
-                $dateRules .= '|after_or_equal:' . $minDate;
-            }
+            // enforce backdate window in Asia/Manila
+            $dateRules = 'required|date|before_or_equal:today|after_or_equal:' . $minDate;
 
             $validator = Validator::make($request->all(), [
                 'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
@@ -157,7 +154,7 @@ class DeliveryReceiptController extends Controller
                     }),
                 ],
                 'date_received' => $dateRules,
-                'override_past_limit' => 'sometimes|boolean',
+
                 'remarks' => 'nullable|string',
                 'dr_picture' => 'required|file|mimes:jpeg,png,jpg,gif|max:2048',
                 'details' => 'required|array|min:1',
@@ -168,7 +165,7 @@ class DeliveryReceiptController extends Controller
                 'details.*.serial_number' => 'nullable|string|max:100',
                 'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
                 'details.*.quantity_delivered' => 'required|integer|min:1',
-                'details.*.unit_of_measure_id' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
+                'details.*.unit_of_measure_id' => 'nullable|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
             ], [
                 'dr_number.unique' => 'DR number already exists',
@@ -182,11 +179,22 @@ class DeliveryReceiptController extends Controller
 
             $validator->after(function ($validator) use ($request) {
                 $details = $request->input('details', []);
+                $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
+                $articleMap = Article::whereIn('ArticleID', $articleIds)
+                    ->get(['ArticleID', 'PropertyTypeID'])
+                    ->keyBy('ArticleID');
+
                 foreach ($details as $index => $detail) {
                     $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
                     $quantity = (int) ($detail['quantity_delivered'] ?? 0);
                     if ($serial !== '' && $quantity > 1) {
                         $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must be 1 when a serial number is provided');
+                    }
+
+                    $articleId = (int) ($detail['article_id'] ?? 0);
+                    $article = $articleMap->get($articleId);
+                    if ($article && (int) ($detail['property_type_id'] ?? 0) !== (int) $article->PropertyTypeID) {
+                        $validator->errors()->add("details.$index.property_type_id", 'Property type must match the selected article.');
                     }
                 }
             });
@@ -237,28 +245,75 @@ class DeliveryReceiptController extends Controller
             ]);
 
             // Create details
-            foreach ($request->details as $detail) {
-                DeliveryReceiptDetail::create([
+            $details = $request->details ?? [];
+            $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
+            $articleMap = Article::whereIn('ArticleID', $articleIds)
+                ->get(['ArticleID', 'PropertyTypeID', 'DefaultUnitOfMeasureID'])
+                ->keyBy('ArticleID');
+            $detailIds = [];
+            foreach ($details as $detail) {
+                $article = $articleMap->get((int) $detail['article_id']);
+                if (!$article) {
+                    throw new \RuntimeException('Selected article was not found.');
+                }
+
+                $unitOfMeasureId = $detail['unit_of_measure_id'] ?? null;
+                if (!$unitOfMeasureId) {
+                    $unitOfMeasureId = $article->DefaultUnitOfMeasureID;
+                }
+
+                $createdDetail = DeliveryReceiptDetail::create([
                     'DRID' => $deliveryReceipt->DRID,
                     'ArticleID' => $detail['article_id'],
                     'ItemDescription' => $detail['item_description'],
                     'Brand' => $detail['brand'] ?? null,
                     'ModelNumber' => $detail['model_number'] ?? null,
                     'SerialNumber' => $detail['serial_number'] ?? null,
-                    'PropertyTypeID' => $detail['property_type_id'],
+                    'PropertyTypeID' => $article->PropertyTypeID,
                     'QuantityDelivered' => $detail['quantity_delivered'],
-                    'UnitOfMeasureID' => $detail['unit_of_measure_id'],
+                    'UnitOfMeasureID' => $unitOfMeasureId,
                     'UnitCost' => $detail['unit_cost'],
                     'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
                 ]);
+
+                $detailIds[] = (int) $createdDetail->DRDetailID;
             }
 
             DB::commit();
+
+            $actorId = (int) (Auth::id() ?? 0);
+            if ($actorId > 0) {
+                AssetAuditLog::createLog(
+                    'delivery_receipt',
+                    (int) $deliveryReceipt->DRID,
+                    'created',
+                    $actorId,
+                    [
+                        'dr_number' => $deliveryReceipt->DRNumber,
+                        'supplier' => $deliveryReceipt->SupplierName,
+                        'details' => $detailIds,
+                    ]
+                );
+
+                foreach ($detailIds as $detailId) {
+                    AssetAuditLog::createLog(
+                        'delivery_receipt_detail',
+                        (int) $detailId,
+                        'created',
+                        $actorId,
+                        [
+                            'dr_id' => (int) $deliveryReceipt->DRID,
+                            'dr_number' => $deliveryReceipt->DRNumber,
+                        ]
+                    );
+                }
+            }
 
             // Load relationships
             $deliveryReceipt->load([
                 'details.propertyType',
                 'details.unitOfMeasure',
+                'details.article',
                 'requestedByUser:UserID,FullName,DepartmentID',
                 'requestedByUser.department:DepartmentID,DepartmentName',
             ]);
@@ -294,6 +349,7 @@ class DeliveryReceiptController extends Controller
     {
         try {
             $deliveryReceipt = DeliveryReceipt::with([
+                    'details.article',
                     'details.propertyType',
                     'details.unitOfMeasure',
                     'requestedByUser:UserID,FullName,DepartmentID',
@@ -353,12 +409,7 @@ class DeliveryReceiptController extends Controller
             // For update: apply same backdate rules as store (use config)
             $backdateYears = (int) config('gso.dr_backdate_years', 5);
             $minDate = Carbon::now('Asia/Manila')->subYears($backdateYears)->toDateString();
-            $isAdmin = Auth::user() && (Auth::user()->UserRoleID ?? null) == 1;
-            $dateRules = 'required|date|before_or_equal:today';
-            $overrideRequested = $request->boolean('override_past_limit', false);
-            if (!($isAdmin && $overrideRequested)) {
-                $dateRules .= '|after_or_equal:' . $minDate;
-            }
+            $dateRules = 'required|date|before_or_equal:today|after_or_equal:' . $minDate;
 
             $validator = Validator::make($request->all(), [
                 'dr_number' => [
@@ -387,18 +438,18 @@ class DeliveryReceiptController extends Controller
                     })->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
                 'date_received' => $dateRules,
-                'override_past_limit' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
                 'dr_picture' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
                 'details' => 'required|array|min:1',
                 'details.*.dr_detail_id' => 'sometimes|integer|exists:deliveryreceiptdetail,DRDetailID', // Optional for updates
+                'details.*.article_id' => 'required|integer|exists:articles,ArticleID',
                 'details.*.item_description' => 'required|string|max:255',
                 'details.*.brand' => 'nullable|string|max:100',
                 'details.*.model_number' => 'nullable|string|max:100',
                 'details.*.serial_number' => 'nullable|string|max:100',
                 'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
                 'details.*.quantity_delivered' => 'required|integer|min:1',
-                'details.*.unit_of_measure_id' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
+                'details.*.unit_of_measure_id' => 'nullable|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
             ], [
                 'dr_number.unique' => 'DR number already exists',
@@ -411,11 +462,22 @@ class DeliveryReceiptController extends Controller
 
             $validator->after(function ($validator) use ($request) {
                 $details = $request->input('details', []);
+                $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
+                $articleMap = Article::whereIn('ArticleID', $articleIds)
+                    ->get(['ArticleID', 'PropertyTypeID'])
+                    ->keyBy('ArticleID');
+
                 foreach ($details as $index => $detail) {
                     $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
                     $quantity = (int) ($detail['quantity_delivered'] ?? 0);
                     if ($serial !== '' && $quantity > 1) {
                         $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must be 1 when a serial number is provided');
+                    }
+
+                    $articleId = (int) ($detail['article_id'] ?? 0);
+                    $article = $articleMap->get($articleId);
+                    if ($article && (int) ($detail['property_type_id'] ?? 0) !== (int) $article->PropertyTypeID) {
+                        $validator->errors()->add("details.$index.property_type_id", 'Property type must match the selected article.');
                     }
                 }
             });
@@ -476,16 +538,33 @@ class DeliveryReceiptController extends Controller
             }
 
             // Update existing details and insert new ones
-            foreach ($request->details as $detail) {
+            $details = $request->details ?? [];
+            $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
+            $articleMap = Article::whereIn('ArticleID', $articleIds)
+                ->get(['ArticleID', 'PropertyTypeID', 'DefaultUnitOfMeasureID'])
+                ->keyBy('ArticleID');
+
+            foreach ($details as $detail) {
+                $article = $articleMap->get((int) $detail['article_id']);
+                if (!$article) {
+                    throw new \RuntimeException('Selected article was not found.');
+                }
+
+                $unitOfMeasureId = $detail['unit_of_measure_id'] ?? null;
+                if (!$unitOfMeasureId) {
+                    $unitOfMeasureId = $article->DefaultUnitOfMeasureID;
+                }
+
                 $detailData = [
                     'DRID' => $deliveryReceipt->DRID,
+                    'ArticleID' => $detail['article_id'],
                     'ItemDescription' => $detail['item_description'],
                     'Brand' => $detail['brand'] ?? null,
                     'ModelNumber' => $detail['model_number'] ?? null,
                     'SerialNumber' => $detail['serial_number'] ?? null,
-                    'PropertyTypeID' => $detail['property_type_id'],
+                    'PropertyTypeID' => $article->PropertyTypeID,
                     'QuantityDelivered' => $detail['quantity_delivered'],
-                    'UnitOfMeasureID' => $detail['unit_of_measure_id'],
+                    'UnitOfMeasureID' => $unitOfMeasureId,
                     'UnitCost' => $detail['unit_cost'],
                     'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
                 ];
@@ -507,6 +586,7 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->load([
                 'details.propertyType',
                 'details.unitOfMeasure',
+                'details.article',
                 'requestedByUser:UserID,FullName,DepartmentID',
                 'requestedByUser.department:DepartmentID,DepartmentName',
             ]);

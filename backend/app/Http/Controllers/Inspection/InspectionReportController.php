@@ -884,6 +884,22 @@ class InspectionReportController extends Controller
                     'CreatedDate' => now(),
                 ]);
 
+                $actorId = (int) (Auth::id() ?? 0);
+                if ($actorId > 0) {
+                    AssetAuditLog::createLog(
+                        'inventory_detail',
+                        (int) $inventoryDetail->InventoryDetailID,
+                        'created_from_inspection',
+                        $actorId,
+                        [
+                            'inventory_id' => (int) $inventory->InventoryID,
+                            'iar_detail_id' => (int) $detail->IARDetailID,
+                            'dr_detail_id' => (int) $detail->DRDetailID,
+                            'property_number' => $propertyNumber,
+                        ]
+                    );
+                }
+
                 $assignedPayload = [
                     'InventoryDetailID' => $inventoryDetail->InventoryDetailID,
                     'EndUserID' => $endUser->EndUserID,

@@ -26,6 +26,8 @@ class UpdateArticleRequest extends FormRequest
         return [
             'ArticleName' => 'required|string|max:255|unique:articles,ArticleName,' . $articleId . ',ArticleID',
             'Description' => 'nullable|string|max:1000',
+            'PropertyTypeID' => 'required|integer|exists:propertytype,PropertyTypeID',
+            'DefaultUnitOfMeasureID' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
             'IsActive' => 'boolean',
         ];
     }
