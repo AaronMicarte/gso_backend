@@ -67,6 +67,22 @@ class InspectionAcceptanceReportController extends Controller
                 $query->where('IARNumber', 'like', '%' . $request->iar_number . '%');
             }
 
+            // new generic query parameter searches both IAR and DR numbers
+            if ($request->has('query')) {
+                $qval = $request->query;
+                $query->where(function ($q) use ($qval) {
+                    $q->where('IARNumber', 'like', '%' . $qval . '%')
+                      ->orWhereHas('deliveryReceipt', function ($q2) use ($qval) {
+                          $q2->where('DRNumber', 'like', '%' . $qval . '%');
+                      });
+                });
+            }
+
+            // Filter by status (pending / inspected)
+            if ($request->has('status')) {
+                $query->where('Status', $request->status);
+            }
+
             $iars = $query->orderBy('CreatedDate', 'desc')->paginate(15);
 
             // Ensure compatibility with older UIs that expect camelCase relation attributes

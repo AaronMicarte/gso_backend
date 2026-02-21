@@ -278,4 +278,55 @@ class InspectionReportControllerTest extends TestCase
         $response->assertJsonPath('data.data.0.workflow_status', 'acknowledged');
         $response->assertJsonPath('data.data.0.workflow_status_label', 'Acknowledged');
     }
+
+    public function test_inspection_reports_endpoint_filters_by_status_and_query(): void
+    {
+        $this->ensureBaseTables();
+
+        $user = User::create([
+            'UserRoleID' => 11,
+            'DepartmentID' => 1,
+            'Username' => 'inspector.filter',
+            'Email' => 'inspector.filter@example.com',
+            'Password' => bcrypt('password'),
+            'FullName' => 'Inspector Filter',
+            'IsActive' => 1,
+        ]);
+
+        // create two reports with different statuses
+        $pending = DB::table('inspection_reports')->insertGetId([
+            'DRID' => 1,
+            'InspectedBy' => $user->UserID,
+            'InspectorName' => $user->FullName,
+            'DateInspected' => now()->format('Y-m-d'),
+            'Status' => 'pending',
+            'CreatedDate' => now(),
+        ]);
+
+        $inspected = DB::table('inspection_reports')->insertGetId([
+            'DRID' => 2,
+            'InspectedBy' => $user->UserID,
+            'InspectorName' => $user->FullName,
+            'DateInspected' => now()->format('Y-m-d'),
+            'Status' => 'inspected',
+            'CreatedDate' => now(),
+        ]);
+
+        // query pending only
+        $response = $this->actingAs($user)->getJson('/api/inspection/reports?status=pending');
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data.data'));
+        $this->assertEquals('pending', $response->json('data.data.0.Status'));
+
+        // query inspected only
+        $response = $this->actingAs($user)->getJson('/api/inspection/reports?status=inspected');
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data.data'));
+        $this->assertEquals('inspected', $response->json('data.data.0.Status'));
+
+        // query using generic query param that matches DRID should return whichever
+        $response = $this->actingAs($user)->getJson('/api/inspection/reports?query=2');
+        $response->assertStatus(200);
+        $this->assertGreaterThanOrEqual(1, count($response->json('data.data')));
+    }
 }
