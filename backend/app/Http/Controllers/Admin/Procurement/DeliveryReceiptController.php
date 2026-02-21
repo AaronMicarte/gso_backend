@@ -76,10 +76,16 @@ class DeliveryReceiptController extends Controller
                     ->first(['Status']);
 
                 if ($issuance) {
+                    // do not consider a newly‑created issuance as fully "issued" –
+                    // keep the DR in the to_be_issued state until the issuance is
+                    // acknowledged by the recipient.  The previous logic set
+                    // `issued` even for pending_acknowledgment, which resulted in
+                    // delivery receipts appearing as already issued while they
+                    // were merely awaiting acknowledgement.
                     if ($issuance->Status === 'acknowledged') {
                         $workflowStatus = 'acknowledged';
                     } elseif ($issuance->Status === 'pending_acknowledgment') {
-                        $workflowStatus = 'issued';
+                        $workflowStatus = 'to_be_issued';
                     }
                 }
 
@@ -358,6 +364,47 @@ class DeliveryReceiptController extends Controller
                 ->findOrFail($id);
 
             $deliveryReceipt->inspection_status = $deliveryReceipt->InspectionStatus ?? 'pending';
+
+            // compute workflow_status/label just like index route so single-DR endpoints remain consistent
+            $workflowStatus = ($deliveryReceipt->InspectionStatus ?? 'pending') === 'inspected'
+                ? 'to_be_accepted'
+                : 'pending_inspection';
+
+            // check for accepted IAR
+            $iar = DB::table('inspectionacceptancereport')
+                ->where('DRID', $deliveryReceipt->DRID)
+                ->whereNull('deleted_at')
+                ->first(['IARID', 'DateAccepted']);
+
+            if ($iar && !empty($iar->DateAccepted)) {
+                $workflowStatus = 'to_be_issued';
+            }
+
+            // check for any issuance state
+            $issuance = DB::table('propertyissuance')
+                ->where('DRID', $deliveryReceipt->DRID)
+                ->whereNull('deleted_at')
+                ->orderByDesc('IssuanceID')
+                ->first(['Status']);
+
+            if ($issuance) {
+                if ($issuance->Status === 'acknowledged') {
+                    $workflowStatus = 'acknowledged';
+                } elseif ($issuance->Status === 'pending_acknowledgment') {
+                    $workflowStatus = 'to_be_issued';
+                }
+            }
+
+            $workflowLabels = [
+                'pending_inspection' => 'Pending inspection',
+                'to_be_accepted' => 'To be accepted',
+                'to_be_issued' => 'To be issued',
+                'issued' => 'Issued',
+                'acknowledged' => 'Acknowledged',
+            ];
+
+            $deliveryReceipt->workflow_status = $workflowStatus;
+            $deliveryReceipt->workflow_status_label = $workflowLabels[$workflowStatus] ?? 'Pending inspection';
 
             // Set receivedByUser explicitly
             $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);

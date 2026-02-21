@@ -210,4 +210,72 @@ class InspectionReportControllerTest extends TestCase
             'InspectionStatus' => 'inspected',
         ]);
     }
+
+    public function test_delivery_receipt_list_status_changes_with_issuance(): void
+    {
+        $this->ensureBaseTables();
+
+        // create an admin user (role 1) so we can call the DR list
+        $user = User::create([
+            'UserRoleID' => 1,
+            'DepartmentID' => 1,
+            'Username' => 'admin.user',
+            'Email' => 'admin@example.com',
+            'Password' => bcrypt('password'),
+            'FullName' => 'Admin User',
+            'IsActive' => 1,
+        ]);
+
+        // create a delivery receipt that is already inspected and accepted
+        $dr = DeliveryReceipt::create([
+            'DRNumber' => 'DR-TEST-03',
+            'SupplierName' => 'Supplier X',
+            'RequestedBy' => $user->UserID,
+            'PONumber' => 'PO-123',
+            'DateReceived' => now()->format('Y-m-d'),
+            'ReceivedBy' => $user->UserID,
+            'InspectionStatus' => 'inspected',
+        ]);
+
+        // insert an IAR with DateAccepted so the backend considers it accepted
+        DB::table('inspectionacceptancereport')->insert([
+            'DRID' => $dr->DRID,
+            'DateInspected' => now()->format('Y-m-d'),
+            'DateAccepted' => now()->format('Y-m-d'),
+            'InspectedBy' => $user->UserID,
+            'CreatedDate' => now(),
+            'UpdatedDate' => now(),
+        ]);
+
+        // no issuance yet = state should be to_be_issued
+        $response = $this->actingAs($user)->getJson('/api/delivery-receipts');
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.data.0.workflow_status', 'to_be_issued');
+        $response->assertJsonPath('data.data.0.workflow_status_label', 'To be issued');
+
+        // create a property issuance record with pending_acknowledgment
+        DB::table('propertyissuance')->insert([
+            'DRID' => $dr->DRID,
+            'Status' => 'pending_acknowledgment',
+            'DateIssued' => now()->format('Y-m-d'),
+            'CreatedDate' => now(),
+            'UpdatedDate' => now(),
+        ]);
+
+        // list again and ensure status remains to_be_issued, not issued
+        $response = $this->actingAs($user)->getJson('/api/delivery-receipts');
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.data.0.workflow_status', 'to_be_issued');
+        $response->assertJsonPath('data.data.0.workflow_status_label', 'To be issued');
+
+        // update the issuance to acknowledged, now DR should show acknowledged
+        DB::table('propertyissuance')
+            ->where('DRID', $dr->DRID)
+            ->update(['Status' => 'acknowledged']);
+
+        $response = $this->actingAs($user)->getJson('/api/delivery-receipts');
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.data.0.workflow_status', 'acknowledged');
+        $response->assertJsonPath('data.data.0.workflow_status_label', 'Acknowledged');
+    }
 }
