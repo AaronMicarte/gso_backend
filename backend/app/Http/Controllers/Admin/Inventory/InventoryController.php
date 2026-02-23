@@ -335,6 +335,27 @@ class InventoryController extends Controller
                             LIMIT 1
                         )
                       ) as locationDepartment"))
+                                            ->addSelect(DB::raw("(
+                                                SELECT COALESCE(beu.FullName, bu.FullName)
+                                                FROM propertyborrowitems pbi
+                                                JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
+                                                LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
+                                                LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
+                                                WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        AND pb.deleted_at IS NULL
+                                                        AND pbi.deleted_at IS NULL
+                                                        AND pb.Status IN ('borrowed','partially_returned')
+                                                        AND NOT EXISTS (
+                                                                SELECT 1
+                                                                FROM propertyreturnitems pri
+                                                                JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
+                                                                WHERE pri.BorrowItemID = pbi.BorrowItemID
+                                                                        AND pri.deleted_at IS NULL
+                                                                        AND pr.deleted_at IS NULL
+                                                        )
+                                                ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
+                                                LIMIT 1
+                                            ) as currentBorrowerName"))
                       ->addSelect(DB::raw("(
                             SELECT pi.DateIssued
                             FROM propertyissuancedetail pidet
@@ -974,6 +995,27 @@ class InventoryController extends Controller
                                         ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                                         LIMIT 1
                                 ) as lastIssuedDate"),
+                                'currentBorrowerName' => DB::raw("(
+                                        SELECT COALESCE(beu.FullName, bu.FullName)
+                                        FROM propertyborrowitems pbi
+                                        JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
+                                        LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
+                                        LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
+                                        WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            AND pb.deleted_at IS NULL
+                                            AND pbi.deleted_at IS NULL
+                                            AND pb.Status IN ('borrowed','partially_returned')
+                                            AND NOT EXISTS (
+                                                SELECT 1
+                                                FROM propertyreturnitems pri
+                                                JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
+                                                WHERE pri.BorrowItemID = pbi.BorrowItemID
+                                                    AND pri.deleted_at IS NULL
+                                                    AND pr.deleted_at IS NULL
+                                            )
+                                        ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
+                                        LIMIT 1
+                                ) as currentBorrowerName"),
             ]);
 
         if ($search) {
