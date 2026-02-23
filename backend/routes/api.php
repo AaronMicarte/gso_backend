@@ -233,6 +233,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}/complete', [\App\Http\Controllers\PropertyTransferController::class, 'complete']);
     });
 
+    // Property Borrowing (PBR)
+    Route::prefix('property-borrows')->group(function () {
+        Route::get('', [\App\Http\Controllers\PropertyBorrowController::class, 'index']);
+        Route::post('', [\App\Http\Controllers\PropertyBorrowController::class, 'store']);
+        Route::get('available-items', [\App\Http\Controllers\PropertyBorrowController::class, 'availableItems']);
+        Route::get('allowed-property-types', [\App\Http\Controllers\PropertyBorrowController::class, 'allowedPropertyTypes']);
+        Route::get('helpers/departments', [\App\Http\Controllers\PropertyBorrowController::class, 'helperDepartments']);
+        Route::get('helpers/end-users', [\App\Http\Controllers\PropertyBorrowController::class, 'helperEndUsers']);
+        Route::get('helpers/conditions', [\App\Http\Controllers\PropertyBorrowController::class, 'helperConditions']);
+        Route::get('{id}', [\App\Http\Controllers\PropertyBorrowController::class, 'show']);
+        Route::post('{id}/releasing-review', [\App\Http\Controllers\PropertyBorrowController::class, 'releasingReview']);
+        Route::post('{id}/approve', [\App\Http\Controllers\PropertyBorrowController::class, 'approve']);
+        Route::post('{id}/reject', [\App\Http\Controllers\PropertyBorrowController::class, 'reject']);
+        Route::post('{id}/return', [\App\Http\Controllers\PropertyBorrowController::class, 'markReturned']);
+    });
+
     // Requisition and Issue Slip (RIS)
     Route::prefix('requisition-issue-slips')->group(function () {
         Route::get('', [RequisitionIssueSlipController::class, 'index']);

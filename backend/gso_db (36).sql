@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 20, 2026 at 03:33 PM
+-- Generation Time: Feb 23, 2026 at 08:33 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -798,7 +798,9 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (119, 1, '2026-02-19 00:30:23', 'Login', '127.0.0.1'),
 (120, 1, '2026-02-20 15:34:45', 'Login', '127.0.0.1'),
 (121, 1, '2026-02-20 17:00:24', 'Logout', '127.0.0.1'),
-(122, 7, '2026-02-20 17:00:36', 'Login', '127.0.0.1');
+(122, 7, '2026-02-20 17:00:36', 'Login', '127.0.0.1'),
+(123, 1, '2026-02-24 03:31:13', 'Login', '127.0.0.1'),
+(124, 3, '2026-02-24 03:32:02', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -942,7 +944,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (129, '2026_02_16_000010_create_property_transfer_tables', 39),
 (130, '2026_02_16_000020_rename_property_transfer_tables', 39),
 (131, '2026_02_17_000001_backfill_property_transfer_custodians', 40),
-(132, '2026_02_17_000010_add_releasing_review_fields_to_propertytransfer', 41);
+(132, '2026_02_17_000010_add_releasing_review_fields_to_propertytransfer', 41),
+(133, '2026_02_20_000001_add_property_type_and_unit_to_articles', 42),
+(134, '2026_02_23_000001_drop_tin_from_supplier_table', 42),
+(135, '2026_02_24_000010_create_property_borrow_tables', 42);
 
 -- --------------------------------------------------------
 
@@ -1070,6 +1075,60 @@ INSERT INTO `position` (`PositionID`, `PositionName`, `PositionDescription`, `Cr
 (2, 'Staff', 'Regular Staff Member', '2026-01-06 23:14:32', '2026-01-06 23:14:32', NULL),
 (3, 'Supervisor', 'Supervisor', '2026-01-06 23:14:32', '2026-01-06 23:14:32', NULL),
 (4, 'Officer', 'Department Officer', '2026-01-06 23:14:32', '2026-01-06 23:14:32', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `propertyborrow`
+--
+
+CREATE TABLE `propertyborrow` (
+  `BorrowID` bigint(20) UNSIGNED NOT NULL,
+  `BorrowNumber` varchar(50) NOT NULL,
+  `RequestedByUserID` int(11) NOT NULL,
+  `FromDepartmentID` int(11) NOT NULL,
+  `ToDepartmentID` int(11) NOT NULL,
+  `FromEndUserID` int(11) DEFAULT NULL,
+  `ToEndUserID` int(11) DEFAULT NULL,
+  `Purpose` text DEFAULT NULL,
+  `RequestedItemsCount` int(10) UNSIGNED DEFAULT NULL,
+  `DueDate` date NOT NULL,
+  `ReleasingDecision` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  `ReleasingApprovedCount` int(10) UNSIGNED DEFAULT NULL,
+  `ReleasingDecisionReason` text DEFAULT NULL,
+  `ReleasingReviewedByUserID` int(11) DEFAULT NULL,
+  `ReleasingReviewedAt` timestamp NULL DEFAULT NULL,
+  `Status` enum('pending','approved','rejected','borrowed','returned','cancelled') NOT NULL DEFAULT 'pending',
+  `ApprovedByUserID` int(11) DEFAULT NULL,
+  `ApprovedAt` timestamp NULL DEFAULT NULL,
+  `ReleasedSignedAt` timestamp NULL DEFAULT NULL,
+  `ReceivedSignedAt` timestamp NULL DEFAULT NULL,
+  `BorrowedAt` timestamp NULL DEFAULT NULL,
+  `ReturnedByUserID` int(11) DEFAULT NULL,
+  `ReturnedAt` timestamp NULL DEFAULT NULL,
+  `ReturnNotes` text DEFAULT NULL,
+  `GsoNotes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `propertyborrowitems`
+--
+
+CREATE TABLE `propertyborrowitems` (
+  `BorrowItemID` bigint(20) UNSIGNED NOT NULL,
+  `BorrowID` bigint(20) UNSIGNED NOT NULL,
+  `InventoryDetailID` int(11) NOT NULL,
+  `Quantity` int(11) NOT NULL DEFAULT 1,
+  `Remarks` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -1600,7 +1659,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('dUnfLgjLW6vK20Fz6ddc1H9hEswcXmP8yxpsbc2R', 7, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiZDluem5hdXRBREZWSnFWcWx2M0duSTc0V2JIMVNyRDdsdXdDTU1SOSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NztzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZlcFNCNklHYk9YZjduV3Z3VURiMnVKanIyRkpPMDdja2JlMWNIRkRrTjkvaFNxbnUucVFlIjt9', 1771578048);
+('dUnfLgjLW6vK20Fz6ddc1H9hEswcXmP8yxpsbc2R', 7, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiZDluem5hdXRBREZWSnFWcWx2M0duSTc0V2JIMVNyRDdsdXdDTU1SOSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6NztzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGZlcFNCNklHYk9YZjduV3Z3VURiMnVKanIyRkpPMDdja2JlMWNIRkRrTjkvaFNxbnUucVFlIjt9', 1771578048),
+('eBBrm3RpKcOZgoipB6eCVujyn9hWVLoJ9HTAK1Xx', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRkU2RkdtcUt0RGt5d2lJSzczTFc3ajlKVlNvY2ZHdW40bHJRNmVPMCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NjE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktYm9ycm93cz9wYWdlPTEmcGVyX3BhZ2U9MTUiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1771875100),
+('N1wm5HBTbR8CGrvDto1XHktaBpeyYnHaKfL7EwPN', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidVh3dmpuN2k4UmZrOVlLT28ybDhLMEowaVpQWDFPa0dpUUtwckdvZSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MztzOjE3OiJwYXNzd29yZF9oYXNoX3dlYiI7czo2MDoiJDJ5JDEyJGhsVTdRS25VYldwaHZKbkZ4WWdhWS5nSlZ6Qm54VktLVi5ranc3eEI1T2guMWpOMGNmQTYyIjt9', 1771875131);
 
 -- --------------------------------------------------------
 
@@ -2118,6 +2179,32 @@ ALTER TABLE `position`
   ADD PRIMARY KEY (`PositionID`);
 
 --
+-- Indexes for table `propertyborrow`
+--
+ALTER TABLE `propertyborrow`
+  ADD PRIMARY KEY (`BorrowID`),
+  ADD UNIQUE KEY `propertyborrow_borrownumber_unique` (`BorrowNumber`),
+  ADD KEY `propertyborrow_status_fromdepartmentid_index` (`Status`,`FromDepartmentID`),
+  ADD KEY `propertyborrow_status_todepartmentid_index` (`Status`,`ToDepartmentID`),
+  ADD KEY `propertyborrow_requestedbyuserid_index` (`RequestedByUserID`),
+  ADD KEY `propertyborrow_duedate_index` (`DueDate`),
+  ADD KEY `propertyborrow_fromdepartmentid_foreign` (`FromDepartmentID`),
+  ADD KEY `propertyborrow_todepartmentid_foreign` (`ToDepartmentID`),
+  ADD KEY `propertyborrow_fromenduserid_foreign` (`FromEndUserID`),
+  ADD KEY `propertyborrow_toenduserid_foreign` (`ToEndUserID`),
+  ADD KEY `propertyborrow_releasingreviewedbyuserid_foreign` (`ReleasingReviewedByUserID`),
+  ADD KEY `propertyborrow_approvedbyuserid_foreign` (`ApprovedByUserID`),
+  ADD KEY `propertyborrow_returnedbyuserid_foreign` (`ReturnedByUserID`);
+
+--
+-- Indexes for table `propertyborrowitems`
+--
+ALTER TABLE `propertyborrowitems`
+  ADD PRIMARY KEY (`BorrowItemID`),
+  ADD KEY `propertyborrowitems_inventorydetailid_index` (`InventoryDetailID`),
+  ADD KEY `propertyborrowitems_borrowid_foreign` (`BorrowID`);
+
+--
 -- Indexes for table `propertyclassification`
 --
 ALTER TABLE `propertyclassification`
@@ -2482,13 +2569,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=123;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=125;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=133;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=136;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -2525,6 +2612,18 @@ ALTER TABLE `physicalcountsession`
 --
 ALTER TABLE `position`
   MODIFY `PositionID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `propertyborrow`
+--
+ALTER TABLE `propertyborrow`
+  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `propertyborrowitems`
+--
+ALTER TABLE `propertyborrowitems`
+  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `propertyclassification`
@@ -2678,8 +2777,8 @@ ALTER TABLE `wastematerialreport`
 -- Constraints for table `articles`
 --
 ALTER TABLE `articles`
-  ADD CONSTRAINT `articles_propertytype_foreign` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`),
-  ADD CONSTRAINT `articles_defaultuom_foreign` FOREIGN KEY (`DefaultUnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`) ON UPDATE CASCADE;
+  ADD CONSTRAINT `articles_defaultuom_foreign` FOREIGN KEY (`DefaultUnitOfMeasureID`) REFERENCES `unitofmeasure` (`UnitOfMeasureID`) ON UPDATE CASCADE,
+  ADD CONSTRAINT `articles_propertytype_foreign` FOREIGN KEY (`PropertyTypeID`) REFERENCES `propertytype` (`PropertyTypeID`);
 
 --
 -- Constraints for table `assetrequest`
@@ -2764,6 +2863,26 @@ ALTER TABLE `iardetail`
 ALTER TABLE `icsdetail`
   ADD CONSTRAINT `icsdetail_ibfk_1` FOREIGN KEY (`ICSID`) REFERENCES `inventorycustodianslip` (`ICSID`),
   ADD CONSTRAINT `icsdetail_ibfk_2` FOREIGN KEY (`PropertyID`) REFERENCES `assignedproperty` (`PropertyID`);
+
+--
+-- Constraints for table `propertyborrow`
+--
+ALTER TABLE `propertyborrow`
+  ADD CONSTRAINT `propertyborrow_approvedbyuserid_foreign` FOREIGN KEY (`ApprovedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertyborrow_fromdepartmentid_foreign` FOREIGN KEY (`FromDepartmentID`) REFERENCES `department` (`DepartmentID`),
+  ADD CONSTRAINT `propertyborrow_fromenduserid_foreign` FOREIGN KEY (`FromEndUserID`) REFERENCES `enduser` (`EndUserID`),
+  ADD CONSTRAINT `propertyborrow_releasingreviewedbyuserid_foreign` FOREIGN KEY (`ReleasingReviewedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertyborrow_requestedbyuserid_foreign` FOREIGN KEY (`RequestedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertyborrow_returnedbyuserid_foreign` FOREIGN KEY (`ReturnedByUserID`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `propertyborrow_todepartmentid_foreign` FOREIGN KEY (`ToDepartmentID`) REFERENCES `department` (`DepartmentID`),
+  ADD CONSTRAINT `propertyborrow_toenduserid_foreign` FOREIGN KEY (`ToEndUserID`) REFERENCES `enduser` (`EndUserID`);
+
+--
+-- Constraints for table `propertyborrowitems`
+--
+ALTER TABLE `propertyborrowitems`
+  ADD CONSTRAINT `propertyborrowitems_borrowid_foreign` FOREIGN KEY (`BorrowID`) REFERENCES `propertyborrow` (`BorrowID`) ON DELETE CASCADE,
+  ADD CONSTRAINT `propertyborrowitems_inventorydetailid_foreign` FOREIGN KEY (`InventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`);
 
 --
 -- Constraints for table `propertytransfer`

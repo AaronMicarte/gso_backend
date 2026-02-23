@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PropertyTransfer;
 use App\Models\PropertyTransferItem;
+use App\Models\PropertyBorrowItem;
 use App\Models\AssignedProperty;
 use App\Models\AssetAuditLog;
 use App\Models\QrCode;
@@ -193,6 +194,16 @@ class PropertyTransferController extends Controller
 
         if ($openTransferExists) {
             return response()->json(['message' => 'One or more items already have an active transfer request'], 422);
+        }
+
+        $openBorrowExists = PropertyBorrowItem::whereIn('InventoryDetailID', $inventoryDetailIds)
+            ->whereHas('borrow', function ($q) {
+                $q->whereIn('Status', ['pending', 'approved', 'borrowed']);
+            })
+            ->exists();
+
+        if ($openBorrowExists) {
+            return response()->json(['message' => 'One or more items are currently under an active borrow request'], 422);
         }
 
         return DB::transaction(function () use ($validated, $user, $inventoryDetailIds) {
@@ -890,6 +901,10 @@ class PropertyTransferController extends Controller
             $q->whereIn('Status', ['pending', 'approved']);
         })->pluck('InventoryDetailID');
 
+        $openBorrowIds = PropertyBorrowItem::whereHas('borrow', function ($q) {
+            $q->whereIn('Status', ['pending', 'approved', 'borrowed']);
+        })->pluck('InventoryDetailID');
+
         $query = AssignedProperty::query()
             ->leftJoin('propertyinventorydetail as pid', 'assignedproperty.InventoryDetailID', '=', 'pid.InventoryDetailID')
             ->leftJoin('deliveryreceiptdetail as drd', 'pid.SourceDRDetailID', '=', 'drd.DRDetailID')
@@ -919,6 +934,10 @@ class PropertyTransferController extends Controller
             ->where('assignedproperty.PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
             ->where('pid.PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
             ->whereNotIn('assignedproperty.InventoryDetailID', $openTransferIds);
+
+        if ($openBorrowIds->isNotEmpty()) {
+            $query->whereNotIn('assignedproperty.InventoryDetailID', $openBorrowIds);
+        }
 
         if ($departmentId) {
             $query->where('assignedproperty.DepartmentID', (int) $departmentId);
