@@ -16,7 +16,6 @@ class SupplierResource extends JsonResource
             'contact_person' => $this->ContactPerson,
             'contact_number' => $this->ContactNumber,
             'email' => $this->Email,
-            'tin' => $this->TIN,
             'is_active' => (bool)$this->IsActive,
             'created_at' => $this->CreatedDate?->format('Y-m-d H:i:s'),
             'updated_at' => $this->UpdatedDate?->format('Y-m-d H:i:s'),

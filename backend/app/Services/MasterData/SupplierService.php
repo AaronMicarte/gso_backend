@@ -6,7 +6,7 @@ use App\Models\MasterData\Supplier;
 
 class SupplierService extends BaseMasterDataService
 {
-    protected $searchableFields = ['SupplierName', 'ContactPerson', 'Email', 'ContactNumber', 'TIN'];
+    protected $searchableFields = ['SupplierName', 'ContactPerson', 'Email', 'ContactNumber'];
     protected $defaultSortField = 'SupplierID';
 
     public function __construct()

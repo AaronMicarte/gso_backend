@@ -27,7 +27,6 @@ class StoreSupplierRequest extends FormRequest
             'ContactPerson' => 'nullable|string|max:100',
             'ContactNumber' => 'nullable|string|max:20',
             'Email' => 'nullable|email|max:100',
-            'TIN' => 'nullable|string|max:50',
             'IsActive' => 'sometimes|boolean',
         ];
     }

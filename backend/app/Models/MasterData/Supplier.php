@@ -21,7 +21,6 @@ class Supplier extends Model
         'ContactPerson',
         'ContactNumber',
         'Email',
-        'TIN',
         'IsActive',
         'CreatedDate',
         'UpdatedDate',
