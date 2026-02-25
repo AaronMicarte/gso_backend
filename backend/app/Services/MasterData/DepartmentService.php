@@ -7,7 +7,9 @@ use App\Models\MasterData\Department;
 class DepartmentService extends BaseMasterDataService
 {
     protected $searchableFields = ['DepartmentCode', 'DepartmentName', 'Description'];
-    protected $defaultSortField = 'DepartmentID';
+    // default to alphabetical by name
+    protected $defaultSortField = 'DepartmentName';
+    protected $defaultSortOrder = 'asc';
 
     public function __construct()
     {

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 23, 2026 at 09:53 PM
+-- Generation Time: Feb 25, 2026 at 07:51 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -176,7 +176,16 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (14, 'property_borrow', 1, 'releasing_approved', 3, '{\"borrow_number\":\"PBR-2026-0001\",\"requested_count\":1,\"approved_count\":1,\"reason\":null}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-23 20:41:11'),
 (15, 'property_borrow', 1, 'approved', 1, '{\"borrow_number\":\"PBR-2026-0001\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 20:42:10'),
 (16, 'inventory_detail', 3, 'borrow_approved', 1, '{\"borrow_id\":1,\"borrow_number\":\"PBR-2026-0001\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 20:42:10'),
-(17, 'property_borrow', 1, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0001\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 20:42:10');
+(17, 'property_borrow', 1, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0001\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 20:42:10'),
+(18, 'property_return', 1, 'created', 1, '{\"borrow_id\":1,\"borrow_number\":\"PBR-2026-0001\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 22:20:18'),
+(19, 'property_borrow', 1, 'returned', 1, '{\"borrow_number\":\"PBR-2026-0001\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 22:20:18'),
+(20, 'inventory_detail', 3, 'borrow_returned', 1, '{\"borrow_id\":1,\"borrow_number\":\"PBR-2026-0001\",\"return_id\":1,\"quantity\":1,\"condition_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 22:20:18'),
+(21, 'property_borrow', 2, 'created', 6, '{\"borrow_number\":\"PBR-2026-0002\",\"from_department_id\":5,\"to_department_id\":3,\"due_date\":\"2026-02-27\",\"items\":[3]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-23 23:37:36'),
+(22, 'inventory_detail', 3, 'borrow_requested', 6, '{\"borrow_id\":2,\"borrow_number\":\"PBR-2026-0002\",\"from_department_id\":5,\"to_department_id\":3,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-23 23:37:36'),
+(23, 'property_borrow', 2, 'releasing_approved', 3, '{\"borrow_number\":\"PBR-2026-0002\",\"requested_count\":1,\"approved_count\":1,\"reason\":null}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-23 23:39:01'),
+(24, 'property_borrow', 2, 'approved', 1, '{\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31'),
+(25, 'inventory_detail', 3, 'borrow_approved', 1, '{\"borrow_id\":2,\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31'),
+(26, 'property_borrow', 2, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31');
 
 -- --------------------------------------------------------
 
@@ -409,7 +418,90 @@ INSERT INTO `department` (`DepartmentID`, `DepartmentName`, `Description`, `Depa
 (3, 'Finance Department', NULL, 'FIN', 1, '2025-12-05 02:07:27', '2026-02-17 17:30:23', NULL),
 (4, 'Human Resources', NULL, 'HR', 1, '2025-12-05 02:07:27', NULL, NULL),
 (5, 'IT Department', NULL, 'IT', 1, '2025-12-05 02:07:27', NULL, NULL),
-(17, 'Department of Health', 'Health responsible', 'DOH', 1, '2026-02-14 12:19:13', NULL, NULL);
+(17, 'Department of Health', 'Health responsible', 'DOH', 1, '2026-02-14 12:19:13', NULL, NULL),
+(18, 'Accounting', NULL, 'ACCOUNTING', 1, '2026-02-25 07:51:00', NULL, NULL),
+(19, 'Admin', NULL, 'ADMIN', 1, '2026-02-25 07:51:00', NULL, NULL),
+(20, 'Agriculture', NULL, 'AGRICULTURE', 1, '2026-02-25 07:51:00', NULL, NULL),
+(21, 'Assessor', NULL, 'ASSESSOR', 1, '2026-02-25 07:51:00', NULL, NULL),
+(22, 'BAC', NULL, 'BAC', 1, '2026-02-25 07:51:00', NULL, NULL),
+(23, 'BFP', NULL, 'BFP', 1, '2026-02-25 07:51:00', NULL, NULL),
+(24, '818', NULL, '818', 1, '2026-02-25 07:51:00', NULL, NULL),
+(25, 'BJMP', NULL, 'BJMP', 1, '2026-02-25 07:51:00', NULL, NULL),
+(26, 'BPLO', NULL, 'BPLO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(27, 'Budget', NULL, 'BUDGET', 1, '2026-02-25 07:51:00', NULL, NULL),
+(28, 'CCE', NULL, 'CCE', 1, '2026-02-25 07:51:00', NULL, NULL),
+(29, 'CCR', NULL, 'CCR', 1, '2026-02-25 07:51:00', NULL, NULL),
+(30, 'CDRRMO', NULL, 'CDRRMO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(31, 'CEEDO', NULL, 'CEEDO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(32, 'CESHUDO', NULL, 'CESHUDO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(33, 'CLENRO', NULL, 'CLENRO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(34, 'COA', NULL, 'COA', 1, '2026-02-25 07:51:00', NULL, NULL),
+(35, 'COMELEC', NULL, 'COMELEC', 1, '2026-02-25 07:51:00', NULL, NULL),
+(36, 'CPDC', NULL, 'CPDC', 1, '2026-02-25 07:51:00', NULL, NULL),
+(37, 'CSWDO', NULL, 'CSWDO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(38, 'OSCA', NULL, 'OSCA', 1, '2026-02-25 07:51:00', NULL, NULL),
+(39, 'PDAW', NULL, 'PDAW', 1, '2026-02-25 07:51:00', NULL, NULL),
+(40, 'DEPED', NULL, 'DEPED', 1, '2026-02-25 07:51:00', NULL, NULL),
+(41, 'DILG', NULL, 'DILG', 1, '2026-02-25 07:51:00', NULL, NULL),
+(42, 'Engineering', NULL, 'ENGINEERING', 1, '2026-02-25 07:51:00', NULL, NULL),
+(43, 'FM Radio', NULL, 'FM_RADIO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(44, 'GSO', NULL, 'GSO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(45, 'Park and Plaza', NULL, 'PARK_AND_PLAZA', 1, '2026-02-25 07:51:00', NULL, NULL),
+(46, 'Sound System', NULL, 'SOUND_SYSTEM', 1, '2026-02-25 07:51:00', NULL, NULL),
+(47, 'Gym', NULL, 'GYM', 1, '2026-02-25 07:51:00', NULL, NULL),
+(48, 'Health Office', NULL, 'HEALTH_OFFICE', 1, '2026-02-25 07:51:00', NULL, NULL),
+(49, 'HRMO', NULL, 'HRMO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(50, 'IAS', NULL, 'IAS', 1, '2026-02-25 07:51:00', NULL, NULL),
+(51, 'Legal Office', NULL, 'LEGAL_OFFICE', 1, '2026-02-25 07:51:00', NULL, NULL),
+(52, 'Lying-In Market', NULL, 'LYING_IN_MARKET', 1, '2026-02-25 07:51:00', NULL, NULL),
+(53, 'Mayor\'s Office', NULL, 'MAYORS_OFFICE', 1, '2026-02-25 07:51:00', NULL, NULL),
+(54, 'MCTC', NULL, 'MCTC', 1, '2026-02-25 07:51:00', NULL, NULL),
+(55, 'Motorpool Nutrition', NULL, 'MOTORPOOL_NUTRITION', 1, '2026-02-25 07:51:00', NULL, NULL),
+(56, 'OCBO', NULL, 'OCBO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(57, 'PESO', NULL, 'PESO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(58, 'PNP', NULL, 'PNP', 1, '2026-02-25 07:51:00', NULL, NULL),
+(59, 'POPCOM', NULL, 'POPCOM', 1, '2026-02-25 07:51:00', NULL, NULL),
+(60, 'Postal', NULL, 'POSTAL', 1, '2026-02-25 07:51:00', NULL, NULL),
+(61, 'Prosecutor', NULL, 'PROSECUTOR', 1, '2026-02-25 07:51:00', NULL, NULL),
+(62, 'Sanitary', NULL, 'SANITARY', 1, '2026-02-25 07:51:00', NULL, NULL),
+(63, 'SP', NULL, 'SP', 1, '2026-02-25 07:51:00', NULL, NULL),
+(64, 'TIMU', NULL, 'TIMU', 1, '2026-02-25 07:51:00', NULL, NULL),
+(65, 'Tourism', NULL, 'TOURISM', 1, '2026-02-25 07:51:00', NULL, NULL),
+(66, 'Treasury', NULL, 'TREASURY', 1, '2026-02-25 07:51:00', NULL, NULL),
+(67, 'Veterinary', NULL, 'VETERINARY', 1, '2026-02-25 07:51:00', NULL, NULL),
+(68, 'Vice Mayor\'s Office', NULL, 'VICE_MAYORS_OFFICE', 1, '2026-02-25 07:51:00', NULL, NULL),
+(69, 'Waterworks', NULL, 'WATERWORKS', 1, '2026-02-25 07:51:00', NULL, NULL),
+(70, 'C1', NULL, 'C1', 1, '2026-02-25 07:51:00', NULL, NULL),
+(71, 'C2', NULL, 'C2', 1, '2026-02-25 07:51:00', NULL, NULL),
+(72, 'C3', NULL, 'C3', 1, '2026-02-25 07:51:00', NULL, NULL),
+(73, 'C4', NULL, 'C4', 1, '2026-02-25 07:51:00', NULL, NULL),
+(74, 'C5', NULL, 'C5', 1, '2026-02-25 07:51:00', NULL, NULL),
+(75, 'C6', NULL, 'C6', 1, '2026-02-25 07:51:00', NULL, NULL),
+(76, 'C7', NULL, 'C7', 1, '2026-02-25 07:51:00', NULL, NULL),
+(77, 'C8', NULL, 'C8', 1, '2026-02-25 07:51:00', NULL, NULL),
+(78, 'C9', NULL, 'C9', 1, '2026-02-25 07:51:00', NULL, NULL),
+(79, 'C10', NULL, 'C10', 1, '2026-02-25 07:51:00', NULL, NULL),
+(80, 'K', NULL, 'K', 1, '2026-02-25 07:51:00', NULL, NULL),
+(81, 'ABC', NULL, 'ABC', 1, '2026-02-25 07:51:00', NULL, NULL),
+(82, 'BLDG MNT', NULL, 'BLDG_MNT', 1, '2026-02-25 07:51:00', NULL, NULL),
+(83, 'PAD', NULL, 'PAD', 1, '2026-02-25 07:51:00', NULL, NULL),
+(84, 'NBI', NULL, 'NBI', 1, '2026-02-25 07:51:00', NULL, NULL),
+(85, 'ECCO', NULL, 'ECCO', 1, '2026-02-25 07:51:00', NULL, NULL),
+(86, 'Poblacion', NULL, 'POBLACION', 1, '2026-02-25 07:51:00', NULL, NULL),
+(87, 'Molugan', NULL, 'MOLUGAN', 1, '2026-02-25 07:51:00', NULL, NULL),
+(88, 'Amoros', NULL, 'AMOROS', 1, '2026-02-25 07:51:00', NULL, NULL),
+(89, 'Sambulawan', NULL, 'SAMBULAWAN', 1, '2026-02-25 07:51:00', NULL, NULL),
+(90, 'Taytay', NULL, 'TAYTAY', 1, '2026-02-25 07:51:00', NULL, NULL),
+(91, 'Himaya', NULL, 'HIMAYA', 1, '2026-02-25 07:51:00', NULL, NULL),
+(92, 'Ulaliman', NULL, 'ULALIMAN', 1, '2026-02-25 07:51:00', NULL, NULL),
+(93, 'Bolobolo (Pedro S Baculio)', NULL, 'BOLOBOLO_PEDRO_S', 1, '2026-02-25 07:51:00', NULL, NULL),
+(94, 'Sinaloc', NULL, 'SINALOC', 1, '2026-02-25 07:51:00', NULL, NULL),
+(95, 'Calongonan (San Francisco de Asis)', NULL, 'CALONGONAN_SF', 1, '2026-02-25 07:51:00', NULL, NULL),
+(96, 'Hinigdaan', NULL, 'HINIGDAAN', 1, '2026-02-25 07:51:00', NULL, NULL),
+(97, 'Kalabaylabay', NULL, 'KALABAYLABAY', 1, '2026-02-25 07:51:00', NULL, NULL),
+(98, 'Bolsong', NULL, 'BOLSONG', 1, '2026-02-25 07:51:00', NULL, NULL),
+(99, 'Quibonbon', NULL, 'QUIBONBON', 1, '2026-02-25 07:51:00', NULL, NULL),
+(100, 'Cogon', NULL, 'COGON', 1, '2026-02-25 07:51:00', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -812,7 +904,30 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (127, 6, '2026-02-24 04:40:10', 'Logout', '127.0.0.1'),
 (128, 3, '2026-02-24 04:40:17', 'Login', '127.0.0.1'),
 (129, 3, '2026-02-24 04:43:25', 'Logout', '127.0.0.1'),
-(130, 6, '2026-02-24 04:43:34', 'Login', '127.0.0.1');
+(130, 6, '2026-02-24 04:43:34', 'Login', '127.0.0.1'),
+(131, 1, '2026-02-24 06:10:00', 'Login', '127.0.0.1'),
+(132, 3, '2026-02-24 06:11:49', 'Login', '127.0.0.1'),
+(133, 3, '2026-02-24 06:12:12', 'Login', '127.0.0.1'),
+(134, 3, '2026-02-24 07:35:37', 'Logout', '127.0.0.1'),
+(135, 6, '2026-02-24 07:35:47', 'Login', '127.0.0.1'),
+(136, 6, '2026-02-24 07:38:18', 'Logout', '127.0.0.1'),
+(137, 3, '2026-02-24 07:38:24', 'Login', '127.0.0.1'),
+(138, 3, '2026-02-24 09:39:30', 'Login', '127.0.0.1'),
+(139, 3, '2026-02-24 09:43:59', 'Logout', '127.0.0.1'),
+(140, 7, '2026-02-24 09:44:16', 'Login', '127.0.0.1'),
+(141, 1, '2026-02-24 10:16:02', 'Login', '127.0.0.1'),
+(142, 1, '2026-02-24 10:16:08', 'Login', '127.0.0.1'),
+(143, 1, '2026-02-24 10:20:41', 'Login', '127.0.0.1'),
+(144, 3, '2026-02-24 13:42:01', 'Login', '127.0.0.1'),
+(145, 3, '2026-02-24 13:42:06', 'Logout', '127.0.0.1'),
+(146, 7, '2026-02-24 13:42:17', 'Login', '127.0.0.1'),
+(147, 1, '2026-02-24 13:42:42', 'Login', '127.0.0.1'),
+(148, 1, '2026-02-24 16:10:50', 'Login', '127.0.0.1'),
+(149, 7, '2026-02-24 16:47:34', 'Logout', '127.0.0.1'),
+(150, 3, '2026-02-24 16:47:41', 'Login', '127.0.0.1'),
+(151, 3, '2026-02-24 16:49:24', 'Logout', '127.0.0.1'),
+(152, 6, '2026-02-24 16:49:34', 'Login', '127.0.0.1'),
+(153, 1, '2026-02-25 14:29:13', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -962,7 +1077,10 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (135, '2026_02_24_000010_create_property_borrow_tables', 42),
 (136, '2026_02_24_000020_create_property_return_tables', 43),
 (137, '2026_02_24_000021_add_partially_returned_status_to_propertyborrow', 43),
-(138, '2026_02_24_000022_drop_property_borrow_signature_and_return_columns', 44);
+(138, '2026_02_24_000022_drop_property_borrow_signature_and_return_columns', 44),
+(139, '2026_02_24_000023_create_property_return_item_conditions', 45),
+(140, '2026_02_24_000024_add_primary_condition_to_return_items', 46),
+(141, '2026_02_24_000023_add_condition_to_property_return_items', 47);
 
 -- --------------------------------------------------------
 
@@ -1128,7 +1246,8 @@ CREATE TABLE `propertyborrow` (
 --
 
 INSERT INTO `propertyborrow` (`BorrowID`, `BorrowNumber`, `RequestedByUserID`, `FromDepartmentID`, `ToDepartmentID`, `FromEndUserID`, `ToEndUserID`, `Purpose`, `RequestedItemsCount`, `DueDate`, `ReleasingDecision`, `ReleasingApprovedCount`, `ReleasingDecisionReason`, `ReleasingReviewedByUserID`, `ReleasingReviewedAt`, `Status`, `ApprovedByUserID`, `ApprovedAt`, `BorrowedAt`, `GsoNotes`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'PBR-2026-0001', 6, 5, 3, 2, 4, 'basta secret', 1, '2026-02-26', 'approved', 1, NULL, 3, '2026-02-23 20:41:11', 'borrowed', 1, '2026-02-23 20:42:10', '2026-02-23 20:42:10', NULL, '2026-02-23 20:39:42', '2026-02-23 20:42:10', NULL);
+(1, 'PBR-2026-0001', 6, 5, 3, 2, 4, 'basta secret', 1, '2026-02-26', 'approved', 1, NULL, 3, '2026-02-23 20:41:11', 'returned', 1, '2026-02-23 20:42:10', '2026-02-23 20:42:10', NULL, '2026-02-23 20:39:42', '2026-02-23 22:20:18', NULL),
+(2, 'PBR-2026-0002', 6, 5, 3, 2, 4, NULL, 1, '2026-02-27', 'approved', 1, NULL, 3, '2026-02-23 23:39:01', 'borrowed', 1, '2026-02-23 23:39:31', '2026-02-23 23:39:31', NULL, '2026-02-23 23:37:36', '2026-02-23 23:39:31', NULL);
 
 -- --------------------------------------------------------
 
@@ -1152,7 +1271,8 @@ CREATE TABLE `propertyborrowitems` (
 --
 
 INSERT INTO `propertyborrowitems` (`BorrowItemID`, `BorrowID`, `InventoryDetailID`, `Quantity`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 3, 1, NULL, '2026-02-23 20:39:42', '2026-02-23 20:39:42', NULL);
+(1, 1, 3, 1, NULL, '2026-02-23 20:39:42', '2026-02-23 20:39:42', NULL),
+(2, 2, 3, 1, NULL, '2026-02-23 23:37:36', '2026-02-23 23:37:36', NULL);
 
 -- --------------------------------------------------------
 
@@ -1419,6 +1539,30 @@ CREATE TABLE `propertyreturn` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `propertyreturn`
+--
+
+INSERT INTO `propertyreturn` (`ReturnID`, `ReturnNumber`, `BorrowID`, `ReturnedByUserID`, `ReturnedAt`, `Notes`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'PBR-RET-2026-0001', 1, 1, '2026-02-23 22:20:18', 'okay rah', '2026-02-23 22:20:18', '2026-02-23 22:20:18', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `propertyreturnitemconditions`
+--
+
+CREATE TABLE `propertyreturnitemconditions` (
+  `ReturnItemConditionID` bigint(20) UNSIGNED NOT NULL,
+  `ReturnItemID` bigint(20) UNSIGNED NOT NULL,
+  `ConditionLabel` varchar(50) NOT NULL,
+  `Quantity` int(11) NOT NULL DEFAULT 1,
+  `Notes` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- --------------------------------------------------------
 
 --
@@ -1431,11 +1575,20 @@ CREATE TABLE `propertyreturnitems` (
   `BorrowItemID` bigint(20) UNSIGNED NOT NULL,
   `InventoryDetailID` int(11) NOT NULL,
   `QuantityReturned` int(11) NOT NULL DEFAULT 1,
+  `ConditionID` int(11) DEFAULT NULL,
+  `PrimaryConditionID` bigint(20) UNSIGNED DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `propertyreturnitems`
+--
+
+INSERT INTO `propertyreturnitems` (`ReturnItemID`, `ReturnID`, `BorrowItemID`, `InventoryDetailID`, `QuantityReturned`, `ConditionID`, `PrimaryConditionID`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 1, 1, 3, 1, 1, NULL, NULL, '2026-02-23 22:20:18', '2026-02-23 22:20:18', NULL);
 
 -- --------------------------------------------------------
 
@@ -1719,8 +1872,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('eBBrm3RpKcOZgoipB6eCVujyn9hWVLoJ9HTAK1Xx', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRkU2RkdtcUt0RGt5d2lJSzczTFc3ajlKVlNvY2ZHdW40bHJRNmVPMCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktYm9ycm93cy8xIjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1771879372),
-('t1dld4ngRYvPJYJLxkhiGrFcRMmenFD5Evwm5IGH', 6, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiYTZzSDMwZlJNV1ZuZHlRQTE0ZlZmQzBKQUlhNXpBYmJlWTJwdDNQRSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktYm9ycm93cy8xIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo2O3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkQS9YQ3FwOGxYck5DZVl2UTZsT3lVdTZEWHhiWHRKM1o3RkouNXEzOXE5eUFTekExRVlJS1MiO30=', 1771879437);
+('e00MBmntaG7FdGIrw2AQcSqmImdMFFUnm0TvezML', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiQ2pDZG9oSnhMN3ZaaEk1YkQ2cm9yUUUyZmx6cTFqTmtMTms4ZUZVNiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MTAxOiJodHRwOi8vbG9jYWxob3N0OjgwMDAvYXBpL2FkbWluL21hc3Rlci1kYXRhL2RlcGFydG1lbnRzP3BhZ2U9MSZwZXJfcGFnZT0xNSZzb3J0X2J5PWlkJnNvcnRfb3JkZXI9ZGVzYyI7czo1OiJyb3V0ZSI7czoxNzoiZGVwYXJ0bWVudHMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1772002237);
 
 -- --------------------------------------------------------
 
@@ -2354,13 +2506,23 @@ ALTER TABLE `propertyreturn`
   ADD KEY `propertyreturn_returnedat_index` (`ReturnedAt`);
 
 --
+-- Indexes for table `propertyreturnitemconditions`
+--
+ALTER TABLE `propertyreturnitemconditions`
+  ADD PRIMARY KEY (`ReturnItemConditionID`),
+  ADD KEY `propertyreturnitemconditions_returnitemid_index` (`ReturnItemID`),
+  ADD KEY `propertyreturnitemconditions_conditionlabel_index` (`ConditionLabel`);
+
+--
 -- Indexes for table `propertyreturnitems`
 --
 ALTER TABLE `propertyreturnitems`
   ADD PRIMARY KEY (`ReturnItemID`),
   ADD KEY `propertyreturnitems_borrowitemid_index` (`BorrowItemID`),
   ADD KEY `propertyreturnitems_inventorydetailid_index` (`InventoryDetailID`),
-  ADD KEY `propertyreturnitems_returnid_foreign` (`ReturnID`);
+  ADD KEY `propertyreturnitems_returnid_foreign` (`ReturnID`),
+  ADD KEY `propertyreturnitems_primaryconditionid_foreign` (`PrimaryConditionID`),
+  ADD KEY `propertyreturnitems_conditionid_index` (`ConditionID`);
 
 --
 -- Indexes for table `propertystatus`
@@ -2544,7 +2706,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -2580,7 +2742,7 @@ ALTER TABLE `deliveryreceiptdetail`
 -- AUTO_INCREMENT for table `department`
 --
 ALTER TABLE `department`
-  MODIFY `DepartmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `DepartmentID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
 
 --
 -- AUTO_INCREMENT for table `disposalmethod`
@@ -2646,13 +2808,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=131;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=154;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=139;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -2694,13 +2856,13 @@ ALTER TABLE `position`
 -- AUTO_INCREMENT for table `propertyborrow`
 --
 ALTER TABLE `propertyborrow`
-  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `propertyborrowitems`
 --
 ALTER TABLE `propertyborrowitems`
-  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `propertyclassification`
@@ -2754,13 +2916,19 @@ ALTER TABLE `propertyreceived`
 -- AUTO_INCREMENT for table `propertyreturn`
 --
 ALTER TABLE `propertyreturn`
-  MODIFY `ReturnID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `ReturnID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `propertyreturnitemconditions`
+--
+ALTER TABLE `propertyreturnitemconditions`
+  MODIFY `ReturnItemConditionID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `propertyreturnitems`
 --
 ALTER TABLE `propertyreturnitems`
-  MODIFY `ReturnItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `ReturnItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `propertystatus`
@@ -2980,11 +3148,19 @@ ALTER TABLE `propertyreturn`
   ADD CONSTRAINT `propertyreturn_returnedbyuserid_foreign` FOREIGN KEY (`ReturnedByUserID`) REFERENCES `user` (`UserID`);
 
 --
+-- Constraints for table `propertyreturnitemconditions`
+--
+ALTER TABLE `propertyreturnitemconditions`
+  ADD CONSTRAINT `propertyreturnitemconditions_returnitemid_foreign` FOREIGN KEY (`ReturnItemID`) REFERENCES `propertyreturnitems` (`ReturnItemID`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `propertyreturnitems`
 --
 ALTER TABLE `propertyreturnitems`
   ADD CONSTRAINT `propertyreturnitems_borrowitemid_foreign` FOREIGN KEY (`BorrowItemID`) REFERENCES `propertyborrowitems` (`BorrowItemID`),
+  ADD CONSTRAINT `propertyreturnitems_conditionid_foreign` FOREIGN KEY (`ConditionID`) REFERENCES `condition` (`ConditionID`),
   ADD CONSTRAINT `propertyreturnitems_inventorydetailid_foreign` FOREIGN KEY (`InventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`),
+  ADD CONSTRAINT `propertyreturnitems_primaryconditionid_foreign` FOREIGN KEY (`PrimaryConditionID`) REFERENCES `propertyreturnitemconditions` (`ReturnItemConditionID`) ON DELETE SET NULL,
   ADD CONSTRAINT `propertyreturnitems_returnid_foreign` FOREIGN KEY (`ReturnID`) REFERENCES `propertyreturn` (`ReturnID`) ON DELETE CASCADE;
 
 --
