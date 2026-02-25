@@ -979,6 +979,7 @@ class PropertyTransferController extends Controller
     public function helperEndUsers(Request $request)
     {
         $departmentId = $request->query('department_id');
+        $excludeGso = filter_var($request->query('exclude_gso'), FILTER_VALIDATE_BOOLEAN);
 
         $query = EndUser::query()
             ->leftJoin('department as d', 'enduser.DepartmentID', '=', 'd.DepartmentID')
@@ -993,6 +994,16 @@ class PropertyTransferController extends Controller
 
         if ($departmentId) {
             $query->where('enduser.DepartmentID', (int) $departmentId);
+        }
+
+        if ($excludeGso) {
+            $query->where(function ($q) {
+                $q->whereNull('d.DepartmentCode')
+                    ->orWhere('d.DepartmentCode', '!=', 'GSO');
+            })->where(function ($q) {
+                $q->whereNull('d.DepartmentName')
+                    ->orWhere('d.DepartmentName', '!=', 'GSO');
+            });
         }
 
         $endUsers = $query->get();
