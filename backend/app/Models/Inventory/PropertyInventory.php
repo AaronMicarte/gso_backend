@@ -16,6 +16,7 @@ class PropertyInventory extends Model
     protected $fillable = [
         'InventoryID',
         'InventoryNumber',
+        'DRID',
         'IARID',
         'DateReceived',
         'Remarks',
@@ -50,5 +51,10 @@ class PropertyInventory extends Model
     public function iar()
     {
         return $this->belongsTo(\App\Models\Procurement\InspectionAcceptanceReport::class, 'IARID', 'IARID');
+    }
+
+    public function deliveryReceipt()
+    {
+        return $this->belongsTo(\App\Models\Procurement\DeliveryReceipt::class, 'DRID', 'DRID');
     }
 }

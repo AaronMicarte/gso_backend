@@ -25,6 +25,8 @@ class DeliveryReceiptDetail extends Model
         'SerialNumber',
         'PropertyTypeID',
         'QuantityDelivered',
+        'QuantityRequested',
+        'ChangeReason',
         'UnitOfMeasureID',
         'UnitCost',
         'TotalCost',
@@ -33,6 +35,7 @@ class DeliveryReceiptDetail extends Model
 
     protected $casts = [
         'QuantityDelivered' => 'integer',
+        'QuantityRequested' => 'integer',
         'UnitCost' => 'decimal:2',
         'TotalCost' => 'decimal:2',
         'UnitOfMeasureID' => 'integer',

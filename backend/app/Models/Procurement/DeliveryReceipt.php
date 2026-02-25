@@ -26,7 +26,9 @@ class DeliveryReceipt extends Model
         'PONumber',
         'InvoiceNumber',
         'ReceivedBy',
+        'InspectedBy',
         'DateReceived',
+        'DateInspected',
         'Remarks',
         'CreatedDate',
         'dr_picture',
@@ -36,6 +38,7 @@ class DeliveryReceipt extends Model
 
     protected $casts = [
         'DateReceived' => 'date',
+        'DateInspected' => 'date',
         'CreatedDate' => 'datetime',
         'InspectionCompletedAt' => 'datetime',
     ];

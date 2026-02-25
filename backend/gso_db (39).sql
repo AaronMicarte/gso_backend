@@ -363,6 +363,8 @@ CREATE TABLE `deliveryreceiptdetail` (
   `SerialNumber` varchar(100) DEFAULT NULL,
   `PropertyTypeID` int(11) NOT NULL,
   `QuantityDelivered` int(11) NOT NULL,
+  `QuantityRequested` int(11) DEFAULT NULL,
+  `ChangeReason` varchar(255) DEFAULT NULL,
   `UnitOfMeasureID` int(11) NOT NULL DEFAULT 1,
   `UnitCost` decimal(18,2) DEFAULT NULL,
   `TotalCost` decimal(18,2) DEFAULT NULL,
@@ -374,22 +376,22 @@ CREATE TABLE `deliveryreceiptdetail` (
 -- Dumping data for table `deliveryreceiptdetail`
 --
 
-INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ArticleID`, `ItemDescription`, `Brand`, `ModelNumber`, `SerialNumber`, `PropertyTypeID`, `QuantityDelivered`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `InspectionStatus`, `deleted_at`) VALUES
-(15, 7, NULL, 'Wireless Mouse', 'Logitech', 'MX Master 3', 'LOG-MX3-001', 7, 1, 2, 500.00, 500.00, 'inspected', NULL),
-(16, 7, NULL, 'Keyboard', 'Logitech', 'MX Keys', 'LOG-MXK-002', 7, 1, 2, 800.00, 800.00, 'inspected', NULL),
-(17, 8, NULL, 'Printer Paper', 'Staples', 'A4-80GSM', NULL, 8, 20, 5, 200.00, 4000.00, 'inspected', NULL),
-(18, 8, NULL, 'Ink Cartridges', 'HP', 'HP-564', NULL, 8, 15, 2, 300.00, 4500.00, 'inspected', NULL),
-(19, 9, NULL, 'Monitor 24\"', 'Dell', 'S2421H', 'DEL-S2421H-001', 7, 1, 2, 15000.00, 15000.00, 'inspected', NULL),
-(20, 9, NULL, 'HDMI Cable', 'Belkin', 'AV10115', NULL, 7, 10, 2, 200.00, 2000.00, 'inspected', NULL),
-(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 2, 5000.00, 5000.00, 'inspected', NULL),
-(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 2, 1000.00, 6000.00, 'inspected', NULL),
-(23, 11, NULL, 'Filing Cabinet', 'Hon', 'HFC42', 'HON-HFC42-001', 6, 1, 2, 8000.00, 8000.00, 'pending', NULL),
-(24, 11, NULL, 'Whiteboard', 'Quartet', 'QRT-792', NULL, 6, 2, 2, 3000.00, 6000.00, 'pending', NULL),
-(25, 12, NULL, 'Laptop Stand', 'Rain Design', 'mStand', 'RD-MST-001', 7, 1, 2, 1500.00, 1500.00, 'pending', NULL),
-(26, 12, NULL, 'USB Hub', 'Anker', '7-in-1', NULL, 7, 9, 2, 400.00, 3600.00, 'pending', NULL),
-(27, 13, NULL, 'Table', 'BrandX', 'ModelX', NULL, 6, 10, 7, 100.00, 1000.00, 'pending', NULL),
-(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 6, 1, 2, 200.00, 200.00, 'inspected', NULL),
-(29, 15, 11, 'basta', 'haha', 'hehe', NULL, 11, 4, 2, 999.00, 3996.00, 'inspected', NULL);
+INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ArticleID`, `ItemDescription`, `Brand`, `ModelNumber`, `SerialNumber`, `PropertyTypeID`, `QuantityDelivered`, `QuantityRequested`, `ChangeReason`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `InspectionStatus`, `deleted_at`) VALUES
+(15, 7, NULL, 'Wireless Mouse', 'Logitech', 'MX Master 3', 'LOG-MX3-001', 7, 1, 1, NULL, 2, 500.00, 500.00, 'inspected', NULL),
+(16, 7, NULL, 'Keyboard', 'Logitech', 'MX Keys', 'LOG-MXK-002', 7, 1, 1, NULL, 2, 800.00, 800.00, 'inspected', NULL),
+(17, 8, NULL, 'Printer Paper', 'Staples', 'A4-80GSM', NULL, 8, 20, 20, NULL, 5, 200.00, 4000.00, 'inspected', NULL),
+(18, 8, NULL, 'Ink Cartridges', 'HP', 'HP-564', NULL, 8, 15, 15, NULL, 2, 300.00, 4500.00, 'inspected', NULL),
+(19, 9, NULL, 'Monitor 24"', 'Dell', 'S2421H', 'DEL-S2421H-001', 7, 1, 1, NULL, 2, 15000.00, 15000.00, 'inspected', NULL),
+(20, 9, NULL, 'HDMI Cable', 'Belkin', 'AV10115', NULL, 7, 10, 10, NULL, 2, 200.00, 2000.00, 'inspected', NULL),
+(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 1, NULL, 2, 5000.00, 5000.00, 'inspected', NULL),
+(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 6, NULL, 2, 1000.00, 6000.00, 'inspected', NULL),
+(23, 11, NULL, 'Filing Cabinet', 'Hon', 'HFC42', 'HON-HFC42-001', 6, 1, 1, NULL, 2, 8000.00, 8000.00, 'pending', NULL),
+(24, 11, NULL, 'Whiteboard', 'Quartet', 'QRT-792', NULL, 6, 2, 2, NULL, 2, 3000.00, 6000.00, 'pending', NULL),
+(25, 12, NULL, 'Laptop Stand', 'Rain Design', 'mStand', 'RD-MST-001', 7, 1, 1, NULL, 2, 1500.00, 1500.00, 'pending', NULL),
+(26, 12, NULL, 'USB Hub', 'Anker', '7-in-1', NULL, 7, 9, 9, NULL, 2, 400.00, 3600.00, 'pending', NULL),
+(27, 13, NULL, 'Table', 'BrandX', 'ModelX', NULL, 6, 10, 10, NULL, 7, 100.00, 1000.00, 'pending', NULL),
+(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 6, 1, 1, NULL, 2, 200.00, 200.00, 'inspected', NULL),
+(29, 15, 11, 'basta', 'haha', 'hehe', NULL, 11, 4, 4, NULL, 2, 999.00, 3996.00, 'inspected', NULL);
 
 -- --------------------------------------------------------
 
