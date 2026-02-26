@@ -20,8 +20,9 @@ return [
 
     'allowed_methods' => ['*'],
 
-    // Allow only localhost:3000 for frontend during local development
-    'allowed_origins' => ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    // Allow localhost ports used by the SPA and any other development origin
+    // (could alternatively use ['*'] for convenience, just be careful in production).
+    'allowed_origins' => ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8000', 'http://127.0.0.1:8000'],
 
     'allowed_origins_patterns' => [],
 

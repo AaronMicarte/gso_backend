@@ -11,27 +11,45 @@ return new class extends Migration {
         Schema::table('deliveryreceipt', function (Blueprint $table) {
             if (!Schema::hasColumn('deliveryreceipt', 'SupplierID')) {
                 // add integer column to hold the FK
-                $table->integer('SupplierID')->unsigned()->nullable()->after('SupplierName');
+                $table->integer('SupplierID')->nullable()->after('SupplierName');
             }
         });
+
+        // Ensure SupplierID uses signed INT to match supplier.SupplierID
+        if (Schema::hasColumn('deliveryreceipt', 'SupplierID')) {
+            DB::statement('ALTER TABLE `deliveryreceipt` MODIFY `SupplierID` INT NULL');
+        }
 
         // backfill from the supplier table based on name match
         DB::table('deliveryreceipt as dr')
             ->join('supplier as s', 'dr.SupplierName', '=', 's.SupplierName')
             ->update(['dr.SupplierID' => DB::raw('s.SupplierID')]);
 
-        Schema::table('deliveryreceipt', function (Blueprint $table) {
-            if (!Schema::hasColumn('deliveryreceipt', 'SupplierID')) {
-                return;
+        if (Schema::hasColumn('deliveryreceipt', 'SupplierID')) {
+            $indexExists = DB::select("SHOW INDEX FROM `deliveryreceipt` WHERE Key_name = 'deliveryreceipt_supplierid_index'");
+            if (empty($indexExists)) {
+                Schema::table('deliveryreceipt', function (Blueprint $table) {
+                    $table->index('SupplierID', 'deliveryreceipt_supplierid_index');
+                });
             }
 
-            // make sure there is an index and foreign key
-            $table->index('SupplierID');
-            $table->foreign('SupplierID')
-                ->references('SupplierID')
-                ->on('supplier')
-                ->onDelete('set null');
-        });
+            $fkExists = DB::select(
+                "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = 'deliveryreceipt'
+                   AND COLUMN_NAME = 'SupplierID'
+                   AND REFERENCED_TABLE_NAME = 'supplier'"
+            );
+
+            if (empty($fkExists)) {
+                Schema::table('deliveryreceipt', function (Blueprint $table) {
+                    $table->foreign('SupplierID')
+                        ->references('SupplierID')
+                        ->on('supplier')
+                        ->onDelete('set null');
+                });
+            }
+        }
 
         // optional: if you wish to remove the old text column uncomment below
         // Schema::table('deliveryreceipt', function (Blueprint $table) {

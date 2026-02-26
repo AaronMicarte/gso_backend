@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use App\Models\Auth\User;
+use App\Models\MasterData\Supplier;
 
 class DeliveryReceipt extends Model
 {
@@ -20,6 +21,7 @@ class DeliveryReceipt extends Model
 
     protected $fillable = [
         'DRNumber',
+        'SupplierID',
         'SupplierName',
         'RequestedBy',
         'PRNumber',
@@ -41,6 +43,7 @@ class DeliveryReceipt extends Model
         'DateInspected' => 'date',
         'CreatedDate' => 'datetime',
         'InspectionCompletedAt' => 'datetime',
+        'SupplierID' => 'integer',
     ];
 
     public function receivedByUser(): BelongsTo
@@ -51,6 +54,11 @@ class DeliveryReceipt extends Model
     public function requestedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'RequestedBy', 'UserID');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'SupplierID', 'SupplierID');
     }
 
     public function details(): HasMany

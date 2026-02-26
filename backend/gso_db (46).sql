@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 25, 2026 at 12:08 PM
+-- Generation Time: Feb 26, 2026 at 04:56 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -185,7 +185,10 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (23, 'property_borrow', 2, 'releasing_approved', 3, '{\"borrow_number\":\"PBR-2026-0002\",\"requested_count\":1,\"approved_count\":1,\"reason\":null}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '2026-02-23 23:39:01'),
 (24, 'property_borrow', 2, 'approved', 1, '{\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31'),
 (25, 'inventory_detail', 3, 'borrow_approved', 1, '{\"borrow_id\":2,\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31'),
-(26, 'property_borrow', 2, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31');
+(26, 'property_borrow', 2, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0002\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-23 23:39:31'),
+(27, 'inventory_detail', 24, 'created_from_dr', 1, '{\"inventory_id\":6,\"dr_detail_id\":37,\"property_number\":\"2026-000024\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 15:55:59'),
+(28, 'delivery_receipt', 23, 'created', 1, '{\"dr_number\":\"ad\",\"supplier\":\"COVID Supplies\",\"details\":[37]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 15:55:59'),
+(29, 'delivery_receipt_detail', 37, 'created', 1, '{\"dr_id\":23,\"dr_number\":\"ad\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '2026-02-26 15:55:59');
 
 -- --------------------------------------------------------
 
@@ -261,7 +264,8 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (45, 20, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
 (46, 21, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
 (47, 22, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
-(48, 23, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42');
+(48, 23, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
+(49, 24, 2, 30, NULL, 'bugnaw', '2026-02-26', 1, 1, 'Auto-created on DR intake', '2026-02-26 23:55:59', '2026-02-26 23:55:59');
 
 -- --------------------------------------------------------
 
@@ -318,12 +322,15 @@ CREATE TABLE `deliveryreceipt` (
   `DRID` int(11) NOT NULL,
   `DRNumber` varchar(50) NOT NULL,
   `SupplierName` varchar(255) DEFAULT NULL COMMENT 'Supplier name (manual entry or from supplier table)',
+  `SupplierID` int(11) DEFAULT NULL,
   `RequestedBy` int(11) DEFAULT NULL,
   `PRNumber` varchar(50) DEFAULT NULL,
   `PONumber` varchar(50) DEFAULT NULL COMMENT 'Manual PO Number reference (optional)',
   `InvoiceNumber` varchar(50) DEFAULT NULL COMMENT 'Invoice number from supplier',
   `ReceivedBy` int(11) NOT NULL,
+  `InspectedBy` int(10) UNSIGNED DEFAULT NULL,
   `DateReceived` date NOT NULL,
+  `DateInspected` date DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `InspectionStatus` enum('pending','inspected') NOT NULL DEFAULT 'pending',
   `InspectionCompletedAt` timestamp NULL DEFAULT NULL,
@@ -336,19 +343,23 @@ CREATE TABLE `deliveryreceipt` (
 -- Dumping data for table `deliveryreceipt`
 --
 
-INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `RequestedBy`, `PRNumber`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `DateReceived`, `Remarks`, `InspectionStatus`, `InspectionCompletedAt`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
-(7, 'DR-2026-002', 'Tech Supplies Inc.', 3, 'PR-002', 'PO-002', 'INV-002', 3, '2026-02-14', 'Wireless peripherals for office use', 'inspected', '2026-02-13 18:03:36', 'dr_pictures/sample1.png', '2026-02-14 02:00:49', NULL),
-(8, 'DR-2026-003', 'Office Depot', 3, 'PR-003', 'PO-003', 'INV-003', 3, '2026-02-13', 'Stationery and office supplies', 'inspected', '2026-02-13 19:07:37', 'dr_pictures/sample2.png', '2026-02-14 02:00:49', NULL),
-(9, 'DR-2026-004', 'Global Electronics', 3, 'PR-004', 'PO-004', 'INV-004', 3, '2026-02-12', 'IT equipment for department', 'inspected', '2026-02-13 19:23:16', 'dr_pictures/sample3.png', '2026-02-14 02:00:49', NULL),
-(10, 'DR-2026-005', 'Stationery World', 3, 'PR-005', 'PO-005', 'INV-005', 3, '2026-02-11', 'Office furniture', 'inspected', '2026-02-15 13:00:58', 'dr_pictures/sample4.png', '2026-02-14 02:00:49', NULL),
-(11, 'DR-2026-006', 'Furniture Co.', 3, 'PR-006', 'PO-006', 'INV-006', 3, '2026-02-10', 'Filing cabinets and whiteboards', 'pending', NULL, 'dr_pictures/sample5.png', '2026-02-14 02:00:49', NULL),
-(12, 'DR-2026-007', 'IT Solutions Ltd.', 3, 'PR-007', 'PO-007', 'INV-007', 3, '2026-02-09', 'Laptop accessories', 'pending', NULL, 'dr_pictures/sample6.png', '2026-02-14 02:00:49', NULL),
-(13, 'dr21', 'as', 3, '1', '1', '1', 1, '2026-02-14', 'good', 'pending', NULL, 'dr_pictures/kjFLcgwgy0GWHXrIO1KdwSGSjQc6leDTT9ezmBls.jpg', '2026-02-14 14:14:58', NULL),
-(14, 'dr123', 'Cyron Suppliers', 3, '3', '3', '3', 1, '2026-02-15', 'goods', 'inspected', '2026-02-15 09:28:48', 'dr_pictures/4IhAGiGgGk8S5e37H1egfX4tnY0UhS5lz3q8Zys6.jpg', '2026-02-15 17:27:07', NULL),
-(15, 'DR321', 'Cyron Suppliers', 6, '123', '123', '123', 1, '2026-02-16', 'good', 'inspected', '2026-02-16 13:47:19', 'dr_pictures/EB4Z6EMSxmPRtZvKuFfmICLI0gsADI6XWFFEdvzA.jpg', '2026-02-16 21:44:27', NULL),
-(16, 'DR-TEST-001', 'Test Supplier A', 3, 'PR-TST-001', 'PO-TST-001', 'INV-TST-001', 3, '2026-02-25', 'Test data for Chokoy', 'pending', NULL, 'dr_pictures/sample7.png', '2026-02-25 10:00:00', NULL),
-(17, 'DR-TEST-002', 'Test Supplier B', 6, 'PR-TST-002', 'PO-TST-002', 'INV-TST-002', 3, '2026-02-25', 'Test data for Cyron', 'pending', NULL, 'dr_pictures/sample8.png', '2026-02-25 10:05:00', NULL),
-(18, 'DR-TEST-003', 'Test Supplier C', 3, 'PR-TST-003', 'PO-TST-003', 'INV-TST-003', 3, '2026-02-25', 'Test data for Chokoy', 'pending', NULL, 'dr_pictures/sample9.png', '2026-02-25 10:10:00', NULL);
+INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `SupplierName`, `SupplierID`, `RequestedBy`, `PRNumber`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `InspectedBy`, `DateReceived`, `DateInspected`, `Remarks`, `InspectionStatus`, `InspectionCompletedAt`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
+(7, 'DR-2026-002', 'Tech Supplies Inc.', NULL, 3, 'PR-002', 'PO-002', 'INV-002', 3, NULL, '2026-02-14', NULL, 'Wireless peripherals for office use', 'inspected', '2026-02-13 18:03:36', 'dr_pictures/sample1.png', '2026-02-14 02:00:49', NULL),
+(8, 'DR-2026-003', 'Office Depot', NULL, 3, 'PR-003', 'PO-003', 'INV-003', 3, NULL, '2026-02-13', NULL, 'Stationery and office supplies', 'inspected', '2026-02-13 19:07:37', 'dr_pictures/sample2.png', '2026-02-14 02:00:49', NULL),
+(9, 'DR-2026-004', 'Global Electronics', NULL, 3, 'PR-004', 'PO-004', 'INV-004', 3, NULL, '2026-02-12', NULL, 'IT equipment for department', 'inspected', '2026-02-13 19:23:16', 'dr_pictures/sample3.png', '2026-02-14 02:00:49', NULL),
+(10, 'DR-2026-005', 'Stationery World', NULL, 3, 'PR-005', 'PO-005', 'INV-005', 3, NULL, '2026-02-11', NULL, 'Office furniture', 'inspected', '2026-02-15 13:00:58', 'dr_pictures/sample4.png', '2026-02-14 02:00:49', NULL),
+(11, 'DR-2026-006', 'Furniture Co.', NULL, 3, 'PR-006', 'PO-006', 'INV-006', 3, NULL, '2026-02-10', '2026-02-10', 'Filing cabinets and whiteboards', 'inspected', '2026-02-25 16:44:51', 'dr_pictures/sample5.png', '2026-02-14 02:00:49', NULL),
+(12, 'DR-2026-007', 'IT Solutions Ltd.', NULL, 3, 'PR-007', 'PO-007', 'INV-007', 3, NULL, '2026-02-09', '2026-02-09', 'Laptop accessories', 'inspected', '2026-02-25 16:44:51', 'dr_pictures/sample6.png', '2026-02-14 02:00:49', NULL),
+(13, 'dr21', 'as', NULL, 3, '1', '1', '1', 1, NULL, '2026-02-14', '2026-02-14', 'good', 'inspected', '2026-02-25 16:44:51', 'dr_pictures/kjFLcgwgy0GWHXrIO1KdwSGSjQc6leDTT9ezmBls.jpg', '2026-02-14 14:14:58', NULL),
+(14, 'dr123', 'Cyron Suppliers', 3, 3, '3', '3', '3', 1, NULL, '2026-02-15', NULL, 'goods', 'inspected', '2026-02-15 09:28:48', 'dr_pictures/4IhAGiGgGk8S5e37H1egfX4tnY0UhS5lz3q8Zys6.jpg', '2026-02-15 17:27:07', NULL),
+(15, 'DR321', 'Cyron Suppliers', 3, 6, '123', '123', '123', 1, NULL, '2026-02-16', NULL, 'good', 'inspected', '2026-02-16 13:47:19', 'dr_pictures/EB4Z6EMSxmPRtZvKuFfmICLI0gsADI6XWFFEdvzA.jpg', '2026-02-16 21:44:27', NULL),
+(17, 'DR-COVID-001', 'COVID Supplies', 4, 3, 'PR-COV-001', 'PO-COV-001', 'INV-COV-001', 1, 1, '2026-02-20', '2026-02-21', 'COVID laptops', 'inspected', '2026-02-21 01:00:00', '/uploads/cov1.jpg', '2026-02-26 00:39:20', NULL),
+(18, 'DR-COVID-002', 'COVID Supplies', 4, 3, 'PR-COV-002', 'PO-COV-002', 'INV-COV-002', 1, 1, '2026-02-22', '2026-02-23', 'COVID filing cabinets', 'inspected', '2026-02-25 16:44:51', '/uploads/cov2.jpg', '2026-02-26 00:39:20', NULL),
+(19, 'DR-COVID-003', 'COVID Supplies', 4, 3, 'PR-COV-003', 'PO-COV-003', 'INV-COV-003', 1, 1, '2026-02-24', '2026-02-25', 'COVID calculators', 'inspected', '2026-02-25 16:44:51', '/uploads/cov3.jpg', '2026-02-26 00:39:20', NULL),
+(20, 'DR-CYRON-001', 'Cyron Suppliers', 3, 6, 'PR-CYR-001', 'PO-CYR-001', 'INV-CYR-001', 1, 1, '2026-02-20', '2026-02-21', 'Cyron telephone sets', 'inspected', '2026-02-21 02:00:00', '/uploads/cyr1.jpg', '2026-02-26 00:39:20', NULL),
+(21, 'DR-CYRON-002', 'Cyron Suppliers', 3, 6, 'PR-CYR-002', 'PO-CYR-002', 'INV-CYR-002', 1, 1, '2026-02-22', '2026-02-23', 'Cyron calculators', 'inspected', '2026-02-25 16:44:51', '/uploads/cyr2.jpg', '2026-02-26 00:39:20', NULL),
+(22, 'DR-CYRON-003', 'Cyron Suppliers', 3, 6, 'PR-CYR-003', 'PO-CYR-003', 'INV-CYR-003', 1, 1, '2026-02-24', '2026-02-25', 'Cyron filing cabinets', 'inspected', '2026-02-25 16:44:51', '/uploads/cyr3.jpg', '2026-02-26 00:39:20', NULL),
+(23, 'ad', 'COVID Supplies', 4, 3, '451', '2521', '421', 1, 1, '2026-02-26', '2026-02-26', 'sad', 'inspected', '2026-02-26 15:55:59', 'dr_pictures/b0RkpZWGJvI5NbBpG7E825VdMokJn7ynifSiyhAr.jpg', '2026-02-26 23:55:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -379,27 +390,29 @@ CREATE TABLE `deliveryreceiptdetail` (
 -- Dumping data for table `deliveryreceiptdetail`
 --
 
-INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ArticleID`, `ItemDescription`, `Brand`, `ModelNumber`, `SerialNumber`, `PropertyTypeID`, `QuantityDelivered`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `InspectionStatus`, `deleted_at`) VALUES
-(15, 7, NULL, 'Wireless Mouse', 'Logitech', 'MX Master 3', 'LOG-MX3-001', 7, 1, 2, 500.00, 500.00, 'inspected', NULL),
-(16, 7, NULL, 'Keyboard', 'Logitech', 'MX Keys', 'LOG-MXK-002', 7, 1, 2, 800.00, 800.00, 'inspected', NULL),
-(17, 8, NULL, 'Printer Paper', 'Staples', 'A4-80GSM', NULL, 8, 20, 5, 200.00, 4000.00, 'inspected', NULL),
-(18, 8, NULL, 'Ink Cartridges', 'HP', 'HP-564', NULL, 8, 15, 2, 300.00, 4500.00, 'inspected', NULL),
-(19, 9, NULL, 'Monitor 24\"', 'Dell', 'S2421H', 'DEL-S2421H-001', 7, 1, 2, 15000.00, 15000.00, 'inspected', NULL),
-(20, 9, NULL, 'HDMI Cable', 'Belkin', 'AV10115', NULL, 7, 10, 2, 200.00, 2000.00, 'inspected', NULL),
-(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 2, 5000.00, 5000.00, 'inspected', NULL),
-(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 2, 1000.00, 6000.00, 'inspected', NULL),
-(23, 11, NULL, 'Filing Cabinet', 'Hon', 'HFC42', 'HON-HFC42-001', 6, 1, 2, 8000.00, 8000.00, 'pending', NULL),
-(24, 11, NULL, 'Whiteboard', 'Quartet', 'QRT-792', NULL, 6, 2, 2, 3000.00, 6000.00, 'pending', NULL),
-(25, 12, NULL, 'Laptop Stand', 'Rain Design', 'mStand', 'RD-MST-001', 7, 1, 2, 1500.00, 1500.00, 'pending', NULL),
-(26, 12, NULL, 'USB Hub', 'Anker', '7-in-1', NULL, 7, 9, 2, 400.00, 3600.00, 'pending', NULL),
-(27, 13, NULL, 'Table', 'BrandX', 'ModelX', NULL, 6, 10, 7, 100.00, 1000.00, 'pending', NULL),
-(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 6, 1, 2, 200.00, 200.00, 'inspected', NULL),
-(29, 15, 11, 'basta', 'haha', 'hehe', NULL, 11, 4, 2, 999.00, 3996.00, 'inspected', NULL);
-
 INSERT INTO `deliveryreceiptdetail` (`DRDetailID`, `DRID`, `ArticleID`, `ItemDescription`, `Brand`, `ModelNumber`, `SerialNumber`, `PropertyTypeID`, `QuantityDelivered`, `QuantityRequested`, `ChangeReason`, `UnitOfMeasureID`, `UnitCost`, `TotalCost`, `InspectionStatus`, `deleted_at`) VALUES
-(30, 16, 11, 'Calculator', NULL, NULL, NULL, 11, 5, 5, NULL, 2, 100.00, 500.00, 'pending', NULL),
-(31, 17, 7, 'Air Conditioner', NULL, NULL, NULL, 8, 3, 3, NULL, 2, 200.00, 600.00, 'pending', NULL),
-(32, 18, NULL, 'Test Item C', NULL, NULL, NULL, 7, 2, 2, NULL, 2, 150.00, 300.00, 'pending', NULL);
+(15, 7, NULL, 'Wireless Mouse', 'Logitech', 'MX Master 3', 'LOG-MX3-001', 7, 1, 1, NULL, 2, 500.00, 500.00, 'inspected', NULL),
+(16, 7, NULL, 'Keyboard', 'Logitech', 'MX Keys', 'LOG-MXK-002', 7, 1, 1, NULL, 2, 800.00, 800.00, 'inspected', NULL),
+(17, 8, NULL, 'Printer Paper', 'Staples', 'A4-80GSM', NULL, 8, 20, 20, NULL, 5, 200.00, 4000.00, 'inspected', NULL),
+(18, 8, NULL, 'Ink Cartridges', 'HP', 'HP-564', NULL, 8, 15, 15, NULL, 2, 300.00, 4500.00, 'inspected', NULL),
+(19, 9, NULL, 'Monitor 24\"', 'Dell', 'S2421H', 'DEL-S2421H-001', 7, 1, 1, NULL, 2, 15000.00, 15000.00, 'inspected', NULL),
+(20, 9, NULL, 'HDMI Cable', 'Belkin', 'AV10115', NULL, 7, 10, 10, NULL, 2, 200.00, 2000.00, 'inspected', NULL),
+(21, 10, NULL, 'Office Chair', 'Herman Miller', 'Aeron', 'HM-AERON-001', 6, 1, 1, NULL, 2, 5000.00, 5000.00, 'inspected', NULL),
+(22, 10, NULL, 'Desk Lamp', 'IKEA', 'FLEKKE', NULL, 6, 6, 6, NULL, 2, 1000.00, 6000.00, 'inspected', NULL),
+(23, 11, NULL, 'Filing Cabinet', 'Hon', 'HFC42', 'HON-HFC42-001', 6, 1, 1, NULL, 2, 8000.00, 8000.00, 'inspected', NULL),
+(24, 11, NULL, 'Whiteboard', 'Quartet', 'QRT-792', NULL, 6, 2, 2, NULL, 2, 3000.00, 6000.00, 'inspected', NULL),
+(25, 12, NULL, 'Laptop Stand', 'Rain Design', 'mStand', 'RD-MST-001', 7, 1, 1, NULL, 2, 1500.00, 1500.00, 'inspected', NULL),
+(26, 12, NULL, 'USB Hub', 'Anker', '7-in-1', NULL, 7, 9, 9, NULL, 2, 400.00, 3600.00, 'inspected', NULL),
+(27, 13, NULL, 'Table', 'BrandX', 'ModelX', NULL, 6, 10, 10, NULL, 7, 100.00, 1000.00, 'inspected', NULL),
+(28, 14, 7, 'maka bugnaw', 'ambot', 'ambotnumber', '123', 8, 1, 1, NULL, 2, 200.00, 200.00, 'inspected', NULL),
+(29, 15, 11, 'basta', 'haha', 'hehe', NULL, 11, 4, 4, NULL, 2, 999.00, 3996.00, 'inspected', NULL),
+(31, 17, 2, 'Laptop Computer', 'Dell', 'Latitude 5420', 'SN-LAPTOP-001', 7, 1, 1, NULL, 2, 45000.00, 45000.00, 'inspected', NULL),
+(32, 18, 6, 'Filing Cabinet', 'Steelcase', 'FC-2026', NULL, 6, 5, 5, NULL, 2, 8000.00, 40000.00, 'inspected', NULL),
+(33, 19, 11, 'Calculator', 'Casio', 'FX-991EX', NULL, 11, 10, 10, NULL, 2, 1200.00, 12000.00, 'inspected', NULL),
+(34, 20, 9, 'Telephone Set', 'Panasonic', 'KX-T7705X', 'SN-TEL-001', 2, 1, 1, NULL, 2, 1800.00, 1800.00, 'inspected', NULL),
+(35, 21, 11, 'Calculator', 'Canon', 'LS-123K', NULL, 11, 8, 8, NULL, 2, 1100.00, 8800.00, 'inspected', NULL),
+(36, 22, 6, 'Filing Cabinet', 'Steelcase', 'FC-2026', NULL, 6, 3, 3, NULL, 2, 8500.00, 25500.00, 'inspected', NULL),
+(37, 23, 7, 'bugnaw', NULL, NULL, NULL, 8, 1, 1, NULL, 2, 10000.00, 10000.00, 'inspected', NULL);
 
 -- --------------------------------------------------------
 
@@ -935,7 +948,16 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (153, 1, '2026-02-25 14:29:13', 'Login', '127.0.0.1'),
 (154, 3, '2026-02-25 17:06:31', 'Login', '127.0.0.1'),
 (155, 3, '2026-02-25 17:07:08', 'Logout', '127.0.0.1'),
-(156, 6, '2026-02-25 17:07:21', 'Login', '127.0.0.1');
+(156, 6, '2026-02-25 17:07:21', 'Login', '127.0.0.1'),
+(157, 1, '2026-02-26 04:27:13', 'Login', '127.0.0.1'),
+(158, 3, '2026-02-26 04:36:37', 'Login', '127.0.0.1'),
+(159, 1, '2026-02-26 09:54:40', 'Login', '127.0.0.1'),
+(160, 1, '2026-02-26 11:36:15', 'Logout', '127.0.0.1'),
+(161, 1, '2026-02-26 11:36:21', 'Login', '127.0.0.1'),
+(162, 1, '2026-02-26 11:36:27', 'Logout', '127.0.0.1'),
+(163, 1, '2026-02-26 11:39:59', 'Login', '127.0.0.1'),
+(164, 3, '2026-02-26 23:52:39', 'Login', '127.0.0.1'),
+(165, 1, '2026-02-26 23:55:06', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1088,7 +1110,11 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (138, '2026_02_24_000022_drop_property_borrow_signature_and_return_columns', 44),
 (139, '2026_02_24_000023_create_property_return_item_conditions', 45),
 (140, '2026_02_24_000024_add_primary_condition_to_return_items', 46),
-(141, '2026_02_24_000023_add_condition_to_property_return_items', 47);
+(141, '2026_02_24_000023_add_condition_to_property_return_items', 47),
+(142, '2026_02_25_000001_merge_dr_inspection_fields', 48),
+(143, '2026_02_25_000002_simplify_dr_detail_fields', 48),
+(144, '2026_02_25_000003_add_supplier_fk_to_deliveryreceipt', 49),
+(145, '2026_02_25_000004_update_dr_supplier_unique_indexes', 50);
 
 -- --------------------------------------------------------
 
@@ -1365,7 +1391,8 @@ INSERT INTO `propertyinventory` (`InventoryID`, `PropertyTypeID`, `UnitOfMeasure
 (2, NULL, NULL, NULL, 3, '2026-02-14', NULL, 'Auto-ingested from IAR #IAR-2026-0003', '2026-02-14 03:23:17', NULL, 'INV-20260214-032317-3', NULL),
 (3, NULL, NULL, NULL, 4, '2026-02-15', NULL, 'Auto-ingested from IAR #IAR-2026-0004', '2026-02-15 17:28:48', NULL, 'INV-20260215-172848-4', NULL),
 (4, NULL, NULL, NULL, 6, '2026-02-15', NULL, 'Auto-ingested from IAR #IAR-2026-0006', '2026-02-15 21:00:58', NULL, 'INV-20260215-210058-6', NULL),
-(5, NULL, NULL, NULL, 7, '2026-02-16', NULL, 'Auto-ingested from IAR #IAR-2026-0007', '2026-02-16 21:47:19', NULL, 'INV-20260216-214719-7', NULL);
+(5, NULL, NULL, NULL, 7, '2026-02-16', NULL, 'Auto-ingested from IAR #IAR-2026-0007', '2026-02-16 21:47:19', NULL, 'INV-20260216-214719-7', NULL),
+(6, NULL, NULL, 23, NULL, '2026-02-26', NULL, 'Auto-ingested from DR #ad', '2026-02-26 23:55:59', NULL, 'INV-20260226-235559-23', NULL);
 
 -- --------------------------------------------------------
 
@@ -1425,7 +1452,8 @@ INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `Prop
 (20, 5, 11, NULL, 'basta', '2026-000020', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
 (21, 5, 11, NULL, 'basta', '2026-000021', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
 (22, 5, 11, NULL, 'basta', '2026-000022', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
-(23, 5, 11, NULL, 'basta', '2026-000023', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL);
+(23, 5, 11, NULL, 'basta', '2026-000023', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
+(24, 6, 8, NULL, 'bugnaw', '2026-000024', NULL, 1, 1, 1, 2, 10000.00, 10000.00, NULL, 37, 1, NULL, NULL, NULL, '2026-02-26 23:55:59', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1464,7 +1492,8 @@ INSERT INTO `propertyissuance` (`IssuanceID`, `RequestID`, `DRID`, `IssuedBy`, `
 (2, NULL, 14, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0002', 'acknowledged', '2026-02-16', 'Auto-created from IAR acknowledgement', NULL, '2026-02-16 00:00:00', 3, NULL, NULL, '2026-02-16 15:26:49'),
 (3, NULL, 8, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0003', 'pending_acknowledgment', '2026-02-14', 'Auto-created from inspection completion', NULL, NULL, NULL, NULL, NULL, '2026-02-16 17:51:05'),
 (4, NULL, 15, 7, NULL, NULL, 4, 'Cyron Micarte', 'PAR', 'PAR-2026-0004', 'pending_acknowledgment', '2026-02-16', 'Auto-created from inspection completion', NULL, NULL, NULL, NULL, NULL, '2026-02-16 21:47:19'),
-(5, NULL, 9, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0005', 'acknowledged', '2026-02-18', 'Auto-created from IAR acknowledgement', NULL, '2026-02-18 00:00:00', 3, NULL, NULL, '2026-02-18 23:31:58');
+(5, NULL, 9, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0005', 'acknowledged', '2026-02-18', 'Auto-created from IAR acknowledgement', NULL, '2026-02-18 00:00:00', 3, NULL, NULL, '2026-02-18 23:31:58'),
+(6, NULL, 23, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0006', 'pending_acknowledgment', '2026-02-26', 'Auto-created from DR inspection', NULL, NULL, NULL, NULL, NULL, '2026-02-26 23:55:59');
 
 -- --------------------------------------------------------
 
@@ -1510,7 +1539,8 @@ INSERT INTO `propertyissuancedetail` (`IssuanceDetailID`, `IssuanceID`, `Request
 (17, 5, NULL, 'HDMI Cable', 'unit', 10, 1, 'Auto-created from IAR acknowledgement', '2026-02-18 15:31:59', '2026-02-18 15:31:59', NULL),
 (18, 5, NULL, 'HDMI Cable', 'unit', 11, 1, 'Auto-created from IAR acknowledgement', '2026-02-18 15:31:59', '2026-02-18 15:31:59', NULL),
 (19, 5, NULL, 'HDMI Cable', 'unit', 12, 1, 'Auto-created from IAR acknowledgement', '2026-02-18 15:31:59', '2026-02-18 15:31:59', NULL),
-(20, 5, NULL, 'HDMI Cable', 'unit', 13, 1, 'Auto-created from IAR acknowledgement', '2026-02-18 15:31:59', '2026-02-18 15:31:59', NULL);
+(20, 5, NULL, 'HDMI Cable', 'unit', 13, 1, 'Auto-created from IAR acknowledgement', '2026-02-18 15:31:59', '2026-02-18 15:31:59', NULL),
+(21, 6, NULL, 'bugnaw', 'unit', 24, 1, 'Auto-created from DR inspection', '2026-02-26 15:55:59', '2026-02-26 15:55:59', NULL);
 
 -- --------------------------------------------------------
 
@@ -1777,7 +1807,8 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 (20, 45, 20, 23, 'http://localhost:3000/qr/scan/45?h=c4807b78f58a', '2026-02-16 21:47:19'),
 (21, 46, 21, 23, 'http://localhost:3000/qr/scan/46?h=46cc4d5d18b8', '2026-02-16 21:47:19'),
 (22, 47, 22, 23, 'http://localhost:3000/qr/scan/47?h=8193cece10b6', '2026-02-16 21:47:19'),
-(23, 48, 23, 23, 'http://localhost:3000/qr/scan/48?h=f858bdc6ffb7', '2026-02-16 21:47:19');
+(23, 48, 23, 23, 'http://localhost:3000/qr/scan/48?h=f858bdc6ffb7', '2026-02-16 21:47:19'),
+(24, 49, 24, 30, 'http://localhost:3000/qr/scan/49?h=ba6ca30d5d9e', '2026-02-26 23:55:59');
 
 -- --------------------------------------------------------
 
@@ -1880,8 +1911,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('e00MBmntaG7FdGIrw2AQcSqmImdMFFUnm0TvezML', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiQ2pDZG9oSnhMN3ZaaEk1YkQ2cm9yUUUyZmx6cTFqTmtMTms4ZUZVNiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzU6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vcHJvY3VyZW1lbnQvaW5zcGVjdGlvbi1hY2NlcHRhbmNlLXJlcG9ydHMvNyI7czo1OiJyb3V0ZSI7czozNDoiaW5zcGVjdGlvbi1hY2NlcHRhbmNlLXJlcG9ydHMuc2hvdyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1772017338),
-('JGciQ7S9ngGz9ir31sDRwcW9BEamDx9vhAblS3j8', 6, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiZHloWXlRUXRkTHliV1pobkxMd0FDdER2RDRRNGg4S2YxbjlOdk5zMCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Nzc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvcHJvcGVydHktYm9ycm93cy9oZWxwZXJzL2VuZC11c2Vycz9kZXBhcnRtZW50X2lkPTIzIjtzOjU6InJvdXRlIjtOO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTo2O3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkQS9YQ3FwOGxYck5DZVl2UTZsT3lVdTZEWHhiWHRKM1o3RkouNXEzOXE5eUFTekExRVlJS1MiO30=', 1772013457);
+('4LESHF7fKIZu3MAYRUm85RChrB91hs32lNIxVrTh', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiT3BObEZEQk5BNElzMk1jeXZ6ejk3eEVDcHk1bjJtc2VpdWJNMHc4aiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vcHJvY3VyZW1lbnQvZGVsaXZlcnktcmVjZWlwdHM/cGFnZT0xJnBlcl9wYWdlPTEwIjtzOjU6InJvdXRlIjtzOjIzOiJkZWxpdmVyeS1yZWNlaXB0cy5pbmRleCI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1772121366),
+('8q5XOTuMXCowt4eb83jwMV3ubrRLq65JqN4YGg7A', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRnpncjV4UXlvaHp2eml0cmN1TmIxQkJiWkt6RG5nNU1KSlFpdFhIdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Njc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvY29uZGl0aW9ucz9wZXJfcGFnZT1hbGwiO3M6NToicm91dGUiO3M6MTY6ImNvbmRpdGlvbnMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkaGxVN1FLblViV3BodkpuRnhZZ2FZLmdKVnpCbnhWS0tWLmtqdzd4QjVPaC4xak4wY2ZBNjIiO30=', 1772121175);
 
 -- --------------------------------------------------------
 
@@ -1909,7 +1940,8 @@ CREATE TABLE `supplier` (
 INSERT INTO `supplier` (`SupplierID`, `SupplierName`, `Address`, `ContactPerson`, `ContactNumber`, `Email`, `IsActive`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
 (1, 'Tyron Corporation', 'Zone 7, Molugan, El Salvador City', 'Tyron Micarte', '09476971709', 'micarte2010@gmail.com', 1, '2025-12-14 13:00:36', NULL, NULL),
 (2, 'Los Pollos Hermanos', 'Albaquerque, New Mexico', 'Gus Fring', '09925077173', 'lospolloshermanos@gmail.com', 1, '2025-12-14 13:25:54', NULL, NULL),
-(3, 'Cyron Suppliers', 'Lapasan, Cagayan de Oro City, Philippines, 9000', 'Cyron Micarte', '09925077173', 'cyronmicarte@gmail.com', 1, '2025-12-26 15:58:19', '2025-12-26 15:58:47', NULL);
+(3, 'Cyron Suppliers', 'Lapasan, Cagayan de Oro City, Philippines, 9000', 'Cyron Micarte', '09925077173', 'cyronmicarte@gmail.com', 1, '2025-12-26 15:58:19', '2025-12-26 15:58:47', NULL),
+(4, 'COVID Supplies', NULL, NULL, NULL, NULL, 1, '2026-02-26 00:39:20', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1978,7 +2010,9 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (80, 1, 'Trusted Device', '33197b1264d30fbb0c44a9ded474c191a0f689407265cdd39a803c9a667474a2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-03-19 21:03:25', '2026-02-17 21:03:25', NULL),
 (81, 3, 'Trusted Device', '42cc87f13c1f7053027d05e7c49d998988304b1468f72621ab50bf7ba273d6cd', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-03-19 21:05:28', '2026-02-17 21:05:28', NULL),
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
-(83, 3, 'Trusted Device', '1d477b525bb9536a45317116234d4dc76c9591f97ff36fdd68079ad2383d7cc1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-20 21:56:29', '2026-02-18 21:56:29', NULL);
+(83, 3, 'Trusted Device', '1d477b525bb9536a45317116234d4dc76c9591f97ff36fdd68079ad2383d7cc1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-20 21:56:29', '2026-02-18 21:56:29', NULL),
+(84, 3, 'Trusted Device', '2c08e0fe7b7c7eb36021b27ce8614143407b5a044868e7737c0d2a8ef43db52a', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-28 23:52:39', '2026-02-26 23:52:39', NULL),
+(85, 1, 'Trusted Device', 'f03b6fb7d6b5f62c9f756dbeb6bdbc644441cf13b196ac505575527c771e434e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-03-28 23:55:06', '2026-02-26 23:55:06', NULL);
 
 -- --------------------------------------------------------
 
@@ -2038,9 +2072,9 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`UserID`, `UserRoleID`, `DepartmentID`, `Username`, `Email`, `EmailVerifiedAt`, `ActivationTokenHash`, `ActivationSentAt`, `ActivationExpiresAt`, `Password`, `MustChangePassword`, `FullName`, `IsActive`, `MFAEnabled`, `MFASecret`, `BackupCodes`, `CreatedDate`, `UpdatedDate`) VALUES
-(1, 1, 49, 'gso.admin', 'micarte.aaron08@gmail.com', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$ftgGRhJOPo.5FWmybeLLv.Z8wX8/H.BifZNZsK51uQIsJHUB/k.h6', 0, 'GSO Administrator', 1, 0, 'eyJpdiI6Ik4xMnJ1RzIxbC9rMUpYcDJZYTk4S3c9PSIsInZhbHVlIjoiVnk0UUlOeDQ4aFBUNitKNnduWXJINE9SUzVvS0J0NTBXQmxTbVc1WjJRZz0iLCJtYWMiOiJiNTMzYzRmOTUwMTY3MzI2OTY4OTA2OTk3OWY2OWVkMDVjYmQwZjc5NWYyZWEzOGI4M2I1ODNjMDNlYTJkOGE5IiwidGFnIjoiIn0=', 'eyJpdiI6IkJ5eWxNQkpISDNlVHg2ZUtpN2ViN2c9PSIsInZhbHVlIjoid3V2TFN0bExYWGgwR0cwWUlya1VaV0lQc2hVQjI4bGpzR3pSQkRYZlp4RUI5OU5iT0ZkTG9LSVBNWjg5V2pjRzNqYmh5S1IxamVTTzM0UkkybWY3WWpMZVhPU3MwM1JFOXlCanlrNjJ4NXRNOStUSXBnRk1kZDQrQVFwcjVva2JPMnpONFJBUzNrVzlEaWNsUk1EUDlaSmlZOGZUMFR0K0FhYklhQkd0b0prPSIsIm1hYyI6ImNjOGQ2MTYxM2VhYjZhMGFmYmNmYjNjZmVhZmY3YjJiMWNkMTk2ZGM2MzMyNTE4NTM5ZDJjMzA5OTQxNTY1MjEiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-02-25 15:31:42'),
+(1, 1, 49, 'gso.admin', 'micarte.aaron08@gmail.com', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$ftgGRhJOPo.5FWmybeLLv.Z8wX8/H.BifZNZsK51uQIsJHUB/k.h6', 0, 'GSO Administrator', 1, 1, 'eyJpdiI6ImJvcFBFdSttOHlXRGNGeVN1MytvQ2c9PSIsInZhbHVlIjoiaE56YzA0VTE1YnhwNlp0YldLY0ZYYmpHUERZa0dJb2wvcm1Id3lndFRlVT0iLCJtYWMiOiI2OGJhYjIzYTNlZDA5NDI4NjQ4MDAxMjg4NmE2OTMxZmFkNTVkNjI3ZDc2N2Y0MjY0MzQxMWM4MjZlOGZkMTM1IiwidGFnIjoiIn0=', 'eyJpdiI6Im9iWlVLSmo4ZEhkWXBSVG04MzlnakE9PSIsInZhbHVlIjoiZzNtRjlLNEhVS3FJd0VVUTd4cVNXa1BLVUlPeG9CYnMvWmZULyt1R001MVBTTzhTaE5DM2tFamNQblFkdStTL2ZUc1JLY3dEWmoyVENxdmVFQ3ZCdkcyMENaVHMxM3lUWWg0UFcwMUdBa2ovQktFeFREZFFnRkJlY1hwbENkeHpoeXZSQmljUGxYdnJ6RGFBU3RHcHE4bTREcmEzTDM5d0JkWGs5VUR3bGNjPSIsIm1hYyI6IjkxZGY5OTAyZGU1NDY4YzgxNjg5ZWM3OTg1MWZhOGE3NmE1MTE4YzNkZTZjZjFjNjI3MjllZGQ1MDI4NzJiMjkiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-02-26 23:54:52'),
 (2, 2, 49, 'gso.staff.aaronmicarte', 'aaron.micarte@gso.gov.ph', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$YU66h83wjMCOJ9LMN81o8OuWpIuFYTFQpHCxkuWDAurXbYJS9Q.Mu', 0, 'Aaron Micarte', 1, 1, 'eyJpdiI6IjlHZGd3c0dKcmxwcnBLNEdhN2pkWVE9PSIsInZhbHVlIjoiRkd3RWh6SUczdmt3NnpVU0lhUnVGazNSSmdCYkU3OCtLZzA3T1RPZW1BST0iLCJtYWMiOiI3NjliN2M0MDBjZDE4N2YyODcxMWVkMjNjODdiMmVlMDcwZDEwYWIzYTk3NzFhMDVkMjY1MTQzMDM4Y2Y0OThkIiwidGFnIjoiIn0=', 'eyJpdiI6InRLc2pkQjlRVHpZd2ZzKzZ3c0RCRmc9PSIsInZhbHVlIjoiZUlXMnFlWFZ0dkNtZmUxMVVON0VUa3lXOG1EWDNmVjdrRFUxN09TUElBR2Q1K1NNeEF1WHJjTFMyN3dNbG01alUxMGN1b0l4cE5qQmRPL1BUNGxPRU00VGFOaFVtNEd2SWpJTnlEYmhLbTFrVEk0NU51UDY1S2Z4K2RCOHhxbGVyZnkyU1lXbkp2QXFPNlZWNCtwZ0lndHVyd2ljeW4wSUdObktkajJuVkpnPSIsIm1hYyI6ImU0NDM1MWY0YzZkYTYyZmMwY2QzYWM1M2ZiYmMwZTE4MzY0NzM2OWU0YzU2YTg3ODljOWY1NzhiNWVkNWEzNWQiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-02-25 15:31:42'),
-(3, 4, 30, 'IT_Head_Chokoy', 'custodian@gso.gov.ph', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$hlU7QKnUbWphvJnFxYgaY.gJVzBnxVKKV.kjw7xB5Oh.1jN0cfA62', 0, 'Chokoy Covid', 1, 0, 'eyJpdiI6ImFvVEpuaEFUclVHYXRVSEJmV3NsYWc9PSIsInZhbHVlIjoibDM5NXorMGlPTkVqUHk1YXN0OXgzM3BWd0FoT3BkYVN0ZkdwRzkxRk9yaz0iLCJtYWMiOiJhOWI4MGQzMjUyZGMyYmJhYTNiNjI3NjVjYWI5NGYyNGIyYjUwNmFkNmM1NjAzZGM5MTE3YTIzOWVkMGQ2NDg5IiwidGFnIjoiIn0=', 'eyJpdiI6Ik1mTHF2UjNtNFlyRldRTzcwbDF5S0E9PSIsInZhbHVlIjoiNjcwdVQxeTJtNmNwOUt4Wkd5RVN1alhjcGZ5R0w5Z2g4clI4L3BvRklUbERXaGFEY1MxMHMzaGMwRGVjVmhtbXpKT1AxSlUxeUlMam9PUWRUeFBNcnpJdytsUmFubHpiSExFWEJKOXErK1dLUEtLWFZ0MDVJQ2RPYU11MHorUmRxTS8zRlpmRythNkJlUmh3ZmZUYkNScXBxRlV0YmUwN3NyUjRkQUNCazMwPSIsIm1hYyI6ImJmN2NlN2EwODAzMDNlZTEwYWZkOGRkNjQwNzYwZTE1NzY3MDEyZGMwMTZjMDRjMWQ4NzcwMzY4ZmJiYTU3NTgiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-02-25 17:10:48'),
+(3, 4, 30, 'IT_Head_Chokoy', 'custodian@gso.gov.ph', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$hlU7QKnUbWphvJnFxYgaY.gJVzBnxVKKV.kjw7xB5Oh.1jN0cfA62', 0, 'Chokoy Covid', 1, 1, 'eyJpdiI6ImFvVEpuaEFUclVHYXRVSEJmV3NsYWc9PSIsInZhbHVlIjoibDM5NXorMGlPTkVqUHk1YXN0OXgzM3BWd0FoT3BkYVN0ZkdwRzkxRk9yaz0iLCJtYWMiOiJhOWI4MGQzMjUyZGMyYmJhYTNiNjI3NjVjYWI5NGYyNGIyYjUwNmFkNmM1NjAzZGM5MTE3YTIzOWVkMGQ2NDg5IiwidGFnIjoiIn0=', 'eyJpdiI6Ik1mTHF2UjNtNFlyRldRTzcwbDF5S0E9PSIsInZhbHVlIjoiNjcwdVQxeTJtNmNwOUt4Wkd5RVN1alhjcGZ5R0w5Z2g4clI4L3BvRklUbERXaGFEY1MxMHMzaGMwRGVjVmhtbXpKT1AxSlUxeUlMam9PUWRUeFBNcnpJdytsUmFubHpiSExFWEJKOXErK1dLUEtLWFZ0MDVJQ2RPYU11MHorUmRxTS8zRlpmRythNkJlUmh3ZmZUYkNScXBxRlV0YmUwN3NyUjRkQUNCazMwPSIsIm1hYyI6ImJmN2NlN2EwODAzMDNlZTEwYWZkOGRkNjQwNzYwZTE1NzY3MDEyZGMwMTZjMDRjMWQ4NzcwMzY4ZmJiYTU3NTgiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-02-26 11:36:09'),
 (5, 4, 54, 'HR_Head_Tyron', 'micarte2005@gmail.com', '2026-01-14 01:50:24', NULL, NULL, NULL, '$2y$12$UjxLHSUjJQBOZYHqrB7ajuK2rIiZ1P9962RTMFifYWMoF.fH7o3Wq', 0, 'Tyron Mecarte', 1, 1, 'eyJpdiI6Ilo3U0pYYVBOd1RFZEtTbmxxUlRXUWc9PSIsInZhbHVlIjoiYXlZTWlzemI3TlFZeWI4MUpuNC9wdEpFelN0emhnbFVWL1g2Ky9lMTFOTT0iLCJtYWMiOiIwZjY3ZjA3OTUwY2M1NGQzOTczMmNhZjA1NzI5NzU4ZDQ0MGEzNDU1NTZkMzEzMmQxYzRjZmI4NzcwYzQ0YjdkIiwidGFnIjoiIn0=', 'eyJpdiI6InplOXhDZXZEeHR1QkF6WEpGYzRjdEE9PSIsInZhbHVlIjoiRGh6cXVuaHRQRDU1aGxGd2hDZGVLdmJkcWIybDNnWkpXaXF5TkdobmpzOS9iYzlNRDNUcldyQ0VZSlR2UDlDd3JvZ1lUVjVIWWJBTWJENmRKZHhva2FNZzJOc3ZaZkordUhzTkJnbkhuNEdYWnoxWDRtVkNZVGFHZkVhb2VLcHdDWVJtYzVZYno2SmJJS1h6YytiRVMwNDZBcVN0TnR4aDBJckRPSThOMmQ4PSIsIm1hYyI6ImExZDNmMzBiN2VjNzJjNzg5ZDEyYjAxMTRmNWJmZjcwZTJjYzhkMWUwNjA0OGU3MDkxNDk5NTlkYzc2NmI2YmMiLCJ0YWciOiIifQ==', '2026-01-14 01:00:26', '2026-02-25 15:31:42'),
 (6, 4, 23, 'FD_Head_Cyron', 'aaya.micarte.coc@phinmaed.com', '2026-01-15 14:01:41', NULL, NULL, NULL, '$2y$12$A/XCqp8lXrNCeYvQ6lOyUu6DXxbXtJ3Z7FJ.5q39q9yASzA1EYIKS', 0, 'Cyron Micarte', 1, 0, 'eyJpdiI6Iko3ekRUVUFOMjJpa2dFUExuaWhGUFE9PSIsInZhbHVlIjoiK0ZUQyt2VmpJenJ0c25YZmpwUzNwMU0yQmVoYmdtcTFVN2pwOUZLOHBPOD0iLCJtYWMiOiI4NjFjY2U2ZTEwY2EwZjE2YTZhOWExOWEzZWVmYmZkZjdlYzFlOTdjZmRjZTMxY2I3N2RiYzI5MjIyZmNhOGUyIiwidGFnIjoiIn0=', 'eyJpdiI6IlBGTGE5dnYwdCsrVlJMbzgwZ0t0WWc9PSIsInZhbHVlIjoiY0UrYzltZHJHMG5qTE9FUDljMVpEVDJ4YnNYY0QzeGRIQUNjK0lqS3hNYzJCYVdhZUZYcm9RdnRIRHhPTkNhbnF0Wnk1bW14Y1hKdXQzNmFibndSTno3OXV4V3VMVXRFWHBvM0VCdHozRHgwTkZYaFlQcnVrOThETXFhS3p3dE9FYWhiNWdDa1IybzhaUXhwL0g1WXA4d2crOFlnZktpVnJlK2NJbWJRWDdzPSIsIm1hYyI6IjZkYTMxNDY2ZGUzOGY2ZjVhYmQ0NGZjZWNlODNhZTQ0OTVjMjAyYTMwYjE4ZGNjNDg1ODdjNmZlNTdkM2ViZWEiLCJ0YWciOiIifQ==', '2026-01-15 14:00:32', '2026-02-25 15:31:42'),
 (7, 6, 49, 'IO_Abrogar', 'cycymicarte@gmail.com', '2026-02-12 18:27:18', NULL, NULL, NULL, '$2y$12$fepSB6IGbOXf7nWvwUDb2uJjr2FJO07ckbe1cHFDkN9/hSqnu.qQe', 0, 'Francismile Noah Abrogar', 1, 0, 'eyJpdiI6IlF1RW8ybzQxNWVPcy9obHNxZnJkN2c9PSIsInZhbHVlIjoiR3lzZ2VFZldMdkFocEpoRWVaU3BEMFJzRmovYWVPY1Z3MGRZaDFmc1h5VT0iLCJtYWMiOiJiNmE2ZjNmMWU4ZDliZmQ0YTExM2ExODE1MTFjNmE5MGE0Mzc5NjYzZTliOTE2NmU3MmFmNDc3YzFmZTE4YTQwIiwidGFnIjoiIn0=', 'eyJpdiI6InNoeEFiQmczdGtPRzFJeVBtTUl0L1E9PSIsInZhbHVlIjoiZlFjTFZMQ1FJSTAyK0pCNmg1OEhKVVRzYlluZGFvMC9nWk0yOW9BVGhFczMwTWlsM0psWHpKUVM4QkpVVEtTYWFqaG5kWHlqTWNwNmpvSkE5R2MrYXZyaVZUR3crOEdQbGp6ZE0zTkFPcSswR3BnRWdITHVPZ2FsMU1MQmdjeDdueVNMdDlnMWNYRGJxaFl0VC9xZFJzT2k1YUkzaVBRNFpMeDFvcFRHbkJZPSIsIm1hYyI6IjI4ZTlmMjViYTUzOWY3MjZmOWI5MjVhOGQ4ZjE0OTFiOTdlNjJjMzE4MDFhZGJjZTk3MjY4OGQwMmRlN2RjNzIiLCJ0YWciOiIifQ==', '2026-02-12 18:26:12', '2026-02-25 15:31:42');
@@ -2226,9 +2260,12 @@ ALTER TABLE `condition`
 ALTER TABLE `deliveryreceipt`
   ADD PRIMARY KEY (`DRID`),
   ADD UNIQUE KEY `ux_deliveryreceipt_drnumber` (`DRNumber`),
+  ADD UNIQUE KEY `ux_deliveryreceipt_supplierid_invoice` (`SupplierID`,`InvoiceNumber`),
+  ADD UNIQUE KEY `ux_deliveryreceipt_supplierid_po` (`SupplierID`,`PONumber`),
   ADD KEY `POID` (`PONumber`),
   ADD KEY `ReceivedBy` (`ReceivedBy`),
-  ADD KEY `deliveryreceipt_requestedby_index` (`RequestedBy`);
+  ADD KEY `deliveryreceipt_requestedby_index` (`RequestedBy`),
+  ADD KEY `deliveryreceipt_supplierid_index` (`SupplierID`);
 
 --
 -- Indexes for table `deliveryreceiptdetail`
@@ -2720,7 +2757,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -2732,7 +2769,7 @@ ALTER TABLE `asset_request_signatures`
 -- AUTO_INCREMENT for table `assignedproperty`
 --
 ALTER TABLE `assignedproperty`
-  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- AUTO_INCREMENT for table `condition`
@@ -2744,13 +2781,13 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
 --
 ALTER TABLE `deliveryreceiptdetail`
-  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=30;
+  MODIFY `DRDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `department`
@@ -2822,13 +2859,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=157;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=146;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -2900,25 +2937,25 @@ ALTER TABLE `propertydisposaldetail`
 -- AUTO_INCREMENT for table `propertyinventory`
 --
 ALTER TABLE `propertyinventory`
-  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `InventoryID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `propertyinventorydetail`
 --
 ALTER TABLE `propertyinventorydetail`
-  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `InventoryDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `propertyissuance`
 --
 ALTER TABLE `propertyissuance`
-  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `propertyissuancedetail`
 --
 ALTER TABLE `propertyissuancedetail`
-  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT for table `propertyreceived`
@@ -2972,7 +3009,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `qrcode`
 --
 ALTER TABLE `qrcode`
-  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `requisition_issue_slips`
@@ -2996,13 +3033,13 @@ ALTER TABLE `requisition_issue_slip_signatures`
 -- AUTO_INCREMENT for table `supplier`
 --
 ALTER TABLE `supplier`
-  MODIFY `SupplierID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `SupplierID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=84;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -3101,7 +3138,8 @@ ALTER TABLE `assignedproperty`
 --
 ALTER TABLE `deliveryreceipt`
   ADD CONSTRAINT `deliveryreceipt_ibfk_2` FOREIGN KEY (`ReceivedBy`) REFERENCES `user` (`UserID`),
-  ADD CONSTRAINT `deliveryreceipt_requestedby_foreign` FOREIGN KEY (`RequestedBy`) REFERENCES `user` (`UserID`) ON DELETE SET NULL;
+  ADD CONSTRAINT `deliveryreceipt_requestedby_foreign` FOREIGN KEY (`RequestedBy`) REFERENCES `user` (`UserID`) ON DELETE SET NULL,
+  ADD CONSTRAINT `deliveryreceipt_supplierid_foreign` FOREIGN KEY (`SupplierID`) REFERENCES `supplier` (`SupplierID`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `deliveryreceiptdetail`

@@ -34,6 +34,7 @@ class DeliveryReceiptController extends Controller
                     'details.article',
                     'details.propertyType',
                     'details.unitOfMeasure',
+                    'details.inventoryDetails:InventoryDetailID,SourceDRDetailID,PropertyNumber',
                     'requestedByUser:UserID,FullName,DepartmentID',
                     'requestedByUser.department:DepartmentID,DepartmentName',
                 ])
@@ -47,7 +48,9 @@ class DeliveryReceiptController extends Controller
             }
 
             // Filter by supplier
-            if ($request->has('supplier_name')) {
+            if ($request->has('supplier_id')) {
+                $query->where('SupplierID', (int) $request->supplier_id);
+            } elseif ($request->has('supplier_name')) {
                 $query->where('SupplierName', 'like', '%' . $request->supplier_name . '%');
             }
 
@@ -136,7 +139,7 @@ class DeliveryReceiptController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
-                'supplier_name' => 'required|string|max:255',
+                'supplier_id' => 'required|integer|exists:supplier,SupplierID',
                 'requested_by_user_id' => 'required|integer|exists:user,UserID',
                 'pr_number' => 'required|string|max:50',
                 'po_number' => [
@@ -144,7 +147,7 @@ class DeliveryReceiptController extends Controller
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
-                        return $q->where('SupplierName', $request->supplier_name);
+                        return $q->where('SupplierID', (int) $request->supplier_id);
                     }),
                 ],
                 'invoice_number' => [
@@ -152,7 +155,7 @@ class DeliveryReceiptController extends Controller
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
-                        return $q->where('SupplierName', $request->supplier_name);
+                        return $q->where('SupplierID', (int) $request->supplier_id);
                     }),
                 ],
                 'date_received' => $dateRules,
@@ -241,9 +244,19 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
+            $supplier = Supplier::find((int) $request->supplier_id);
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['supplier_id' => ['Supplier not found.']]
+                ], 422);
+            }
+
             $deliveryReceipt = DeliveryReceipt::create([
                 'DRNumber' => $request->dr_number,
-                'SupplierName' => $request->supplier_name,
+                'SupplierID' => (int) $supplier->SupplierID,
+                'SupplierName' => $supplier->SupplierName,
                 'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
@@ -334,6 +347,7 @@ class DeliveryReceiptController extends Controller
                 'details.propertyType',
                 'details.unitOfMeasure',
                 'details.article',
+                'details.inventoryDetails:InventoryDetailID,SourceDRDetailID,PropertyNumber',
                 'requestedByUser:UserID,FullName,DepartmentID',
                 'requestedByUser.department:DepartmentID,DepartmentName',
             ]);
@@ -372,6 +386,7 @@ class DeliveryReceiptController extends Controller
                     'details.article',
                     'details.propertyType',
                     'details.unitOfMeasure',
+                    'details.inventoryDetails:InventoryDetailID,SourceDRDetailID,PropertyNumber',
                     'requestedByUser:UserID,FullName,DepartmentID',
                     'requestedByUser.department:DepartmentID,DepartmentName',
                 ])
@@ -427,6 +442,12 @@ class DeliveryReceiptController extends Controller
                 foreach ($data['details'] as &$d) {
                     $d['propertyType'] = $d['property_type'] ?? null;
                     $d['unitOfMeasure'] = $d['unit_of_measure'] ?? null;
+                    $d['inventoryDetails'] = $d['inventory_details'] ?? [];
+                    $d['propertyNumbers'] = collect($d['inventory_details'] ?? [])
+                        ->pluck('PropertyNumber')
+                        ->filter()
+                        ->values()
+                        ->all();
                 }
             }
 
@@ -468,7 +489,7 @@ class DeliveryReceiptController extends Controller
                     'max:50',
                     Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
-                'supplier_name' => 'required|string|max:255',
+                'supplier_id' => 'required|integer|exists:supplier,SupplierID',
                 'requested_by_user_id' => 'required|integer|exists:user,UserID',
                 'pr_number' => 'required|string|max:50',
                 'po_number' => [
@@ -476,7 +497,7 @@ class DeliveryReceiptController extends Controller
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
-                        return $q->where('SupplierName', $request->supplier_name);
+                        return $q->where('SupplierID', (int) $request->supplier_id);
                     })->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
                 'invoice_number' => [
@@ -484,7 +505,7 @@ class DeliveryReceiptController extends Controller
                     'string',
                     'max:50',
                     Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
-                        return $q->where('SupplierName', $request->supplier_name);
+                        return $q->where('SupplierID', (int) $request->supplier_id);
                     })->ignore($deliveryReceipt->DRID, 'DRID'),
                 ],
                 'date_received' => $dateRules,
@@ -573,9 +594,19 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
+            $supplier = Supplier::find((int) $request->supplier_id);
+            if (!$supplier) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => ['supplier_id' => ['Supplier not found.']]
+                ], 422);
+            }
+
             $deliveryReceipt->update([
                 'DRNumber' => $request->dr_number,
-                'SupplierName' => $request->supplier_name,
+                'SupplierID' => (int) $supplier->SupplierID,
+                'SupplierName' => $supplier->SupplierName,
                 'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
@@ -655,6 +686,7 @@ class DeliveryReceiptController extends Controller
                 'details.propertyType',
                 'details.unitOfMeasure',
                 'details.article',
+                'details.inventoryDetails:InventoryDetailID,SourceDRDetailID,PropertyNumber',
                 'requestedByUser:UserID,FullName,DepartmentID',
                 'requestedByUser.department:DepartmentID,DepartmentName',
             ]);

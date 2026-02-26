@@ -122,8 +122,11 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
 
         // Local/testing bypass: allow login without MFA code entry.
+        // The environment variable `MFA_BYPASS_FOR_TESTING` can still be used locally
+        // but defaults to false so MFA is enforced by default. Remove this block
+        // altogether if you never want to bypass MFA.
         $bypassMfaForTesting = app()->environment('local')
-            && filter_var((string) env('MFA_BYPASS_FOR_TESTING', 'true'), FILTER_VALIDATE_BOOLEAN);
+            && filter_var((string) env('MFA_BYPASS_FOR_TESTING', 'false'), FILTER_VALIDATE_BOOLEAN);
 
         if ($bypassMfaForTesting) {
             LoginAudit::create([
@@ -158,7 +161,25 @@ class AuthController extends Controller
             ]);
         }
 
-        // 6. Check MFA Requirement
+        // 6. Enforce MFA setup for roles that require it
+        $userRole = $user->userRole->RoleName ?? '';
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
+        if (!$user->MFAEnabled && in_array($userRole, $mfaRequiredRoles)) {
+            return response()->json([
+                'message' => 'MFA setup required',
+                'mfa_required' => true,
+                'mfa_setup_required' => true,
+                'user_id' => $user->UserID,
+                'user' => [
+                    'UserID' => $user->UserID,
+                    'Username' => $user->Username,
+                    'FullName' => $user->FullName ?? $user->Username,
+                    'MFAEnabled' => $user->MFAEnabled,
+                ],
+            ], 200);
+        }
+
+        // 7. Check MFA Requirement
         // For testing/admin control, enforce MFA only when MFAEnabled is true on the user record.
 
         if ($user->MFAEnabled) {
@@ -310,12 +331,17 @@ class AuthController extends Controller
         $user->UpdatedDate = Carbon::now();
         $user->save();
 
-        // Return info for client; MFA setup is optional unless explicitly enabled.
+        // Determine whether this user should be prompted to set up MFA.  Some
+        // roles are required to have MFA even if the user hasn't enabled it yet.
+        $userRole = $user->userRole->RoleName ?? '';
+        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
+        $setupRequired = !$user->MFAEnabled && in_array($userRole, $mfaRequiredRoles);
 
+        // Return info for client; MFA setup is optional unless explicitly enabled.
         return response()->json([
             'message' => 'Account activated successfully',
             'user_id' => $user->UserID,
-            'mfa_setup_required' => false,
+            'mfa_setup_required' => $setupRequired,
             'mfa_enabled' => (bool) $user->MFAEnabled,
         ]);
     }
