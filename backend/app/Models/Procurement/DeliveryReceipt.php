@@ -21,6 +21,7 @@ class DeliveryReceipt extends Model
 
     protected $fillable = [
         'DRNumber',
+        'IARNumber',
         'SupplierID',
         'SupplierName',
         'RequestedBy',

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 26, 2026 at 04:56 PM
+-- Generation Time: Mar 03, 2026 at 01:44 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -265,7 +265,7 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (46, 21, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
 (47, 22, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
 (48, 23, 4, 23, NULL, 'basta', '2026-02-16', 1, 1, 'Auto-created on inspection', '2026-02-16 21:47:19', '2026-02-25 15:31:42'),
-(49, 24, 2, 30, NULL, 'bugnaw', '2026-02-26', 1, 1, 'Auto-created on DR intake', '2026-02-26 23:55:59', '2026-02-26 23:55:59');
+(49, 24, 2, 30, 'PAR-2026-0006', 'bugnaw', '2026-02-26', 2, 1, 'Auto-created from DR inspection', '2026-02-26 23:55:59', '2026-02-27 01:26:13');
 
 -- --------------------------------------------------------
 
@@ -755,7 +755,16 @@ INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `Inspect
 (4, 'IAR-2026-0004', 14, 7, 3, '2026-02-15', '2026-02-16', 'a', '2026-02-15 17:28:46', NULL),
 (5, 'IAR-2026-0005', 13, 7, NULL, '2026-02-15', NULL, 'good', '2026-02-15 19:53:12', NULL),
 (6, 'IAR-2026-0006', 10, 7, NULL, '2026-02-15', NULL, 'good', '2026-02-15 19:55:03', NULL),
-(7, 'IAR-2026-0007', 15, 7, NULL, '2026-02-16', NULL, 'good', '2026-02-16 21:47:18', NULL);
+(7, 'IAR-2026-0007', 15, 7, NULL, '2026-02-16', NULL, 'good', '2026-02-16 21:47:18', NULL),
+(8, 'IAR-2026-0008', 11, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(9, 'IAR-2026-0009', 12, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(10, 'IAR-2026-0010', 17, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(11, 'IAR-2026-0011', 18, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(12, 'IAR-2026-0012', 19, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(13, 'IAR-2026-0013', 20, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(14, 'IAR-2026-0014', 21, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(15, 'IAR-2026-0015', 22, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL),
+(16, 'IAR-2026-0016', 23, 1, 1, '2026-03-03', '2026-03-03', 'Auto-generated for existing DR', '2026-03-03 20:43:06', NULL);
 
 -- --------------------------------------------------------
 
@@ -957,7 +966,9 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (162, 1, '2026-02-26 11:36:27', 'Logout', '127.0.0.1'),
 (163, 1, '2026-02-26 11:39:59', 'Login', '127.0.0.1'),
 (164, 3, '2026-02-26 23:52:39', 'Login', '127.0.0.1'),
-(165, 1, '2026-02-26 23:55:06', 'Login', '127.0.0.1');
+(165, 1, '2026-02-26 23:55:06', 'Login', '127.0.0.1'),
+(166, 1, '2026-02-27 09:15:44', 'Login', '127.0.0.1'),
+(167, 1, '2026-02-27 14:58:13', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1453,7 +1464,7 @@ INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `Prop
 (21, 5, 11, NULL, 'basta', '2026-000021', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
 (22, 5, 11, NULL, 'basta', '2026-000022', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
 (23, 5, 11, NULL, 'basta', '2026-000023', NULL, 1, 1, 1, 2, 999.00, 999.00, 22, 29, 1, 'haha', 'hehe', NULL, '2026-02-16 21:47:19', NULL, NULL),
-(24, 6, 8, NULL, 'bugnaw', '2026-000024', NULL, 1, 1, 1, 2, 10000.00, 10000.00, NULL, 37, 1, NULL, NULL, NULL, '2026-02-26 23:55:59', NULL, NULL);
+(24, 6, 8, NULL, 'bugnaw', '2026-000024', NULL, 1, 0, 2, 2, 10000.00, 10000.00, NULL, 37, 1, NULL, NULL, NULL, '2026-02-26 23:55:59', '2026-02-27 01:26:13', NULL);
 
 -- --------------------------------------------------------
 
@@ -1493,7 +1504,7 @@ INSERT INTO `propertyissuance` (`IssuanceID`, `RequestID`, `DRID`, `IssuedBy`, `
 (3, NULL, 8, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0003', 'pending_acknowledgment', '2026-02-14', 'Auto-created from inspection completion', NULL, NULL, NULL, NULL, NULL, '2026-02-16 17:51:05'),
 (4, NULL, 15, 7, NULL, NULL, 4, 'Cyron Micarte', 'PAR', 'PAR-2026-0004', 'pending_acknowledgment', '2026-02-16', 'Auto-created from inspection completion', NULL, NULL, NULL, NULL, NULL, '2026-02-16 21:47:19'),
 (5, NULL, 9, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0005', 'acknowledged', '2026-02-18', 'Auto-created from IAR acknowledgement', NULL, '2026-02-18 00:00:00', 3, NULL, NULL, '2026-02-18 23:31:58'),
-(6, NULL, 23, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0006', 'pending_acknowledgment', '2026-02-26', 'Auto-created from DR inspection', NULL, NULL, NULL, NULL, NULL, '2026-02-26 23:55:59');
+(6, NULL, 23, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0006', 'acknowledged', '2026-02-26', 'Auto-created from DR inspection', NULL, '2026-02-26 00:00:00', 3, NULL, NULL, '2026-02-26 23:55:59');
 
 -- --------------------------------------------------------
 
@@ -1911,8 +1922,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('4LESHF7fKIZu3MAYRUm85RChrB91hs32lNIxVrTh', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiT3BObEZEQk5BNElzMk1jeXZ6ejk3eEVDcHk1bjJtc2VpdWJNMHc4aiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6ODA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vcHJvY3VyZW1lbnQvZGVsaXZlcnktcmVjZWlwdHM/cGFnZT0xJnBlcl9wYWdlPTEwIjtzOjU6InJvdXRlIjtzOjIzOiJkZWxpdmVyeS1yZWNlaXB0cy5pbmRleCI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1772121366),
-('8q5XOTuMXCowt4eb83jwMV3ubrRLq65JqN4YGg7A', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRnpncjV4UXlvaHp2eml0cmN1TmIxQkJiWkt6RG5nNU1KSlFpdFhIdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Njc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvY29uZGl0aW9ucz9wZXJfcGFnZT1hbGwiO3M6NToicm91dGUiO3M6MTY6ImNvbmRpdGlvbnMuaW5kZXgiO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aTozO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkaGxVN1FLblViV3BodkpuRnhZZ2FZLmdKVnpCbnhWS0tWLmtqdzd4QjVPaC4xak4wY2ZBNjIiO30=', 1772121175);
+('e0E6r4afx0R6PxIQzLNur7N3uZdA53AFj5iq8VL0', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiM2QxTVpqQzZpNElINVpaa2RuQk5ybndyTDZ3MExtRUs5T2t1VDRKaSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzE6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vbWFzdGVyLWRhdGEvcHJvcGVydHktdHlwZXM/cGVyX3BhZ2U9YWxsIjtzOjU6InJvdXRlIjtzOjIwOiJwcm9wZXJ0eS10eXBlcy5pbmRleCI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1772175353),
+('LHXM2HoTiMoBsv3vrueHddn0PMq4K87M32RWaauj', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoid01RMEpsUjd5bkNFMXlNd2tIVFc5OVBFNXRYUXUwaXpTdG93YUY5VyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NDQ6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvZGFzaGJvYXJkL2FjdGl2aXR5IjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX1zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO3M6MTc6InBhc3N3b3JkX2hhc2hfd2ViIjtzOjYwOiIkMnkkMTIkZnRnR1JoSk9Qby41RldteWJlTEx2Llo4d1g4L0guQmlmWk5ac0s1MXVRSXNKSFVCL2suaDYiO30=', 1772175633);
 
 -- --------------------------------------------------------
 
@@ -2012,7 +2023,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (83, 3, 'Trusted Device', '1d477b525bb9536a45317116234d4dc76c9591f97ff36fdd68079ad2383d7cc1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-20 21:56:29', '2026-02-18 21:56:29', NULL),
 (84, 3, 'Trusted Device', '2c08e0fe7b7c7eb36021b27ce8614143407b5a044868e7737c0d2a8ef43db52a', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-28 23:52:39', '2026-02-26 23:52:39', NULL),
-(85, 1, 'Trusted Device', 'f03b6fb7d6b5f62c9f756dbeb6bdbc644441cf13b196ac505575527c771e434e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-03-28 23:55:06', '2026-02-26 23:55:06', NULL);
+(85, 1, 'Trusted Device', 'f03b6fb7d6b5f62c9f756dbeb6bdbc644441cf13b196ac505575527c771e434e', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-27 14:58:13', '2026-03-28 23:55:06', '2026-02-26 23:55:06', '2026-02-27 14:58:13');
 
 -- --------------------------------------------------------
 
@@ -2847,7 +2858,7 @@ ALTER TABLE `iiruprecommendation`
 -- AUTO_INCREMENT for table `inspectionacceptancereport`
 --
 ALTER TABLE `inspectionacceptancereport`
-  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `inventorycustodianslip`
@@ -2859,7 +2870,7 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=168;
 
 --
 -- AUTO_INCREMENT for table `migrations`

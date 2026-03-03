@@ -17,6 +17,71 @@ class PropertyIssuanceControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_get_delivery_receipts_for_issuance_includes_pending_and_inspected()
+    {
+        // create a user who will be the requester; departments/roles are
+        // seeded elsewhere but we just set sane values here.
+        $user = User::create([
+            'UserRoleID' => 2,
+            'DepartmentID' => 1,
+            'Username' => 'list.user',
+            'Email' => 'list.user@example.com',
+            'Password' => bcrypt('password'),
+            'FullName' => 'List User',
+            'IsActive' => 1,
+        ]);
+
+        // pending delivery receipt (no inspection report yet)
+        $drPending = \App\Models\Procurement\DeliveryReceipt::create([
+            'DRNumber' => 'DR-PENDING-1',
+            'RequestedBy' => $user->UserID,
+            'InspectionStatus' => 'pending',
+            'DateReceived' => now()->format('Y-m-d'),
+        ]);
+
+        // inspected delivery receipt with an IAR but not yet accepted
+        $drInspected = \App\Models\Procurement\DeliveryReceipt::create([
+            'DRNumber' => 'DR-INSPECT-1',
+            'RequestedBy' => $user->UserID,
+            'InspectionStatus' => 'inspected',
+            'DateReceived' => now()->format('Y-m-d'),
+        ]);
+
+        $iar = \App\Models\Procurement\InspectionAcceptanceReport::create([
+            'IARNumber' => 'IAR-TEST-1',
+            'DRID' => $drInspected->DRID,
+            'DateInspected' => now()->format('Y-m-d'),
+        ]);
+
+        \App\Models\Procurement\IarDetail::create([
+            'IARID' => $iar->IARID,
+            'DRDetailID' => 0,
+            'QuantityAccepted' => 1,
+            'PropertyTypeID' => 1,
+        ]);
+
+        $response = $this->actingAs($user)
+            ->getJson('/api/property-issuances/delivery-receipts');
+
+        $response->assertStatus(200);
+
+        $data = $response->json('data');
+        // both receipts should be returned regardless of inspection status
+        $this->assertCount(2, $data);
+
+        $numbers = array_column($data, 'DRNumber');
+        $this->assertContains('DR-PENDING-1', $numbers);
+        $this->assertContains('DR-INSPECT-1', $numbers);
+
+        // make sure the statuses came through correctly
+        $statusMap = [];
+        foreach ($data as $row) {
+            $statusMap[$row['DRNumber']] = $row['InspectionStatus'] ?? null;
+        }
+        $this->assertEquals('pending', $statusMap['DR-PENDING-1']);
+        $this->assertEquals('inspected', $statusMap['DR-INSPECT-1']);
+    }
+
     public function test_create_issuance_allocates_inventory_and_populates_inventory_detail_and_stock_no()
     {
         // minimal fixtures: userrole + department tables are handled in other helpers in suite;

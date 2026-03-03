@@ -15,6 +15,7 @@ use App\Models\MasterData\Supplier;
 use App\Models\AssetAuditLog;
 use App\Models\AssignedProperty;
 use App\Models\EndUser;
+use App\Models\Procurement\InspectionAcceptanceReport;
 use App\Models\QrCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -199,6 +200,10 @@ class DeliveryReceiptController extends Controller
                     }
 
                     $requested = (int) ($detail['quantity_requested'] ?? 0);
+                    if ($serial !== '' && $requested > 1) {
+                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must be 1 when a serial number is provided');
+                    }
+
                     $changeReason = isset($detail['change_reason']) ? trim((string) $detail['change_reason']) : '';
                     if ($quantity !== $requested && $changeReason === '') {
                         $validator->errors()->add("details.$index.change_reason", 'Change reason is required when delivered differs from requested quantity');
@@ -311,6 +316,9 @@ class DeliveryReceiptController extends Controller
 
             $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
             $this->createIssuancesFromDeliveryReceipt($deliveryReceipt);
+
+            // ensure an IAR exists with a generated IAR number
+            $this->ensureIarForDeliveryReceipt($deliveryReceipt);
 
             DB::commit();
 
@@ -548,6 +556,10 @@ class DeliveryReceiptController extends Controller
                     }
 
                     $requested = (int) ($detail['quantity_requested'] ?? 0);
+                    if ($serial !== '' && $requested > 1) {
+                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must be 1 when a serial number is provided');
+                    }
+
                     $changeReason = isset($detail['change_reason']) ? trim((string) $detail['change_reason']) : '';
                     if ($quantity !== $requested && $changeReason === '') {
                         $validator->errors()->add("details.$index.change_reason", 'Change reason is required when delivered differs from requested quantity');
@@ -678,6 +690,9 @@ class DeliveryReceiptController extends Controller
 
             $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
             $this->createIssuancesFromDeliveryReceipt($deliveryReceipt);
+
+            // ensure an IAR exists after updating the DR
+            $this->ensureIarForDeliveryReceipt($deliveryReceipt);
 
             DB::commit();
 
@@ -848,6 +863,35 @@ class DeliveryReceiptController extends Controller
         }
     }
 
+    public function ensureIarForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
+    {
+        // create IAR record if one does not exist yet
+        if (InspectionAcceptanceReport::where('DRID', $deliveryReceipt->DRID)->exists()) {
+            // If IAR exists but DR doesn't have IAR number, update it
+            if (empty($deliveryReceipt->IARNumber)) {
+                $iar = InspectionAcceptanceReport::where('DRID', $deliveryReceipt->DRID)->first();
+                if ($iar && !empty($iar->IARNumber)) {
+                    $deliveryReceipt->update(['IARNumber' => $iar->IARNumber]);
+                }
+            }
+            return;
+        }
+
+        $iarNumber = 'IAR-' . date('Y') . '-' . str_pad(InspectionAcceptanceReport::count() + 1, 4, '0', STR_PAD_LEFT);
+        InspectionAcceptanceReport::create([
+            'IARNumber' => $iarNumber,
+            'DRID' => $deliveryReceipt->DRID,
+            'InspectedBy' => null,
+            'AcceptedBy' => null,
+            'DateInspected' => null,
+            'DateAccepted' => null,
+            'Remarks' => 'Auto-generated when DR saved',
+        ]);
+
+        // Update the delivery receipt with the IAR number
+        $deliveryReceipt->update(['IARNumber' => $iarNumber]);
+    }
+
     private function createIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
     {
         $inventoryDetails = PropertyInventoryDetail::with([
@@ -929,6 +973,53 @@ class DeliveryReceiptController extends Controller
                     'QuantityIssued' => 1,
                     'Remarks' => $issuance->Remarks,
                 ]);
+
+                // update inventory availability and create/update AssignedProperty record
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+                $availableQty = (int) ($detail->QuantityAvailable ?? 0);
+                $shouldFinalize = $availableQty > 0 || (int) ($detail->PropertyStatusID ?? 0) !== 2;
+
+                if ($shouldFinalize) {
+                    if ($availableQty < 1) {
+                        $alreadyAssigned = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->exists();
+                        if ($alreadyAssigned) {
+                            throw new \Exception('Insufficient available quantity for DR issuance item.');
+                        }
+
+                        $detail->QuantityAvailable = 1;
+                        $detail->save();
+                        $availableQty = 1;
+                    }
+
+                    $detail->decrement('QuantityAvailable', 1);
+                    if ($detail->fresh()->QuantityAvailable <= 0) {
+                        $detail->update(['PropertyStatusID' => 2]);
+                    }
+                }
+
+                $assignedPayload = [
+                    'InventoryDetailID' => $detail->InventoryDetailID,
+                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                    'DepartmentID' => (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?: $resolvedEndUser->DepartmentID),
+                    'PropertyCardNumber' => $issuance->DocumentNumber,
+                    'Description' => $detail->Description ?? $itemDescription,
+                    'AssignedDate' => $issuedAt,
+                    'PropertyStatusID' => $shouldFinalize ? 2 : (int) ($assignedProperty?->PropertyStatusID ?? 2),
+                    'ConditionID' => (int) ($detail->ConditionID ?? 1),
+                    'Remarks' => $issuance->Remarks,
+                ];
+
+                if ($assignedProperty) {
+                    $assignedProperty->fill($assignedPayload);
+                    $assignedProperty->save();
+                } else {
+                    $assignedProperty = AssignedProperty::create($assignedPayload);
+                }
+
+                // ensure a QR code exists for this assignment (mirrors PropertyIssuanceController behavior)
+                if (method_exists($this, 'ensureQrCodeForDetail')) {
+                    $this->ensureQrCodeForDetail($detail, $assignedProperty);
+                }
             }
         }
     }
