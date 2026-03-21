@@ -142,6 +142,14 @@ class PropertyBorrowController extends Controller
             if (!$isOwner && !$isDeptInvolved) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
+
+            if ((int) $borrow->FromDepartmentID === $departmentId) {
+                $borrow->ApprovedAt = null;
+                $borrow->BorrowedAt = null;
+                $borrow->ApprovedByUserID = null;
+                $borrow->setRelation('returns', collect());
+                $borrow->setRelation('approvedBy', null);
+            }
         }
 
         return response()->json($borrow);
@@ -470,7 +478,36 @@ class PropertyBorrowController extends Controller
             }
 
             if ($approvedCount < 1) {
-                return response()->json(['message' => 'Approved quantity must be at least 1'], 422);
+                $autoRejectReason = $reason !== ''
+                    ? $reason
+                    : 'Auto-rejected: releasing department set all provided quantities to 0.';
+
+                $borrow->update([
+                    'ReleasingDecision' => 'rejected',
+                    'ReleasingApprovedCount' => 0,
+                    'ReleasingDecisionReason' => $autoRejectReason,
+                    'ReleasingReviewedByUserID' => (int) $user->UserID,
+                    'ReleasingReviewedAt' => now(),
+                    'Status' => 'rejected',
+                ]);
+
+                AssetAuditLog::createLog(
+                    'property_borrow',
+                    (int) $borrow->BorrowID,
+                    'releasing_rejected',
+                    (int) $user->UserID,
+                    [
+                        'borrow_number' => $borrow->BorrowNumber,
+                        'requested_count' => $requestedCount,
+                        'approved_count' => 0,
+                        'reason' => $autoRejectReason,
+                    ]
+                );
+
+                return response()->json([
+                    'message' => 'Borrow request auto-rejected because provided quantity is 0',
+                    'borrow' => $borrow,
+                ]);
             }
 
             if ($approvedCount > $requestedCount) {

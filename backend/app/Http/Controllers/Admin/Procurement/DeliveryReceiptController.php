@@ -15,7 +15,6 @@ use App\Models\MasterData\Supplier;
 use App\Models\AssetAuditLog;
 use App\Models\AssignedProperty;
 use App\Models\EndUser;
-use App\Models\Procurement\InspectionAcceptanceReport;
 use App\Models\QrCode;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -32,6 +31,7 @@ class DeliveryReceiptController extends Controller
     {
         try {
             $query = DeliveryReceipt::with([
+                    'supplier:SupplierID,SupplierName',
                     'details.article',
                     'details.propertyType',
                     'details.unitOfMeasure',
@@ -52,7 +52,9 @@ class DeliveryReceiptController extends Controller
             if ($request->has('supplier_id')) {
                 $query->where('SupplierID', (int) $request->supplier_id);
             } elseif ($request->has('supplier_name')) {
-                $query->where('SupplierName', 'like', '%' . $request->supplier_name . '%');
+                $query->whereHas('supplier', function ($q) use ($request) {
+                    $q->where('SupplierName', 'like', '%' . $request->supplier_name . '%');
+                });
             }
 
             // Filter by PO number
@@ -110,6 +112,8 @@ class DeliveryReceiptController extends Controller
                 $dr->RequestedByName = $dr->requestedByUser->FullName ?? null;
                 $dr->DepartmentName = $dr->requestedByUser->department->DepartmentName ?? null;
                 $dr->DepartmentID = $dr->requestedByUser->DepartmentID ?? null;
+                $dr->SupplierName = $dr->supplier->SupplierName ?? null;
+                $dr->supplier_name = $dr->supplier->SupplierName ?? null;
                 // Remove the temporary field
                 unset($dr->received_by_name);
                 return $dr;
@@ -258,10 +262,12 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
+            $iarNumber = $this->generateDrIarNumber();
+
             $deliveryReceipt = DeliveryReceipt::create([
                 'DRNumber' => $request->dr_number,
+                'IARNumber' => $iarNumber,
                 'SupplierID' => (int) $supplier->SupplierID,
-                'SupplierName' => $supplier->SupplierName,
                 'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
@@ -315,10 +321,6 @@ class DeliveryReceiptController extends Controller
             }
 
             $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
-            $this->createIssuancesFromDeliveryReceipt($deliveryReceipt);
-
-            // ensure an IAR exists with a generated IAR number
-            $this->ensureIarForDeliveryReceipt($deliveryReceipt);
 
             DB::commit();
 
@@ -331,7 +333,7 @@ class DeliveryReceiptController extends Controller
                     $actorId,
                     [
                         'dr_number' => $deliveryReceipt->DRNumber,
-                        'supplier' => $deliveryReceipt->SupplierName,
+                        'supplier' => $supplier->SupplierName,
                         'details' => $detailIds,
                     ]
                 );
@@ -352,6 +354,7 @@ class DeliveryReceiptController extends Controller
 
             // Load relationships
             $deliveryReceipt->load([
+                'supplier:SupplierID,SupplierName',
                 'details.propertyType',
                 'details.unitOfMeasure',
                 'details.article',
@@ -370,6 +373,8 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
             $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
             $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
+            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
+            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
 
             return response()->json([
                 'success' => true,
@@ -391,6 +396,7 @@ class DeliveryReceiptController extends Controller
     {
         try {
             $deliveryReceipt = DeliveryReceipt::with([
+                    'supplier:SupplierID,SupplierName',
                     'details.article',
                     'details.propertyType',
                     'details.unitOfMeasure',
@@ -443,6 +449,8 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
             $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
             $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
+            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
+            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
 
             // Normalize relationship keys for frontend by converting the model to an array
             $data = $deliveryReceipt->toArray();
@@ -615,10 +623,12 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
+            $iarNumber = $deliveryReceipt->IARNumber ?: $this->generateDrIarNumber();
+
             $deliveryReceipt->update([
                 'DRNumber' => $request->dr_number,
+                'IARNumber' => $iarNumber,
                 'SupplierID' => (int) $supplier->SupplierID,
-                'SupplierName' => $supplier->SupplierName,
                 'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
                 'PONumber' => $request->po_number,
@@ -689,15 +699,12 @@ class DeliveryReceiptController extends Controller
             }
 
             $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
-            $this->createIssuancesFromDeliveryReceipt($deliveryReceipt);
-
-            // ensure an IAR exists after updating the DR
-            $this->ensureIarForDeliveryReceipt($deliveryReceipt);
 
             DB::commit();
 
             // Load relationships
             $deliveryReceipt->load([
+                'supplier:SupplierID,SupplierName',
                 'details.propertyType',
                 'details.unitOfMeasure',
                 'details.article',
@@ -716,6 +723,8 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
             $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
             $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
+            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
+            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
 
             return response()->json([
                 'success' => true,
@@ -861,35 +870,6 @@ class DeliveryReceiptController extends Controller
                 );
             }
         }
-    }
-
-    public function ensureIarForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
-    {
-        // create IAR record if one does not exist yet
-        if (InspectionAcceptanceReport::where('DRID', $deliveryReceipt->DRID)->exists()) {
-            // If IAR exists but DR doesn't have IAR number, update it
-            if (empty($deliveryReceipt->IARNumber)) {
-                $iar = InspectionAcceptanceReport::where('DRID', $deliveryReceipt->DRID)->first();
-                if ($iar && !empty($iar->IARNumber)) {
-                    $deliveryReceipt->update(['IARNumber' => $iar->IARNumber]);
-                }
-            }
-            return;
-        }
-
-        $iarNumber = 'IAR-' . date('Y') . '-' . str_pad(InspectionAcceptanceReport::count() + 1, 4, '0', STR_PAD_LEFT);
-        InspectionAcceptanceReport::create([
-            'IARNumber' => $iarNumber,
-            'DRID' => $deliveryReceipt->DRID,
-            'InspectedBy' => null,
-            'AcceptedBy' => null,
-            'DateInspected' => null,
-            'DateAccepted' => null,
-            'Remarks' => 'Auto-generated when DR saved',
-        ]);
-
-        // Update the delivery receipt with the IAR number
-        $deliveryReceipt->update(['IARNumber' => $iarNumber]);
     }
 
     private function createIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
@@ -1061,6 +1041,24 @@ class DeliveryReceiptController extends Controller
         $hash = substr(hash_hmac('sha256', (string) $propertyId, $key), 0, 12);
 
         return $baseUrl . '/qr/scan/' . $propertyId . '?h=' . $hash;
+    }
+
+    private function generateDrIarNumber(): string
+    {
+        $year = date('Y');
+        $prefix = 'IAR-' . $year . '-';
+
+        $latest = DB::table('deliveryreceipt')
+            ->where('IARNumber', 'like', $prefix . '%')
+            ->orderByDesc('IARNumber')
+            ->value('IARNumber');
+
+        $next = 1;
+        if ($latest && preg_match('/^(?:IAR-)\d{4}-(\d{4,})$/', (string) $latest, $m)) {
+            $next = ((int) $m[1]) + 1;
+        }
+
+        return $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
     private function generateDocumentNumber(string $type): string

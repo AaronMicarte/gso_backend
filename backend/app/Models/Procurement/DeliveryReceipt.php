@@ -23,7 +23,6 @@ class DeliveryReceipt extends Model
         'DRNumber',
         'IARNumber',
         'SupplierID',
-        'SupplierName',
         'RequestedBy',
         'PRNumber',
         'PONumber',

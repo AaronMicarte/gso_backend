@@ -127,6 +127,17 @@ class PropertyTransferController extends Controller
             if (!$isOwner && !$isDeptInvolved) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
+
+            if ((int) $transfer->FromDepartmentID === $departmentId) {
+                $transfer->ApprovedAt = null;
+                $transfer->BorrowerSignedAt = null;
+                $transfer->BorrowingSignedAt = null;
+                $transfer->CompletedAt = null;
+                $transfer->ApprovedByUserID = null;
+                $transfer->CompletedByUserID = null;
+                $transfer->setRelation('approvedBy', null);
+                $transfer->setRelation('completedBy', null);
+            }
         }
 
         return response()->json($transfer);
@@ -504,7 +515,66 @@ class PropertyTransferController extends Controller
             }
 
             if ($approvedCount < 1) {
-                return response()->json(['message' => 'Approved quantity must be at least 1'], 422);
+                $autoRejectReason = $reason !== ''
+                    ? $reason
+                    : 'Auto-rejected: releasing department set all provided quantities to 0.';
+
+                $transfer->update([
+                    'ReleasingDecision' => 'rejected',
+                    'ReleasingApprovedCount' => 0,
+                    'ReleasingDecisionReason' => $autoRejectReason,
+                    'ReleasingReviewedByUserID' => (int) $user->UserID,
+                    'ReleasingReviewedAt' => now(),
+                    'Status' => 'rejected',
+                ]);
+
+                AssetAuditLog::createLog(
+                    'property_transfer',
+                    (int) $transfer->TransferID,
+                    'releasing_rejected',
+                    (int) $user->UserID,
+                    [
+                        'transfer_number' => $transfer->TransferNumber,
+                        'requested_count' => $requestedCount,
+                        'approved_count' => 0,
+                        'reason' => $autoRejectReason,
+                    ]
+                );
+
+                foreach ($transfer->items as $item) {
+                    AssetAuditLog::createLog(
+                        'inventory_detail',
+                        (int) $item->InventoryDetailID,
+                        'transfer_releasing_rejected',
+                        (int) $user->UserID,
+                        [
+                            'transfer_id' => (int) $transfer->TransferID,
+                            'transfer_number' => $transfer->TransferNumber,
+                            'reason' => $autoRejectReason,
+                        ]
+                    );
+                }
+
+                return response()->json([
+                    'message' => 'Transfer auto-rejected because provided quantity is 0',
+                    'transfer' => $transfer->fresh([
+                        'requestedBy:UserID,FullName,DepartmentID',
+                        'requestedBy.department:DepartmentID,DepartmentName',
+                        'fromDepartment:DepartmentID,DepartmentName',
+                        'toDepartment:DepartmentID,DepartmentName',
+                        'fromEndUser:EndUserID,FullName,DepartmentID',
+                        'fromEndUser.department:DepartmentID,DepartmentName',
+                        'toEndUser:EndUserID,FullName,DepartmentID',
+                        'toEndUser.department:DepartmentID,DepartmentName',
+                        'releasingReviewedBy:UserID,FullName',
+                        'approvedBy:UserID,FullName',
+                        'completedBy:UserID,FullName',
+                        'items.inventoryDetail.unitOfMeasure',
+                        'items.inventoryDetail.propertyType',
+                        'items.inventoryDetail.inventory',
+                        'items.inventoryDetail.drDetail.article',
+                    ]),
+                ]);
             }
 
             if ($approvedCount > $requestedCount) {
@@ -758,7 +828,91 @@ class PropertyTransferController extends Controller
                 );
             }
 
-            return response()->json(['message' => 'Receiving signature confirmed', 'transfer' => $transfer]);
+            $completionTime = now();
+            foreach ($transfer->items as $item) {
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $item->InventoryDetailID)
+                    ->where('DepartmentID', (int) $transfer->FromDepartmentID)
+                    ->where('EndUserID', (int) $transfer->FromEndUserID)
+                    ->where('PropertyStatusID', self::PROPERTY_STATUS_ISSUED)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$assignedProperty) {
+                    return response()->json(['message' => 'Assigned issued property missing for an item or custody mismatch'], 422);
+                }
+
+                $inventoryDetail = DB::table('propertyinventorydetail')
+                    ->where('InventoryDetailID', (int) $item->InventoryDetailID)
+                    ->lockForUpdate()
+                    ->first(['InventoryDetailID', 'PropertyStatusID']);
+
+                if (!$inventoryDetail || (int) ($inventoryDetail->PropertyStatusID ?? 0) !== self::PROPERTY_STATUS_ISSUED) {
+                    return response()->json(['message' => 'Only issued items can be transferred'], 422);
+                }
+
+                $assignedProperty->fill([
+                    'EndUserID' => (int) $transfer->ToEndUserID,
+                    'DepartmentID' => (int) $transfer->ToDepartmentID,
+                    'PropertyCardNumber' => $transfer->TransferNumber,
+                    'AssignedDate' => $completionTime->toDateString(),
+                    'PropertyStatusID' => self::PROPERTY_STATUS_ISSUED,
+                ]);
+                $assignedProperty->save();
+
+                DB::table('propertyinventorydetail')
+                    ->where('InventoryDetailID', (int) $item->InventoryDetailID)
+                    ->update(['PropertyStatusID' => self::PROPERTY_STATUS_ISSUED]);
+
+                $this->updateQrCodeForAssignedProperty($assignedProperty);
+
+                AssetAuditLog::createLog(
+                    'property_transfer_item',
+                    (int) $item->TransferItemID,
+                    'transferred',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                        'inventory_detail_id' => (int) $item->InventoryDetailID,
+                        'from_department_id' => (int) $transfer->FromDepartmentID,
+                        'to_department_id' => (int) $transfer->ToDepartmentID,
+                    ]
+                );
+
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'transfer_completed',
+                    (int) $user->UserID,
+                    [
+                        'transfer_id' => (int) $transfer->TransferID,
+                        'transfer_number' => $transfer->TransferNumber,
+                        'from_department_id' => (int) $transfer->FromDepartmentID,
+                        'to_department_id' => (int) $transfer->ToDepartmentID,
+                        'from_end_user_id' => (int) $transfer->FromEndUserID,
+                        'to_end_user_id' => (int) $transfer->ToEndUserID,
+                    ]
+                );
+            }
+
+            $transfer->update([
+                'Status' => 'completed',
+                'CompletedByUserID' => (int) $user->UserID,
+                'CompletedAt' => $completionTime,
+            ]);
+
+            AssetAuditLog::createLog(
+                'property_transfer',
+                (int) $transfer->TransferID,
+                'completed',
+                (int) $user->UserID,
+                ['transfer_number' => $transfer->TransferNumber]
+            );
+
+            return response()->json([
+                'message' => 'Receiving signature confirmed and transfer completed automatically',
+                'transfer' => $transfer,
+            ]);
         });
     }
 

@@ -11,6 +11,7 @@ use App\Models\PropertyTransferItem;
 use App\Models\AssetAuditLog;
 use App\Models\Procurement\DeliveryReceipt;
 use App\Models\Procurement\DeliveryReceiptDetail;
+use App\Models\Procurement\IARDetail;
 use App\Models\MasterData\PropertyStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -93,6 +94,15 @@ class InventoryController extends Controller
 
         $custodianSql = "COALESCE(
                 (
+                    SELECT euAP.FullName
+                    FROM propertyinventorydetail invd
+                    JOIN assignedproperty ap ON ap.InventoryDetailID = invd.InventoryDetailID
+                    LEFT JOIN enduser euAP ON euAP.EndUserID = ap.EndUserID
+                    WHERE invd.InventoryID = propertyinventory.InventoryID
+                    ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                    LIMIT 1
+                ),
+                (
                     SELECT COALESCE(
                         CASE
                             WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
@@ -112,7 +122,7 @@ class InventoryController extends Controller
                     WHERE invd.InventoryID = propertyinventory.InventoryID
                         AND pi.deleted_at IS NULL
                         AND pidet.deleted_at IS NULL
-                        AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                        AND pi.Status = 'acknowledged'
                     ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                     LIMIT 1
                 ),
@@ -129,6 +139,15 @@ class InventoryController extends Controller
             )";
 
         $locationSql = "COALESCE(
+            (
+                SELECT depAP.DepartmentName
+                FROM propertyinventorydetail invd
+                JOIN assignedproperty ap ON ap.InventoryDetailID = invd.InventoryDetailID
+                LEFT JOIN department depAP ON depAP.DepartmentID = ap.DepartmentID
+                WHERE invd.InventoryID = propertyinventory.InventoryID
+                ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                LIMIT 1
+            ),
                 (
                     SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
                     FROM propertyissuancedetail pidet
@@ -143,7 +162,7 @@ class InventoryController extends Controller
                     WHERE invd.InventoryID = propertyinventory.InventoryID
                       AND pi.deleted_at IS NULL
                       AND pidet.deleted_at IS NULL
-                      AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                      AND pi.Status = 'acknowledged'
                     ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                     LIMIT 1
                 ),
@@ -168,7 +187,7 @@ class InventoryController extends Controller
             WHERE invd.InventoryID = propertyinventory.InventoryID
               AND pi.deleted_at IS NULL
               AND pidet.deleted_at IS NULL
-              AND pi.Status IN ('pending_acknowledgment','acknowledged')
+              AND pi.Status = 'acknowledged'
             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
             LIMIT 1
         )";
@@ -243,7 +262,15 @@ class InventoryController extends Controller
                               'propertyclassification.ClassificationName', 'propertyclassification.DocumentType',
                               'propertystatus.StatusName'
                       )
-                      ->addSelect(DB::raw("COALESCE(
+                                            ->addSelect(DB::raw("COALESCE(
+                                                (
+                                                        SELECT euAP.FullName
+                                                        FROM assignedproperty ap
+                                                        LEFT JOIN enduser euAP ON euAP.EndUserID = ap.EndUserID
+                                                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                                        LIMIT 1
+                                                ),
                         (
                             SELECT COALESCE(
                                 CASE
@@ -263,7 +290,7 @@ class InventoryController extends Controller
                             WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                                 AND pi.deleted_at IS NULL
                                 AND pidet.deleted_at IS NULL
-                                AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                AND pi.Status = 'acknowledged'
                             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                             LIMIT 1
                         ),
@@ -276,7 +303,15 @@ class InventoryController extends Controller
                             LIMIT 1
                         )
                       ) as custodianName"))
-                      ->addSelect(DB::raw("COALESCE(
+                                            ->addSelect(DB::raw("COALESCE(
+                                                (
+                                                        SELECT depAP.DepartmentName
+                                                        FROM assignedproperty ap
+                                                        LEFT JOIN department depAP ON depAP.DepartmentID = ap.DepartmentID
+                                                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                                        LIMIT 1
+                                                ),
                         (
                             SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
                             FROM propertyissuancedetail pidet
@@ -290,7 +325,7 @@ class InventoryController extends Controller
                             WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                                 AND pi.deleted_at IS NULL
                                 AND pidet.deleted_at IS NULL
-                                AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                AND pi.Status = 'acknowledged'
                             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                             LIMIT 1
                         ),
@@ -332,7 +367,7 @@ class InventoryController extends Controller
                             WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                                 AND pi.deleted_at IS NULL
                                 AND pidet.deleted_at IS NULL
-                                AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                AND pi.Status = 'acknowledged'
                             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                             LIMIT 1
                       ) as lastIssuedDate"));
@@ -591,6 +626,9 @@ class InventoryController extends Controller
             'issuance.request',
         ])
             ->where('InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->whereHas('issuance', function ($q) {
+                $q->where('Status', 'acknowledged')->whereNull('deleted_at');
+            })
             ->orderBy('IssuanceDetailID')
             ->get();
 
@@ -894,6 +932,14 @@ class InventoryController extends Controller
                                 ) as qrCodeData"),
                                 'custodianName' => DB::raw("COALESCE(
                                         (
+                                            SELECT euAP.FullName
+                                            FROM assignedproperty ap
+                                            LEFT JOIN enduser euAP ON euAP.EndUserID = ap.EndUserID
+                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                            LIMIT 1
+                                        ),
+                                        (
                                             SELECT COALESCE(
                                                 CASE
                                                     WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
@@ -912,7 +958,7 @@ class InventoryController extends Controller
                                             WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                                                 AND pi.deleted_at IS NULL
                                                 AND pidet.deleted_at IS NULL
-                                                AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                                AND pi.Status = 'acknowledged'
                                             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                                             LIMIT 1
                                         ),
@@ -927,6 +973,14 @@ class InventoryController extends Controller
                                 ) as custodianName"),
                                 'locationDepartment' => DB::raw("COALESCE(
                                         (
+                                            SELECT depAP.DepartmentName
+                                            FROM assignedproperty ap
+                                            LEFT JOIN department depAP ON depAP.DepartmentID = ap.DepartmentID
+                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                            LIMIT 1
+                                        ),
+                                        (
                                             SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
                                             FROM propertyissuancedetail pidet
                                             JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
@@ -939,7 +993,7 @@ class InventoryController extends Controller
                                             WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                                                 AND pi.deleted_at IS NULL
                                                 AND pidet.deleted_at IS NULL
-                                                AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                                AND pi.Status = 'acknowledged'
                                             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                                             LIMIT 1
                                         ),
@@ -960,7 +1014,7 @@ class InventoryController extends Controller
                                         WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                                             AND pi.deleted_at IS NULL
                                             AND pidet.deleted_at IS NULL
-                                            AND pi.Status IN ('pending_acknowledgment','acknowledged')
+                                            AND pi.Status = 'acknowledged'
                                         ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                                         LIMIT 1
                                 ) as lastIssuedDate"),

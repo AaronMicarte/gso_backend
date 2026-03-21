@@ -86,10 +86,11 @@ class DashboardController extends Controller
             // Recent delivery receipts (last 5)
             $deliveryReceipts = DB::table('deliveryreceipt')
                 ->join('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
+                ->leftJoin('supplier', 'deliveryreceipt.SupplierID', '=', 'supplier.SupplierID')
                 ->select(
                     'deliveryreceipt.DRID as id',
                     'deliveryreceipt.DRNumber as drNumber',
-                    'deliveryreceipt.SupplierName as supplier',
+                    'supplier.SupplierName as supplier',
                     'user.Username as user',
                     'deliveryreceipt.CreatedDate as timestamp'
                 )

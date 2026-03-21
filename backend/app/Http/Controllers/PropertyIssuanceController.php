@@ -304,14 +304,15 @@ class PropertyIssuanceController extends Controller
         }
 
         // Transform details
-        $transformedIssuance['details'] = $issuance->details->map(function ($detail) {
+        $transformedIssuance['details'] = $issuance->details->map(function ($detail) use ($issuance) {
             $inventoryDetail = $detail->inventoryDetail;
+            $documentType = (string) ($issuance->DocumentType ?? 'ICS');
 
-            // Item Name should come from DR (deliveryreceiptdetail.ItemDescription) when available.
-            // Fallback to issuance detail ItemDescription (legacy/manual).
-            $itemName = $inventoryDetail?->drDetail?->ItemDescription
-                ?? $detail->ItemDescription
-                ?? 'Item';
+            $itemName = $this->resolveIssuanceItemName(
+                $documentType,
+                $inventoryDetail?->drDetail,
+                $detail->ItemDescription
+            );
 
             // Technical/long description comes from inventory detail Description.
             $technicalDescription = $inventoryDetail?->Description ?? null;
@@ -827,7 +828,11 @@ class PropertyIssuanceController extends Controller
                         throw new \Exception('Issuance quantities must be 1 per InventoryDetailID for QR/accountability tracking.');
                     }
 
-                    $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
+                    $itemDescription = $this->resolveIssuanceItemName(
+                        $documentType,
+                        $detail->drDetail,
+                        $detail->Description
+                    );
                     $unitName = $detail->unitOfMeasure?->UnitName ?? null;
 
                     PropertyIssuanceDetail::create([
@@ -1684,7 +1689,11 @@ class PropertyIssuanceController extends Controller
                 } else {
                     // fallback: create issuance detail from IARDetail (no inventory yet)
                     $qty = (int) ($detail->QuantityAccepted ?? 1);
-                    $itemDescription = $detail->drDetail?->ItemDescription ?? 'Item';
+                    $itemDescription = $this->resolveIssuanceItemName(
+                        $documentType,
+                        $detail->drDetail,
+                        null
+                    );
 
                     // Avoid duplicate entries with same IARDetail reference
                     $exists = PropertyIssuanceDetail::where('IssuanceID', $issuance->IssuanceID)
@@ -1803,7 +1812,11 @@ class PropertyIssuanceController extends Controller
                 $detailId = (int) $detail->InventoryDetailID;
                 $detailExists = in_array($detailId, $existingDetailIds, true);
 
-                $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
+                $itemDescription = $this->resolveIssuanceItemName(
+                    $documentType,
+                    $detail->drDetail,
+                    $detail->Description
+                );
                 $unitName = $detail->unitOfMeasure?->UnitName ?? null;
 
                 if (! $detailExists) {
@@ -1939,7 +1952,11 @@ class PropertyIssuanceController extends Controller
                     continue;
                 }
 
-                $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
+                $itemDescription = $this->resolveIssuanceItemName(
+                    $documentType,
+                    $detail->drDetail,
+                    $detail->Description
+                );
                 $unitName = $detail->unitOfMeasure?->UnitName ?? null;
 
                 PropertyIssuanceDetail::create([
@@ -1961,21 +1978,20 @@ class PropertyIssuanceController extends Controller
 
     private function createIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt, EndUser $resolvedEndUser): array
     {
-        // Work directly with DR details instead of inventory details
-        $drDetails = DB::table('deliveryreceiptdetail as drd')
-            ->leftJoin('propertytype as pt', 'drd.PropertyTypeID', '=', 'pt.PropertyTypeID')
-            ->leftJoin('propertyclassification as pc', 'pt.PropertyClassificationID', '=', 'pc.PropertyClassificationID')
-            ->leftJoin('unitofmeasure as uom', 'drd.UnitOfMeasureID', '=', 'uom.UnitOfMeasureID')
-            ->where('drd.DRID', (int) $deliveryReceipt->DRID)
-            ->select(
-                'drd.*',
-                'pt.PropertyTypeName',
-                'pc.DocumentType',
-                'uom.UnitName'
-            )
+        $this->ensureInventoryForDeliveryReceipt($deliveryReceipt);
+
+        $inventoryDetails = PropertyInventoryDetail::with([
+                'drDetail',
+                'propertyType.propertyClassification',
+                'unitOfMeasure',
+            ])
+            ->whereHas('drDetail', function ($q) use ($deliveryReceipt) {
+                $q->where('DRID', (int) $deliveryReceipt->DRID);
+            })
+            ->lockForUpdate()
             ->get();
 
-        if ($drDetails->isEmpty()) {
+        if ($inventoryDetails->isEmpty()) {
             return [];
         }
 
@@ -1986,13 +2002,14 @@ class PropertyIssuanceController extends Controller
                 return (string) $issuance->DocumentType;
             });
 
-        // Group DR details by document type
-        $groupedByType = $drDetails->groupBy(function ($detail) {
-            return $detail->DocumentType ?: 'ICS';
+        $groupedByType = $inventoryDetails->groupBy(function ($detail) {
+            $docType = $detail->propertyType?->propertyClassification?->DocumentType ?? null;
+            return $docType ?: 'ICS';
         });
 
         $issuances = [];
         $issuedToName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? null;
+        $departmentId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0) ?: null;
         $issuedAt = now();
 
         foreach ($groupedByType as $documentType => $details) {
@@ -2029,7 +2046,7 @@ class PropertyIssuanceController extends Controller
                 $issuance->save();
 
                 $existingDetailIds = $issuance->details
-                    ->pluck('DRDetailID') // Use DRDetailID instead of InventoryDetailID
+                    ->pluck('InventoryDetailID')
                     ->filter()
                     ->map(function ($id) {
                         return (int) $id;
@@ -2039,26 +2056,73 @@ class PropertyIssuanceController extends Controller
             }
 
             foreach ($details as $detail) {
-                $drDetailId = (int) $detail->DRDetailID;
-                $detailExists = in_array($drDetailId, $existingDetailIds, true);
+                $inventoryDetailId = (int) $detail->InventoryDetailID;
+                $detailExists = in_array($inventoryDetailId, $existingDetailIds, true);
+
+                $itemDescription = $this->resolveIssuanceItemName(
+                    $documentType,
+                    $detail->drDetail,
+                    $detail->Description
+                );
+                $unitName = $detail->unitOfMeasure?->UnitName ?? null;
 
                 if (! $detailExists) {
                     PropertyIssuanceDetail::create([
                         'IssuanceID' => $issuance->IssuanceID,
                         'RequestDetailID' => null,
-                        'DRDetailID' => $detail->DRDetailID, // Link to DR detail directly
-                        'InventoryDetailID' => null, // No inventory dependency
-                        'ItemDescription' => $detail->ItemDescription,
-                        'Unit' => $detail->UnitName,
-                        'QuantityIssued' => $detail->QuantityDelivered,
+                        'InventoryDetailID' => $detail->InventoryDetailID,
+                        'ItemDescription' => $itemDescription,
+                        'Unit' => $unitName,
+                        'QuantityIssued' => 1,
                         'Remarks' => $issuance->Remarks,
                     ]);
 
-                    $existingDetailIds[] = $drDetailId;
+                    $existingDetailIds[] = $inventoryDetailId;
                 }
 
-                // Create assigned property records for tracking
-                $this->createAssignedPropertyFromDR($detail, $resolvedEndUser, $issuance);
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+                $availableQty = (int) ($detail->QuantityAvailable ?? 0);
+                $shouldFinalize = $availableQty > 0 || (int) ($detail->PropertyStatusID ?? 0) !== 2;
+
+                if ($shouldFinalize) {
+                    if ($availableQty < 1) {
+                        $alreadyAssigned = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->exists();
+                        if ($alreadyAssigned) {
+                            throw new \Exception('Insufficient available quantity for DR issuance item.');
+                        }
+
+                        $detail->QuantityAvailable = 1;
+                        $detail->save();
+                    }
+
+                    $detail->decrement('QuantityAvailable', 1);
+                    if ($detail->fresh()->QuantityAvailable <= 0) {
+                        $detail->update(['PropertyStatusID' => 2]);
+                    }
+                }
+
+                $assignedPayload = [
+                    'InventoryDetailID' => $detail->InventoryDetailID,
+                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                    'DepartmentID' => $departmentId,
+                    'PropertyCardNumber' => $issuance->DocumentNumber,
+                    'Description' => $detail->Description ?? $itemDescription,
+                    'AssignedDate' => $issuedAt,
+                    'PropertyStatusID' => $shouldFinalize
+                        ? 2
+                        : (int) ($assignedProperty?->PropertyStatusID ?? 2),
+                    'ConditionID' => (int) ($detail->ConditionID ?? 1),
+                    'Remarks' => $issuance->Remarks,
+                ];
+
+                if ($assignedProperty) {
+                    $assignedProperty->fill($assignedPayload);
+                    $assignedProperty->save();
+                } else {
+                    $assignedProperty = AssignedProperty::create($assignedPayload);
+                }
+
+                $this->ensureQrCodeForDetail($detail, $assignedProperty);
             }
 
             $issuances[] = $issuance;
@@ -2067,35 +2131,129 @@ class PropertyIssuanceController extends Controller
         return $issuances;
     }
 
-    private function createAssignedPropertyFromDR($drDetail, EndUser $endUser, $issuance): void
+    private function ensureInventoryForDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
     {
-        // Generate property number for tracking
+        if (PropertyInventory::where('DRID', (int) $deliveryReceipt->DRID)->whereNull('deleted_at')->exists()) {
+            return;
+        }
+
+        $deliveryReceipt->loadMissing(['details', 'requestedByUser']);
+        $details = $deliveryReceipt->details;
+        if ($details->isEmpty()) {
+            return;
+        }
+
+        $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
+
+        $inventory = PropertyInventory::create([
+            'InventoryNumber' => 'INV-' . date('Ymd-His') . '-' . $deliveryReceipt->DRID,
+            'DRID' => (int) $deliveryReceipt->DRID,
+            'IARID' => null,
+            'DateReceived' => $deliveryReceipt->DateInspected ?? $deliveryReceipt->DateReceived ?? now(),
+            'Remarks' => 'Auto-ingested from DR #' . $deliveryReceipt->DRNumber,
+            'CreatedDate' => now(),
+        ]);
+
+        $toBeIssuedStatusId = PropertyStatus::where('StatusName', 'To be issued')
+            ->orWhere('StatusName', 'For issuance')
+            ->orWhere('StatusName', 'For Issuance')
+            ->value('PropertyStatusID');
+
+        if (! $toBeIssuedStatusId) {
+            $toBeIssuedStatusId = PropertyStatus::where('StatusName', 'Available')
+                ->value('PropertyStatusID') ?? 1;
+        }
+
         $year = date('Y');
         $prefix = $year . '-';
-        $latestItem = AssignedProperty::whereRaw('PropertyCardNumber LIKE ?', [$prefix . '%'])
-            ->orderBy('PropertyCardNumber', 'desc')
+        $latestItem = PropertyInventoryDetail::withTrashed()
+            ->where('PropertyNumber', 'like', $prefix . '%')
+            ->orderBy('PropertyNumber', 'desc')
             ->first();
 
         $currentSequence = 0;
-        if ($latestItem && preg_match('/-(\d+)$/', (string) $latestItem->PropertyCardNumber, $matches)) {
+        if ($latestItem && preg_match('/-(\d+)$/', (string) $latestItem->PropertyNumber, $matches)) {
             $currentSequence = (int) $matches[1];
         }
 
-        $newSequence = str_pad($currentSequence + 1, 6, '0', STR_PAD_LEFT);
-        $propertyNumber = $prefix . $newSequence;
+        foreach ($details as $detail) {
+            $deliveredQty = (int) ($detail->QuantityDelivered ?? 0);
+            if ($deliveredQty <= 0) {
+                continue;
+            }
 
-        AssignedProperty::create([
-            'InventoryDetailID' => null, // No inventory dependency
-            'EndUserID' => $endUser->EndUserID,
-            'DepartmentID' => $endUser->DepartmentID,
-            'PropertyCardNumber' => $issuance->DocumentNumber,
-            'Description' => $drDetail->ItemDescription,
-            'AssignedDate' => now()->format('Y-m-d'),
-            'PropertyStatusID' => 2, // Assigned status
-            'ConditionID' => 1, // Good condition by default
-            'Remarks' => 'Auto-created from DR acknowledgment',
-            'CreatedDate' => now(),
-        ]);
+            for ($i = 0; $i < $deliveredQty; $i++) {
+                $currentSequence++;
+                $propertyNumber = $prefix . str_pad((string) $currentSequence, 6, '0', STR_PAD_LEFT);
+
+                $inventoryDetail = PropertyInventoryDetail::create([
+                    'InventoryID' => $inventory->InventoryID,
+                    'PropertyTypeID' => $detail->PropertyTypeID,
+                    'PropertyNumber' => $propertyNumber,
+                    'ConditionID' => 1,
+                    'Brand' => $detail->Brand,
+                    'ModelNumber' => $detail->ModelNumber,
+                    'SerialNumber' => $detail->SerialNumber,
+                    'Description' => $detail->ItemDescription,
+                    'Quantity' => 1,
+                    'QuantityAvailable' => 1,
+                    'PropertyStatusID' => $toBeIssuedStatusId,
+                    'UnitOfMeasureID' => $detail->UnitOfMeasureID,
+                    'UnitCost' => $detail->UnitCost,
+                    'TotalCost' => $detail->UnitCost,
+                    'SourceIARDetailID' => null,
+                    'SourceDRDetailID' => $detail->DRDetailID,
+                    'Remarks' => $detail->ChangeReason,
+                    'CreatedDate' => now(),
+                ]);
+
+                $assignedPayload = [
+                    'InventoryDetailID' => $inventoryDetail->InventoryDetailID,
+                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
+                    'DepartmentID' => (int) ($resolvedEndUser->DepartmentID ?? 0),
+                    'PropertyCardNumber' => null,
+                    'Description' => $detail->ItemDescription,
+                    'AssignedDate' => now()->toDateString(),
+                    'PropertyStatusID' => (int) $toBeIssuedStatusId,
+                    'ConditionID' => 1,
+                    'Remarks' => 'Auto-created on DR intake',
+                ];
+
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)->first();
+                if ($assignedProperty) {
+                    $assignedProperty->fill($assignedPayload);
+                    $assignedProperty->save();
+                } else {
+                    $assignedProperty = AssignedProperty::create($assignedPayload);
+                }
+
+                $this->ensureQrCodeForDetail($inventoryDetail, $assignedProperty);
+            }
+        }
+    }
+
+    private function resolveIssuanceItemName(string $documentType, ?DeliveryReceiptDetail $drDetail, ?string $fallback): string
+    {
+        $normalizedType = strtoupper(trim($documentType));
+
+        if ($normalizedType === 'PAR') {
+            $articleName = trim((string) ($drDetail?->article?->ArticleName ?? ''));
+            if ($articleName !== '') {
+                return $articleName;
+            }
+        }
+
+        $drItemName = trim((string) ($drDetail?->ItemDescription ?? ''));
+        if ($drItemName !== '') {
+            return $drItemName;
+        }
+
+        $fallbackName = trim((string) ($fallback ?? ''));
+        if ($fallbackName !== '') {
+            return $fallbackName;
+        }
+
+        return 'Item';
     }
 
 }
