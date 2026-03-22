@@ -7,6 +7,7 @@ use App\Models\Auth\User;
 use App\Models\Auth\LoginAudit;
 use App\Models\Auth\TrustedDevice;
 use App\Services\MFAService;
+use App\Services\TurnstileService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,10 +17,12 @@ use Illuminate\Support\Facades\Hash;
 class MFAController extends Controller
 {
     protected MFAService $mfaService;
+    protected TurnstileService $turnstileService;
 
-    public function __construct(MFAService $mfaService)
+    public function __construct(MFAService $mfaService, TurnstileService $turnstileService)
     {
         $this->mfaService = $mfaService;
+        $this->turnstileService = $turnstileService;
     }
 
     /**
@@ -124,9 +127,19 @@ class MFAController extends Controller
             'user_id' => 'required|integer',
             // Accept either a 6-digit TOTP code or an 8-character backup code
             'code' => 'required|string|min:6|max:8|regex:/^[A-Za-z0-9]+$/',
+            'turnstile_token' => 'nullable|string',
             'trust_device' => 'boolean',
             'device_name' => 'nullable|string|max:255',
         ]);
+
+        $turnstileCheck = $this->turnstileService->verifyToken($request->input('turnstile_token'), $request->ip());
+        if (!$turnstileCheck['success']) {
+            return response()->json([
+                'message' => $turnstileCheck['message'] ?? 'Captcha verification failed.',
+                'turnstile_failed' => true,
+                'turnstile_errors' => $turnstileCheck['errors'] ?? [],
+            ], 422);
+        }
 
         // Normalize code (defensive: strip spaces and uppercase)
         $validated['code'] = strtoupper(preg_replace('/\s+/', '', $validated['code']));

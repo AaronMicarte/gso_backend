@@ -10,6 +10,7 @@ use App\Models\Auth\User;
 use App\Models\Auth\LoginAudit;
 use App\Models\Auth\TrustedDevice;
 use App\Services\MFAService;
+use App\Services\TurnstileService;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -22,10 +23,12 @@ class AuthController extends Controller
     private const LOCKOUT_SECONDS = 60; // 60 seconds for better testing
 
     protected MFAService $mfaService;
+    protected TurnstileService $turnstileService;
 
-    public function __construct(MFAService $mfaService)
+    public function __construct(MFAService $mfaService, TurnstileService $turnstileService)
     {
         $this->mfaService = $mfaService;
+        $this->turnstileService = $turnstileService;
     }
 
     /**
@@ -39,11 +42,21 @@ class AuthController extends Controller
             $request->validate([
                 'username' => 'required|string',
                 'password' => 'required|string',
+                'turnstile_token' => 'nullable|string',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
+            ], 422);
+        }
+
+        $turnstileCheck = $this->turnstileService->verifyToken($request->input('turnstile_token'), $request->ip());
+        if (!$turnstileCheck['success']) {
+            return response()->json([
+                'message' => $turnstileCheck['message'] ?? 'Captcha verification failed.',
+                'turnstile_failed' => true,
+                'turnstile_errors' => $turnstileCheck['errors'] ?? [],
             ], 422);
         }
 
@@ -290,6 +303,7 @@ class AuthController extends Controller
         try {
             $request->validate([
                 'token' => 'required|string|min:20',
+                'turnstile_token' => 'nullable|string',
                 'password' => [
                     'required',
                     'string',
@@ -301,6 +315,15 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $turnstileCheck = $this->turnstileService->verifyToken($request->input('turnstile_token'), $request->ip());
+        if (!$turnstileCheck['success']) {
+            return response()->json([
+                'message' => $turnstileCheck['message'] ?? 'Captcha verification failed.',
+                'turnstile_failed' => true,
+                'turnstile_errors' => $turnstileCheck['errors'] ?? [],
             ], 422);
         }
 
