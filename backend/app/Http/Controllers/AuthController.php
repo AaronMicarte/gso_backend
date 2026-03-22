@@ -174,25 +174,7 @@ class AuthController extends Controller
             ]);
         }
 
-        // 6. Enforce MFA setup for roles that require it
-        $userRole = $user->userRole->RoleName ?? '';
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
-        if (!$user->MFAEnabled && in_array($userRole, $mfaRequiredRoles)) {
-            return response()->json([
-                'message' => 'MFA setup required',
-                'mfa_required' => true,
-                'mfa_setup_required' => true,
-                'user_id' => $user->UserID,
-                'user' => [
-                    'UserID' => $user->UserID,
-                    'Username' => $user->Username,
-                    'FullName' => $user->FullName ?? $user->Username,
-                    'MFAEnabled' => $user->MFAEnabled,
-                ],
-            ], 200);
-        }
-
-        // 7. Check MFA Requirement
+        // 6. Check MFA Requirement
         // For testing/admin control, enforce MFA only when MFAEnabled is true on the user record.
 
         if ($user->MFAEnabled) {
