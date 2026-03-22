@@ -18,6 +18,7 @@ class Article extends Model
     protected $fillable = [
         'ArticleName',
         'Description',
+        'ArticleImage',
         'PropertyTypeID',
         'DefaultUnitOfMeasureID',
         'IsActive',

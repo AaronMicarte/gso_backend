@@ -21,11 +21,13 @@ class UpdateArticleRequest extends FormRequest
      */
     public function rules(): array
     {
-        $articleId = $this->route('article');
+        $articleId = $this->route('id') ?? $this->route('article');
         
         return [
             'ArticleName' => 'required|string|max:255|unique:articles,ArticleName,' . $articleId . ',ArticleID',
             'Description' => 'nullable|string|max:1000',
+            'ArticleImage' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'RemoveImage' => 'nullable|boolean',
             'PropertyTypeID' => 'required|integer|exists:propertytype,PropertyTypeID',
             'DefaultUnitOfMeasureID' => 'required|integer|exists:unitofmeasure,UnitOfMeasureID',
             'IsActive' => 'boolean',

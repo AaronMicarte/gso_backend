@@ -4,6 +4,7 @@ namespace App\Http\Resources\MasterData;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ArticleResource extends JsonResource
 {
@@ -13,6 +14,8 @@ class ArticleResource extends JsonResource
             'id' => $this->ArticleID,
             'name' => $this->ArticleName,
             'description' => $this->Description,
+            'image_path' => $this->ArticleImage,
+            'image_url' => $this->ArticleImage ? Storage::disk('public')->url($this->ArticleImage) : null,
             'property_type_id' => $this->PropertyTypeID,
             'default_unit_of_measure_id' => $this->DefaultUnitOfMeasureID,
             'is_active' => $this->IsActive,
