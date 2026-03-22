@@ -8,6 +8,8 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Notification\UserPushToken;
+use App\Models\Notification\UserNotification;
 
 class User extends Authenticatable
 {
@@ -107,6 +109,22 @@ class User extends Authenticatable
     public function trustedDevices(): HasMany
     {
         return $this->hasMany(TrustedDevice::class, 'UserID', 'UserID');
+    }
+
+    /**
+     * Get push tokens registered by this user.
+     */
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(UserPushToken::class, 'UserID', 'UserID');
+    }
+
+    /**
+     * Get notifications addressed to this user.
+     */
+    public function appNotifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class, 'UserID', 'UserID');
     }
 
     /**

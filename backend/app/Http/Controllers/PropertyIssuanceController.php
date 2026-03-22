@@ -19,6 +19,7 @@ use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\Procurement\InspectionAcceptanceReport;
 use App\Models\MasterData\PropertyStatus;
 use App\Services\AssetRequestSignatureService;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -709,6 +710,35 @@ class PropertyIssuanceController extends Controller
 
             DB::commit();
 
+            app(RoleNotificationService::class)->notifyRoles(
+                ['Admin', 'GSO Staff'],
+                'asset_request.issued',
+                'Assets Issued',
+                sprintf('Request %s has been issued and is awaiting acknowledgment.', $assetRequest->RequestNumber),
+                [
+                    'request_id' => (string) $assetRequest->RequestID,
+                    'request_number' => (string) $assetRequest->RequestNumber,
+                    'status' => 'issued',
+                    'link' => '/admin/issuance',
+                ],
+                (int) (Auth::id() ?? 0)
+            );
+
+            if ((int) $assetRequest->RequestedBy > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $assetRequest->RequestedBy,
+                    'asset_request.issued',
+                    'Your Request Has Been Issued',
+                    sprintf('Request %s has been issued by GSO.', $assetRequest->RequestNumber),
+                    [
+                        'request_id' => (string) $assetRequest->RequestID,
+                        'request_number' => (string) $assetRequest->RequestNumber,
+                        'status' => 'issued',
+                        'link' => '/department_head/issuance',
+                    ]
+                );
+            }
+
             return response()->json([
                 'message' => 'Assets issued successfully',
                 'data' => [
@@ -900,6 +930,19 @@ class PropertyIssuanceController extends Controller
             }
 
             DB::commit();
+
+            app(RoleNotificationService::class)->notifyUser(
+                (int) $deliveryReceipt->RequestedBy,
+                'delivery_receipt.issued',
+                'Delivery Receipt Issued',
+                sprintf('Your delivery receipt %s is now issued to department custody.', $deliveryReceipt->DRNumber),
+                [
+                    'dr_id' => (string) $deliveryReceipt->DRID,
+                    'dr_number' => (string) $deliveryReceipt->DRNumber,
+                    'status' => 'issued',
+                    'link' => '/department_head/issuance',
+                ]
+            );
 
             return response()->json([
                 'message' => 'Assets issued successfully',
@@ -1458,6 +1501,19 @@ class PropertyIssuanceController extends Controller
             $issuances = $this->createIssuancesFromDeliveryReceipt($deliveryReceipt, $resolvedEndUser);
 
             DB::commit();
+
+            app(RoleNotificationService::class)->notifyUser(
+                (int) $deliveryReceipt->RequestedBy,
+                'delivery_receipt.acknowledged',
+                'Delivery Receipt Acknowledged',
+                sprintf('Delivery receipt %s has been acknowledged and inventory is ready.', $deliveryReceipt->DRNumber),
+                [
+                    'dr_id' => (string) $deliveryReceipt->DRID,
+                    'dr_number' => (string) $deliveryReceipt->DRNumber,
+                    'status' => 'acknowledged',
+                    'link' => '/department_head/delivery-receipts',
+                ]
+            );
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error in DR acknowledgment: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);

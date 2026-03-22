@@ -43,4 +43,9 @@ return [
         'expected_hostname' => env('TURNSTILE_EXPECTED_HOSTNAME'),
     ],
 
+    'firebase' => [
+        'project_id' => env('FCM_PROJECT_ID'),
+        'service_account_json' => env('FCM_SERVICE_ACCOUNT_JSON'),
+    ],
+
 ];

@@ -28,6 +28,7 @@ use App\Http\Controllers\department_head\DashboardController as DepartmentHeadDa
 use App\Http\Controllers\department_head\ReceivedItemsController as DepartmentHeadReceivedItemsController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RequisitionIssueSlipController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,6 +66,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard routes
     Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
     Route::get('/dashboard/activity', [DashboardController::class, 'getRecentActivity']);
+
+    // Notification routes
+    Route::prefix('notifications')->group(function () {
+        Route::get('', [NotificationController::class, 'index']);
+        Route::patch('read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::patch('{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::post('push-token', [NotificationController::class, 'registerPushToken']);
+        Route::delete('push-token', [NotificationController::class, 'removePushToken']);
+    });
 
     // MFA Management routes (require authentication)
     Route::prefix('mfa')->group(function () {

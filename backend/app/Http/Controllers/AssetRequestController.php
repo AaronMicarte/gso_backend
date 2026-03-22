@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\MasterData\DepartmentResource;
+use App\Services\Notifications\RoleNotificationService;
 
 class AssetRequestController extends Controller
 {
@@ -269,6 +270,19 @@ class AssetRequestController extends Controller
 
             DB::commit();
 
+            app(RoleNotificationService::class)->notifyRoles(
+                ['Admin', 'GSO Staff'],
+                'asset_request.created',
+                'New Asset Request Submitted',
+                sprintf('Request %s was submitted by %s.', $assetRequest->RequestNumber, $user->FullName),
+                [
+                    'request_id' => (string) $assetRequest->RequestID,
+                    'request_number' => (string) $assetRequest->RequestNumber,
+                    'link' => '/admin/asset-requests/' . $assetRequest->RequestID,
+                ],
+                (int) $user->UserID
+            );
+
             return response()->json([
                 'message' => 'Asset request created successfully',
                 'request' => $assetRequest->load(['requester', 'department', 'details'])
@@ -430,6 +444,35 @@ class AssetRequestController extends Controller
 
             DB::commit();
 
+            if ((int) $assetRequest->RequestedBy > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $assetRequest->RequestedBy,
+                    'asset_request.approved',
+                    'Asset Request Approved',
+                    sprintf('Request %s was approved and is waiting for issuance.', $assetRequest->RequestNumber),
+                    [
+                        'request_id' => (string) $assetRequest->RequestID,
+                        'request_number' => (string) $assetRequest->RequestNumber,
+                        'status' => 'waiting_for_issuance',
+                        'link' => '/department_head/asset-requests/' . $assetRequest->RequestID,
+                    ]
+                );
+            }
+
+            app(RoleNotificationService::class)->notifyRoles(
+                ['Admin', 'GSO Staff'],
+                'asset_request.ready_for_issuance',
+                'Request Ready for Issuance',
+                sprintf('Request %s is approved and ready for issuance.', $assetRequest->RequestNumber),
+                [
+                    'request_id' => (string) $assetRequest->RequestID,
+                    'request_number' => (string) $assetRequest->RequestNumber,
+                    'status' => 'waiting_for_issuance',
+                    'link' => '/admin/asset-requests/' . $assetRequest->RequestID,
+                ],
+                (int) $user->UserID
+            );
+
             return response()->json([
                 'message' => 'Asset request approved successfully',
                 'request' => $assetRequest->load(['details', 'reviewer'])
@@ -512,6 +555,21 @@ class AssetRequestController extends Controller
 
             DB::commit();
 
+            if ((int) $assetRequest->RequestedBy > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $assetRequest->RequestedBy,
+                    'asset_request.rejected',
+                    'Asset Request Rejected',
+                    sprintf('Request %s was rejected. Please review notes from GSO.', $assetRequest->RequestNumber),
+                    [
+                        'request_id' => (string) $assetRequest->RequestID,
+                        'request_number' => (string) $assetRequest->RequestNumber,
+                        'status' => 'rejected',
+                        'link' => '/department_head/asset-requests/' . $assetRequest->RequestID,
+                    ]
+                );
+            }
+
             return response()->json([
                 'message' => 'Asset request rejected',
                 'request' => $assetRequest->load(['details', 'reviewer'])
@@ -559,6 +617,20 @@ class AssetRequestController extends Controller
             );
 
             DB::commit();
+
+            app(RoleNotificationService::class)->notifyRoles(
+                ['Admin', 'GSO Staff'],
+                'asset_request.cancelled',
+                'Asset Request Cancelled',
+                sprintf('Request %s was cancelled by %s.', $assetRequest->RequestNumber, $user->FullName),
+                [
+                    'request_id' => (string) $assetRequest->RequestID,
+                    'request_number' => (string) $assetRequest->RequestNumber,
+                    'status' => 'cancelled',
+                    'link' => '/admin/asset-requests/' . $assetRequest->RequestID,
+                ],
+                (int) $user->UserID
+            );
 
             return response()->json([
                 'message' => 'Asset request cancelled successfully',
@@ -635,6 +707,35 @@ class AssetRequestController extends Controller
             );
 
             DB::commit();
+
+            app(RoleNotificationService::class)->notifyRoles(
+                ['Admin', 'GSO Staff'],
+                'asset_request.received',
+                'Asset Receipt Confirmed',
+                sprintf('Request %s has been marked as received by %s.', $assetRequest->RequestNumber, $user->FullName),
+                [
+                    'request_id' => (string) $assetRequest->RequestID,
+                    'request_number' => (string) $assetRequest->RequestNumber,
+                    'status' => 'received',
+                    'link' => '/admin/asset-requests/' . $assetRequest->RequestID,
+                ],
+                (int) $user->UserID
+            );
+
+            if ((int) $assetRequest->RequestedBy > 0 && (int) $assetRequest->RequestedBy !== (int) $user->UserID) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $assetRequest->RequestedBy,
+                    'asset_request.received',
+                    'Department Receipt Confirmed',
+                    sprintf('Your request %s is now marked as received.', $assetRequest->RequestNumber),
+                    [
+                        'request_id' => (string) $assetRequest->RequestID,
+                        'request_number' => (string) $assetRequest->RequestNumber,
+                        'status' => 'received',
+                        'link' => '/department_head/asset-requests/' . $assetRequest->RequestID,
+                    ]
+                );
+            }
 
             return response()->json([
                 'message' => 'Receipt confirmed successfully',
@@ -770,6 +871,21 @@ class AssetRequestController extends Controller
             );
 
             DB::commit();
+
+            if ((int) $assetRequest->RequestedBy > 0 && (int) $assetRequest->RequestedBy !== (int) $user->UserID) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $assetRequest->RequestedBy,
+                    'asset_request.reviewed',
+                    'Asset Request Reviewed',
+                    sprintf('Request %s has updated review details from GSO.', $assetRequest->RequestNumber),
+                    [
+                        'request_id' => (string) $assetRequest->RequestID,
+                        'request_number' => (string) $assetRequest->RequestNumber,
+                        'status' => (string) $assetRequest->Status,
+                        'link' => '/department_head/asset-requests/' . $assetRequest->RequestID,
+                    ]
+                );
+            }
 
             return response()->json([
                 'message' => 'Review data saved successfully',
