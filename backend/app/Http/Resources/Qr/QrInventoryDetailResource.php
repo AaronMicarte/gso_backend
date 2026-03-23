@@ -27,6 +27,11 @@ class QrInventoryDetailResource extends JsonResource
                 return [
                     'DRDetailID' => (int) $this->drDetail->DRDetailID,
                     'ItemDescription' => $this->drDetail->ItemDescription,
+                    'article' => $this->drDetail->relationLoaded('article') && $this->drDetail->article ? [
+                        'ArticleID' => (int) $this->drDetail->article->ArticleID,
+                        'ArticleName' => $this->drDetail->article->ArticleName,
+                        'Description' => $this->drDetail->article->Description,
+                    ] : null,
                 ];
             }),
             'unitOfMeasure' => $this->whenLoaded('unitOfMeasure', function () {

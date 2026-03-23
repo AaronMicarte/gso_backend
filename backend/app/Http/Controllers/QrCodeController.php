@@ -33,7 +33,7 @@ class QrCodeController extends Controller
         $query->selectRaw('(select pi.DocumentType from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as DocumentType');
 
         $query->with([
-            'inventoryDetail.drDetail',
+            'inventoryDetail.drDetail.article',
             'inventoryDetail.unitOfMeasure',
             'endUser.department',
             'department',
