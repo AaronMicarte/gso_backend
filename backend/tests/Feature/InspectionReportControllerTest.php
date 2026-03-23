@@ -392,6 +392,104 @@ class InspectionReportControllerTest extends TestCase
         $this->assertDatabaseHas('inspectionacceptancereport', ['DRID' => $latestDrId]);
     }
 
+    public function test_validation_disallows_future_date_received(): void
+    {
+        $this->ensureBaseTables();
+
+        $user = User::create([
+            'UserRoleID' => 1,
+            'DepartmentID' => 1,
+            'Username' => 'future.user',
+            'Email' => 'future@example.com',
+            'Password' => bcrypt('password'),
+            'FullName' => 'Future User',
+            'IsActive' => 1,
+        ]);
+
+        DB::table('supplier')->insert(['SupplierID' => 1, 'SupplierName' => 'Test Supplier']);
+        DB::table('article')->insert(['ArticleID' => 1, 'ArticleName' => 'Test Article', 'PropertyTypeID' => 1, 'DefaultUnitOfMeasureID' => 1]);
+        DB::table('propertytype')->insert(['PropertyTypeID' => 1, 'PropertyName' => 'Type1', 'PropertyClassificationID' => 1]);
+        DB::table('unitofmeasure')->insert(['UnitOfMeasureID' => 1, 'UnitName' => 'pcs']);
+
+        $payload = [
+            'dr_number' => 'DR-FUTURE-01',
+            'supplier_id' => 1,
+            'requested_by_user_id' => $user->UserID,
+            'pr_number' => 'PR-FUTURE',
+            'po_number' => 'PO-FUTURE',
+            'invoice_number' => 'INV-FUTURE',
+            'date_received' => now()->addDay()->format('Y-m-d'),
+            'remarks' => '',
+            'dr_picture' => UploadedFile::fake()->image('dr.jpg'),
+            'details' => [[
+                'article_id' => 1,
+                'item_description' => 'API Item',
+                'brand' => '',
+                'model_number' => '',
+                'serial_number' => '',
+                'property_type_id' => 1,
+                'quantity_delivered' => 1,
+                'quantity_requested' => 1,
+                'change_reason' => '',
+                'unit_of_measure_id' => 1,
+                'unit_cost' => 100,
+            ]],
+        ];
+
+        $response = $this->actingAs($user)->postJson('/api/admin/procurement/delivery-receipts', $payload);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['date_received']);
+    }
+
+    public function test_validation_disallows_date_received_more_than_one_year_old(): void
+    {
+        $this->ensureBaseTables();
+
+        $user = User::create([
+            'UserRoleID' => 1,
+            'DepartmentID' => 1,
+            'Username' => 'past.user',
+            'Email' => 'past@example.com',
+            'Password' => bcrypt('password'),
+            'FullName' => 'Past User',
+            'IsActive' => 1,
+        ]);
+
+        DB::table('supplier')->insert(['SupplierID' => 1, 'SupplierName' => 'Test Supplier']);
+        DB::table('article')->insert(['ArticleID' => 1, 'ArticleName' => 'Test Article', 'PropertyTypeID' => 1, 'DefaultUnitOfMeasureID' => 1]);
+        DB::table('propertytype')->insert(['PropertyTypeID' => 1, 'PropertyName' => 'Type1', 'PropertyClassificationID' => 1]);
+        DB::table('unitofmeasure')->insert(['UnitOfMeasureID' => 1, 'UnitName' => 'pcs']);
+
+        $payload = [
+            'dr_number' => 'DR-PAST-01',
+            'supplier_id' => 1,
+            'requested_by_user_id' => $user->UserID,
+            'pr_number' => 'PR-PAST',
+            'po_number' => 'PO-PAST',
+            'invoice_number' => 'INV-PAST',
+            'date_received' => now()->subYear()->subDay()->format('Y-m-d'),
+            'remarks' => '',
+            'dr_picture' => UploadedFile::fake()->image('dr.jpg'),
+            'details' => [[
+                'article_id' => 1,
+                'item_description' => 'API Item',
+                'brand' => '',
+                'model_number' => '',
+                'serial_number' => '',
+                'property_type_id' => 1,
+                'quantity_delivered' => 1,
+                'quantity_requested' => 1,
+                'change_reason' => '',
+                'unit_of_measure_id' => 1,
+                'unit_cost' => 100,
+            ]],
+        ];
+
+        $response = $this->actingAs($user)->postJson('/api/admin/procurement/delivery-receipts', $payload);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['date_received']);
+    }
+
     public function test_validation_disallows_serial_with_multiple_quantity(): void
     {
         $this->ensureBaseTables();
