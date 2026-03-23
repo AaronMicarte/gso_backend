@@ -43,6 +43,7 @@ class AuthController extends Controller
                 'username' => 'required|string',
                 'password' => 'required|string',
                 'turnstile_token' => 'nullable|string',
+                'device_token' => 'nullable|string|max:255',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -179,7 +180,7 @@ class AuthController extends Controller
 
         if ($user->MFAEnabled) {
             // Check if device is trusted
-            $deviceToken = $request->cookie('device_token');
+            $deviceToken = $request->cookie('device_token') ?: $request->input('device_token');
 
             if ($deviceToken) {
                 $trustedDevice = $this->mfaService->verifyDeviceToken($user, $deviceToken);
@@ -201,7 +202,7 @@ class AuthController extends Controller
                     // Explicitly save session to prevent race condition
                     $request->session()->save();
 
-                    return response()->json([
+                    $response = response()->json([
                         'message' => 'Login successful',
                         'mfa_required' => false,
                         'user' => [
@@ -219,6 +220,25 @@ class AuthController extends Controller
                             ]
                         ]
                     ]);
+
+                    // Refresh device token as httpOnly cookie. This also repairs local dev
+                    // sessions where the token was sent via payload fallback.
+                    $secure = $request->isSecure() || app()->environment('production');
+                    $sameSite = $secure ? 'None' : 'Lax';
+                    $domain = null;
+                    $response->cookie(
+                        'device_token',
+                        $deviceToken,
+                        60 * 24 * 30,
+                        '/',
+                        $domain,
+                        $secure,
+                        true,
+                        false,
+                        $sameSite
+                    );
+
+                    return $response;
                 }
             }
 
@@ -463,8 +483,8 @@ class AuthController extends Controller
             $sameSite = $secure ? 'None' : 'Lax';
 
             // Set cookie (30 days)
-            // Use 'localhost' domain for local development to work with both localhost and 127.0.0.1
-            $domain = app()->environment('local') ? 'localhost' : null;
+            // Use host-only cookie in local development to avoid localhost/127.0.0.1 mismatch.
+            $domain = null;
             $response->cookie(
                 'device_token',
                 $device->plain_token,

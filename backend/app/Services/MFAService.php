@@ -157,16 +157,55 @@ class MFAService
     ): TrustedDevice {
         // Generate a secure, random device token
         $token = bin2hex(random_bytes(32));
+        $hashedToken = hash('sha256', $token);
+        $normalizedDeviceName = $deviceName ?? 'Trusted Device';
 
-        $device = TrustedDevice::create([
-            'UserID' => $user->UserID,
-            'DeviceToken' => hash('sha256', $token), // Store hashed token
-            'DeviceName' => $deviceName,
-            'UserAgent' => $userAgent,
-            'IPAddress' => $ipAddress,
-            'CreatedDate' => now(),
-            'ExpiresAt' => now()->addDays($expiryDays),
-        ]);
+        $fingerprintQuery = TrustedDevice::query()
+            ->where('UserID', $user->UserID)
+            ->where('UserAgent', $userAgent)
+            ->where('IPAddress', $ipAddress);
+
+        $device = (clone $fingerprintQuery)
+            ->orderByDesc('DeviceID')
+            ->first();
+
+        $expiresAt = now()->addDays($expiryDays);
+
+        if ($device) {
+            // Reuse existing row for the same browser/device signature.
+            $device->fill([
+                'DeviceToken' => $hashedToken,
+                'DeviceName' => $normalizedDeviceName,
+                'UserAgent' => $userAgent,
+                'IPAddress' => $ipAddress,
+                'ExpiresAt' => $expiresAt,
+                'LastUsedAt' => now(),
+                'UpdatedAt' => now(),
+            ]);
+
+            if (!$device->CreatedDate) {
+                $device->CreatedDate = now();
+            }
+
+            $device->save();
+        } else {
+            $device = TrustedDevice::create([
+                'UserID' => $user->UserID,
+                'DeviceToken' => $hashedToken,
+                'DeviceName' => $normalizedDeviceName,
+                'UserAgent' => $userAgent,
+                'IPAddress' => $ipAddress,
+                'CreatedDate' => now(),
+                'ExpiresAt' => $expiresAt,
+                'LastUsedAt' => now(),
+                'UpdatedAt' => now(),
+            ]);
+        }
+
+        // Keep only one active row for the same device signature.
+        (clone $fingerprintQuery)
+            ->where('DeviceID', '!=', $device->DeviceID)
+            ->delete();
 
         // Return device with plain token (only shown once)
         $device->plain_token = $token;
@@ -243,6 +282,14 @@ class MFAService
         return TrustedDevice::where('UserID', $user->UserID)
             ->where('ExpiresAt', '>', now())
             ->orderBy('LastUsedAt', 'desc')
-            ->get();
+            ->orderByDesc('CreatedDate')
+            ->get()
+            ->unique(function (TrustedDevice $device) {
+                return strtolower(implode('|', [
+                    (string) ($device->UserAgent ?? ''),
+                    (string) ($device->IPAddress ?? ''),
+                ]));
+            })
+            ->values();
     }
 }

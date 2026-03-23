@@ -23,6 +23,7 @@ class TrustedDevice extends Model
         'CreatedDate',
         'ExpiresAt',
         'LastUsedAt',
+        'UpdatedAt',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class TrustedDevice extends Model
             'CreatedDate' => 'datetime',
             'ExpiresAt' => 'datetime',
             'LastUsedAt' => 'datetime',
+            'UpdatedAt' => 'datetime',
         ];
     }
 
