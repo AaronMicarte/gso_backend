@@ -272,6 +272,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('statuses', [AssetServiceRecordController::class, 'statuses']);
         Route::get('helpers/vendors', [AssetServiceRecordController::class, 'helperVendors']);
         Route::get('helpers/departments', [AssetServiceRecordController::class, 'helperDepartments']);
+        Route::get('helpers/department-heads', [AssetServiceRecordController::class, 'helperDepartmentHeads']);
         Route::get('helpers/end-users', [AssetServiceRecordController::class, 'helperEndUsers']);
         Route::get('helpers/inventory', [AssetServiceRecordController::class, 'helperInventory']);
         Route::get('{id}', [AssetServiceRecordController::class, 'show']);

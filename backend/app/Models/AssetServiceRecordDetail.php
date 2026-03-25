@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Auth\User;
 use App\Models\Inventory\PropertyInventoryDetail;
+use App\Models\MasterData\Supplier;
 use App\Models\MasterData\Vendor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,12 +28,11 @@ class AssetServiceRecordDetail extends Model
         'BudgetStatus',
         'Status',
         'AssignedVendorID',
+        'AssignedSupplierID',
         'EstimatedCost',
         'ActualCost',
-        'WarrantyCovered',
-        'WarrantyOutcome',
-        'CompletionNotes',
-        'VerificationNotes',
+        'WarrantyClaimNumber',
+        'RepairOrderNumber',
         'InvoiceAttachment',
         'SupportingAttachments',
         'CreatedByUserID',
@@ -40,7 +40,6 @@ class AssetServiceRecordDetail extends Model
     ];
 
     protected $casts = [
-        'WarrantyCovered' => 'boolean',
         'EstimatedCost' => 'decimal:2',
         'ActualCost' => 'decimal:2',
         'SupportingAttachments' => 'array',
@@ -59,6 +58,11 @@ class AssetServiceRecordDetail extends Model
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class, 'AssignedVendorID', 'VendorID');
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'AssignedSupplierID', 'SupplierID');
     }
 
     public function createdBy(): BelongsTo
