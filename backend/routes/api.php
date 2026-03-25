@@ -291,6 +291,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('qr')->group(function () {
         Route::get('properties', [QrCodeController::class, 'index']);
         Route::post('properties/{propertyId}/generate', [QrCodeController::class, 'generate']);
+        Route::put('properties/{propertyId}', [QrCodeController::class, 'update']);
         Route::get('scan/{propertyId}', [QrCodeController::class, 'scan']);
     });
 

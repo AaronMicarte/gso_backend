@@ -9,6 +9,7 @@ use App\Http\Resources\Qr\QrAssignedPropertyResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class QrCodeController extends Controller
 {
@@ -111,6 +112,43 @@ class QrCodeController extends Controller
             'message' => 'QR generated',
             'qr' => $qr,
         ], 201);
+    }
+
+    // PUT /api/qr/properties/{propertyId}
+    public function update(Request $request, int $propertyId)
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        $isPrivileged = in_array($roleName, ['Admin', 'GSO Staff'], true);
+
+        $assignedProperty = AssignedProperty::find($propertyId);
+        if (!$assignedProperty) {
+            return response()->json(['message' => 'Property not found'], 404);
+        }
+
+        if (!$isPrivileged && $assignedProperty->DepartmentID !== $user?->DepartmentID) {
+            return response()->json(['message' => 'Unauthorized to update this property'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'condition_id' => 'required|integer|exists:condition,ConditionID',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $assignedProperty->ConditionID = (int) $request->input('condition_id');
+        $assignedProperty->UpdatedDate = now();
+        $assignedProperty->save();
+
+        return response()->json([
+            'message' => 'Property condition updated',
+            'property' => (new QrAssignedPropertyResource($assignedProperty))->toArray($request),
+        ]);
     }
 
     // GET /api/qr/scan/{propertyId}
