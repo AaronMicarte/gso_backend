@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\MasterData\PropertyClassificationController;
 use App\Http\Controllers\Admin\MasterData\PropertyStatusController;
 use App\Http\Controllers\Admin\MasterData\PropertyTypeController;
 use App\Http\Controllers\Admin\MasterData\SupplierController;
+use App\Http\Controllers\Admin\MasterData\VendorController;
 use App\Http\Controllers\Admin\MasterData\UnitOfMeasureController;
 use App\Http\Controllers\Admin\MasterData\UserRoleController;
 use App\Http\Controllers\Admin\Procurement\DeliveryReceiptController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\department_head\ReceivedItemsController as DepartmentHe
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RequisitionIssueSlipController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AssetServiceRecordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -146,6 +148,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('suppliers', SupplierController::class)->parameters(['suppliers' => 'id']);
             Route::post('suppliers/{id}/restore', [SupplierController::class, 'restore']);
 
+            // Vendors (Repair/Service)
+            Route::apiResource('vendors', VendorController::class)->parameters(['vendors' => 'id']);
+            Route::post('vendors/{id}/restore', [VendorController::class, 'restore']);
+
             // Units of Measure
             Route::apiResource('units-of-measure', UnitOfMeasureController::class)->parameters(['units-of-measure' => 'id']);
             Route::post('units-of-measure/{id}/restore', [UnitOfMeasureController::class, 'restore']);
@@ -257,6 +263,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}/approve', [\App\Http\Controllers\PropertyBorrowController::class, 'approve']);
         Route::post('{id}/reject', [\App\Http\Controllers\PropertyBorrowController::class, 'reject']);
         Route::post('{id}/return', [\App\Http\Controllers\PropertyBorrowController::class, 'markReturned']);
+    });
+
+    // Service & Repair
+    Route::prefix('asset-services')->group(function () {
+        Route::get('', [AssetServiceRecordController::class, 'index']);
+        Route::post('', [AssetServiceRecordController::class, 'store']);
+        Route::get('statuses', [AssetServiceRecordController::class, 'statuses']);
+        Route::get('helpers/vendors', [AssetServiceRecordController::class, 'helperVendors']);
+        Route::get('helpers/departments', [AssetServiceRecordController::class, 'helperDepartments']);
+        Route::get('helpers/end-users', [AssetServiceRecordController::class, 'helperEndUsers']);
+        Route::get('helpers/inventory', [AssetServiceRecordController::class, 'helperInventory']);
+        Route::get('{id}', [AssetServiceRecordController::class, 'show']);
+        Route::post('{id}', [AssetServiceRecordController::class, 'update']);
     });
 
     // Requisition and Issue Slip (RIS)
