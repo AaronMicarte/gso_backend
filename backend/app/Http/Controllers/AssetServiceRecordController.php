@@ -32,6 +32,47 @@ class AssetServiceRecordController extends Controller
         'vendor_repair',
     ];
 
+    private function getDepartmentHeadForDepartmentId(?int $departmentId): ?string
+    {
+        if (empty($departmentId)) {
+            return null;
+        }
+
+        return User::query()
+            ->where('DepartmentID', $departmentId)
+            ->whereHas('userRole', function ($q) {
+                $q->where('RoleName', self::ROLE_DEPARTMENT_HEAD);
+            })
+            ->orderBy('FullName')
+            ->value('FullName');
+    }
+
+    private function getDepartmentLabelForDepartmentId(?int $departmentId): ?string
+    {
+        if (empty($departmentId)) {
+            return null;
+        }
+
+        $row = DB::table('department')
+            ->select(['DepartmentCode', 'DepartmentName'])
+            ->where('DepartmentID', $departmentId)
+            ->first();
+
+        if (!$row) {
+            return null;
+        }
+
+        return trim((string) ($row->DepartmentCode ?: $row->DepartmentName)) ?: null;
+    }
+
+    private function enrichRecordWithDepartmentHead(AssetServiceRecord $record): AssetServiceRecord
+    {
+        $departmentId = (int) $record->ReportSource;
+        $record->setAttribute('reportingDepartmentHead', $this->getDepartmentHeadForDepartmentId($departmentId));
+        $record->setAttribute('reportingDepartmentLabel', $this->getDepartmentLabelForDepartmentId($departmentId));
+        return $record;
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -43,20 +84,21 @@ class AssetServiceRecordController extends Controller
 
         $query = AssetServiceRecord::query()
             ->with([
+                'details.inventoryDetail.drDetail:DRDetailID,DRID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
                 'details.inventoryDetail.propertyType:PropertyTypeID,PropertyName',
                 'details.inventoryDetail.condition:ConditionID,ConditionName',
                 'details.inventoryDetail.inventory:InventoryID,InventoryNumber,DateReceived',
                 'details.vendor:VendorID,VendorName,ContactPerson,ContactNumber,Email',
                 'details.supplier:SupplierID,SupplierName,ContactPerson,ContactNumber,Email',
-                'reportingDepartment:DepartmentID,DepartmentName',
-                'submittedByEndUser:EndUserID,FullName,DepartmentID',
+                'reportingDepartment:DepartmentID,DepartmentName,DepartmentCode',
                 'createdBy:UserID,FullName',
                 'updatedBy:UserID,FullName',
             ]);
 
+
         if ($roleName === self::ROLE_DEPARTMENT_HEAD) {
             $departmentId = (int) ($user?->DepartmentID ?? 0);
-            $query->where('ReportingDepartmentID', $departmentId);
+            $query->where('ReportSource', $departmentId);
         }
 
         if ($request->filled('status')) {
@@ -70,7 +112,7 @@ class AssetServiceRecordController extends Controller
         }
 
         if ($request->filled('department_id')) {
-            $query->where('ReportingDepartmentID', (int) $request->query('department_id'));
+            $query->where('ReportSource', (int) $request->query('department_id'));
         }
 
         if ($request->filled('search')) {
@@ -94,6 +136,10 @@ class AssetServiceRecordController extends Controller
         $perPage = max(10, min(100, (int) $request->query('per_page', 15)));
         $rows = $query->orderByDesc('created_at')->paginate($perPage);
 
+        $rows->getCollection()->transform(function (AssetServiceRecord $record) {
+            return $this->enrichRecordWithDepartmentHead($record);
+        });
+
         return response()->json($rows);
     }
 
@@ -110,22 +156,22 @@ class AssetServiceRecordController extends Controller
             'details.inventoryDetail.propertyType:PropertyTypeID,PropertyName',
             'details.inventoryDetail.condition:ConditionID,ConditionName',
             'details.inventoryDetail.inventory:InventoryID,InventoryNumber,DateReceived',
-            'details.inventoryDetail.drDetail:DRDetailID,DRID,ItemDescription',
+            'details.inventoryDetail.drDetail:DRDetailID,DRID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
             'details.vendor:VendorID,VendorName,Address,ContactPerson,ContactNumber,Email',
             'details.supplier:SupplierID,SupplierName,ContactPerson,ContactNumber,Email',
-            'reportingDepartment:DepartmentID,DepartmentName',
-            'submittedByEndUser:EndUserID,FullName,DepartmentID',
+            'reportingDepartment:DepartmentID,DepartmentName,DepartmentCode',
             'createdBy:UserID,FullName',
             'updatedBy:UserID,FullName',
         ])->findOrFail($id);
 
         if ($roleName === self::ROLE_DEPARTMENT_HEAD) {
             $departmentId = (int) ($user?->DepartmentID ?? 0);
-            if ((int) $record->ReportingDepartmentID !== $departmentId) {
+            if ((int) $record->ReportSource !== $departmentId) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         }
 
+        $record = $this->enrichRecordWithDepartmentHead($record);
         return response()->json($this->withAttachmentUrls($record));
     }
 
@@ -143,11 +189,7 @@ class AssetServiceRecordController extends Controller
 
         $validated = $request->validate([
             'date_reported' => "required|date|after_or_equal:{$oneYearAgo}|before_or_equal:{$today}",
-            'report_source' => 'nullable|in:cce_user,inventory_check,audit,other',
-            'submitted_by_name' => 'nullable|string|max:150',
-            'submitted_by_end_user_id' => 'nullable|integer|exists:enduser,EndUserID',
-            'reporting_department_id' => 'required|integer|exists:department,DepartmentID',
-            'reporting_department_head_user_id' => 'nullable|integer|exists:user,UserID',
+            'report_source_id' => 'required|integer|exists:department,DepartmentID',
             'record_notes' => 'nullable|string|max:4000',
             'details' => 'required|array|min:1',
             'details.*.inventory_detail_id' => 'required|integer|exists:propertyinventorydetail,InventoryDetailID',
@@ -165,23 +207,11 @@ class AssetServiceRecordController extends Controller
 
         return DB::transaction(function () use ($validated, $user) {
             $defaultStatus = 'pending';
-            $reportingHead = !empty($validated['reporting_department_head_user_id'])
-                ? User::with('userRole')->find($validated['reporting_department_head_user_id'])
-                : null;
-
-            if ($reportingHead && ($reportingHead->userRole?->RoleName !== self::ROLE_DEPARTMENT_HEAD || (int) $reportingHead->DepartmentID !== (int) $validated['reporting_department_id'])) {
-                return response()->json([
-                    'message' => 'Selected reporting department head is invalid for the department.',
-                ], 422);
-            }
 
             $record = AssetServiceRecord::create([
                 'ServiceNumber' => AssetServiceRecord::generateServiceNumber(),
                 'DateReported' => $validated['date_reported'],
-                'ReportSource' => $validated['report_source'] ?? 'other',
-                'SubmittedByName' => $reportingHead?->FullName,
-                'SubmittedByEndUserID' => null,
-                'ReportingDepartmentID' => $validated['reporting_department_id'] ?? null,
+                'ReportSource' => $validated['report_source_id'],
                 'Status' => $defaultStatus,
                 'RecordNotes' => $validated['record_notes'] ?? null,
                 'CreatedByUserID' => (int) $user->UserID,
@@ -191,7 +221,7 @@ class AssetServiceRecordController extends Controller
             $detailStatuses = [];
             foreach ($validated['details'] as $detailInput) {
                 $inventoryDetail = \App\Models\Inventory\PropertyInventoryDetail::findOrFail((int) $detailInput['inventory_detail_id']);
-                $this->assertInventoryBelongsToDepartment($inventoryDetail, (int) $validated['reporting_department_id']);
+                $this->assertInventoryBelongsToDepartment($inventoryDetail, (int) $validated['report_source_id']);
 
                 $normalizedDetail = $this->normalizeAndValidateDetailInput($detailInput, $defaultStatus, true);
 
@@ -244,7 +274,7 @@ class AssetServiceRecordController extends Controller
                     'service_number' => $record->ServiceNumber,
                     'status' => $record->Status,
                     'details_count' => count($detailStatuses),
-                    'reporting_department_id' => $record->ReportingDepartmentID,
+                    'report_source_id' => $record->ReportSource,
                 ]
             );
 
@@ -256,8 +286,7 @@ class AssetServiceRecordController extends Controller
                     'details.inventoryDetail.inventory:InventoryID,InventoryNumber,DateReceived',
                     'details.vendor:VendorID,VendorName,ContactPerson,ContactNumber,Email',
                     'details.supplier:SupplierID,SupplierName,ContactPerson,ContactNumber,Email',
-                    'reportingDepartment:DepartmentID,DepartmentName',
-                    'submittedByEndUser:EndUserID,FullName,DepartmentID',
+                    'reportingDepartment:DepartmentID,DepartmentName,DepartmentCode',
                     'createdBy:UserID,FullName',
                     'updatedBy:UserID,FullName',
                 ])),
@@ -282,11 +311,7 @@ class AssetServiceRecordController extends Controller
 
         $validated = $request->validate([
             'date_reported' => "sometimes|required|date|after_or_equal:{$oneYearAgo}|before_or_equal:{$today}",
-            'report_source' => 'sometimes|nullable|in:cce_user,inventory_check,audit,other',
-            'submitted_by_name' => 'nullable|string|max:150',
-            'submitted_by_end_user_id' => 'nullable|integer|exists:enduser,EndUserID',
-            'reporting_department_id' => 'nullable|integer|exists:department,DepartmentID',
-            'reporting_department_head_user_id' => 'nullable|integer|exists:user,UserID',
+            'report_source_id' => 'sometimes|required|integer|exists:department,DepartmentID',
             'status' => 'nullable|in:pending,under_review,work_approved,repair_in_progress,verification,closed,unrepairable',
             'record_notes' => 'nullable|string|max:4000',
             'details' => 'nullable|array|min:1',
@@ -312,20 +337,6 @@ class AssetServiceRecordController extends Controller
             ], 422);
         }
 
-        if (array_key_exists('reporting_department_head_user_id', $validated) && !empty($validated['reporting_department_head_user_id'])) {
-            $head = User::with('userRole')->find($validated['reporting_department_head_user_id']);
-            $departmentId = (int) ($validated['reporting_department_id'] ?? $record->ReportingDepartmentID);
-
-            if (!$head || $head->userRole?->RoleName !== self::ROLE_DEPARTMENT_HEAD || (int) $head->DepartmentID !== $departmentId) {
-                return response()->json([
-                    'message' => 'Selected reporting department head is invalid for the department.',
-                ], 422);
-            }
-
-            $validated['submitted_by_name'] = $head->FullName;
-            $validated['submitted_by_end_user_id'] = null;
-        }
-
         return DB::transaction(function () use ($validated, $record, $user, $oldStatus) {
             $detailStatuses = [];
 
@@ -338,7 +349,7 @@ class AssetServiceRecordController extends Controller
                     }
 
                     $inventoryDetail = \App\Models\Inventory\PropertyInventoryDetail::findOrFail((int) $detailInput['inventory_detail_id']);
-                    $departmentId = (int) ($validated['reporting_department_id'] ?? $record->ReportingDepartmentID);
+                    $departmentId = (int) ($validated['report_source_id'] ?? $record->ReportSource);
                     $this->assertInventoryBelongsToDepartment($inventoryDetail, $departmentId);
 
                     if (!$detail) {
@@ -414,10 +425,7 @@ class AssetServiceRecordController extends Controller
 
             $record->fill([
                 'DateReported' => $validated['date_reported'] ?? $record->DateReported,
-                'ReportSource' => $validated['report_source'] ?? $record->ReportSource,
-                'SubmittedByName' => array_key_exists('submitted_by_name', $validated) ? $validated['submitted_by_name'] : $record->SubmittedByName,
-                'SubmittedByEndUserID' => array_key_exists('submitted_by_end_user_id', $validated) ? $validated['submitted_by_end_user_id'] : $record->SubmittedByEndUserID,
-                'ReportingDepartmentID' => array_key_exists('reporting_department_id', $validated) ? $validated['reporting_department_id'] : $record->ReportingDepartmentID,
+                'ReportSource' => $validated['report_source_id'] ?? $record->ReportSource,
                 'Status' => $resolvedStatus,
                 'RecordNotes' => array_key_exists('record_notes', $validated) ? $validated['record_notes'] : $record->RecordNotes,
                 'UpdatedByUserID' => (int) $user->UserID,
@@ -460,8 +468,7 @@ class AssetServiceRecordController extends Controller
                     'details.inventoryDetail.inventory:InventoryID,InventoryNumber,DateReceived',
                     'details.vendor:VendorID,VendorName,ContactPerson,ContactNumber,Email',
                     'details.supplier:SupplierID,SupplierName,ContactPerson,ContactNumber,Email',
-                    'reportingDepartment:DepartmentID,DepartmentName',
-                    'submittedByEndUser:EndUserID,FullName,DepartmentID',
+                    'reportingDepartment:DepartmentID,DepartmentName,DepartmentCode',
                     'createdBy:UserID,FullName',
                     'updatedBy:UserID,FullName',
                 ])),

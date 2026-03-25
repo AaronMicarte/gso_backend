@@ -52,7 +52,7 @@ class AssetServiceRecordDetail extends Model
 
     public function inventoryDetail(): BelongsTo
     {
-        return $this->belongsTo(PropertyInventoryDetail::class, 'InventoryDetailID', 'InventoryDetailID');
+        return $this->belongsTo(PropertyInventoryDetail::class, 'InventoryDetailID', 'InventoryDetailID')->withTrashed();
     }
 
     public function vendor(): BelongsTo

@@ -68,7 +68,7 @@ class PropertyInventoryDetail extends Model
 
     public function drDetail()
     {
-        return $this->belongsTo(\App\Models\Procurement\DeliveryReceiptDetail::class, 'SourceDRDetailID', 'DRDetailID');
+        return $this->belongsTo(\App\Models\Procurement\DeliveryReceiptDetail::class, 'SourceDRDetailID', 'DRDetailID')->withTrashed();
     }
 
     public function unitOfMeasure()

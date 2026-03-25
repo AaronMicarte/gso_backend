@@ -21,9 +21,6 @@ class AssetServiceRecord extends Model
         'ServiceNumber',
         'DateReported',
         'ReportSource',
-        'SubmittedByName',
-        'SubmittedByEndUserID',
-        'ReportingDepartmentID',
         'Status',
         'RecordNotes',
         'CreatedByUserID',
@@ -41,12 +38,7 @@ class AssetServiceRecord extends Model
 
     public function reportingDepartment(): BelongsTo
     {
-        return $this->belongsTo(Department::class, 'ReportingDepartmentID', 'DepartmentID');
-    }
-
-    public function submittedByEndUser(): BelongsTo
-    {
-        return $this->belongsTo(EndUser::class, 'SubmittedByEndUserID', 'EndUserID');
+        return $this->belongsTo(Department::class, 'ReportSource', 'DepartmentID');
     }
 
     public function createdBy(): BelongsTo
