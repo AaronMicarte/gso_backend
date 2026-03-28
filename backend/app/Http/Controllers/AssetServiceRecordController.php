@@ -18,13 +18,22 @@ class AssetServiceRecordController extends Controller
     private const ROLE_GSO_STAFF = 'GSO Staff';
     private const ROLE_DEPARTMENT_HEAD = 'Department Head';
 
-    private const STATUS_FLOW = [
+    private const ALLOWED_STATUSES = [
         'pending',
-        'under_review',
         'work_approved',
         'repair_in_progress',
         'verification',
-        'closed',
+        'fixed',
+        'unrepairable',
+    ];
+
+    private const STATUS_FLOW = [
+        'pending',
+        'work_approved',
+        'repair_in_progress',
+        'verification',
+        'fixed',
+        'unrepairable',
     ];
 
     private const HANDLING_DECISIONS = [
@@ -191,12 +200,14 @@ class AssetServiceRecordController extends Controller
             'date_reported' => "required|date|after_or_equal:{$oneYearAgo}|before_or_equal:{$today}",
             'report_source_id' => 'required|integer|exists:department,DepartmentID',
             'record_notes' => 'nullable|string|max:4000',
+            'final_notes' => 'nullable|string|max:4000',
             'details' => 'required|array|min:1',
             'details.*.inventory_detail_id' => 'required|integer|exists:propertyinventorydetail,InventoryDetailID',
             'details.*.problem_description' => 'required|string|max:4000',
             'details.*.handling_decision' => 'nullable|in:warranty_claim,vendor_repair',
             'details.*.budget_status' => 'nullable|in:pending_check,warranty_covered,budget_available',
-            'details.*.status' => 'nullable|in:pending,under_review,work_approved,repair_in_progress,verification,closed,unrepairable',
+            'details.*.status' => 'nullable|in:'.implode(',', self::ALLOWED_STATUSES),
+            'details.*.verification_note' => 'nullable|string|max:4000',
             'details.*.assigned_vendor_id' => 'nullable|integer|exists:vendor,VendorID',
             'details.*.assigned_supplier_id' => 'nullable|integer|exists:supplier,SupplierID',
             'details.*.actual_cost' => 'nullable|numeric|min:0',
@@ -214,6 +225,7 @@ class AssetServiceRecordController extends Controller
                 'ReportSource' => $validated['report_source_id'],
                 'Status' => $defaultStatus,
                 'RecordNotes' => $validated['record_notes'] ?? null,
+                'FinalNotes' => $validated['final_notes'] ?? null,
                 'CreatedByUserID' => (int) $user->UserID,
                 'UpdatedByUserID' => (int) $user->UserID,
             ]);
@@ -234,6 +246,7 @@ class AssetServiceRecordController extends Controller
                     'HandlingDecision' => $normalizedDetail['handling_decision'],
                     'BudgetStatus' => $normalizedDetail['budget_status'],
                     'Status' => $normalizedDetail['status'],
+                    'VerificationNote' => $normalizedDetail['verification_note'],
                     'AssignedVendorID' => $normalizedDetail['assigned_vendor_id'],
                     'AssignedSupplierID' => $normalizedDetail['assigned_supplier_id'],
                     'EstimatedCost' => $normalizedDetail['estimated_cost'],
@@ -312,15 +325,17 @@ class AssetServiceRecordController extends Controller
         $validated = $request->validate([
             'date_reported' => "sometimes|required|date|after_or_equal:{$oneYearAgo}|before_or_equal:{$today}",
             'report_source_id' => 'sometimes|required|integer|exists:department,DepartmentID',
-            'status' => 'nullable|in:pending,under_review,work_approved,repair_in_progress,verification,closed,unrepairable',
+            'status' => 'nullable|in:'.implode(',', self::ALLOWED_STATUSES),
             'record_notes' => 'nullable|string|max:4000',
+            'final_notes' => 'nullable|string|max:4000',
             'details' => 'nullable|array|min:1',
             'details.*.service_record_detail_id' => 'nullable|integer|exists:asset_service_records_details,ServiceRecordDetailID',
             'details.*.inventory_detail_id' => 'required_with:details|integer|exists:propertyinventorydetail,InventoryDetailID',
             'details.*.problem_description' => 'required_with:details|string|max:4000',
             'details.*.handling_decision' => 'nullable|in:warranty_claim,vendor_repair',
             'details.*.budget_status' => 'nullable|in:pending_check,warranty_covered,budget_available',
-            'details.*.status' => 'nullable|in:pending,under_review,work_approved,repair_in_progress,verification,closed,unrepairable',
+            'details.*.status' => 'nullable|in:'.implode(',', self::ALLOWED_STATUSES),
+            'details.*.verification_note' => 'nullable|string|max:4000',
             'details.*.assigned_vendor_id' => 'nullable|integer|exists:vendor,VendorID',
             'details.*.assigned_supplier_id' => 'nullable|integer|exists:supplier,SupplierID',
             'details.*.actual_cost' => 'nullable|numeric|min:0',
@@ -391,6 +406,7 @@ class AssetServiceRecordController extends Controller
                     $detail->RepairOrderNumber = $normalizedDetail['repair_order_number'];
                     $detail->InvoiceAttachment = $normalizedDetail['invoice_attachment'];
                     $detail->SupportingAttachments = $normalizedDetail['supporting_attachments'];
+                    $detail->VerificationNote = $normalizedDetail['verification_note'];
                     $detail->UpdatedByUserID = (int) $user->UserID;
                     $detail->save();
 
@@ -428,6 +444,7 @@ class AssetServiceRecordController extends Controller
                 'ReportSource' => $validated['report_source_id'] ?? $record->ReportSource,
                 'Status' => $resolvedStatus,
                 'RecordNotes' => array_key_exists('record_notes', $validated) ? $validated['record_notes'] : $record->RecordNotes,
+                'FinalNotes' => array_key_exists('final_notes', $validated) ? $validated['final_notes'] : $record->FinalNotes,
                 'UpdatedByUserID' => (int) $user->UserID,
             ]);
 
@@ -478,17 +495,7 @@ class AssetServiceRecordController extends Controller
 
     public function statuses(): \Illuminate\Http\JsonResponse
     {
-        return response()->json([
-            'data' => [
-                'pending',
-                'under_review',
-                'work_approved',
-                'repair_in_progress',
-                'verification',
-                'closed',
-                'unrepairable',
-            ],
-        ]);
+        return response()->json(['data' => self::ALLOWED_STATUSES]);
     }
 
     public function helperVendors(): \Illuminate\Http\JsonResponse
@@ -711,6 +718,8 @@ class AssetServiceRecordController extends Controller
             ? 'pending'
             : (string) ($detailInput['status'] ?? $defaultStatus ?: 'pending');
 
+        $verificationNote = isset($detailInput['verification_note']) ? (string) $detailInput['verification_note'] : null;
+
         $warrantyCovered = $handlingDecision === 'warranty_claim';
         $actualCost = array_key_exists('actual_cost', $detailInput) ? $detailInput['actual_cost'] : null;
         $assignedVendorId = !empty($detailInput['assigned_vendor_id']) ? (int) $detailInput['assigned_vendor_id'] : null;
@@ -724,13 +733,13 @@ class AssetServiceRecordController extends Controller
             throw new HttpResponseException(response()->json(['message' => 'Selecting a vendor or supplier is required.'], 422));
         }
 
-        $isCompleted = in_array($status, ['closed', 'unrepairable'], true);
-        if (!$isCompleted && ($actualCost !== null && $actualCost !== '')) {
-            throw new HttpResponseException(response()->json(['message' => 'Actual cost can only be set when detail status is completed.'], 422));
+        $isFinal = $status === 'fixed';
+        if (!$isFinal && ($actualCost !== null && $actualCost !== '')) {
+            throw new HttpResponseException(response()->json(['message' => 'Actual cost can only be set when service is in fixed stage.'], 422));
         }
 
-        if ($isCompleted && !$warrantyCovered && ($actualCost === null || $actualCost === '')) {
-            throw new HttpResponseException(response()->json(['message' => 'Actual cost is required when detail status is completed.'], 422));
+        if ($isFinal && !$warrantyCovered && ($actualCost === null || $actualCost === '')) {
+            throw new HttpResponseException(response()->json(['message' => 'Actual cost is required for non-warranty services in fixed stage.'], 422));
         }
 
         if ($handlingDecision === 'vendor_repair') {
@@ -744,6 +753,7 @@ class AssetServiceRecordController extends Controller
             'handling_decision' => $handlingDecision,
             'budget_status' => $budgetStatus,
             'status' => $status,
+            'verification_note' => $verificationNote,
             'assigned_vendor_id' => $assignedVendorId,
             'assigned_supplier_id' => $assignedSupplierId,
             'estimated_cost' => null,
@@ -766,12 +776,12 @@ class AssetServiceRecordController extends Controller
             return true;
         }
 
-        if ($nextStatus === 'unrepairable') {
-            return in_array($currentStatus, ['pending', 'under_review', 'work_approved', 'repair_in_progress', 'verification'], true);
+        if ($currentStatus === 'repair_in_progress' && in_array($nextStatus, ['fixed', 'unrepairable'], true)) {
+            return true;
         }
 
-        if ($currentStatus === 'unrepairable' || $currentStatus === 'closed') {
-            return false;
+        if ($currentStatus === 'verification' && in_array($nextStatus, ['fixed', 'unrepairable', 'repair_in_progress'], true)) {
+            return true;
         }
 
         $currentIndex = array_search($currentStatus, self::STATUS_FLOW, true);
@@ -807,27 +817,20 @@ class AssetServiceRecordController extends Controller
             return 'pending';
         }
 
-        $allClosed = count(array_filter($statuses, static fn (string $s) => $s === 'closed')) === count($statuses);
-        if ($allClosed) {
-            return 'closed';
-        }
-
-        $allUnrepairable = count(array_filter($statuses, static fn (string $s) => $s === 'unrepairable')) === count($statuses);
-        if ($allUnrepairable) {
-            return 'unrepairable';
-        }
-
-        if (in_array('verification', $statuses, true)) {
-            return 'verification';
-        }
         if (in_array('repair_in_progress', $statuses, true)) {
             return 'repair_in_progress';
         }
+        if (in_array('verification', $statuses, true)) {
+            return 'verification';
+        }
+        if (in_array('unrepairable', $statuses, true)) {
+            return 'unrepairable';
+        }
+        if (in_array('fixed', $statuses, true)) {
+            return 'fixed';
+        }
         if (in_array('work_approved', $statuses, true)) {
             return 'work_approved';
-        }
-        if (in_array('under_review', $statuses, true)) {
-            return 'under_review';
         }
 
         return 'pending';

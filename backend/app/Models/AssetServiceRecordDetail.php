@@ -27,6 +27,7 @@ class AssetServiceRecordDetail extends Model
         'HandlingDecision',
         'BudgetStatus',
         'Status',
+        'VerificationNote',
         'AssignedVendorID',
         'AssignedSupplierID',
         'EstimatedCost',

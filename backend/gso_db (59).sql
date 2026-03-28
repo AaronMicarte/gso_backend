@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2026 at 03:56 PM
+-- Generation Time: Mar 28, 2026 at 02:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -244,7 +244,16 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (83, 'property_borrow', 3, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0003\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 14:01:58'),
 (84, 'property_return', 2, 'created', 1, '{\"borrow_id\":3,\"borrow_number\":\"PBR-2026-0003\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 14:03:14'),
 (85, 'property_borrow', 3, 'returned', 1, '{\"borrow_number\":\"PBR-2026-0003\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 14:03:14'),
-(86, 'inventory_detail', 28, 'borrow_returned', 1, '{\"borrow_id\":3,\"borrow_number\":\"PBR-2026-0003\",\"return_id\":2,\"quantity\":1,\"condition_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 14:03:14');
+(86, 'inventory_detail', 28, 'borrow_returned', 1, '{\"borrow_id\":3,\"borrow_number\":\"PBR-2026-0003\",\"return_id\":2,\"quantity\":1,\"condition_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-25 14:03:14'),
+(87, 'asset_service_record_detail', 1, 'updated', 1, '{\"service_record_id\":1,\"old_status\":\"pending\",\"new_status\":\"work_approved\",\"inventory_detail_id\":96}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:09:50'),
+(88, 'asset_service_record', 1, 'updated', 1, '{\"service_number\":\"SVR-2026-0001\",\"old_status\":\"pending\",\"new_status\":\"work_approved\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:09:50'),
+(89, 'asset_service_record', 1, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0001\",\"old_status\":\"pending\",\"new_status\":\"work_approved\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:09:50'),
+(90, 'asset_service_record_detail', 1, 'updated', 1, '{\"service_record_id\":1,\"old_status\":\"work_approved\",\"new_status\":\"repair_in_progress\",\"inventory_detail_id\":96}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:21:17'),
+(91, 'asset_service_record', 1, 'updated', 1, '{\"service_number\":\"SVR-2026-0001\",\"old_status\":\"work_approved\",\"new_status\":\"repair_in_progress\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:21:17'),
+(92, 'asset_service_record', 1, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0001\",\"old_status\":\"work_approved\",\"new_status\":\"repair_in_progress\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:21:17'),
+(93, 'asset_service_record_detail', 1, 'updated', 1, '{\"service_record_id\":1,\"old_status\":\"repair_in_progress\",\"new_status\":\"verification\",\"inventory_detail_id\":96}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:34:32'),
+(94, 'asset_service_record', 1, 'updated', 1, '{\"service_number\":\"SVR-2026-0001\",\"old_status\":\"repair_in_progress\",\"new_status\":\"verification\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:34:32'),
+(95, 'asset_service_record', 1, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0001\",\"old_status\":\"repair_in_progress\",\"new_status\":\"verification\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-28 12:34:32');
 
 -- --------------------------------------------------------
 
@@ -297,7 +306,7 @@ CREATE TABLE `asset_service_records` (
 --
 
 INSERT INTO `asset_service_records` (`ServiceRecordID`, `ServiceNumber`, `DateReported`, `ReportSource`, `Status`, `RecordNotes`, `CreatedByUserID`, `UpdatedByUserID`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'SVR-2026-0001', '2026-03-25', 30, 'pending', NULL, 1, 1, '2026-03-25 13:41:50', '2026-03-25 13:41:50', NULL);
+(1, 'SVR-2026-0001', '2026-03-25', 30, 'repair_in_progress', NULL, 1, 1, '2026-03-25 13:41:50', '2026-03-28 12:34:32', NULL);
 
 -- --------------------------------------------------------
 
@@ -335,7 +344,7 @@ CREATE TABLE `asset_service_records_details` (
 --
 
 INSERT INTO `asset_service_records_details` (`ServiceRecordDetailID`, `ServiceRecordID`, `InventoryDetailID`, `PropertyNumber`, `ItemDescription`, `ProblemDescription`, `HandlingDecision`, `BudgetStatus`, `Status`, `AssignedVendorID`, `AssignedSupplierID`, `EstimatedCost`, `ActualCost`, `WarrantyClaimNumber`, `RepairOrderNumber`, `InvoiceAttachment`, `SupportingAttachments`, `CreatedByUserID`, `UpdatedByUserID`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 96, '2026-000092', 'Office Chair (CH-ERG-22)', 'naguba ang ligid', 'warranty_claim', 'warranty_covered', 'pending', NULL, 1, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-03-25 13:41:50', '2026-03-25 13:41:50', NULL);
+(1, 1, 96, '2026-000092', 'Office Chair (CH-ERG-22)', 'naguba ang ligid', 'warranty_claim', 'warranty_covered', 'verification', NULL, 1, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-03-25 13:41:50', '2026-03-28 12:34:32', NULL);
 
 -- --------------------------------------------------------
 
@@ -998,7 +1007,16 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (75, 6, '2026-03-25 22:00:55', 'Login', '127.0.0.1'),
 (76, 6, '2026-03-25 22:02:20', 'Logout', '127.0.0.1'),
 (77, 3, '2026-03-25 22:02:26', 'Login', '127.0.0.1'),
-(78, 1, '2026-03-25 22:16:17', 'Login', '127.0.0.1');
+(78, 1, '2026-03-25 22:16:17', 'Login', '127.0.0.1'),
+(79, 1, '2026-03-26 12:41:33', 'FailedLogin', '127.0.0.1'),
+(80, 1, '2026-03-26 12:41:35', 'FailedLogin', '127.0.0.1'),
+(81, 1, '2026-03-26 12:41:38', 'FailedLogin', '127.0.0.1'),
+(82, 1, '2026-03-26 12:41:41', 'FailedLogin', '127.0.0.1'),
+(83, 1, '2026-03-26 12:41:44', 'FailedLogin', '127.0.0.1'),
+(84, 1, '2026-03-26 12:43:33', 'FailedLogin', '127.0.0.1'),
+(85, 1, '2026-03-26 12:43:41', 'FailedLogin', '127.0.0.1'),
+(86, 1, '2026-03-26 12:44:05', 'FailedLogin', '127.0.0.1'),
+(87, 1, '2026-03-28 17:42:58', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1165,7 +1183,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (152, '2026_03_24_000300_create_repair_vendors_and_asset_service_records', 56),
 (153, '2026_03_25_140000_update_asset_service_record_details_for_workflow', 57),
 (154, '2026_03_25_170000_drop_redundant_columns_from_asset_service_record_details', 58),
-(155, '2026_03_25_200000_refactor_asset_service_report_source_to_department', 59);
+(155, '2026_03_25_200000_refactor_asset_service_report_source_to_department', 59),
+(156, '2026_03_28_000000_adjust_asset_service_statuses', 60);
 
 -- --------------------------------------------------------
 
@@ -2143,9 +2162,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('BBUqK5UkNEVwb3FlXBAW8BGJ5YJkTOMXfNgaw01K', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUGtFR3BSaEl2ZnpmVWtYYmJmcUNkRmZrOFJWNVZwMm93aUtMSHp4YSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRobFU3UUtuVWJXcGh2Sm5GeFlnYVkuZ0pWekJueFZLS1Yua2p3N3hCNU9oLjFqTjBjZkE2MiI7fQ==', 1774450569),
-('cC16QeunIj1UkKqAMAXpu0fRitCxDCylE56S59W0', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiQ1FqY1NxVmVrWmNUeW1MNjhWaWtyblpmSXdqbDUyRERvRVpYMG0zbiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1774448135),
-('iBECeqsOJsQnRtLpHUsjPNa44Ev0ddqdDiDwq6QX', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiR0dQaDB2NDZxM1kzUjVKT0VmQzd0VHg2ajRKNTg3NWlkQW5iY2xjcyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1774450613);
+('gogAnCR7naXHe2Y7jkFxVe5cK4aEXXHC0kXW94Di', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoicEdMRkpIMktJREhNNmJ5Mml5NVJOYm85RGRxcUlxdENmYjdSQk1zbiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1774702926);
 
 -- --------------------------------------------------------
 
@@ -2216,7 +2233,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (87, 3, 'Trusted Device', 'a6c3e3c1261a9b539ea4a47e6511694036382d051906d8f54aef7b55e1d5b1fe', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', '2026-03-04 00:33:22', '2026-04-02 22:58:48', '2026-03-03 22:58:48', '2026-03-04 00:33:22'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
 (98, 3, 'Trusted Device', '297d885ccb698dc6bd7ece0af703158fcff45a1af4858da1ecf53670e1e8a6b6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-03-22 17:42:23', '2026-04-19 21:48:16', '2026-03-20 21:48:16', '2026-03-22 17:42:23'),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-25 22:16:17', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-03-25 22:16:17');
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-28 17:42:58', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-03-28 17:42:58');
 
 -- --------------------------------------------------------
 
@@ -2386,8 +2403,8 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-03-22 14:51:52'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-03-22 14:51:52'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-03-22 14:52:48'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:55:55', '2026-03-22 14:52:48', '2026-03-25 14:55:55'),
-(5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 1, '2026-03-25 14:02:44', '2026-03-22 15:23:01', '2026-03-25 14:02:44'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-28 12:13:41', '2026-03-22 14:52:48', '2026-03-28 12:13:41'),
+(5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 1, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-25 16:28:43'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-03-25 13:31:10'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41');
 
@@ -3092,7 +3109,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=87;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=96;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -3206,13 +3223,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=88;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=156;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=157;
 
 --
 -- AUTO_INCREMENT for table `par`

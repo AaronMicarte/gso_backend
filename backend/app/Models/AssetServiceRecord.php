@@ -23,6 +23,7 @@ class AssetServiceRecord extends Model
         'ReportSource',
         'Status',
         'RecordNotes',
+        'FinalNotes',
         'CreatedByUserID',
         'UpdatedByUserID',
     ];
