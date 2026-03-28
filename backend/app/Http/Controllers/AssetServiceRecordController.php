@@ -37,6 +37,8 @@ class AssetServiceRecordController extends Controller
     ];
 
     private const HANDLING_DECISIONS = [
+        'warranty',
+        'no_warranty',
         'warranty_claim',
         'vendor_repair',
     ];
@@ -204,7 +206,7 @@ class AssetServiceRecordController extends Controller
             'details' => 'required|array|min:1',
             'details.*.inventory_detail_id' => 'required|integer|exists:propertyinventorydetail,InventoryDetailID',
             'details.*.problem_description' => 'required|string|max:4000',
-            'details.*.handling_decision' => 'nullable|in:warranty_claim,vendor_repair',
+            'details.*.handling_decision' => 'nullable|in:warranty,no_warranty,warranty_claim,vendor_repair',
             'details.*.budget_status' => 'nullable|in:pending_check,warranty_covered,budget_available',
             'details.*.status' => 'nullable|in:'.implode(',', self::ALLOWED_STATUSES),
             'details.*.verification_note' => 'nullable|string|max:4000',
@@ -332,7 +334,7 @@ class AssetServiceRecordController extends Controller
             'details.*.service_record_detail_id' => 'nullable|integer|exists:asset_service_records_details,ServiceRecordDetailID',
             'details.*.inventory_detail_id' => 'required_with:details|integer|exists:propertyinventorydetail,InventoryDetailID',
             'details.*.problem_description' => 'required_with:details|string|max:4000',
-            'details.*.handling_decision' => 'nullable|in:warranty_claim,vendor_repair',
+            'details.*.handling_decision' => 'nullable|in:warranty,no_warranty,warranty_claim,vendor_repair',
             'details.*.budget_status' => 'nullable|in:pending_check,warranty_covered,budget_available',
             'details.*.status' => 'nullable|in:'.implode(',', self::ALLOWED_STATUSES),
             'details.*.verification_note' => 'nullable|string|max:4000',
@@ -720,7 +722,14 @@ class AssetServiceRecordController extends Controller
 
         $verificationNote = isset($detailInput['verification_note']) ? (string) $detailInput['verification_note'] : null;
 
-        $warrantyCovered = $handlingDecision === 'warranty_claim';
+        $normalizedHandlingDecision = $handlingDecision;
+        if ($handlingDecision === 'warranty_claim') {
+            $normalizedHandlingDecision = 'warranty';
+        } elseif ($handlingDecision === 'vendor_repair') {
+            $normalizedHandlingDecision = 'no_warranty';
+        }
+
+        $warrantyCovered = $normalizedHandlingDecision === 'warranty';
         $actualCost = array_key_exists('actual_cost', $detailInput) ? $detailInput['actual_cost'] : null;
         $assignedVendorId = !empty($detailInput['assigned_vendor_id']) ? (int) $detailInput['assigned_vendor_id'] : null;
         $assignedSupplierId = !empty($detailInput['assigned_supplier_id']) ? (int) $detailInput['assigned_supplier_id'] : null;
@@ -742,7 +751,7 @@ class AssetServiceRecordController extends Controller
             throw new HttpResponseException(response()->json(['message' => 'Actual cost is required for non-warranty services in fixed stage.'], 422));
         }
 
-        if ($handlingDecision === 'vendor_repair') {
+        if ($normalizedHandlingDecision === 'no_warranty') {
             $budgetStatus = 'budget_available';
         } else {
             $budgetStatus = 'warranty_covered';
@@ -750,7 +759,7 @@ class AssetServiceRecordController extends Controller
 
         return [
             'problem_description' => (string) ($detailInput['problem_description'] ?? ''),
-            'handling_decision' => $handlingDecision,
+            'handling_decision' => $normalizedHandlingDecision,
             'budget_status' => $budgetStatus,
             'status' => $status,
             'verification_note' => $verificationNote,
