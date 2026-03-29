@@ -100,7 +100,7 @@ class AssetServiceRecordController extends Controller
 
     private function getConditionIdForStatus(string $status): ?int
     {
-        if ($status === 'repair_in_progress') {
+        if ($status === 'repair_in_progress' || $status === 'verification') {
             return $this->getConditionIdByName(self::CONDITION_UNDER_REPAIR);
         }
 
@@ -324,7 +324,9 @@ class AssetServiceRecordController extends Controller
                 $unserviceableConditionId = $this->getConditionIdByName(self::CONDITION_UNSERVICEABLE);
                 $underRepairConditionId = $this->getConditionIdByName(self::CONDITION_UNDER_REPAIR);
 
-                if ((int) $inventoryDetail->ConditionID !== $unserviceableConditionId) {
+                // Inventory items should reflect active service workflow. Use Under Repair while in progress,
+                // even when prior condition was Unserviceable.
+                if ((int) $inventoryDetail->ConditionID !== $underRepairConditionId) {
                     $this->assignConditionForInventory($inventoryDetail, $underRepairConditionId);
                 }
             }
@@ -508,6 +510,20 @@ class AssetServiceRecordController extends Controller
             ]);
 
             $record->save();
+
+            // If top-level status is changed without updating any details explicitly, sync inventory conditions.
+            if (empty($validated['details']) && array_key_exists('status', $validated)) {
+                $inventoryConditionId = $this->getConditionIdForStatus($record->Status);
+                if ($inventoryConditionId !== null) {
+                    $serviceDetails = AssetServiceRecordDetail::where('ServiceRecordID', (int) $record->ServiceRecordID)->get();
+                    foreach ($serviceDetails as $serviceDetail) {
+                        $inventoryDetail = \App\Models\Inventory\PropertyInventoryDetail::find($serviceDetail->InventoryDetailID);
+                        if ($inventoryDetail) {
+                            $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
+                        }
+                    }
+                }
+            }
 
             AssetAuditLog::createLog(
                 'asset_service_record',
