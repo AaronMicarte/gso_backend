@@ -254,13 +254,22 @@ class InventoryController extends Controller
                       ->leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
                       ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
                       ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
+                      ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
                       ->select(
                               'propertyinventorydetail.*',
                               'deliveryreceiptdetail.ItemDescription as dr_item_description',
                           'articles.ArticleName as dr_article_name',
                               'propertytype.PropertyName', 'propertytype.Description as property_type_description',
                               'propertyclassification.ClassificationName', 'propertyclassification.DocumentType',
-                              'propertystatus.StatusName'
+                              'propertystatus.StatusName',
+                              DB::raw("COALESCE(condition.ConditionName,
+                                  CASE
+                                      WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 'Serviceable'
+                                      WHEN propertyinventorydetail.PropertyStatusID = 3 THEN 'Under Repair'
+                                      WHEN propertyinventorydetail.PropertyStatusID IN (4,5) THEN 'Unserviceable'
+                                      ELSE 'Unknown'
+                                  END
+                              ) as ConditionName")
                       )
                                             ->addSelect(DB::raw("COALESCE(
                                                 (
@@ -916,7 +925,14 @@ class InventoryController extends Controller
                 'propertyclassification.DocumentType',
                 'propertyinventory.InventoryNumber',
                 'propertystatus.StatusName',
-                'condition.ConditionName',
+                DB::raw("COALESCE(condition.ConditionName,
+                    CASE
+                        WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 'Serviceable'
+                        WHEN propertyinventorydetail.PropertyStatusID = 3 THEN 'Under Repair'
+                        WHEN propertyinventorydetail.PropertyStatusID IN (4, 5) THEN 'Unserviceable'
+                        ELSE 'Unknown'
+                    END
+                ) as ConditionName"),
                 'deliveryreceiptdetail.ItemDescription as dr_item_description',
                 'articles.ArticleName as dr_article_name',
                 'deliveryreceiptdetail.Brand as dr_brand',

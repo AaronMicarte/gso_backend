@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssignedProperty;
+use App\Models\MasterData\Condition;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\QrCode;
 use App\Http\Resources\Qr\QrAssignedPropertyResource;
@@ -141,9 +142,27 @@ class QrCodeController extends Controller
             ], 422);
         }
 
-        $assignedProperty->ConditionID = (int) $request->input('condition_id');
+        $conditionId = (int) $request->input('condition_id');
+        $condition = Condition::find($conditionId);
+
+        if (!$condition || !in_array(\strtolower($condition->ConditionName), ['serviceable', 'unserviceable'], true)) {
+            return response()->json([
+                'message' => 'Condition must be Serviceable or Unserviceable',
+            ], 422);
+        }
+
+        $assignedProperty->ConditionID = $conditionId;
         $assignedProperty->UpdatedDate = now();
         $assignedProperty->save();
+
+        // Keep source inventory condition in sync with assigned property condition.
+        if ($assignedProperty->InventoryDetailID) {
+            $inventoryDetail = \App\Models\Inventory\PropertyInventoryDetail::find($assignedProperty->InventoryDetailID);
+            if ($inventoryDetail) {
+                $inventoryDetail->ConditionID = $conditionId;
+                $inventoryDetail->save();
+            }
+        }
 
         return response()->json([
             'message' => 'Property condition updated',

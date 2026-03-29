@@ -14,11 +14,13 @@ return new class extends Migration
      */
     public function up()
     {
-        // Convert existing legacy values to new terms.
+        // Temporarily allow new values while converting existing legacy values.
+        DB::statement("ALTER TABLE asset_service_records_details MODIFY HandlingDecision ENUM('warranty_claim','vendor_repair','replacement_evaluation','warranty','no_warranty') NULL");
+
         DB::statement("UPDATE asset_service_records_details SET HandlingDecision='warranty' WHERE HandlingDecision='warranty_claim'");
         DB::statement("UPDATE asset_service_records_details SET HandlingDecision='no_warranty' WHERE HandlingDecision='vendor_repair'");
 
-        // Update enum definition to new values.
+        // Finalize enum definition to new values.
         DB::statement("ALTER TABLE asset_service_records_details MODIFY HandlingDecision ENUM('warranty','no_warranty') NULL");
     }
 

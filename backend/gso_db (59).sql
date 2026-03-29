@@ -483,7 +483,8 @@ CREATE TABLE `condition` (
 
 INSERT INTO `condition` (`ConditionID`, `ConditionName`, `Description`, `deleted_at`) VALUES
 (1, 'Serviceable', 'Serviceable Assets', NULL),
-(2, 'Unserviceable', 'Unserviceable Assets', NULL);
+(2, 'Unserviceable', 'Unserviceable Assets', NULL),
+(3, 'Under Repair', 'Under Repair Assets', NULL);
 
 -- --------------------------------------------------------
 

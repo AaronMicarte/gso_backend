@@ -43,6 +43,10 @@ class AssetServiceRecordController extends Controller
         'vendor_repair',
     ];
 
+    private const CONDITION_SERVICEABLE = 'Serviceable';
+    private const CONDITION_UNSERVICEABLE = 'Unserviceable';
+    private const CONDITION_UNDER_REPAIR = 'Under Repair';
+
     private function getDepartmentHeadForDepartmentId(?int $departmentId): ?string
     {
         if (empty($departmentId)) {
@@ -82,6 +86,47 @@ class AssetServiceRecordController extends Controller
         $record->setAttribute('reportingDepartmentHead', $this->getDepartmentHeadForDepartmentId($departmentId));
         $record->setAttribute('reportingDepartmentLabel', $this->getDepartmentLabelForDepartmentId($departmentId));
         return $record;
+    }
+
+    private function getConditionIdByName(string $conditionName): int
+    {
+        $condition = \App\Models\MasterData\Condition::firstOrCreate(
+            ['ConditionName' => $conditionName],
+            ['Description' => "{$conditionName} Assets"]
+        );
+
+        return (int) $condition->ConditionID;
+    }
+
+    private function getConditionIdForStatus(string $status): ?int
+    {
+        if ($status === 'repair_in_progress') {
+            return $this->getConditionIdByName(self::CONDITION_UNDER_REPAIR);
+        }
+
+        if ($status === 'fixed') {
+            return $this->getConditionIdByName(self::CONDITION_SERVICEABLE);
+        }
+
+        if ($status === 'unrepairable') {
+            return $this->getConditionIdByName(self::CONDITION_UNSERVICEABLE);
+        }
+
+        return null;
+    }
+
+    private function assignConditionForInventory(\App\Models\Inventory\PropertyInventoryDetail $inventoryDetail, ?int $conditionId): void
+    {
+        if ($conditionId === null || (int) $inventoryDetail->ConditionID === $conditionId) {
+            return;
+        }
+
+        $inventoryDetail->ConditionID = $conditionId;
+        $inventoryDetail->save();
+
+        // Keep assigned property condition in sync as well.
+        \App\Models\AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)
+            ->update(['ConditionID' => $conditionId]);
     }
 
     public function index(Request $request)
@@ -275,6 +320,13 @@ class AssetServiceRecordController extends Controller
                         'status' => $detail->Status,
                     ]
                 );
+
+                $unserviceableConditionId = $this->getConditionIdByName(self::CONDITION_UNSERVICEABLE);
+                $underRepairConditionId = $this->getConditionIdByName(self::CONDITION_UNDER_REPAIR);
+
+                if ((int) $inventoryDetail->ConditionID !== $unserviceableConditionId) {
+                    $this->assignConditionForInventory($inventoryDetail, $underRepairConditionId);
+                }
             }
 
             $record->Status = $this->computeOverallStatus($detailStatuses);
@@ -426,6 +478,11 @@ class AssetServiceRecordController extends Controller
                             'inventory_detail_id' => (int) $detail->InventoryDetailID,
                         ]
                     );
+
+                    $inventoryConditionId = $this->getConditionIdForStatus($detail->Status);
+                    if ($inventoryConditionId !== null) {
+                        $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
+                    }
                 }
             }
 
@@ -624,6 +681,11 @@ class AssetServiceRecordController extends Controller
                 'drDetail.article:ArticleID,ArticleName',
                 'drDetail.deliveryReceipt:DRID,SupplierID',
                 'drDetail.deliveryReceipt.supplier:SupplierID,SupplierName',
+            ])
+            ->orderByRaw("FIELD(ConditionID, ?, ?, ?) ASC", [
+                $this->getConditionIdByName(self::CONDITION_UNSERVICEABLE),
+                $this->getConditionIdByName(self::CONDITION_UNDER_REPAIR),
+                $this->getConditionIdByName(self::CONDITION_SERVICEABLE),
             ])
             ->orderByDesc('InventoryDetailID');
 
