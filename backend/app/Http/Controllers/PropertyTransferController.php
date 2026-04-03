@@ -333,10 +333,6 @@ class PropertyTransferController extends Controller
             return response()->json(['message' => 'Only pending transfers can be approved'], 422);
         }
 
-        if (($transfer->ReleasingDecision ?? 'pending') !== 'approved') {
-            return response()->json(['message' => 'Releasing department must approve first before GSO/Admin approval'], 422);
-        }
-
         $transfer->update([
             'Status' => 'approved',
             'ApprovedByUserID' => (int) $user->UserID,
@@ -384,8 +380,8 @@ class PropertyTransferController extends Controller
                 return response()->json(['message' => 'Only releasing department can review this request'], 403);
             }
 
-            if ($transfer->Status !== 'pending') {
-                return response()->json(['message' => 'Only pending transfers can be reviewed by releasing department'], 422);
+            if ($transfer->Status !== 'approved') {
+                return response()->json(['message' => 'GSO/Admin must approve first before releasing department review'], 422);
             }
 
             if (($transfer->ReleasingDecision ?? 'pending') !== 'pending') {
@@ -687,8 +683,8 @@ class PropertyTransferController extends Controller
         ]);
 
         $transfer = PropertyTransfer::findOrFail($id);
-        if ($transfer->Status !== 'pending') {
-            return response()->json(['message' => 'Only pending transfers can be rejected'], 422);
+        if (!in_array($transfer->Status, ['pending', 'approved'], true)) {
+            return response()->json(['message' => 'Only pending or approved transfers can be rejected'], 422);
         }
 
         $transfer->update([
@@ -738,6 +734,10 @@ class PropertyTransferController extends Controller
 
             if ($transfer->Status !== 'approved') {
                 return response()->json(['message' => 'Releasing signature is only allowed for approved transfers'], 422);
+            }
+
+            if (($transfer->ReleasingDecision ?? 'pending') !== 'approved') {
+                return response()->json(['message' => 'Releasing custody review must be approved before release signature'], 422);
             }
 
             if ($transfer->BorrowerSignedAt) {
@@ -792,6 +792,10 @@ class PropertyTransferController extends Controller
 
             if ($transfer->Status !== 'approved') {
                 return response()->json(['message' => 'Receiving signature is only allowed for approved transfers'], 422);
+            }
+
+            if (($transfer->ReleasingDecision ?? 'pending') !== 'approved') {
+                return response()->json(['message' => 'Releasing custody review must be approved before receiving confirmation'], 422);
             }
 
             if (!$transfer->BorrowerSignedAt) {
@@ -938,17 +942,17 @@ class PropertyTransferController extends Controller
                 return response()->json(['message' => 'Only approved transfers can be completed'], 422);
             }
 
-            if (!$transfer->BorrowerSignedAt) {
-                return response()->json(['message' => 'GSO releasing signature must be confirmed before completion'], 422);
-            }
-
-            if (!$transfer->BorrowingSignedAt) {
-                return response()->json(['message' => 'Receiving signature must be confirmed before completion'], 422);
+            if (($transfer->ReleasingDecision ?? 'pending') !== 'approved') {
+                return response()->json(['message' => 'Releasing custody must approve first before GSO finalization'], 422);
             }
 
             $completionTime = now();
-            $borrowerSignedAt = Carbon::parse((string) $transfer->BorrowerSignedAt);
-            $borrowingSignedAt = Carbon::parse((string) $transfer->BorrowingSignedAt);
+            $borrowerSignedAt = $transfer->BorrowerSignedAt
+                ? Carbon::parse((string) $transfer->BorrowerSignedAt)
+                : $completionTime;
+            $borrowingSignedAt = $transfer->BorrowingSignedAt
+                ? Carbon::parse((string) $transfer->BorrowingSignedAt)
+                : $completionTime;
 
             foreach ($transfer->items as $item) {
                 $assignedProperty = AssignedProperty::where('InventoryDetailID', $item->InventoryDetailID)

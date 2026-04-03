@@ -356,42 +356,53 @@ class PropertyBorrowController extends Controller
         }
 
         $borrow = PropertyBorrow::findOrFail($id);
-        if ($borrow->Status !== 'pending') {
-            return response()->json(['message' => 'Only pending borrow requests can be approved'], 422);
+        if ($borrow->Status === 'pending') {
+            $borrow->update([
+                'Status' => 'approved',
+                'ApprovedByUserID' => (int) $user->UserID,
+                'ApprovedAt' => now(),
+            ]);
+
+            AssetAuditLog::createLog(
+                'property_borrow',
+                (int) $borrow->BorrowID,
+                'approved',
+                (int) $user->UserID,
+                ['borrow_number' => $borrow->BorrowNumber]
+            );
+
+            $borrow->loadMissing('items');
+            foreach ($borrow->items as $item) {
+                AssetAuditLog::createLog(
+                    'inventory_detail',
+                    (int) $item->InventoryDetailID,
+                    'borrow_approved',
+                    (int) $user->UserID,
+                    [
+                        'borrow_id' => (int) $borrow->BorrowID,
+                        'borrow_number' => $borrow->BorrowNumber,
+                    ]
+                );
+            }
+
+            return response()->json([
+                'message' => 'Borrow request approved by GSO/Admin. Waiting for releasing custody review.',
+                'borrow' => $borrow,
+            ]);
+        }
+
+        if ($borrow->Status !== 'approved') {
+            return response()->json(['message' => 'Only approved borrow requests can be finalized'], 422);
         }
 
         if (($borrow->ReleasingDecision ?? 'pending') !== 'approved') {
-            return response()->json(['message' => 'Releasing department must approve first before GSO/Admin approval'], 422);
+            return response()->json(['message' => 'Releasing department must approve first before final GSO action'], 422);
         }
 
         $borrow->update([
             'Status' => 'borrowed',
-            'ApprovedByUserID' => (int) $user->UserID,
-            'ApprovedAt' => now(),
             'BorrowedAt' => now(),
         ]);
-
-        AssetAuditLog::createLog(
-            'property_borrow',
-            (int) $borrow->BorrowID,
-            'approved',
-            (int) $user->UserID,
-            ['borrow_number' => $borrow->BorrowNumber]
-        );
-
-        $borrow->loadMissing('items');
-        foreach ($borrow->items as $item) {
-            AssetAuditLog::createLog(
-                'inventory_detail',
-                (int) $item->InventoryDetailID,
-                'borrow_approved',
-                (int) $user->UserID,
-                [
-                    'borrow_id' => (int) $borrow->BorrowID,
-                    'borrow_number' => $borrow->BorrowNumber,
-                ]
-            );
-        }
 
         AssetAuditLog::createLog(
             'property_borrow',
@@ -401,7 +412,7 @@ class PropertyBorrowController extends Controller
             ['borrow_number' => $borrow->BorrowNumber]
         );
 
-        return response()->json(['message' => 'Borrow approved and marked as borrowed', 'borrow' => $borrow]);
+        return response()->json(['message' => 'Borrow finalized and marked as borrowed', 'borrow' => $borrow]);
     }
 
     public function releasingReview(Request $request, int $id)
@@ -420,8 +431,8 @@ class PropertyBorrowController extends Controller
                 return response()->json(['message' => 'Only releasing department can review this request'], 403);
             }
 
-            if ($borrow->Status !== 'pending') {
-                return response()->json(['message' => 'Only pending borrows can be reviewed by releasing department'], 422);
+            if ($borrow->Status !== 'approved') {
+                return response()->json(['message' => 'GSO/Admin must approve first before releasing review'], 422);
             }
 
             if (($borrow->ReleasingDecision ?? 'pending') !== 'pending') {
@@ -557,8 +568,8 @@ class PropertyBorrowController extends Controller
         ]);
 
         $borrow = PropertyBorrow::findOrFail($id);
-        if ($borrow->Status !== 'pending') {
-            return response()->json(['message' => 'Only pending borrows can be rejected'], 422);
+        if (!in_array($borrow->Status, ['pending', 'approved'], true)) {
+            return response()->json(['message' => 'Only pending or approved borrows can be rejected'], 422);
         }
 
         $borrow->update([

@@ -14,6 +14,7 @@ use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\Procurement\IARDetail;
 use App\Models\MasterData\PropertyStatus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use App\Models\AssignedProperty;
@@ -214,12 +215,20 @@ class InventoryController extends Controller
         $sortBy = (string) $request->query('sort_by', 'date');
         $sortDir = strtolower((string) $request->query('sort_dir', 'desc'));
 
+        $dateSortColumn = 'created_at';
+        foreach (['DateAcquired', 'DateReceived', 'CreatedDate', 'created_at'] as $candidate) {
+            if (Schema::hasColumn('propertyinventory', $candidate)) {
+                $dateSortColumn = $candidate;
+                break;
+            }
+        }
+
         $validSortColumns = [
-            'date' => 'DateAcquired',
+            'date' => $dateSortColumn,
             'inventory_number' => 'InventoryNumber',
         ];
 
-        $sortColumn = $validSortColumns[$sortBy] ?? 'DateAcquired';
+        $sortColumn = $validSortColumns[$sortBy] ?? $dateSortColumn;
         $sortDirection = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
 
         if ($search) {
