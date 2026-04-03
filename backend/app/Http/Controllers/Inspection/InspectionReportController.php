@@ -15,8 +15,10 @@ use App\Models\AssignedProperty;
 use App\Models\PropertyIssuance;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\EndUser;
+use App\Models\Auth\User;
 use App\Models\QrCode;
 use App\Models\AssetAuditLog;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
@@ -444,7 +446,44 @@ class InspectionReportController extends Controller
             'acceptedByUser',
         ]);
 
+        $report->loadMissing('deliveryReceipt.requestedByUser');
+
         $report->Status = $report->deliveryReceipt->InspectionStatus ?? 'pending';
+
+        $recipientUserIds = $this->getInspectionNotificationUserIds(
+            (int) ($report->deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+            (int) (Auth::id() ?? 0)
+        );
+
+        app(RoleNotificationService::class)->notifyUsers(
+            $recipientUserIds,
+            'inspection_report.created',
+            'Inspection Report Created',
+            sprintf('Inspection report %s was created for DR %s.', (string) $report->IARNumber, (string) ($report->deliveryReceipt->DRNumber ?? 'N/A')),
+            [
+                'iar_id' => (string) $report->IARID,
+                'iar_number' => (string) $report->IARNumber,
+                'dr_id' => (string) $report->DRID,
+                'status' => (string) $report->Status,
+                'link' => '/inspection/reports/' . $report->IARID,
+            ]
+        );
+
+        if ((int) ($report->deliveryReceipt->RequestedBy ?? 0) > 0) {
+            app(RoleNotificationService::class)->notifyUser(
+                (int) $report->deliveryReceipt->RequestedBy,
+                'inspection_report.created',
+                'Inspection Report Created For Your DR',
+                sprintf('Inspection report %s was created for delivery receipt %s.', (string) $report->IARNumber, (string) ($report->deliveryReceipt->DRNumber ?? 'N/A')),
+                [
+                    'iar_id' => (string) $report->IARID,
+                    'iar_number' => (string) $report->IARNumber,
+                    'dr_id' => (string) $report->DRID,
+                    'status' => (string) $report->Status,
+                    'link' => '/inspection/reports/' . $report->IARID,
+                ]
+            );
+        }
 
         return response()->json([
             'success' => true,
@@ -681,7 +720,28 @@ class InspectionReportController extends Controller
 
         $report->load(['details.drDetail', 'details.condition', 'details.propertyType', 'deliveryReceipt', 'inspectedByUser', 'acceptedByUser']);
 
+        $report->loadMissing('deliveryReceipt.requestedByUser');
+
         $report->Status = $report->deliveryReceipt->InspectionStatus ?? 'pending';
+
+        $recipientUserIds = $this->getInspectionNotificationUserIds(
+            (int) ($report->deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+            (int) (Auth::id() ?? 0)
+        );
+
+        app(RoleNotificationService::class)->notifyUsers(
+            $recipientUserIds,
+            'inspection_report.updated',
+            'Inspection Report Updated',
+            sprintf('Inspection report %s was updated.', (string) $report->IARNumber),
+            [
+                'iar_id' => (string) $report->IARID,
+                'iar_number' => (string) $report->IARNumber,
+                'dr_id' => (string) $report->DRID,
+                'status' => (string) $report->Status,
+                'link' => '/inspection/reports/' . $report->IARID,
+            ]
+        );
 
         return response()->json([
             'success' => true,
@@ -787,7 +847,44 @@ class InspectionReportController extends Controller
 
         $report->load(['details.drDetail', 'details.condition', 'details.propertyType', 'deliveryReceipt', 'inspectedByUser', 'acceptedByUser']);
 
+        $report->loadMissing('deliveryReceipt.requestedByUser');
+
         $report->Status = $report->deliveryReceipt->InspectionStatus ?? 'pending';
+
+        $recipientUserIds = $this->getInspectionNotificationUserIds(
+            (int) ($report->deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+            (int) (Auth::id() ?? 0)
+        );
+
+        app(RoleNotificationService::class)->notifyUsers(
+            $recipientUserIds,
+            'inspection_report.completed',
+            'Inspection Completed',
+            sprintf('Inspection report %s was completed for DR %s.', (string) $report->IARNumber, (string) ($report->deliveryReceipt->DRNumber ?? 'N/A')),
+            [
+                'iar_id' => (string) $report->IARID,
+                'iar_number' => (string) $report->IARNumber,
+                'dr_id' => (string) $report->DRID,
+                'status' => (string) $report->Status,
+                'link' => '/inspection/reports/' . $report->IARID,
+            ]
+        );
+
+        if ((int) ($report->deliveryReceipt->RequestedBy ?? 0) > 0) {
+            app(RoleNotificationService::class)->notifyUser(
+                (int) $report->deliveryReceipt->RequestedBy,
+                'inspection_report.completed',
+                'Inspection Completed For Your DR',
+                sprintf('Inspection report %s for delivery receipt %s is complete.', (string) $report->IARNumber, (string) ($report->deliveryReceipt->DRNumber ?? 'N/A')),
+                [
+                    'iar_id' => (string) $report->IARID,
+                    'iar_number' => (string) $report->IARNumber,
+                    'dr_id' => (string) $report->DRID,
+                    'status' => (string) $report->Status,
+                    'link' => '/inspection/reports/' . $report->IARID,
+                ]
+            );
+        }
 
         return response()->json([
             'success' => true,
@@ -1116,6 +1213,37 @@ class InspectionReportController extends Controller
         }
 
         return $prefix . str_pad((string) $newNumber, 4, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function getInspectionNotificationUserIds(int $departmentId, ?int $excludeUserId = null): array
+    {
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', true)
+            ->where(function ($q) use ($departmentId) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', ['Admin', 'GSO Staff']);
+                })->orWhere(function ($deptHeadQ) use ($departmentId) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', 'Department Head');
+                    });
+
+                    if ($departmentId > 0) {
+                        $deptHeadQ->where('DepartmentID', $departmentId);
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
     }
 
     public function conditions(): JsonResponse

@@ -97,4 +97,34 @@ class NotificationController extends Controller
 
         return response()->json(['message' => 'All notifications marked as read']);
     }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $user = Auth::user();
+
+        $deleted = UserNotification::query()
+            ->where('UserNotificationID', $id)
+            ->where('UserID', (int) $user->UserID)
+            ->delete();
+
+        if ($deleted < 1) {
+            return response()->json(['message' => 'Notification not found'], 404);
+        }
+
+        return response()->json(['message' => 'Notification deleted']);
+    }
+
+    public function destroyAll(): JsonResponse
+    {
+        $user = Auth::user();
+
+        $deletedCount = UserNotification::query()
+            ->where('UserID', (int) $user->UserID)
+            ->delete();
+
+        return response()->json([
+            'message' => 'All notifications deleted',
+            'deleted_count' => (int) $deletedCount,
+        ]);
+    }
 }

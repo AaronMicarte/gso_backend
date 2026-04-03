@@ -12,6 +12,7 @@ use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\MasterData\Condition;
 use App\Models\Auth\User;
 use App\Models\AssetAuditLog;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -412,6 +413,40 @@ class InspectionAcceptanceReportController extends Controller
                 }
             }
 
+            $iar->loadMissing('deliveryReceipt.requestedByUser');
+            $recipientUserIds = $this->getIarNotificationUserIds(
+                (int) ($iar->deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+                (int) (AuthFacade::id() ?? 0)
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'iar.created',
+                'Inspection & Acceptance Report Created',
+                sprintf('IAR %s has been created.', (string) $iar->IARNumber),
+                [
+                    'iar_id' => (string) $iar->IARID,
+                    'iar_number' => (string) $iar->IARNumber,
+                    'dr_id' => (string) $iar->DRID,
+                    'link' => '/procurement/inspection-acceptance-reports/' . $iar->IARID,
+                ]
+            );
+
+            if ((int) ($iar->AcceptedBy ?? 0) > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $iar->AcceptedBy,
+                    'iar.created',
+                    'IAR Assigned To You',
+                    sprintf('IAR %s was created and assigned for acceptance.', (string) $iar->IARNumber),
+                    [
+                        'iar_id' => (string) $iar->IARID,
+                        'iar_number' => (string) $iar->IARNumber,
+                        'dr_id' => (string) $iar->DRID,
+                        'link' => '/procurement/inspection-acceptance-reports/' . $iar->IARID,
+                    ]
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Inspection & Acceptance Report created successfully',
@@ -526,6 +561,40 @@ class InspectionAcceptanceReportController extends Controller
                         $d['drDetail']['unitOfMeasure'] = $d['drDetail']['unit_of_measure'] ?? null;
                     }
                 }
+            }
+
+            $iar->loadMissing('deliveryReceipt.requestedByUser');
+            $recipientUserIds = $this->getIarNotificationUserIds(
+                (int) ($iar->deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+                (int) (AuthFacade::id() ?? 0)
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'iar.updated',
+                'Inspection & Acceptance Report Updated',
+                sprintf('IAR %s has been updated.', (string) $iar->IARNumber),
+                [
+                    'iar_id' => (string) $iar->IARID,
+                    'iar_number' => (string) $iar->IARNumber,
+                    'dr_id' => (string) $iar->DRID,
+                    'link' => '/procurement/inspection-acceptance-reports/' . $iar->IARID,
+                ]
+            );
+
+            if ((int) ($iar->AcceptedBy ?? 0) > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $iar->AcceptedBy,
+                    'iar.updated',
+                    'IAR Updated',
+                    sprintf('IAR %s assigned to you has been updated.', (string) $iar->IARNumber),
+                    [
+                        'iar_id' => (string) $iar->IARID,
+                        'iar_number' => (string) $iar->IARNumber,
+                        'dr_id' => (string) $iar->DRID,
+                        'link' => '/procurement/inspection-acceptance-reports/' . $iar->IARID,
+                    ]
+                );
             }
 
             return response()->json([
@@ -862,6 +931,37 @@ class InspectionAcceptanceReportController extends Controller
                 'user_agent' => request()->userAgent(),
             ]
         );
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function getIarNotificationUserIds(int $departmentId, ?int $excludeUserId = null): array
+    {
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', 1)
+            ->where(function ($q) use ($departmentId) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', ['Admin', 'GSO Staff']);
+                })->orWhere(function ($deptHeadQ) use ($departmentId) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', 'Department Head');
+                    });
+
+                    if ($departmentId > 0) {
+                        $deptHeadQ->where('DepartmentID', $departmentId);
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
     }
 
     public function getConditions(): JsonResponse

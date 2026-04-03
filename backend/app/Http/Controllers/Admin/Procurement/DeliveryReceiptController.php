@@ -16,6 +16,7 @@ use App\Models\AssetAuditLog;
 use App\Models\AssignedProperty;
 use App\Models\EndUser;
 use App\Models\QrCode;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -417,6 +418,39 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
             $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
 
+            $recipientUserIds = $this->getProcurementNotificationUserIds(
+                (int) ($deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+                (int) (Auth::id() ?? 0)
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'delivery_receipt.created',
+                'Delivery Receipt Created',
+                sprintf('Delivery receipt %s has been created and inspected.', (string) $deliveryReceipt->DRNumber),
+                [
+                    'dr_id' => (string) $deliveryReceipt->DRID,
+                    'dr_number' => (string) $deliveryReceipt->DRNumber,
+                    'status' => 'inspected',
+                    'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
+                ]
+            );
+
+            if ((int) $deliveryReceipt->RequestedBy > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $deliveryReceipt->RequestedBy,
+                    'delivery_receipt.created',
+                    'Delivery Receipt Processed',
+                    sprintf('Delivery receipt %s for your request has been created and inspected.', (string) $deliveryReceipt->DRNumber),
+                    [
+                        'dr_id' => (string) $deliveryReceipt->DRID,
+                        'dr_number' => (string) $deliveryReceipt->DRNumber,
+                        'status' => 'inspected',
+                        'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
+                    ]
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt created successfully',
@@ -767,6 +801,39 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
             $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
 
+            $recipientUserIds = $this->getProcurementNotificationUserIds(
+                (int) ($deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+                (int) (Auth::id() ?? 0)
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'delivery_receipt.updated',
+                'Delivery Receipt Updated',
+                sprintf('Delivery receipt %s has been updated.', (string) $deliveryReceipt->DRNumber),
+                [
+                    'dr_id' => (string) $deliveryReceipt->DRID,
+                    'dr_number' => (string) $deliveryReceipt->DRNumber,
+                    'status' => 'inspected',
+                    'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
+                ]
+            );
+
+            if ((int) $deliveryReceipt->RequestedBy > 0) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $deliveryReceipt->RequestedBy,
+                    'delivery_receipt.updated',
+                    'Delivery Receipt Updated',
+                    sprintf('Delivery receipt %s linked to your request has been updated.', (string) $deliveryReceipt->DRNumber),
+                    [
+                        'dr_id' => (string) $deliveryReceipt->DRID,
+                        'dr_number' => (string) $deliveryReceipt->DRNumber,
+                        'status' => 'inspected',
+                        'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
+                    ]
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Delivery receipt updated successfully',
@@ -1082,6 +1149,37 @@ class DeliveryReceiptController extends Controller
         $hash = substr(hash_hmac('sha256', (string) $propertyId, $key), 0, 12);
 
         return $baseUrl . '/qr/scan/' . $propertyId . '?h=' . $hash;
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function getProcurementNotificationUserIds(int $departmentId, ?int $excludeUserId = null): array
+    {
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', 1)
+            ->where(function ($q) use ($departmentId) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', ['Admin', 'GSO Staff']);
+                })->orWhere(function ($deptHeadQ) use ($departmentId) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', 'Department Head');
+                    });
+
+                    if ($departmentId > 0) {
+                        $deptHeadQ->where('DepartmentID', $departmentId);
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
     }
 
     private function generateDrIarNumber(): string

@@ -72,8 +72,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notification routes
     Route::prefix('notifications')->group(function () {
         Route::get('', [NotificationController::class, 'index']);
+        Route::delete('', [NotificationController::class, 'destroyAll']);
         Route::patch('read-all', [NotificationController::class, 'markAllAsRead']);
         Route::patch('{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::delete('{id}', [NotificationController::class, 'destroy']);
         Route::post('push-token', [NotificationController::class, 'registerPushToken']);
         Route::delete('push-token', [NotificationController::class, 'removePushToken']);
     });

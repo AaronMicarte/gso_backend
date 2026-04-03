@@ -6,6 +6,7 @@ use App\Models\AssetAuditLog;
 use App\Models\AssetServiceRecord;
 use App\Models\AssetServiceRecordDetail;
 use App\Models\Auth\User;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -347,6 +348,25 @@ class AssetServiceRecordController extends Controller
                 ]
             );
 
+            $recipientUserIds = $this->getServiceRecordNotificationUserIds(
+                (int) $record->ReportSource,
+                (int) $user->UserID
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'asset_service_record.created',
+                'Asset Service Record Created',
+                sprintf('Service record %s has been created.', (string) $record->ServiceNumber),
+                [
+                    'service_record_id' => (string) $record->ServiceRecordID,
+                    'service_number' => (string) $record->ServiceNumber,
+                    'status' => (string) $record->Status,
+                    'report_source_id' => (string) $record->ReportSource,
+                    'link' => '/service-records/' . $record->ServiceRecordID,
+                ]
+            );
+
             return response()->json([
                 'message' => 'Service record created successfully',
                 'record' => $this->withAttachmentUrls($record->fresh()->load([
@@ -548,6 +568,44 @@ class AssetServiceRecordController extends Controller
                         'service_number' => $record->ServiceNumber,
                         'old_status' => $oldStatus,
                         'new_status' => $record->Status,
+                    ]
+                );
+            }
+
+            $recipientUserIds = $this->getServiceRecordNotificationUserIds(
+                (int) $record->ReportSource,
+                (int) $user->UserID
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'asset_service_record.updated',
+                'Asset Service Record Updated',
+                $oldStatus !== $record->Status
+                    ? sprintf('Service record %s status changed from %s to %s.', (string) $record->ServiceNumber, $oldStatus, (string) $record->Status)
+                    : sprintf('Service record %s has been updated.', (string) $record->ServiceNumber),
+                [
+                    'service_record_id' => (string) $record->ServiceRecordID,
+                    'service_number' => (string) $record->ServiceNumber,
+                    'old_status' => $oldStatus,
+                    'status' => (string) $record->Status,
+                    'report_source_id' => (string) $record->ReportSource,
+                    'link' => '/service-records/' . $record->ServiceRecordID,
+                ]
+            );
+
+            if ((int) ($record->CreatedByUserID ?? 0) > 0 && (int) ($record->CreatedByUserID ?? 0) !== (int) $user->UserID) {
+                app(RoleNotificationService::class)->notifyUser(
+                    (int) $record->CreatedByUserID,
+                    'asset_service_record.updated',
+                    'Service Record Updated',
+                    sprintf('Service record %s was updated.', (string) $record->ServiceNumber),
+                    [
+                        'service_record_id' => (string) $record->ServiceRecordID,
+                        'service_number' => (string) $record->ServiceNumber,
+                        'old_status' => $oldStatus,
+                        'status' => (string) $record->Status,
+                        'link' => '/service-records/' . $record->ServiceRecordID,
                     ]
                 );
             }
@@ -855,6 +913,37 @@ class AssetServiceRecordController extends Controller
     private function canManage(string $roleName): bool
     {
         return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF], true);
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function getServiceRecordNotificationUserIds(int $departmentId, ?int $excludeUserId = null): array
+    {
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', true)
+            ->where(function ($q) use ($departmentId) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', [self::ROLE_ADMIN, self::ROLE_GSO_STAFF]);
+                })->orWhere(function ($deptHeadQ) use ($departmentId) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', self::ROLE_DEPARTMENT_HEAD);
+                    });
+
+                    if ($departmentId > 0) {
+                        $deptHeadQ->where('DepartmentID', $departmentId);
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
     }
 
     private function isStatusTransitionAllowed(string $currentStatus, string $nextStatus): bool

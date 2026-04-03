@@ -10,7 +10,9 @@ use App\Models\Inventory\PropertyIssuanceDetail;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\AssignedProperty;
 use App\Models\EndUser;
+use App\Models\Auth\User;
 use App\Models\AssetAuditLog;
+use App\Services\Notifications\RoleNotificationService;
 
 class IssuanceController extends Controller
 {
@@ -151,10 +153,60 @@ class IssuanceController extends Controller
             }
 
             DB::commit();
+
+            $recipientUserIds = $this->getIssuanceNotificationUserIds(
+                (int) $departmentId,
+                (int) ($request->input('issued_by') ?? 0)
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                'inventory_issuance.created',
+                'Inventory Issuance Recorded',
+                sprintf('Issuance #%s has been recorded with %d item(s).', (string) $issuance->IssuanceID, count($request->input('details'))),
+                [
+                    'issuance_id' => (string) $issuance->IssuanceID,
+                    'issued_to_type' => (string) $issuedToType,
+                    'issued_to' => (string) $issuedTo,
+                    'link' => '/inventory/issuances/' . $issuance->IssuanceID,
+                ]
+            );
+
             return response()->json(['message' => 'Issuance recorded successfully', 'issuance_id' => $issuance->IssuanceID], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Failed to record issuance: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function getIssuanceNotificationUserIds(int $departmentId, ?int $excludeUserId = null): array
+    {
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', true)
+            ->where(function ($q) use ($departmentId) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', ['Admin', 'GSO Staff']);
+                })->orWhere(function ($deptHeadQ) use ($departmentId) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', 'Department Head');
+                    });
+
+                    if ($departmentId > 0) {
+                        $deptHeadQ->where('DepartmentID', $departmentId);
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
     }
 }

@@ -9,11 +9,15 @@ use App\Models\AssignedProperty;
 use App\Models\AssetAuditLog;
 use App\Models\QrCode;
 use App\Models\EndUser;
+use App\Models\Auth\User;
 use App\Models\MasterData\Department;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
+use Throwable;
 
 class PropertyTransferController extends Controller
 {
@@ -40,6 +44,7 @@ class PropertyTransferController extends Controller
             'releasingReviewedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
             'completedBy:UserID,FullName',
+            'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber',
         ])->withCount('items');
 
         if (!$this->isPrivileged($roleName)) {
@@ -87,6 +92,28 @@ class PropertyTransferController extends Controller
 
         $perPage = max(10, (int) $request->query('per_page', 15));
         $transfers = $query->orderByDesc('created_at')->paginate($perPage);
+
+        $transfers->getCollection()->transform(function ($transfer) {
+            $items = collect($transfer->items ?? []);
+            $preview = $items->take(5)->map(function ($item) {
+                return [
+                    'TransferItemID' => (int) $item->TransferItemID,
+                    'InventoryDetailID' => (int) $item->InventoryDetailID,
+                    'Quantity' => (int) ($item->Quantity ?? 0),
+                    'PropertyNumber' => $item->inventoryDetail->PropertyNumber ?? null,
+                    'Description' => $item->inventoryDetail->Description ?? null,
+                    'Brand' => $item->inventoryDetail->Brand ?? null,
+                    'ModelNumber' => $item->inventoryDetail->ModelNumber ?? null,
+                    'SerialNumber' => $item->inventoryDetail->SerialNumber ?? null,
+                ];
+            })->values();
+
+            $transfer->setAttribute('items_preview', $preview);
+            $transfer->setAttribute('items_preview_limit', 5);
+            $transfer->setAttribute('items_remaining_count', max(0, $items->count() - 5));
+
+            return $transfer;
+        });
 
         return response()->json($transfers);
     }
@@ -312,6 +339,15 @@ class PropertyTransferController extends Controller
                 'items.inventoryDetail.drDetail.article',
             ]);
 
+            $this->notifyTransferRoles(
+                $transfer,
+                'property_transfer.created',
+                'New Property Transfer Request',
+                sprintf('Transfer %s was submitted by %s.', (string) $transfer->TransferNumber, (string) ($user->FullName ?? 'Department Head')),
+                'pending',
+                (int) $user->UserID
+            );
+
             return response()->json([
                 'message' => 'Transfer request submitted',
                 'transfer' => $transfer,
@@ -360,6 +396,22 @@ class PropertyTransferController extends Controller
                     ]
                 );
             }
+
+        $this->notifyTransferRoles(
+            $transfer,
+            'property_transfer.approved',
+            'Property Transfer Approved',
+            sprintf('Transfer %s was approved by GSO/Admin.', (string) $transfer->TransferNumber),
+            'approved',
+            (int) $user->UserID
+        );
+        $this->notifyTransferRequester(
+            $transfer,
+            'property_transfer.approved',
+            'Your Transfer Request Was Approved',
+            sprintf('Transfer %s has been approved and is waiting for releasing department review.', (string) $transfer->TransferNumber),
+            'approved'
+        );
 
         return response()->json(['message' => 'Transfer approved', 'transfer' => $transfer]);
     }
@@ -440,6 +492,22 @@ class PropertyTransferController extends Controller
                         ]
                     );
                 }
+
+                $this->notifyTransferRoles(
+                    $transfer,
+                    'property_transfer.releasing_rejected',
+                    'Transfer Rejected By Releasing Department',
+                    sprintf('Transfer %s was rejected by the releasing department.', (string) $transfer->TransferNumber),
+                    'rejected',
+                    (int) $user->UserID
+                );
+                $this->notifyTransferRequester(
+                    $transfer,
+                    'property_transfer.releasing_rejected',
+                    'Your Transfer Request Was Rejected',
+                    sprintf('Transfer %s was rejected by the releasing department. Reason: %s', (string) $transfer->TransferNumber, $reason),
+                    'rejected'
+                );
 
                 return response()->json([
                     'message' => 'Transfer rejected by releasing department',
@@ -551,6 +619,22 @@ class PropertyTransferController extends Controller
                     );
                 }
 
+                $this->notifyTransferRoles(
+                    $transfer,
+                    'property_transfer.releasing_rejected',
+                    'Transfer Auto-Rejected',
+                    sprintf('Transfer %s was auto-rejected by releasing department due to zero approved quantity.', (string) $transfer->TransferNumber),
+                    'rejected',
+                    (int) $user->UserID
+                );
+                $this->notifyTransferRequester(
+                    $transfer,
+                    'property_transfer.releasing_rejected',
+                    'Your Transfer Request Was Rejected',
+                    sprintf('Transfer %s was auto-rejected. Reason: %s', (string) $transfer->TransferNumber, $autoRejectReason),
+                    'rejected'
+                );
+
                 return response()->json([
                     'message' => 'Transfer auto-rejected because provided quantity is 0',
                     'transfer' => $transfer->fresh([
@@ -646,6 +730,22 @@ class PropertyTransferController extends Controller
                 );
             }
 
+            $this->notifyTransferRoles(
+                $transfer,
+                'property_transfer.releasing_approved',
+                'Transfer Cleared By Releasing Department',
+                sprintf('Transfer %s was approved by the releasing department.', (string) $transfer->TransferNumber),
+                'approved',
+                (int) $user->UserID
+            );
+            $this->notifyTransferRequester(
+                $transfer,
+                'property_transfer.releasing_approved',
+                'Transfer Cleared By Releasing Department',
+                sprintf('Transfer %s was approved by the releasing department and is awaiting signatures.', (string) $transfer->TransferNumber),
+                'approved'
+            );
+
             return response()->json([
                 'message' => 'Transfer reviewed by releasing department',
                 'transfer' => $transfer->fresh([
@@ -717,6 +817,22 @@ class PropertyTransferController extends Controller
                 );
             }
 
+        $this->notifyTransferRoles(
+            $transfer,
+            'property_transfer.rejected',
+            'Property Transfer Rejected',
+            sprintf('Transfer %s was rejected by GSO/Admin.', (string) $transfer->TransferNumber),
+            'rejected',
+            (int) $user->UserID
+        );
+        $this->notifyTransferRequester(
+            $transfer,
+            'property_transfer.rejected',
+            'Your Transfer Request Was Rejected',
+            sprintf('Transfer %s was rejected by GSO/Admin.', (string) $transfer->TransferNumber),
+            'rejected'
+        );
+
         return response()->json(['message' => 'Transfer rejected', 'transfer' => $transfer]);
     }
 
@@ -769,6 +885,22 @@ class PropertyTransferController extends Controller
                     ]
                 );
             }
+
+            $this->notifyTransferRoles(
+                $transfer,
+                'property_transfer.releasing_signed',
+                'Transfer Releasing Signature Confirmed',
+                sprintf('Transfer %s has been signed by releasing side (GSO/Admin).', (string) $transfer->TransferNumber),
+                'approved',
+                (int) $user->UserID
+            );
+            $this->notifyTransferRequester(
+                $transfer,
+                'property_transfer.releasing_signed',
+                'Transfer Release Signature Confirmed',
+                sprintf('Transfer %s releasing signature is complete and waiting for receiving confirmation.', (string) $transfer->TransferNumber),
+                'approved'
+            );
 
             return response()->json(['message' => 'Releasing signature confirmed', 'transfer' => $transfer]);
         });
@@ -913,6 +1045,22 @@ class PropertyTransferController extends Controller
                 ['transfer_number' => $transfer->TransferNumber]
             );
 
+            $this->notifyTransferRoles(
+                $transfer,
+                'property_transfer.completed',
+                'Property Transfer Completed',
+                sprintf('Transfer %s was completed after receiving confirmation.', (string) $transfer->TransferNumber),
+                'completed',
+                (int) $user->UserID
+            );
+            $this->notifyTransferRequester(
+                $transfer,
+                'property_transfer.completed',
+                'Your Transfer Was Completed',
+                sprintf('Transfer %s has been fully completed.', (string) $transfer->TransferNumber),
+                'completed'
+            );
+
             return response()->json([
                 'message' => 'Receiving signature confirmed and transfer completed automatically',
                 'transfer' => $transfer,
@@ -1037,6 +1185,22 @@ class PropertyTransferController extends Controller
                 ['transfer_number' => $transfer->TransferNumber]
             );
 
+            $this->notifyTransferRoles(
+                $transfer,
+                'property_transfer.completed',
+                'Property Transfer Completed',
+                sprintf('Transfer %s was finalized by GSO/Admin.', (string) $transfer->TransferNumber),
+                'completed',
+                (int) $user->UserID
+            );
+            $this->notifyTransferRequester(
+                $transfer,
+                'property_transfer.completed',
+                'Your Transfer Was Completed',
+                sprintf('Transfer %s has been completed.', (string) $transfer->TransferNumber),
+                'completed'
+            );
+
             return response()->json(['message' => 'Transfer completed', 'transfer' => $transfer]);
         });
     }
@@ -1065,6 +1229,7 @@ class PropertyTransferController extends Controller
 
         $query = AssignedProperty::query()
             ->leftJoin('propertyinventorydetail as pid', 'assignedproperty.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->leftJoin('propertytype as pt', 'pid.PropertyTypeID', '=', 'pt.PropertyTypeID')
             ->leftJoin('deliveryreceiptdetail as drd', 'pid.SourceDRDetailID', '=', 'drd.DRDetailID')
             ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
             ->leftJoin('department as d', 'assignedproperty.DepartmentID', '=', 'd.DepartmentID')
@@ -1083,6 +1248,8 @@ class PropertyTransferController extends Controller
                 'pid.ModelNumber',
                 'pid.SerialNumber',
                 'pid.UnitCost',
+                'pid.PropertyTypeID',
+                'pt.PropertyName as PropertyTypeName',
                 'drd.ItemDescription as ItemDescription',
                 'a.ArticleName as ArticleName',
                 'uom.UnitName',
@@ -1177,6 +1344,114 @@ class PropertyTransferController extends Controller
     private function canCreate(string $roleName): bool
     {
         return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF, self::ROLE_DEPARTMENT_HEAD], true);
+    }
+
+    private function notifyTransferRoles(
+        PropertyTransfer $transfer,
+        string $eventType,
+        string $title,
+        string $message,
+        string $status,
+        ?int $excludeUserId = null
+    ): void {
+        try {
+            $recipientUserIds = $this->getTransferNotificationUserIds(
+                [(int) $transfer->FromDepartmentID, (int) $transfer->ToDepartmentID],
+                $excludeUserId
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                $eventType,
+                $title,
+                $message,
+                [
+                    'transfer_id' => (string) $transfer->TransferID,
+                    'transfer_number' => (string) $transfer->TransferNumber,
+                    'status' => $status,
+                    'link' => '/property-transfer/' . $transfer->TransferID,
+                ]
+            );
+        } catch (Throwable $e) {
+            Log::warning('Transfer role notification failed', [
+                'transfer_id' => (int) $transfer->TransferID,
+                'event_type' => $eventType,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @param array<int> $departmentIds
+     * @return array<int>
+     */
+    private function getTransferNotificationUserIds(array $departmentIds, ?int $excludeUserId = null): array
+    {
+        $scopedDepartmentIds = collect($departmentIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', true)
+            ->where(function ($q) use ($scopedDepartmentIds) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', [self::ROLE_ADMIN, self::ROLE_GSO_STAFF]);
+                })->orWhere(function ($deptHeadQ) use ($scopedDepartmentIds) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', self::ROLE_DEPARTMENT_HEAD);
+                    });
+
+                    if ($scopedDepartmentIds->isNotEmpty()) {
+                        $deptHeadQ->whereIn('DepartmentID', $scopedDepartmentIds->all());
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function notifyTransferRequester(
+        PropertyTransfer $transfer,
+        string $eventType,
+        string $title,
+        string $message,
+        string $status
+    ): void {
+        $requesterId = (int) ($transfer->RequestedByUserID ?? 0);
+        if ($requesterId <= 0) {
+            return;
+        }
+
+        try {
+            app(RoleNotificationService::class)->notifyUser(
+                $requesterId,
+                $eventType,
+                $title,
+                $message,
+                [
+                    'transfer_id' => (string) $transfer->TransferID,
+                    'transfer_number' => (string) $transfer->TransferNumber,
+                    'status' => $status,
+                    'link' => '/property-transfer/' . $transfer->TransferID,
+                ]
+            );
+        } catch (Throwable $e) {
+            Log::warning('Transfer requester notification failed', [
+                'transfer_id' => (int) $transfer->TransferID,
+                'requester_id' => $requesterId,
+                'event_type' => $eventType,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function updateQrCodeForAssignedProperty(AssignedProperty $assignedProperty): void

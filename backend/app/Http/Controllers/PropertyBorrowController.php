@@ -10,13 +10,17 @@ use App\Models\PropertyTransferItem;
 use App\Models\AssignedProperty;
 use App\Models\AssetAuditLog;
 use App\Models\EndUser;
+use App\Models\Auth\User;
 use App\Models\MasterData\Department;
 use App\Models\MasterData\Condition;
 use App\Models\MasterData\PropertyType;
+use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
+use Throwable;
 
 class PropertyBorrowController extends Controller
 {
@@ -49,6 +53,7 @@ class PropertyBorrowController extends Controller
             'toEndUser.department:DepartmentID,DepartmentName',
             'releasingReviewedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
+            'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber',
         ])->withCount('items');
 
         if (!$this->isPrivileged($roleName)) {
@@ -96,6 +101,28 @@ class PropertyBorrowController extends Controller
 
         $perPage = max(10, (int) $request->query('per_page', 15));
         $borrows = $query->orderByDesc('created_at')->paginate($perPage);
+
+        $borrows->getCollection()->transform(function ($borrow) {
+            $items = collect($borrow->items ?? []);
+            $preview = $items->take(5)->map(function ($item) {
+                return [
+                    'BorrowItemID' => (int) $item->BorrowItemID,
+                    'InventoryDetailID' => (int) $item->InventoryDetailID,
+                    'Quantity' => (int) ($item->Quantity ?? 0),
+                    'PropertyNumber' => $item->inventoryDetail->PropertyNumber ?? null,
+                    'Description' => $item->inventoryDetail->Description ?? null,
+                    'Brand' => $item->inventoryDetail->Brand ?? null,
+                    'ModelNumber' => $item->inventoryDetail->ModelNumber ?? null,
+                    'SerialNumber' => $item->inventoryDetail->SerialNumber ?? null,
+                ];
+            })->values();
+
+            $borrow->setAttribute('items_preview', $preview);
+            $borrow->setAttribute('items_preview_limit', 5);
+            $borrow->setAttribute('items_remaining_count', max(0, $items->count() - 5));
+
+            return $borrow;
+        });
 
         return response()->json($borrows);
     }
@@ -339,6 +366,15 @@ class PropertyBorrowController extends Controller
                 'items.inventoryDetail.propertyType',
             ]);
 
+            $this->notifyBorrowRoles(
+                $borrow,
+                'property_borrow.created',
+                'New Property Borrow Request',
+                sprintf('Borrow request %s was submitted by %s.', (string) $borrow->BorrowNumber, (string) ($user->FullName ?? 'Department Head')),
+                'pending',
+                (int) $user->UserID
+            );
+
             return response()->json([
                 'message' => 'Borrow request submitted',
                 'borrow' => $borrow,
@@ -385,6 +421,22 @@ class PropertyBorrowController extends Controller
                 );
             }
 
+            $this->notifyBorrowRoles(
+                $borrow,
+                'property_borrow.approved',
+                'Property Borrow Approved',
+                sprintf('Borrow request %s was approved by GSO/Admin and is awaiting releasing review.', (string) $borrow->BorrowNumber),
+                'approved',
+                (int) $user->UserID
+            );
+            $this->notifyBorrowRequester(
+                $borrow,
+                'property_borrow.approved',
+                'Your Borrow Request Was Approved',
+                sprintf('Borrow request %s was approved and is pending releasing department review.', (string) $borrow->BorrowNumber),
+                'approved'
+            );
+
             return response()->json([
                 'message' => 'Borrow request approved by GSO/Admin. Waiting for releasing custody review.',
                 'borrow' => $borrow,
@@ -410,6 +462,22 @@ class PropertyBorrowController extends Controller
             'borrowed',
             (int) $user->UserID,
             ['borrow_number' => $borrow->BorrowNumber]
+        );
+
+        $this->notifyBorrowRoles(
+            $borrow,
+            'property_borrow.borrowed',
+            'Property Borrow Released',
+            sprintf('Borrow request %s was finalized and marked as borrowed.', (string) $borrow->BorrowNumber),
+            'borrowed',
+            (int) $user->UserID
+        );
+        $this->notifyBorrowRequester(
+            $borrow,
+            'property_borrow.borrowed',
+            'Borrow Request Finalized',
+            sprintf('Borrow request %s is now marked as borrowed.', (string) $borrow->BorrowNumber),
+            'borrowed'
         );
 
         return response()->json(['message' => 'Borrow finalized and marked as borrowed', 'borrow' => $borrow]);
@@ -476,6 +544,22 @@ class PropertyBorrowController extends Controller
                     ]
                 );
 
+                $this->notifyBorrowRoles(
+                    $borrow,
+                    'property_borrow.releasing_rejected',
+                    'Borrow Request Rejected By Releasing Department',
+                    sprintf('Borrow request %s was rejected by the releasing department.', (string) $borrow->BorrowNumber),
+                    'rejected',
+                    (int) $user->UserID
+                );
+                $this->notifyBorrowRequester(
+                    $borrow,
+                    'property_borrow.releasing_rejected',
+                    'Your Borrow Request Was Rejected',
+                    sprintf('Borrow request %s was rejected by releasing department. Reason: %s', (string) $borrow->BorrowNumber, $reason),
+                    'rejected'
+                );
+
                 return response()->json(['message' => 'Borrow request rejected', 'borrow' => $borrow]);
             }
 
@@ -515,6 +599,22 @@ class PropertyBorrowController extends Controller
                     ]
                 );
 
+                $this->notifyBorrowRoles(
+                    $borrow,
+                    'property_borrow.releasing_rejected',
+                    'Borrow Request Auto-Rejected',
+                    sprintf('Borrow request %s was auto-rejected by releasing department due to zero approved quantity.', (string) $borrow->BorrowNumber),
+                    'rejected',
+                    (int) $user->UserID
+                );
+                $this->notifyBorrowRequester(
+                    $borrow,
+                    'property_borrow.releasing_rejected',
+                    'Your Borrow Request Was Rejected',
+                    sprintf('Borrow request %s was auto-rejected. Reason: %s', (string) $borrow->BorrowNumber, $autoRejectReason),
+                    'rejected'
+                );
+
                 return response()->json([
                     'message' => 'Borrow request auto-rejected because provided quantity is 0',
                     'borrow' => $borrow,
@@ -550,6 +650,22 @@ class PropertyBorrowController extends Controller
                 ]
             );
 
+            $this->notifyBorrowRoles(
+                $borrow,
+                'property_borrow.releasing_approved',
+                'Borrow Request Cleared By Releasing Department',
+                sprintf('Borrow request %s was approved by the releasing department.', (string) $borrow->BorrowNumber),
+                'approved',
+                (int) $user->UserID
+            );
+            $this->notifyBorrowRequester(
+                $borrow,
+                'property_borrow.releasing_approved',
+                'Borrow Request Cleared By Releasing Department',
+                sprintf('Borrow request %s was approved by releasing department and is waiting for final GSO action.', (string) $borrow->BorrowNumber),
+                'approved'
+            );
+
             return response()->json(['message' => 'Releasing review submitted', 'borrow' => $borrow]);
         });
     }
@@ -583,6 +699,22 @@ class PropertyBorrowController extends Controller
             'rejected',
             (int) $user->UserID,
             ['borrow_number' => $borrow->BorrowNumber]
+        );
+
+        $this->notifyBorrowRoles(
+            $borrow,
+            'property_borrow.rejected',
+            'Property Borrow Rejected',
+            sprintf('Borrow request %s was rejected by GSO/Admin.', (string) $borrow->BorrowNumber),
+            'rejected',
+            (int) $user->UserID
+        );
+        $this->notifyBorrowRequester(
+            $borrow,
+            'property_borrow.rejected',
+            'Your Borrow Request Was Rejected',
+            sprintf('Borrow request %s was rejected by GSO/Admin.', (string) $borrow->BorrowNumber),
+            'rejected'
         );
 
         return response()->json(['message' => 'Borrow rejected', 'borrow' => $borrow]);
@@ -737,6 +869,26 @@ class PropertyBorrowController extends Controller
                     ]
                 );
             }
+
+            $this->notifyBorrowRoles(
+                $borrow,
+                $newStatus === 'returned' ? 'property_borrow.returned' : 'property_borrow.partially_returned',
+                $newStatus === 'returned' ? 'Borrow Fully Returned' : 'Borrow Partially Returned',
+                $newStatus === 'returned'
+                    ? sprintf('Borrow request %s has been fully returned.', (string) $borrow->BorrowNumber)
+                    : sprintf('Borrow request %s has a partial return recorded.', (string) $borrow->BorrowNumber),
+                $newStatus,
+                (int) $user->UserID
+            );
+            $this->notifyBorrowRequester(
+                $borrow,
+                $newStatus === 'returned' ? 'property_borrow.returned' : 'property_borrow.partially_returned',
+                $newStatus === 'returned' ? 'Borrow Return Completed' : 'Borrow Partial Return Recorded',
+                $newStatus === 'returned'
+                    ? sprintf('Borrow request %s is now fully returned.', (string) $borrow->BorrowNumber)
+                    : sprintf('Borrow request %s is now partially returned.', (string) $borrow->BorrowNumber),
+                $newStatus
+            );
 
             $borrow->load([
                 'requestedBy:UserID,FullName,DepartmentID',
@@ -922,5 +1074,113 @@ class PropertyBorrowController extends Controller
     private function canCreate(string $roleName): bool
     {
         return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF, self::ROLE_DEPARTMENT_HEAD], true);
+    }
+
+    private function notifyBorrowRoles(
+        PropertyBorrow $borrow,
+        string $eventType,
+        string $title,
+        string $message,
+        string $status,
+        ?int $excludeUserId = null
+    ): void {
+        try {
+            $recipientUserIds = $this->getBorrowNotificationUserIds(
+                [(int) $borrow->FromDepartmentID, (int) $borrow->ToDepartmentID],
+                $excludeUserId
+            );
+
+            app(RoleNotificationService::class)->notifyUsers(
+                $recipientUserIds,
+                $eventType,
+                $title,
+                $message,
+                [
+                    'borrow_id' => (string) $borrow->BorrowID,
+                    'borrow_number' => (string) $borrow->BorrowNumber,
+                    'status' => $status,
+                    'link' => '/property-borrow/' . $borrow->BorrowID,
+                ]
+            );
+        } catch (Throwable $e) {
+            Log::warning('Borrow role notification failed', [
+                'borrow_id' => (int) $borrow->BorrowID,
+                'event_type' => $eventType,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * @param array<int> $departmentIds
+     * @return array<int>
+     */
+    private function getBorrowNotificationUserIds(array $departmentIds, ?int $excludeUserId = null): array
+    {
+        $scopedDepartmentIds = collect($departmentIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', true)
+            ->where(function ($q) use ($scopedDepartmentIds) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', [self::ROLE_ADMIN, self::ROLE_GSO_STAFF]);
+                })->orWhere(function ($deptHeadQ) use ($scopedDepartmentIds) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', self::ROLE_DEPARTMENT_HEAD);
+                    });
+
+                    if ($scopedDepartmentIds->isNotEmpty()) {
+                        $deptHeadQ->whereIn('DepartmentID', $scopedDepartmentIds->all());
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function notifyBorrowRequester(
+        PropertyBorrow $borrow,
+        string $eventType,
+        string $title,
+        string $message,
+        string $status
+    ): void {
+        $requesterId = (int) ($borrow->RequestedByUserID ?? 0);
+        if ($requesterId <= 0) {
+            return;
+        }
+
+        try {
+            app(RoleNotificationService::class)->notifyUser(
+                $requesterId,
+                $eventType,
+                $title,
+                $message,
+                [
+                    'borrow_id' => (string) $borrow->BorrowID,
+                    'borrow_number' => (string) $borrow->BorrowNumber,
+                    'status' => $status,
+                    'link' => '/property-borrow/' . $borrow->BorrowID,
+                ]
+            );
+        } catch (Throwable $e) {
+            Log::warning('Borrow requester notification failed', [
+                'borrow_id' => (int) $borrow->BorrowID,
+                'requester_id' => $requesterId,
+                'event_type' => $eventType,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

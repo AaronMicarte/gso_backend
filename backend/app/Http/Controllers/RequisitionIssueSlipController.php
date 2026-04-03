@@ -12,6 +12,8 @@ use App\Models\RequisitionIssueSlipItem;
 use App\Models\RequisitionIssueSlipSignature;
 use App\Models\AssetRequest;
 use App\Models\AssetRequestSignature;
+use App\Models\Auth\User;
+use App\Services\Notifications\RoleNotificationService;
 
 class RequisitionIssueSlipController extends Controller
 {
@@ -230,6 +232,43 @@ class RequisitionIssueSlipController extends Controller
         $this->syncSignatureFromRequest((int) $assetRequest->RequestID, (int) $ris->id, 'requester', 'requested_by');
         $this->syncSignatureFromRequest((int) $assetRequest->RequestID, (int) $ris->id, 'approver', 'approved_by');
 
+        $recipientUserIds = $this->getRisNotificationUserIds(
+            (int) ($assetRequest->DepartmentID ?? 0),
+            (int) ($user->UserID ?? 0)
+        );
+
+        app(RoleNotificationService::class)->notifyUsers(
+            $recipientUserIds,
+            'ris.prepared',
+            'Requisition Issue Slip Prepared',
+            sprintf('RIS %s was prepared for request %s.', (string) $ris->ris_number, (string) $assetRequest->RequestNumber),
+            [
+                'ris_id' => (string) $ris->id,
+                'ris_number' => (string) $ris->ris_number,
+                'request_id' => (string) $assetRequest->RequestID,
+                'request_number' => (string) $assetRequest->RequestNumber,
+                'status' => (string) $ris->status,
+                'link' => '/ris/' . $ris->id,
+            ]
+        );
+
+        if ((int) ($assetRequest->RequestedBy ?? 0) > 0) {
+            app(RoleNotificationService::class)->notifyUser(
+                (int) $assetRequest->RequestedBy,
+                'ris.prepared',
+                'RIS Prepared For Your Request',
+                sprintf('RIS %s was prepared for your request %s.', (string) $ris->ris_number, (string) $assetRequest->RequestNumber),
+                [
+                    'ris_id' => (string) $ris->id,
+                    'ris_number' => (string) $ris->ris_number,
+                    'request_id' => (string) $assetRequest->RequestID,
+                    'request_number' => (string) $assetRequest->RequestNumber,
+                    'status' => (string) $ris->status,
+                    'link' => '/ris/' . $ris->id,
+                ]
+            );
+        }
+
         return response()->json([
             'message' => 'RIS prepared successfully',
             'ris' => $this->buildRisPayload($ris->fresh()),
@@ -278,6 +317,37 @@ class RequisitionIssueSlipController extends Controller
         }
 
         return $this->show($ris->id);
+    }
+
+    /**
+     * @return array<int>
+     */
+    private function getRisNotificationUserIds(int $departmentId, ?int $excludeUserId = null): array
+    {
+        $query = User::query()
+            ->select('UserID')
+            ->where('IsActive', true)
+            ->where(function ($q) use ($departmentId) {
+                $q->whereHas('userRole', function ($roleQ) {
+                    $roleQ->whereIn('RoleName', ['Admin', 'GSO Staff']);
+                })->orWhere(function ($deptHeadQ) use ($departmentId) {
+                    $deptHeadQ->whereHas('userRole', function ($roleQ) {
+                        $roleQ->where('RoleName', 'Department Head');
+                    });
+
+                    if ($departmentId > 0) {
+                        $deptHeadQ->where('DepartmentID', $departmentId);
+                    } else {
+                        $deptHeadQ->whereRaw('1 = 0');
+                    }
+                });
+            });
+
+        if (!empty($excludeUserId)) {
+            $query->where('UserID', '!=', (int) $excludeUserId);
+        }
+
+        return $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
     }
 
     private function syncSignatureFromRequest(int $requestId, int $risId, string $requestRole, string $risRole): void
