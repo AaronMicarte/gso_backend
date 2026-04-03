@@ -355,7 +355,7 @@ class InspectionReportController extends Controller
 
         DB::beginTransaction();
         try {
-            $iarNumber = 'IAR-' . date('Y') . '-' . str_pad(InspectionAcceptanceReport::count() + 1, 4, '0', STR_PAD_LEFT);
+            $iarNumber = $this->generateIarNumber();
             $conditionIds = collect($request->items)->pluck('condition_id')->filter()->unique()->all();
             $conditionMap = Condition::whereIn('ConditionID', $conditionIds)->pluck('ConditionName', 'ConditionID');
             $report = InspectionAcceptanceReport::create([
@@ -1063,6 +1063,39 @@ class InspectionReportController extends Controller
         $hash = substr(hash_hmac('sha256', (string) $propertyId, $key), 0, 12);
 
         return $baseUrl . '/qr/scan/' . $propertyId . '?h=' . $hash;
+    }
+
+    private function generateIarNumber(): string
+    {
+        $year = date('Y');
+        $prefix = 'IAR-' . $year . '-';
+
+        $latestIar = DB::table('inspectionacceptancereport')
+            ->where('IARNumber', 'like', $prefix . '%')
+            ->orderByDesc('IARNumber')
+            ->value('IARNumber');
+
+        $latestDr = DB::table('deliveryreceipt')
+            ->where('IARNumber', 'like', $prefix . '%')
+            ->orderByDesc('IARNumber')
+            ->value('IARNumber');
+
+        $maxSequence = 0;
+        foreach ([$latestIar, $latestDr] as $value) {
+            if ($value && preg_match('/^IAR-\d{4}-(\d{4,})$/', (string) $value, $matches)) {
+                $maxSequence = max($maxSequence, (int) $matches[1]);
+            }
+        }
+
+        do {
+            $maxSequence++;
+            $candidate = $prefix . str_pad((string) $maxSequence, 4, '0', STR_PAD_LEFT);
+
+            $exists = DB::table('inspectionacceptancereport')->where('IARNumber', $candidate)->exists()
+                || DB::table('deliveryreceipt')->where('IARNumber', $candidate)->exists();
+        } while ($exists);
+
+        return $candidate;
     }
 
     private function generateDocumentNumber(string $type): string

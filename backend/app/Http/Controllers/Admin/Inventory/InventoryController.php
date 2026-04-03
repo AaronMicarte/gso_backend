@@ -211,6 +211,17 @@ class InventoryController extends Controller
                 'deliveryReceipt'
             ]);
 
+        $sortBy = (string) $request->query('sort_by', 'date');
+        $sortDir = strtolower((string) $request->query('sort_dir', 'desc'));
+
+        $validSortColumns = [
+            'date' => 'DateAcquired',
+            'inventory_number' => 'InventoryNumber',
+        ];
+
+        $sortColumn = $validSortColumns[$sortBy] ?? 'DateAcquired';
+        $sortDirection = in_array($sortDir, ['asc', 'desc'], true) ? $sortDir : 'desc';
+
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('InventoryNumber', 'like', '%' . $search . '%')
@@ -220,6 +231,8 @@ class InventoryController extends Controller
                   });
             });
         }
+
+        $query->orderBy($sortColumn, $sortDirection);
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 

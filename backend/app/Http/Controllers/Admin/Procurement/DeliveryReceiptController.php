@@ -62,7 +62,25 @@ class DeliveryReceiptController extends Controller
                 $query->where('PONumber', 'like', '%' . $request->po_number . '%');
             }
 
-            $deliveryReceipts = $query->orderBy('CreatedDate', 'desc')->paginate(15);
+            // Generic search across DR number, IAR number, PO number, and supplier
+            if ($request->has('query')) {
+                $search = trim((string) $request->query);
+                if ($search !== '') {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('deliveryreceipt.DRNumber', 'like', '%' . $search . '%')
+                            ->orWhere('deliveryreceipt.IARNumber', 'like', '%' . $search . '%')
+                            ->orWhere('deliveryreceipt.PONumber', 'like', '%' . $search . '%')
+                            ->orWhereHas('supplier', function ($sq) use ($search) {
+                                $sq->where('SupplierName', 'like', '%' . $search . '%');
+                            });
+                    });
+                }
+            }
+
+            $perPage = (int) $request->input('per_page', 15);
+            $perPage = max(1, min($perPage, 100));
+
+            $deliveryReceipts = $query->orderBy('CreatedDate', 'desc')->paginate($perPage);
 
             // Transform to include workflow info
             $deliveryReceipts->getCollection()->transform(function ($dr) {

@@ -268,8 +268,8 @@ class InspectionAcceptanceReportController extends Controller
 
             DB::beginTransaction();
 
-            // Generate IAR number
-            $iarNumber = 'IAR-' . date('Y') . '-' . str_pad(InspectionAcceptanceReport::count() + 1, 4, '0', STR_PAD_LEFT);
+            // Generate IAR number (collision-safe across IAR and DR tables)
+            $iarNumber = $this->generateIarNumber();
 
             $iar = InspectionAcceptanceReport::create([
                 'IARNumber' => $iarNumber,
@@ -911,5 +911,38 @@ class InspectionAcceptanceReportController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    private function generateIarNumber(): string
+    {
+        $year = date('Y');
+        $prefix = 'IAR-' . $year . '-';
+
+        $latestIar = DB::table('inspectionacceptancereport')
+            ->where('IARNumber', 'like', $prefix . '%')
+            ->orderByDesc('IARNumber')
+            ->value('IARNumber');
+
+        $latestDr = DB::table('deliveryreceipt')
+            ->where('IARNumber', 'like', $prefix . '%')
+            ->orderByDesc('IARNumber')
+            ->value('IARNumber');
+
+        $maxSequence = 0;
+        foreach ([$latestIar, $latestDr] as $value) {
+            if ($value && preg_match('/^IAR-\d{4}-(\d{4,})$/', (string) $value, $matches)) {
+                $maxSequence = max($maxSequence, (int) $matches[1]);
+            }
+        }
+
+        do {
+            $maxSequence++;
+            $candidate = $prefix . str_pad((string) $maxSequence, 4, '0', STR_PAD_LEFT);
+
+            $exists = DB::table('inspectionacceptancereport')->where('IARNumber', $candidate)->exists()
+                || DB::table('deliveryreceipt')->where('IARNumber', $candidate)->exists();
+        } while ($exists);
+
+        return $candidate;
     }
 }
