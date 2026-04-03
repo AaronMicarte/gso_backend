@@ -77,6 +77,32 @@ class DeliveryReceiptController extends Controller
                 }
             }
 
+            // Workflow status filtering for delivery receipts
+            // Pending inspection is intentionally excluded from this listing.
+            $status = trim((string) $request->input('status', ''));
+
+            if ($status === 'to_be_issued') {
+                $query->where('deliveryreceipt.InspectionStatus', 'inspected')
+                    ->whereNotExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from('propertyissuance')
+                            ->whereColumn('propertyissuance.DRID', 'deliveryreceipt.DRID')
+                            ->where('propertyissuance.Status', 'acknowledged')
+                            ->whereNull('propertyissuance.deleted_at');
+                    });
+            } elseif ($status === 'acknowledged') {
+                $query->whereExists(function ($sub) {
+                    $sub->select(DB::raw(1))
+                        ->from('propertyissuance')
+                        ->whereColumn('propertyissuance.DRID', 'deliveryreceipt.DRID')
+                        ->where('propertyissuance.Status', 'acknowledged')
+                        ->whereNull('propertyissuance.deleted_at');
+                });
+            } else {
+                // Default listing: inspected receipts only (issuance workflow view).
+                $query->where('deliveryreceipt.InspectionStatus', 'inspected');
+            }
+
             $perPage = (int) $request->input('per_page', 15);
             $perPage = max(1, min($perPage, 100));
 
@@ -86,9 +112,7 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipts->getCollection()->transform(function ($dr) {
                 $dr->inspection_status = $dr->InspectionStatus ?? 'pending';
 
-                $workflowStatus = ($dr->InspectionStatus ?? 'pending') === 'inspected'
-                    ? 'to_be_issued'
-                    : 'pending_inspection';
+                $workflowStatus = 'to_be_issued';
 
                 $issuance = DB::table('propertyissuance')
                     ->where('DRID', $dr->DRID)
@@ -111,14 +135,13 @@ class DeliveryReceiptController extends Controller
                 }
 
                 $workflowLabels = [
-                    'pending_inspection' => 'Pending inspection',
                     'to_be_issued' => 'To be issued',
                     'issued' => 'Issued',
                     'acknowledged' => 'Acknowledged',
                 ];
 
                 $dr->workflow_status = $workflowStatus;
-                $dr->workflow_status_label = $workflowLabels[$workflowStatus] ?? 'Pending inspection';
+                $dr->workflow_status_label = $workflowLabels[$workflowStatus] ?? 'To be issued';
 
                 // Set receivedByUser from the joined data
                 $dr->receivedByUser = $dr->received_by_name ? [

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2026 at 01:27 PM
+-- Generation Time: Apr 03, 2026 at 03:22 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -638,20 +638,26 @@ CREATE TABLE `deliveryreceipt` (
 --
 
 INSERT INTO `deliveryreceipt` (`DRID`, `DRNumber`, `IARNumber`, `SupplierID`, `RequestedBy`, `PRNumber`, `PONumber`, `InvoiceNumber`, `ReceivedBy`, `InspectedBy`, `DateReceived`, `DateInspected`, `Remarks`, `InspectionStatus`, `InspectionCompletedAt`, `dr_picture`, `CreatedDate`, `deleted_at`) VALUES
-(29, 'DR-2026-03-18-001', 'IAR-2026-03-18-001', 1, 3, 'PR-2026-CCE-1001', 'PO-2026-1001', 'INV-2026-1001', 1, 7, '2026-03-10', '2026-03-10', 'Batch 1 office and ICT assets for operational rollout.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-001.jpg', '2026-03-18 17:54:47', NULL),
-(30, 'DR-2026-03-18-003', 'IAR-2026-03-18-003', 2, 6, 'PR-2026-CCE-1003', 'PO-2026-1003', 'INV-2026-1003', 1, 7, '2026-03-14', '2026-03-14', 'Batch 3 admin support assets.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-003.jpg', '2026-03-18 17:54:47', NULL),
-(31, 'DR-2026-03-18-002', 'IAR-2026-03-18-002', 3, 3, 'PR-2026-CCE-1002', 'PO-2026-1002', 'INV-2026-1002', 1, 7, '2026-03-12', '2026-03-12', 'Batch 2 mixed furniture and equipment.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-002.jpg', '2026-03-18 17:54:47', NULL),
-(32, 'DR-2026-03-18-004', 'IAR-2026-03-18-004', 4, 6, 'PR-2026-CCE-1004', 'PO-2026-1004', 'INV-2026-1004', 1, 7, '2026-03-16', '2026-03-16', 'Batch 4 additional non-expendable units.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-004.jpg', '2026-03-18 17:54:47', NULL),
+(29, 'DR-2026-03-18-001', 'IAR-2026-0014', 1, 3, 'PR-2026-CCE-1001', 'PO-2026-1001', 'INV-2026-1001', 1, 7, '2026-03-10', '2026-03-10', 'Batch 1 office and ICT assets for operational rollout.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-001.jpg', '2026-03-18 17:54:47', NULL),
+(30, 'DR-2026-03-18-003', 'IAR-2026-0015', 2, 6, 'PR-2026-CCE-1003', 'PO-2026-1003', 'INV-2026-1003', 1, 7, '2026-03-14', '2026-03-14', 'Batch 3 admin support assets.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-003.jpg', '2026-03-18 17:54:47', NULL),
+(31, 'DR-2026-03-18-002', 'IAR-2026-0016', 3, 3, 'PR-2026-CCE-1002', 'PO-2026-1002', 'INV-2026-1002', 1, 7, '2026-03-12', '2026-03-12', 'Batch 2 mixed furniture and equipment.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-002.jpg', '2026-03-18 17:54:47', NULL),
+(32, 'DR-2026-03-18-004', 'IAR-2026-0017', 4, 6, 'PR-2026-CCE-1004', 'PO-2026-1004', 'INV-2026-1004', 1, 7, '2026-03-16', '2026-03-16', 'Batch 4 additional non-expendable units.', 'inspected', '2026-03-18 09:54:47', 'uploads/dr/dr-2026-03-18-004.jpg', '2026-03-18 17:54:47', NULL),
 (40, 'dr21', 'IAR-2026-0005', 3, 3, '1', '1', '1', 1, 1, '2026-03-18', '2026-03-18', 'sad', 'inspected', '2026-03-18 10:11:05', 'dr_pictures/ZCC8NMHmpSaSUl9O6WbxtQZIm9wYgBnaQNi0mXe9.png', '2026-03-18 18:11:05', NULL),
 (41, 'dr22', 'IAR-2026-0001', 2, 6, '3', '3', '3', 1, 1, '2026-03-18', '2026-03-18', 'we', 'inspected', '2026-03-18 11:27:56', 'dr_pictures/gHOqAKCuNMHyVT13glRYsaes5wMmO3pAGIARLY4l.jpg', '2026-03-18 19:27:56', NULL),
-(42, 'dr23', 'IAR-2026-0001', 2, 3, '3', '4', '4', 1, 1, '2026-03-22', '2026-03-22', 'ds', 'inspected', '2026-03-22 14:54:56', 'dr_pictures/AzdGFPTBXXgUF62m5y0yQJd6Z38WeRgfkIaZxLQf.jpg', '2026-03-22 22:54:56', NULL),
-(43, 'dr31', 'IAR-2026-0001', 4, 3, '5', '5', '5', 1, 1, '2026-03-22', '2026-03-22', '5', 'inspected', '2026-03-22 15:17:31', 'dr_pictures/CQn88MMQBbwlG3OBttAne3naz8bfi6HwDF849iDg.jpg', '2026-03-22 23:17:31', NULL),
-(44, 'dr11', 'IAR-2026-0001', 3, 3, '11', '11', '11', 1, 1, '2026-03-22', '2026-03-22', '11', 'inspected', '2026-03-22 15:22:27', 'dr_pictures/ZBSE7AsuIuAXZITn68CGbjUEUUrkiRlaqWb7G6Ex.jpg', '2026-03-22 23:22:27', NULL),
-(45, 'd2', 'IAR-2026-0001', 4, 3, '32', '23', '2', 1, 1, '2026-03-24', '2026-03-24', NULL, 'inspected', '2026-03-24 03:40:12', 'dr_pictures/qMvtv2bSafZ0yrIUNpW9EjRumuBhbAXjPDyxQYxT.jpg', '2026-03-24 11:40:12', NULL),
-(46, 'd21', 'IAR-2026-0001', 4, 3, '23', '3', '33', 1, 1, '2026-03-24', '2026-03-24', NULL, 'inspected', '2026-03-24 03:43:37', 'dr_pictures/wFNpkmmlKZ9aDolSpQry3JwUS5JFf07HNaFMN7ib.jpg', '2026-03-24 11:43:37', NULL),
-(47, 'DR-TEST-1', 'IAR-2026-0001', 2, 3, '123', '123', '123', 1, 1, '2026-03-29', '2026-03-29', 'good', 'inspected', '2026-03-29 12:32:46', 'dr_pictures/dR0esOLyOu1rEc99ZlPPjLv2aiZ97HxfEtDnIftp.jpg', '2026-03-29 20:32:46', NULL),
-(48, 'DR-TEST-2', 'IAR-2026-0001', 2, 3, '1234', '1234', '1234', 1, 1, '2026-03-29', '2026-03-29', 'good', 'inspected', '2026-03-29 12:52:16', 'dr_pictures/wKQBtIWcHe6fC5r5mUmOrOQsPaEHJ2vzywpvV7uE.jpg', '2026-03-29 20:52:16', NULL),
-(49, 'DR-TEST-3', 'IAR-2026-0001', 2, 3, '12345', '12345', '12345', 1, 1, '2026-03-29', '2026-03-29', 'goods', 'inspected', '2026-03-29 13:15:35', 'dr_pictures/ajpqfmjfe3z72YbrQ3Zv14X9eMFsjI9XUMgMZTwI.jpg', '2026-03-29 21:15:35', NULL);
+(42, 'dr23', 'IAR-2026-0006', 2, 3, '3', '4', '4', 1, 1, '2026-03-22', '2026-03-22', 'ds', 'inspected', '2026-03-22 14:54:56', 'dr_pictures/AzdGFPTBXXgUF62m5y0yQJd6Z38WeRgfkIaZxLQf.jpg', '2026-03-22 22:54:56', NULL),
+(43, 'dr31', 'IAR-2026-0007', 4, 3, '5', '5', '5', 1, 1, '2026-03-22', '2026-03-22', '5', 'inspected', '2026-03-22 15:17:31', 'dr_pictures/CQn88MMQBbwlG3OBttAne3naz8bfi6HwDF849iDg.jpg', '2026-03-22 23:17:31', NULL),
+(44, 'dr11', 'IAR-2026-0008', 3, 3, '11', '11', '11', 1, 1, '2026-03-22', '2026-03-22', '11', 'inspected', '2026-03-22 15:22:27', 'dr_pictures/ZBSE7AsuIuAXZITn68CGbjUEUUrkiRlaqWb7G6Ex.jpg', '2026-03-22 23:22:27', NULL),
+(45, 'd2', 'IAR-2026-0009', 4, 3, '32', '23', '2', 1, 1, '2026-03-24', '2026-03-24', NULL, 'inspected', '2026-03-24 03:40:12', 'dr_pictures/qMvtv2bSafZ0yrIUNpW9EjRumuBhbAXjPDyxQYxT.jpg', '2026-03-24 11:40:12', NULL),
+(46, 'd21', 'IAR-2026-0010', 4, 3, '23', '3', '33', 1, 1, '2026-03-24', '2026-03-24', NULL, 'inspected', '2026-03-24 03:43:37', 'dr_pictures/wFNpkmmlKZ9aDolSpQry3JwUS5JFf07HNaFMN7ib.jpg', '2026-03-24 11:43:37', NULL),
+(47, 'DR-TEST-1', 'IAR-2026-0011', 2, 3, '123', '123', '123', 1, 1, '2026-03-29', '2026-03-29', 'good', 'inspected', '2026-03-29 12:32:46', 'dr_pictures/dR0esOLyOu1rEc99ZlPPjLv2aiZ97HxfEtDnIftp.jpg', '2026-03-29 20:32:46', NULL),
+(48, 'DR-TEST-2', 'IAR-2026-0012', 2, 3, '1234', '1234', '1234', 1, 1, '2026-03-29', '2026-03-29', 'good', 'inspected', '2026-03-29 12:52:16', 'dr_pictures/wKQBtIWcHe6fC5r5mUmOrOQsPaEHJ2vzywpvV7uE.jpg', '2026-03-29 20:52:16', NULL),
+(49, 'DR-TEST-3', 'IAR-2026-0013', 2, 3, '12345', '12345', '12345', 1, 1, '2026-03-29', '2026-03-29', 'goods', 'inspected', '2026-03-29 13:15:35', 'dr_pictures/ajpqfmjfe3z72YbrQ3Zv14X9eMFsjI9XUMgMZTwI.jpg', '2026-03-29 21:15:35', NULL),
+(50, 'DR-AUTO-IAR-202604031931021', 'IAR-2026-0018', 1, 1, 'PR-AUTO-202604031931021', 'PO-AUTO-202604031931021', 'INV-AUTO-202604031931021', 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated validation DR', 'inspected', '2026-04-03 11:31:03', 'dr_pictures/auto-test.png', '2026-04-03 19:31:03', NULL),
+(51, 'DR-AUTO-IAR-202604031931032', 'IAR-2026-0019', 1, 1, 'PR-AUTO-202604031931032', 'PO-AUTO-202604031931032', 'INV-AUTO-202604031931032', 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated validation DR', 'inspected', '2026-04-03 11:31:03', 'dr_pictures/auto-test.png', '2026-04-03 19:31:03', NULL),
+(52, 'DR-AUTO-IAR-202604031931033', 'IAR-2026-0020', 1, 1, 'PR-AUTO-202604031931033', 'PO-AUTO-202604031931033', 'INV-AUTO-202604031931033', 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated validation DR', 'inspected', '2026-04-03 11:31:03', 'dr_pictures/auto-test.png', '2026-04-03 19:31:03', NULL),
+(53, 'DR-AUTO-IAR-202604031931121', 'IAR-2026-0021', 1, 1, 'PR-AUTO-202604031931121', 'PO-AUTO-202604031931121', 'INV-AUTO-202604031931121', 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated validation DR', 'inspected', '2026-04-03 11:31:12', 'dr_pictures/auto-test.png', '2026-04-03 19:31:12', NULL),
+(54, 'DR-AUTO-IAR-202604031931122', 'IAR-2026-0022', 1, 1, 'PR-AUTO-202604031931122', 'PO-AUTO-202604031931122', 'INV-AUTO-202604031931122', 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated validation DR', 'inspected', '2026-04-03 11:31:12', 'dr_pictures/auto-test.png', '2026-04-03 19:31:12', NULL),
+(55, 'DR-AUTO-IAR-202604031931123', 'IAR-2026-0023', 1, 1, 'PR-AUTO-202604031931123', 'PO-AUTO-202604031931123', 'INV-AUTO-202604031931123', 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated validation DR', 'inspected', '2026-04-03 11:31:12', 'dr_pictures/auto-test.png', '2026-04-03 19:31:12', NULL);
 
 -- --------------------------------------------------------
 
@@ -1024,6 +1030,26 @@ CREATE TABLE `inspectionacceptancereport` (
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `inspectionacceptancereport`
+--
+
+INSERT INTO `inspectionacceptancereport` (`IARID`, `IARNumber`, `DRID`, `InspectedBy`, `AcceptedBy`, `DateInspected`, `DateAccepted`, `Remarks`, `CreatedDate`, `deleted_at`) VALUES
+(1, 'IAR-2026-0014', 29, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(2, 'IAR-2026-0015', 30, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(3, 'IAR-2026-0016', 31, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(4, 'IAR-2026-0017', 32, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(5, 'IAR-2026-0005', 40, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(6, 'IAR-2026-0001', 41, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(7, 'IAR-2026-0006', 42, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(8, 'IAR-2026-0007', 43, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(9, 'IAR-2026-0008', 44, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(10, 'IAR-2026-0009', 45, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(11, 'IAR-2026-0010', 46, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(12, 'IAR-2026-0011', 47, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(13, 'IAR-2026-0012', 48, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL),
+(14, 'IAR-2026-0013', 49, 1, 1, '2026-04-03', '2026-04-03', 'Auto-generated for existing DR', '2026-04-03 19:29:58', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -1355,7 +1381,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (161, '2026_03_28_000005_remove_final_notes_from_service_record_details', 65),
 (162, '2026_03_28_000006_restore_verification_enum_in_asset_service_statuses', 66),
 (163, '2026_03_29_000001_update_handling_decision_to_warranty_no_warranty', 67),
-(164, '2026_03_29_000002_add_under_repair_condition', 67);
+(164, '2026_03_29_000002_add_under_repair_condition', 67),
+(165, '2026_04_03_193500_add_unique_indexes_to_iar_number_columns', 68);
 
 -- --------------------------------------------------------
 
@@ -2365,14 +2392,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('2RHgTgGL0YABjBKEfn2ZOXGgA8QtT911Eocg2XOI', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiWGZaNGVEckVQM0Jkc1VBNFVsNjJjYm9aUDFGblpSbldJNmI3OFFYdyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1774925072),
-('6vQKw4Uh1RGRQWsrKYwW5iDBhYjjHHyUw4qDdC23', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQUFmRTZIaGUxaTZNZXg5WW5BUlp2cmh4dUhVRXBvbjRaYUJIYXJLMiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1774925069),
-('AB3MY43b1J2TxO7rINTNs7fTRssbl7Gxn1Bx90l5', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRXRBZVFnNU9nSllkZWx5R2g2Sk81T1NDeDF1ZFVZb2JSSDFHUHRCdCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775215662),
-('bPmzXdcBUc8br7EhCoPBe79ih6er5gKOGtapyiHy', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiaklzYnBJWlNzR0dxU21Hd0N6MDFoeDlwM1YyRnZOcFlJWFNjSjJvTCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1774925070),
-('Dge6a0IOKuiHihmjIZCkn1sn34pvqHCkfDyBL4Hx', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTDFCdDlIZVdBeGU5SXpuMlM4bVF4bjZ5NmlKcWlkQnVlOVpZVk5PaiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1774925071),
-('Guow0vrKu86JPk4kx8T0zFzhEPY4POP4oDO0uzRH', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiSXBGV1JHbWk1dVdKWmV0cjhvMHlXV3hrMzcwYzQzWHh5M0tNdHJ4SyI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRobFU3UUtuVWJXcGh2Sm5GeFlnYVkuZ0pWekJueFZLS1Yua2p3N3hCNU9oLjFqTjBjZkE2MiI7fQ==', 1774806182),
-('jK9LZssHbCDjTfbaMvqDjH30sVrkbv03SEhPoNMA', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoia1ZoaGJ6djBjV21NQWZSQWp2NU51djc0eFF0VURJU0JZc0R4NkVLOCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1774806183),
-('Ydy2ZVQXobfbSV2Wcudk0mhZtXStMeKs0JiuoQXX', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiSGg3SmViWTlKWkU3MVZlaDNOMmNYaDk5UDJIU1pjSEFEWDhTM0lTNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1774925068);
+('AB3MY43b1J2TxO7rINTNs7fTRssbl7Gxn1Bx90l5', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRXRBZVFnNU9nSllkZWx5R2g2Sk81T1NDeDF1ZFVZb2JSSDFHUHRCdCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775222522);
 
 -- --------------------------------------------------------
 
@@ -2616,7 +2636,7 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-03-22 14:51:52'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-03-22 14:51:52'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-03-22 14:52:48'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-03 11:23:18', '2026-03-22 14:52:48', '2026-04-03 11:23:18'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-03 11:51:58', '2026-03-22 14:52:48', '2026-04-03 11:51:58'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-03-25 13:31:10'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
@@ -2805,6 +2825,7 @@ ALTER TABLE `deliveryreceipt`
   ADD UNIQUE KEY `ux_deliveryreceipt_drnumber` (`DRNumber`),
   ADD UNIQUE KEY `ux_deliveryreceipt_supplierid_invoice` (`SupplierID`,`InvoiceNumber`),
   ADD UNIQUE KEY `ux_deliveryreceipt_supplierid_po` (`SupplierID`,`PONumber`),
+  ADD UNIQUE KEY `ux_deliveryreceipt_iarnumber` (`IARNumber`),
   ADD KEY `POID` (`PONumber`),
   ADD KEY `ReceivedBy` (`ReceivedBy`),
   ADD KEY `deliveryreceipt_requestedby_index` (`RequestedBy`),
@@ -2900,6 +2921,7 @@ ALTER TABLE `iiruprecommendation`
 ALTER TABLE `inspectionacceptancereport`
   ADD PRIMARY KEY (`IARID`),
   ADD UNIQUE KEY `IARNumber` (`IARNumber`),
+  ADD UNIQUE KEY `ux_inspectionacceptancereport_iarnumber` (`IARNumber`),
   ADD KEY `DRID` (`DRID`),
   ADD KEY `InspectedBy` (`InspectedBy`),
   ADD KEY `AcceptedBy` (`AcceptedBy`);
@@ -3359,7 +3381,7 @@ ALTER TABLE `condition`
 -- AUTO_INCREMENT for table `deliveryreceipt`
 --
 ALTER TABLE `deliveryreceipt`
-  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
+  MODIFY `DRID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- AUTO_INCREMENT for table `deliveryreceiptdetail`
@@ -3425,7 +3447,7 @@ ALTER TABLE `iiruprecommendation`
 -- AUTO_INCREMENT for table `inspectionacceptancereport`
 --
 ALTER TABLE `inspectionacceptancereport`
-  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `IARID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `inventorycustodianslip`
@@ -3443,7 +3465,7 @@ ALTER TABLE `loginaudit`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=165;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=166;
 
 --
 -- AUTO_INCREMENT for table `par`

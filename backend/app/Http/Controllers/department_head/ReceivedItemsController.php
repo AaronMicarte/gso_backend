@@ -38,6 +38,7 @@ class ReceivedItemsController extends Controller
                 })
                 ->whereNull('dr.deleted_at')
                 ->where('reqU.DepartmentID', $departmentId)
+                ->where('dr.InspectionStatus', 'inspected')
                 ->select(
                     'dr.DRID',
                     'dr.DRNumber',
@@ -119,46 +120,18 @@ class ReceivedItemsController extends Controller
                 $drItems = $itemsByDr->get($dr->DRID, collect());
 
                 $mappedItems = $drItems->map(function ($item) use ($dr) {
-                    $inspectionStatus = (string) ($dr->InspectionStatus ?? 'pending');
                     $issuanceStatus = (string) ($item->IssuanceStatus ?? '');
-                    $forIssuanceCount = (int) ($item->ForIssuanceCount ?? 0);
-                    $issuedCount = (int) ($item->IssuedCount ?? 0);
-                    $quantityAccepted = (int) ($item->QuantityAccepted ?? 0);
-                    $hasIar = !empty($dr->IARID);
-
-                    $status = 'pending';
-                    if ($inspectionStatus === 'inspected') {
-                        $status = 'inspected';
-                    }
-                    if ($quantityAccepted > 0 || !empty($dr->IARDateAccepted)) {
-                        $status = 'to_be_issued';
-                    }
-                    if ($forIssuanceCount > 0) {
-                        $status = 'to_be_issued';
-                    }
-                    if ($issuedCount > 0) {
-                        $status = 'issued';
-                    }
-                    if ($issuanceStatus === 'pending_acknowledgment') {
-                        $status = 'issued';
-                    }
+                    $status = 'to_be_issued';
                     if ($issuanceStatus === 'acknowledged') {
                         $status = 'acknowledged';
                     }
 
                     $labels = [
-                        'pending' => 'Pending',
-                        'inspected' => 'Inspected',
-                        'accepted' => 'Accepted',
                         'to_be_issued' => 'To be issued',
-                        'issued' => 'Issued',
                         'acknowledged' => 'Acknowledged',
                     ];
 
-                    $statusLabel = $labels[$status] ?? 'Pending';
-                    if (! $hasIar && $status === 'pending') {
-                        $statusLabel = 'Pending inspection';
-                    }
+                    $statusLabel = $labels[$status] ?? 'To be issued';
 
                     return [
                         'DRDetailID' => (int) $item->DRDetailID,
