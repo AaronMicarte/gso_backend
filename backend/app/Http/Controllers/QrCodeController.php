@@ -33,6 +33,7 @@ class QrCodeController extends Controller
 
         // Add most-recent document type as a subquery field
         $query->selectRaw('(select pi.DocumentType from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as DocumentType');
+        $query->selectRaw("(select u.FullName from user as u inner join userrole as ur on ur.UserRoleID = u.UserRoleID where u.IsActive = 1 and ur.RoleName = 'Department Head' and u.DepartmentID = assignedproperty.DepartmentID order by coalesce(u.UpdatedDate, u.CreatedDate) desc, u.UserID desc limit 1) as CurrentDepartmentHead");
 
         $query->with([
             'inventoryDetail.drDetail.article',
@@ -181,6 +182,7 @@ class QrCodeController extends Controller
             ->select('assignedproperty.*')
             ->selectRaw('(select u.FullName from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID inner join assetrequest as ar on pi.RequestID = ar.RequestID inner join user as u on ar.RequestedBy = u.UserID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as RequesterFullName')
             ->selectRaw('(select pi.DocumentType from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as DocumentType')
+            ->selectRaw("(select u.FullName from user as u inner join userrole as ur on ur.UserRoleID = u.UserRoleID where u.IsActive = 1 and ur.RoleName = 'Department Head' and u.DepartmentID = assignedproperty.DepartmentID order by coalesce(u.UpdatedDate, u.CreatedDate) desc, u.UserID desc limit 1) as CurrentDepartmentHead")
             ->with([
             'inventoryDetail.drDetail',
             'inventoryDetail.unitOfMeasure',

@@ -15,6 +15,7 @@ Route::get('/sanctum/csrf-cookie', [CsrfCookieController::class, 'show'])
 
 // Authentication routes
 Route::post('/login', [App\Http\Controllers\AuthController::class, 'login'])->name('login');
+Route::post('/auth/change-temporary-password', [App\Http\Controllers\AuthController::class, 'changeTemporaryPassword']);
 Route::post('/mfa/verify', [App\Http\Controllers\AuthController::class, 'completeMFALogin']);
 Route::post('/mfa/setup/generate', [App\Http\Controllers\AuthController::class, 'generateMFASecretForLogin']);
 Route::post('/mfa/setup/enable', [App\Http\Controllers\AuthController::class, 'enableMFADuringLogin']);

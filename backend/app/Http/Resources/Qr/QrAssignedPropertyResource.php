@@ -13,6 +13,10 @@ class QrAssignedPropertyResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $headName = trim((string) ($this->CurrentDepartmentHead ?? ''));
+        $hasHead = $headName !== '';
+        $hasDepartment = (int) ($this->DepartmentID ?? 0) > 0;
+
         return [
             'PropertyID' => (int) $this->PropertyID,
             'InventoryDetailID' => (int) $this->InventoryDetailID,
@@ -68,6 +72,9 @@ class QrAssignedPropertyResource extends JsonResource
             // requester: the full name of the user who requested this issuance (if available via issuance -> request)
             'requester' => $this->RequesterFullName ?? null,
             'documentType' => $this->DocumentType ?? null,
+            'currentDepartmentHead' => $hasHead ? $headName : null,
+            'departmentHeadVacant' => $hasDepartment && !$hasHead,
+            'accountabilityLabel' => $hasHead ? $headName : ($hasDepartment ? 'No current department head' : null),
         ];
     }
 }

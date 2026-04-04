@@ -15,8 +15,8 @@ return [
     |
     */
 
-    // Allow CORS on API routes and the SPA auth endpoints (login, logout, user, csrf)
-    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'user', 'sanctum/*', 'mfa/*'],
+    // Allow CORS on API routes and SPA auth endpoints (including web auth/* routes).
+    'paths' => ['api/*', 'sanctum/csrf-cookie', 'login', 'logout', 'user', 'sanctum/*', 'mfa/*', 'auth/*'],
 
     'allowed_methods' => ['*'],
 

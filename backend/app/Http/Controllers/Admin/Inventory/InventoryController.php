@@ -180,6 +180,46 @@ class InventoryController extends Controller
                 )
             )";
 
+        $locationDepartmentIdSql = "COALESCE(
+            (
+                SELECT ap.DepartmentID
+                FROM propertyinventorydetail invd
+                JOIN assignedproperty ap ON ap.InventoryDetailID = invd.InventoryDetailID
+                WHERE invd.InventoryID = propertyinventory.InventoryID
+                ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
+                FROM propertyissuancedetail pidet
+                JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+                LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                WHERE invd.InventoryID = propertyinventory.InventoryID
+                    AND pi.deleted_at IS NULL
+                    AND pidet.deleted_at IS NULL
+                    AND pi.Status = 'acknowledged'
+                ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT dep.DepartmentID
+                FROM propertyinventorydetail invd
+                JOIN deliveryreceiptdetail drd ON drd.DRDetailID = invd.SourceDRDetailID
+                JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                LEFT JOIN department dep ON dep.DepartmentID = drReqU.DepartmentID
+                WHERE invd.InventoryID = propertyinventory.InventoryID
+                ORDER BY drd.DRDetailID ASC
+                LIMIT 1
+            )
+        )";
+
         $lastIssuedDateSql = "(
             SELECT pi.DateIssued
             FROM propertyissuancedetail pidet
@@ -197,6 +237,7 @@ class InventoryController extends Controller
             ->select('propertyinventory.*')
             ->addSelect(DB::raw($custodianSql . ' as CurrentCustodianName'))
             ->addSelect(DB::raw($locationSql . ' as CurrentLocation'))
+            ->addSelect(DB::raw($locationDepartmentIdSql . ' as CurrentLocationDepartmentID'))
             ->addSelect(DB::raw($lastIssuedDateSql . ' as LastIssuedDate'))
             ->with([
                 'details' => function($query) {
@@ -245,7 +286,34 @@ class InventoryController extends Controller
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
-        $paginator->getCollection()->transform(function ($inventory) {
+        $departmentIds = $paginator->getCollection()
+            ->pluck('CurrentLocationDepartmentID')
+            ->filter(fn ($id) => !empty($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $departmentHeadByDepartment = [];
+        if ($departmentIds->isNotEmpty()) {
+            $headRows = DB::table('user as u')
+                ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                ->where('u.IsActive', 1)
+                ->where('ur.RoleName', 'Department Head')
+                ->whereIn('u.DepartmentID', $departmentIds->all())
+                ->orderBy('u.DepartmentID')
+                ->orderByDesc(DB::raw('COALESCE(u.UpdatedDate, u.CreatedDate)'))
+                ->orderByDesc('u.UserID')
+                ->get(['u.DepartmentID', 'u.FullName']);
+
+            foreach ($headRows as $row) {
+                $deptId = (int) ($row->DepartmentID ?? 0);
+                if ($deptId > 0 && !isset($departmentHeadByDepartment[$deptId])) {
+                    $departmentHeadByDepartment[$deptId] = trim((string) ($row->FullName ?? ''));
+                }
+            }
+        }
+
+        $paginator->getCollection()->transform(function ($inventory) use ($departmentHeadByDepartment) {
             $firstDetail = $inventory->details->first();
             $description = $firstDetail ? ($firstDetail->Description ?: $firstDetail->dr_item_description ?: 'No description') : 'No description';
             $inventory->Description = $description;
@@ -257,7 +325,20 @@ class InventoryController extends Controller
             $assignedDetails = $inventory->details->where('PropertyStatusID', 2)->count();
             $inventory->PrimaryStatus = ($totalDetails > 0 && $assignedDetails === $totalDetails) ? 'Assigned' : 'For issuance';
 
-            $inventory->CurrentCustodianName = $inventory->CurrentCustodianName ?: 'Requester not set';
+            $departmentId = (int) ($inventory->CurrentLocationDepartmentID ?? 0);
+            $headName = $departmentId > 0 ? ($departmentHeadByDepartment[$departmentId] ?? null) : null;
+            $hasHead = is_string($headName) && trim($headName) !== '';
+            $inventory->CurrentDepartmentHead = $hasHead ? $headName : null;
+            $inventory->DepartmentHeadVacant = $departmentId > 0 && !$hasHead;
+            $inventory->AccountabilityLabel = $inventory->DepartmentHeadVacant
+                ? 'No current department head'
+                : ($inventory->CurrentDepartmentHead ?? null);
+
+            if (!empty($inventory->AccountabilityLabel)) {
+                $inventory->CurrentCustodianName = $inventory->AccountabilityLabel;
+            } elseif (empty($inventory->CurrentCustodianName)) {
+                $inventory->CurrentCustodianName = 'Requester not set';
+            }
             $inventory->CurrentLocation = $inventory->CurrentLocation ?: 'Department not set';
 
             return $inventory;
@@ -370,6 +451,41 @@ class InventoryController extends Controller
                             LIMIT 1
                         )
                       ) as locationDepartment"))
+                                            ->addSelect(DB::raw("COALESCE(
+                                                (
+                                                        SELECT ap.DepartmentID
+                                                        FROM assignedproperty ap
+                                                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                                        LIMIT 1
+                                                ),
+                        (
+                            SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
+                            FROM propertyissuancedetail pidet
+                            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                            LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                            LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                            LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                            LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                            LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                            WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                AND pi.deleted_at IS NULL
+                                AND pidet.deleted_at IS NULL
+                                AND pi.Status = 'acknowledged'
+                            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                            LIMIT 1
+                        ),
+                        (
+                            SELECT depDR.DepartmentID
+                            FROM deliveryreceiptdetail drd
+                            JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                            LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
+                            WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
+                            LIMIT 1
+                        )
+                      ) as locationDepartmentId"))
                                             ->addSelect(DB::raw("(
                                                 SELECT COALESCE(beu.FullName, bu.FullName)
                                                 FROM propertyborrowitems pbi
@@ -420,6 +536,47 @@ class InventoryController extends Controller
         $totalDetails = $inventory->details?->count() ?? 0;
         $assignedDetails = $inventory->details?->where('PropertyStatusID', 2)->count() ?? 0;
         $inventory->PrimaryStatus = ($totalDetails > 0 && $assignedDetails === $totalDetails) ? 'Assigned' : 'For issuance';
+
+        $detailDepartmentIds = $inventory->details
+            ->pluck('locationDepartmentId')
+            ->filter(fn ($id) => !empty($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $departmentHeadByDepartment = [];
+        if ($detailDepartmentIds->isNotEmpty()) {
+            $headRows = DB::table('user as u')
+                ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                ->where('u.IsActive', 1)
+                ->where('ur.RoleName', 'Department Head')
+                ->whereIn('u.DepartmentID', $detailDepartmentIds->all())
+                ->orderBy('u.DepartmentID')
+                ->orderByDesc(DB::raw('COALESCE(u.UpdatedDate, u.CreatedDate)'))
+                ->orderByDesc('u.UserID')
+                ->get(['u.DepartmentID', 'u.FullName']);
+
+            foreach ($headRows as $row) {
+                $deptId = (int) ($row->DepartmentID ?? 0);
+                if ($deptId > 0 && !isset($departmentHeadByDepartment[$deptId])) {
+                    $departmentHeadByDepartment[$deptId] = trim((string) ($row->FullName ?? ''));
+                }
+            }
+        }
+
+        $inventory->details->transform(function ($detail) use ($departmentHeadByDepartment) {
+            $departmentId = (int) ($detail->locationDepartmentId ?? 0);
+            $headName = $departmentId > 0 ? ($departmentHeadByDepartment[$departmentId] ?? null) : null;
+            $hasHead = is_string($headName) && trim($headName) !== '';
+
+            $detail->currentDepartmentHead = $hasHead ? $headName : null;
+            $detail->departmentHeadVacant = $departmentId > 0 && !$hasHead;
+            $detail->accountabilityLabel = $detail->departmentHeadVacant
+                ? 'No current department head'
+                : ($detail->currentDepartmentHead ?? null);
+
+            return $detail;
+        });
 
         return response()->json($inventory);
     }
@@ -853,6 +1010,55 @@ class InventoryController extends Controller
             );
         }
 
+        $currentDepartmentId = (int) (DB::table('assignedproperty')
+            ->where('InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->orderByDesc(DB::raw('COALESCE(UpdatedDate, CreatedDate)'))
+            ->orderByDesc('PropertyID')
+            ->value('DepartmentID') ?? 0);
+
+        if ($currentDepartmentId > 0) {
+            $departmentHeadAuditLogs = AssetAuditLog::with('performer')
+                ->where('EntityType', 'user')
+                ->where('Action', 'department_head_assignment_changed')
+                ->orderBy('CreatedAt')
+                ->get();
+
+            foreach ($departmentHeadAuditLogs as $log) {
+                $details = is_array($log->Details) ? $log->Details : [];
+                $fromDepartmentId = (int) ($details['from_department_id'] ?? 0);
+                $toDepartmentId = (int) ($details['to_department_id'] ?? 0);
+
+                if ($currentDepartmentId !== $fromDepartmentId && $currentDepartmentId !== $toDepartmentId) {
+                    continue;
+                }
+
+                $performer = $log->performer
+                    ? ['id' => (int) $log->performer->UserID, 'name' => (string) $log->performer->FullName]
+                    : null;
+
+                $person = trim((string) ($details['user_full_name'] ?? 'Department head'));
+                $fromDepartmentName = trim((string) ($details['from_department_name'] ?? 'Unknown department'));
+                $toDepartmentName = trim((string) ($details['to_department_name'] ?? 'Unknown department'));
+
+                $pushEvent(
+                    'accountability',
+                    'department_head_assignment_changed',
+                    'Department head assignment changed',
+                    $person . ' moved from ' . $fromDepartmentName . ' to ' . $toDepartmentName,
+                    $log->CreatedAt ? $log->CreatedAt->toISOString() : null,
+                    $performer,
+                    [
+                        'department_id' => $currentDepartmentId,
+                        'user_full_name' => $details['user_full_name'] ?? null,
+                        'from_department_name' => $details['from_department_name'] ?? null,
+                        'to_department_name' => $details['to_department_name'] ?? null,
+                        'from_role' => $details['from_role'] ?? null,
+                        'to_role' => $details['to_role'] ?? null,
+                    ]
+                );
+            }
+        }
+
         usort($history, function (array $a, array $b) {
             return strcmp((string) $a['occurred_at'], (string) $b['occurred_at']);
         });
@@ -1045,6 +1251,41 @@ class InventoryController extends Controller
                                             LIMIT 1
                                         )
                                 ) as locationDepartment"),
+                                'locationDepartmentId' => DB::raw("COALESCE(
+                                        (
+                                            SELECT ap.DepartmentID
+                                            FROM assignedproperty ap
+                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                            LIMIT 1
+                                        ),
+                                        (
+                                            SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
+                                            FROM propertyissuancedetail pidet
+                                            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                                            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                                            LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                                            LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                                            LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                                            LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                                            LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                                            WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                AND pi.deleted_at IS NULL
+                                                AND pidet.deleted_at IS NULL
+                                                AND pi.Status = 'acknowledged'
+                                            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                                            LIMIT 1
+                                        ),
+                                        (
+                                            SELECT depDR.DepartmentID
+                                            FROM deliveryreceiptdetail drd
+                                            JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                                            LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
+                                            WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
+                                            LIMIT 1
+                                        )
+                                ) as locationDepartmentId"),
                                 'lastIssuedDate' => DB::raw("(
                                         SELECT pi.DateIssued
                                         FROM propertyissuancedetail pidet
@@ -1101,6 +1342,47 @@ class InventoryController extends Controller
         }
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+        $departmentIds = collect($paginator->items())
+            ->pluck('locationDepartmentId')
+            ->filter(fn ($id) => !empty($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $departmentHeadByDepartment = [];
+        if ($departmentIds->isNotEmpty()) {
+            $headRows = DB::table('user as u')
+                ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                ->where('u.IsActive', 1)
+                ->where('ur.RoleName', 'Department Head')
+                ->whereIn('u.DepartmentID', $departmentIds->all())
+                ->orderBy('u.DepartmentID')
+                ->orderByDesc(DB::raw('COALESCE(u.UpdatedDate, u.CreatedDate)'))
+                ->orderByDesc('u.UserID')
+                ->get(['u.DepartmentID', 'u.FullName']);
+
+            foreach ($headRows as $row) {
+                $deptId = (int) ($row->DepartmentID ?? 0);
+                if ($deptId > 0 && !isset($departmentHeadByDepartment[$deptId])) {
+                    $departmentHeadByDepartment[$deptId] = trim((string) ($row->FullName ?? ''));
+                }
+            }
+        }
+
+        $paginator->getCollection()->transform(function ($item) use ($departmentHeadByDepartment) {
+            $departmentId = (int) ($item->locationDepartmentId ?? 0);
+            $headName = $departmentId > 0 ? ($departmentHeadByDepartment[$departmentId] ?? null) : null;
+            $hasHead = is_string($headName) && trim($headName) !== '';
+
+            $item->currentDepartmentHead = $hasHead ? $headName : null;
+            $item->departmentHeadVacant = $departmentId > 0 && !$hasHead;
+            $item->accountabilityLabel = $item->departmentHeadVacant
+                ? 'No current department head'
+                : ($item->currentDepartmentHead ?? null);
+
+            return $item;
+        });
 
         return $paginator;
     }

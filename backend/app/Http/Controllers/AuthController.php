@@ -135,6 +135,15 @@ class AuthController extends Controller
         // Clear rate limiter on success
         RateLimiter::clear($throttleKey);
 
+        if ((bool) $user->MustChangePassword) {
+            return response()->json([
+                'message' => 'Password change required before login.',
+                'must_change_password' => true,
+                'user_id' => $user->UserID,
+                'username' => $user->Username,
+            ], 200);
+        }
+
         // Local/testing bypass: allow login without MFA code entry.
         // The environment variable `MFA_BYPASS_FOR_TESTING` can still be used locally
         // but defaults to false so MFA is enforced by default. Remove this block
@@ -368,6 +377,68 @@ class AuthController extends Controller
             'user_id' => $user->UserID,
             'mfa_setup_required' => $setupRequired,
             'mfa_enabled' => (bool) $user->MFAEnabled,
+        ]);
+    }
+
+    /**
+     * Change temporary/default password before completing login.
+     */
+    public function changeTemporaryPassword(Request $request)
+    {
+        try {
+            $request->validate([
+                'username' => 'required|string',
+                'current_password' => 'required|string',
+                'new_password' => [
+                    'required',
+                    'string',
+                    'confirmed',
+                    PasswordRule::min(12)->mixedCase()->numbers()->symbols(),
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        }
+
+        $user = User::where('Username', $request->input('username'))->first();
+        if (!$user) {
+            return response()->json(['message' => 'Invalid username or password'], 401);
+        }
+
+        if (!$user->IsActive) {
+            return response()->json([
+                'message' => 'Account is disabled. Please contact your GSO Admin.',
+                'account_disabled' => true,
+            ], 403);
+        }
+
+        if (!$user->EmailVerifiedAt) {
+            return response()->json([
+                'message' => 'Account activation required. Please check your email for the activation link.',
+                'activation_required' => true,
+            ], 403);
+        }
+
+        if (!(bool) $user->MustChangePassword) {
+            return response()->json(['message' => 'Password change is not required for this account.'], 422);
+        }
+
+        if (!Hash::check((string) $request->input('current_password'), (string) $user->Password)) {
+            return response()->json(['message' => 'Invalid username or password'], 401);
+        }
+
+        $user->Password = Hash::make((string) $request->input('new_password'));
+        $user->MustChangePassword = 0;
+        $user->UpdatedDate = Carbon::now();
+        $user->save();
+
+        $this->mfaService->revokeAllDevices($user);
+
+        return response()->json([
+            'message' => 'Password updated successfully. Please login with your new password.',
         ]);
     }
 

@@ -94,7 +94,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('admin')->group(function () {
         // User Management (Admin only)
         Route::get('users', [UserManagementController::class, 'index']);
+        Route::get('users/{id}', [UserManagementController::class, 'show']);
         Route::post('users', [UserManagementController::class, 'store']);
+        Route::patch('users/{id}', [UserManagementController::class, 'update']);
         Route::patch('users/{id}/active', [UserManagementController::class, 'toggleActive']);
         Route::patch('users/{id}/mfa', [UserManagementController::class, 'toggleMfa']);
         Route::post('users/{id}/resend-activation', [UserManagementController::class, 'resendActivation']);

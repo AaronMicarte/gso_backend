@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\AccountActivationMail;
 use App\Models\Auth\User;
+use App\Services\MFAService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,10 @@ use Illuminate\Support\Str;
 
 class UserManagementController extends Controller
 {
+    public function __construct(private MFAService $mfaService)
+    {
+    }
+
     private function assertAdmin(Request $request)
     {
         $user = $request->user();
@@ -60,6 +65,34 @@ class UserManagementController extends Controller
 
         return response()->json([
             'data' => $users,
+        ]);
+    }
+
+    public function show(Request $request, int $id)
+    {
+        $this->assertAdmin($request);
+
+        $user = User::query()->with(['department', 'userRole'])->find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'UserID' => $user->UserID,
+                'Username' => $user->Username,
+                'Email' => $user->Email,
+                'FullName' => $user->FullName,
+                'IsActive' => (bool) $user->IsActive,
+                'EmailVerifiedAt' => $user->EmailVerifiedAt,
+                'MFAEnabled' => (bool) $user->MFAEnabled,
+                'UserRoleID' => $user->UserRoleID,
+                'Role' => $user->userRole?->RoleName,
+                'DepartmentID' => $user->DepartmentID,
+                'Department' => $user->department?->DepartmentName,
+                'CreatedDate' => $user->CreatedDate,
+                'UpdatedDate' => $user->UpdatedDate,
+            ],
         ]);
     }
 
@@ -182,6 +215,88 @@ class UserManagementController extends Controller
             'user' => [
                 'UserID' => $user->UserID,
                 'MFAEnabled' => (bool) $user->MFAEnabled,
+            ],
+        ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $this->assertAdmin($request);
+
+        $validated = $request->validate([
+            'Username' => 'required|string|min:3|max:50',
+            'Email' => 'required|email|max:100',
+            'FullName' => 'nullable|string|max:100',
+            'UserRoleID' => 'required|integer',
+            'DepartmentID' => 'required|integer',
+            'IsActive' => 'required|boolean',
+            'ResetPasswordToDefault' => 'sometimes|boolean',
+        ]);
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+
+        $username = trim($validated['Username']);
+        $email = strtolower(trim($validated['Email']));
+
+        if (User::where('Username', $username)->where('UserID', '!=', $user->UserID)->exists()) {
+            return response()->json(['message' => 'Username already exists'], 422);
+        }
+
+        if (User::whereRaw('LOWER(Email) = ?', [$email])->where('UserID', '!=', $user->UserID)->exists()) {
+            return response()->json(['message' => 'Email already exists'], 422);
+        }
+
+        if ((int) $request->user()?->UserID === (int) $user->UserID && !$validated['IsActive']) {
+            return response()->json(['message' => 'You cannot disable your own account'], 422);
+        }
+
+        $currentEmail = strtolower((string) $user->Email);
+        $emailChanged = $currentEmail !== $email;
+        $resetPassword = (bool) ($validated['ResetPasswordToDefault'] ?? false);
+
+        $user->Username = $username;
+        $user->Email = $email;
+        $user->FullName = isset($validated['FullName']) && trim((string) $validated['FullName']) !== ''
+            ? trim((string) $validated['FullName'])
+            : null;
+        $user->UserRoleID = (int) $validated['UserRoleID'];
+        $user->DepartmentID = (int) $validated['DepartmentID'];
+        $user->IsActive = $validated['IsActive'] ? 1 : 0;
+
+        if ($resetPassword) {
+            $user->Password = Hash::make('123');
+            $user->MustChangePassword = 1;
+        }
+
+        if ($emailChanged) {
+            $user->MFAEnabled = 0;
+            $user->MFASecret = null;
+            $user->BackupCodes = null;
+        }
+
+        if ($resetPassword || $emailChanged) {
+            $this->mfaService->revokeAllDevices($user);
+        }
+
+        $user->UpdatedDate = Carbon::now();
+        $user->save();
+
+        return response()->json([
+            'message' => 'User updated',
+            'password_reset_required' => $resetPassword,
+            'mfa_reset_required' => $emailChanged,
+            'user' => [
+                'UserID' => $user->UserID,
+                'Username' => $user->Username,
+                'Email' => $user->Email,
+                'FullName' => $user->FullName,
+                'IsActive' => (bool) $user->IsActive,
+                'MFAEnabled' => (bool) $user->MFAEnabled,
+                'UserRoleID' => $user->UserRoleID,
+                'DepartmentID' => $user->DepartmentID,
             ],
         ]);
     }
