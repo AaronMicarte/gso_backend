@@ -18,8 +18,6 @@ class PropertyWasteController extends Controller
 
     private const ALLOWED_STATUSES = [
         'draft',
-        'for_approval',
-        'approved',
         'completed',
         'cancelled',
     ];
@@ -43,7 +41,9 @@ class PropertyWasteController extends Controller
         $query = PropertyWasteReport::query()
             ->with([
                 'items.disposalMethod:DisposalMethodID,MethodName,Description,IconKey',
-                'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID',
+                'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID,SourceDRDetailID',
+                'items.inventoryDetail.drDetail:DRDetailID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
+                'items.inventoryDetail.drDetail.article:ArticleID,ArticleName',
                 'items.condition:ConditionID,ConditionName',
                 'department:DepartmentID,DepartmentName,DepartmentCode',
                 'sourceServiceRecord:ServiceRecordID,ServiceNumber,Status',
@@ -97,7 +97,9 @@ class PropertyWasteController extends Controller
 
         $report = PropertyWasteReport::with([
             'items.disposalMethod:DisposalMethodID,MethodName,Description,IconKey',
-            'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID',
+            'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID,SourceDRDetailID',
+            'items.inventoryDetail.drDetail:DRDetailID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
+            'items.inventoryDetail.drDetail.article:ArticleID,ArticleName',
             'items.condition:ConditionID,ConditionName',
             'department:DepartmentID,DepartmentName,DepartmentCode',
             'sourceServiceRecord:ServiceRecordID,ServiceNumber,Status',
@@ -169,15 +171,15 @@ class PropertyWasteController extends Controller
             }
 
             if (array_key_exists('status', $validated)) {
-                if ($validated['status'] === 'for_approval' && $roleName === self::ROLE_ADMIN) {
-                    $report->Status = 'approved';
-                } else {
-                    $report->Status = $validated['status'];
-                }
+                $report->Status = in_array($validated['status'], ['completed', 'cancelled'], true)
+                    ? $validated['status']
+                    : 'draft';
             } else {
                 $latestStatuses = $report->items()->pluck('Status')->map(fn ($value) => (string) $value)->all();
-                if (!empty($latestStatuses) && count(array_filter($latestStatuses, fn ($status) => in_array($status, ['method_selected', 'for_disposal', 'disposed'], true))) === count($latestStatuses)) {
-                    $report->Status = $roleName === self::ROLE_ADMIN ? 'approved' : 'for_approval';
+                if (!empty($latestStatuses) && count(array_filter($latestStatuses, fn ($status) => $status === 'disposed')) === count($latestStatuses)) {
+                    $report->Status = 'completed';
+                } else {
+                    $report->Status = 'draft';
                 }
             }
 
@@ -200,7 +202,9 @@ class PropertyWasteController extends Controller
                 'message' => 'Property waste report updated successfully',
                 'report' => $report->fresh([
                     'items.disposalMethod:DisposalMethodID,MethodName,Description,IconKey',
-                    'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID',
+                    'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID,SourceDRDetailID',
+                    'items.inventoryDetail.drDetail:DRDetailID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
+                    'items.inventoryDetail.drDetail.article:ArticleID,ArticleName',
                     'items.condition:ConditionID,ConditionName',
                     'department:DepartmentID,DepartmentName,DepartmentCode',
                     'sourceServiceRecord:ServiceRecordID,ServiceNumber,Status',
