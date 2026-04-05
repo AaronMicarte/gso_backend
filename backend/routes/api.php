@@ -31,6 +31,7 @@ use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RequisitionIssueSlipController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AssetServiceRecordController;
+use App\Http\Controllers\PropertyWasteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -281,6 +282,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('helpers/inventory', [AssetServiceRecordController::class, 'helperInventory']);
         Route::get('{id}', [AssetServiceRecordController::class, 'show']);
         Route::post('{id}', [AssetServiceRecordController::class, 'update']);
+    });
+
+    // Property Waste (Disposal Workflow)
+    Route::prefix('property-wastes')->group(function () {
+        Route::get('', [PropertyWasteController::class, 'index']);
+        Route::get('statuses', [PropertyWasteController::class, 'statuses']);
+        Route::get('helpers/disposal-methods', [PropertyWasteController::class, 'helperDisposalMethods']);
+        Route::get('{id}', [PropertyWasteController::class, 'show']);
+        Route::post('{id}', [PropertyWasteController::class, 'update']);
     });
 
     // Requisition and Issue Slip (RIS)

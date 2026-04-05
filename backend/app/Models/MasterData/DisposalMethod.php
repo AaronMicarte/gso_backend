@@ -18,5 +18,6 @@ class DisposalMethod extends Model
     protected $fillable = [
         'MethodName',
         'Description',
+        'IconKey',
     ];
 }

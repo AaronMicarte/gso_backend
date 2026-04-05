@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 03, 2026 at 03:22 PM
+-- Generation Time: Apr 05, 2026 at 08:35 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -354,7 +354,25 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (192, 'asset_service_record', 3, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0003\",\"old_status\":\"repair_in_progress\",\"new_status\":\"verification\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-29 13:38:49'),
 (193, 'asset_service_record_detail', 3, 'updated', 1, '{\"service_record_id\":3,\"old_status\":\"repair_in_progress\",\"new_status\":\"fixed\",\"inventory_detail_id\":138}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-29 13:39:14'),
 (194, 'asset_service_record', 3, 'updated', 1, '{\"service_number\":\"SVR-2026-0003\",\"old_status\":\"verification\",\"new_status\":\"fixed\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-29 13:39:14'),
-(195, 'asset_service_record', 3, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0003\",\"old_status\":\"verification\",\"new_status\":\"fixed\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-29 13:39:14');
+(195, 'asset_service_record', 3, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0003\",\"old_status\":\"verification\",\"new_status\":\"fixed\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-03-29 13:39:14'),
+(196, 'property_transfer', 6, 'created', 3, '{\"transfer_number\":\"PTR-2026-0006\",\"from_department_id\":23,\"to_department_id\":30,\"items\":[29]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:05:47'),
+(197, 'inventory_detail', 29, 'transfer_requested', 3, '{\"transfer_id\":6,\"transfer_number\":\"PTR-2026-0006\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:05:47'),
+(198, 'property_transfer', 6, 'approved', 1, '{\"transfer_number\":\"PTR-2026-0006\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:06:39'),
+(199, 'inventory_detail', 29, 'transfer_approved', 1, '{\"transfer_id\":6,\"transfer_number\":\"PTR-2026-0006\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:06:39'),
+(200, 'property_transfer', 6, 'releasing_approved', 6, '{\"transfer_number\":\"PTR-2026-0006\",\"requested_count\":1,\"approved_count\":1,\"approved_quantities\":{\"6\":1},\"reason\":\"sge\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:08:28'),
+(201, 'inventory_detail', 29, 'transfer_releasing_approved', 6, '{\"transfer_id\":6,\"transfer_number\":\"PTR-2026-0006\",\"approved_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:08:28'),
+(202, 'property_transfer_item', 6, 'transferred', 1, '{\"transfer_id\":6,\"transfer_number\":\"PTR-2026-0006\",\"inventory_detail_id\":29,\"from_department_id\":23,\"to_department_id\":30}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:09:22'),
+(203, 'inventory_detail', 29, 'transfer_completed', 1, '{\"transfer_id\":6,\"transfer_number\":\"PTR-2026-0006\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:09:22'),
+(204, 'property_transfer', 6, 'completed', 1, '{\"transfer_number\":\"PTR-2026-0006\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:09:22'),
+(205, 'property_borrow', 5, 'created', 3, '{\"borrow_number\":\"PBR-2026-0005\",\"from_department_id\":23,\"to_department_id\":30,\"due_date\":\"2026-04-06\",\"items\":[25]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:36:35'),
+(206, 'inventory_detail', 25, 'borrow_requested', 3, '{\"borrow_id\":5,\"borrow_number\":\"PBR-2026-0005\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:36:35'),
+(207, 'property_borrow', 5, 'approved', 1, '{\"borrow_number\":\"PBR-2026-0005\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:37:23'),
+(208, 'inventory_detail', 25, 'borrow_approved', 1, '{\"borrow_id\":5,\"borrow_number\":\"PBR-2026-0005\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:37:23'),
+(209, 'property_borrow', 5, 'releasing_approved', 6, '{\"borrow_number\":\"PBR-2026-0005\",\"requested_count\":1,\"approved_count\":1,\"reason\":\"ok!!!!!!!!!!!!!!!!!!!\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '2026-04-03 17:38:24'),
+(210, 'property_borrow', 5, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0005\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:38:56'),
+(211, 'property_return', 4, 'created', 1, '{\"borrow_id\":5,\"borrow_number\":\"PBR-2026-0005\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:40:55'),
+(212, 'property_borrow', 5, 'returned', 1, '{\"borrow_number\":\"PBR-2026-0005\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:40:55'),
+(213, 'inventory_detail', 25, 'borrow_returned', 1, '{\"borrow_id\":5,\"borrow_number\":\"PBR-2026-0005\",\"return_id\":4,\"quantity\":1,\"condition_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-03 17:40:55');
 
 -- --------------------------------------------------------
 
@@ -393,7 +411,7 @@ CREATE TABLE `asset_service_records` (
   `ServiceNumber` varchar(50) NOT NULL,
   `DateReported` date NOT NULL,
   `ReportSource` int(11) DEFAULT NULL,
-  `Status` enum('pending','under_review','work_approved','repair_in_progress','fixed','verification','closed','unrepairable') NOT NULL DEFAULT 'pending',
+  `Status` enum('pending','under_review','work_approved','repair_in_progress','fixed','verification','closed','unserviceable') NOT NULL DEFAULT 'pending',
   `RecordNotes` text DEFAULT NULL,
   `FinalNotes` text DEFAULT NULL,
   `CreatedByUserID` int(11) NOT NULL,
@@ -427,7 +445,7 @@ CREATE TABLE `asset_service_records_details` (
   `ProblemDescription` text NOT NULL,
   `HandlingDecision` enum('warranty','no_warranty') DEFAULT NULL,
   `BudgetStatus` enum('pending_check','warranty_covered','budget_available','budget_unavailable') NOT NULL DEFAULT 'pending_check',
-  `Status` enum('pending','under_review','work_approved','repair_in_progress','fixed','verification','closed','unrepairable') NOT NULL DEFAULT 'pending',
+  `Status` enum('pending','under_review','work_approved','repair_in_progress','fixed','verification','closed','unserviceable') NOT NULL DEFAULT 'pending',
   `VerificationNote` varchar(4000) DEFAULT NULL,
   `AssignedVendorID` bigint(20) UNSIGNED DEFAULT NULL,
   `AssignedSupplierID` bigint(20) UNSIGNED DEFAULT NULL,
@@ -535,7 +553,7 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (58, 28, 2, 30, 'PTR-2026-0005', 'Hand Tools Set (HTS-112)', '2026-03-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-29 21:26:06'),
 (59, 47, 4, 23, 'PAR-2026-0009', 'Hand Tools Set (HTS-112)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
 (60, 62, 4, 23, 'PAR-2026-0009', 'Hand Tools Set (HTS-112)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
-(61, 29, 4, 23, 'PAR-2026-0009', 'Waste Basket (WB-18L)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
+(61, 29, 2, 30, 'PTR-2026-0006', 'Waste Basket (WB-18L)', '2026-04-04', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-04-04 01:09:22'),
 (62, 48, 4, 23, 'PAR-2026-0009', 'Waste Basket (WB-18L)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
 (63, 63, 4, 23, 'PAR-2026-0009', 'Waste Basket (WB-18L)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
 (64, 75, 4, 23, 'PAR-2026-0009', 'Waste Basket (WB-18L)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
@@ -564,13 +582,6 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `cache`
---
-
-INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('gsoiams-cache-fcm_oauth_access_token', 's:1024:\"ya29.c.c0AZ4bNpbM8UpZsfP-1_yHicdzuNLdWB7tvM3j15akBEkspPp1KEpQnA45NINAmy8iVGnNnBS69fKYap9vSN7OPJPrhapbT3ytUj2f8jj9xA7U_4grBUSTBUGLXY_ybVkYT-20q8l--aZskvaD8WEVp2enxoqR_M4X1Bbi12S_3S0g-EHb0uc5abc12DQ3zrbh1w95Jj7Z1z4HddAzcP9sBW_s_NazMlPThI_fCbWpH5sGTFFpWtqRaVngk77GmvmqYHynHHa9CoQA_I65ChvopHCV1GOgZXj1aGYExHt36K0xJGmwPl19lA8RuQrH1atfXvToR8H8R6Dz7QGjiMYdChZj4lyBjZzx44OvvgPUINqEHmqzGCDbXPGYSQE387AfVqMcw_qZsjwz2vbuaScil2BYgh3jyamqSJRb1MMs2bfnrQnywIqOOnVsZpwvlYwoe00yysM6WSdzYcV1gcb6_Bs1JmYz4dxsnsZa44XzOghyd0niVIuIhr0Wikqtc5YsliYJOBvOqW0Z2W7tqmp3sIvQZfRihpw6IcmRBsFpUSfejgyW1pgmlbMUyRr2WiWR5moFWyz1JuFnQSFOUpp6MSmxMYjumfBZgUxt4sUXXvOU6-YthxfWe3163U2Iualqujbgz7M3o9QVnmhSkil-9bxRMpikwd2W2IYx846oZXtFdMBnVr3siIxByntQsgg8B2Y5Jk8lM3RWiZZeBi0lvYz7s10J5BOYXJmbW3uYvf6cr5q_0wVJnIJZ9OQyWntccOwUjZRbhJISQ1yvYQpRje5W8oRgjJ7dSu04IlgO1W_bnshWF5ZjnruQgZhwbn0qXc5tMWFcvjixQsaQd-VRqRrtFUUJbJ0J_d4Q7vjcMxt62uuF-XXMiVl4UV0M_xFg-7i7WJmc719zVBj445iR6wfp9FzpJVfz3nYRO6__uvIr-liMxtg9wycqJuoygeajspMoBY5xmBJWZW5hhqSM2_M9VmYroZchQ8pUpeWib3FOWaUU6kSMumO\";', 1774792487);
 
 -- --------------------------------------------------------
 
@@ -844,6 +855,7 @@ CREATE TABLE `disposalmethod` (
   `DisposalMethodID` int(11) NOT NULL,
   `MethodName` varchar(100) NOT NULL,
   `Description` varchar(255) DEFAULT NULL,
+  `IconKey` varchar(50) DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -851,12 +863,12 @@ CREATE TABLE `disposalmethod` (
 -- Dumping data for table `disposalmethod`
 --
 
-INSERT INTO `disposalmethod` (`DisposalMethodID`, `MethodName`, `Description`, `deleted_at`) VALUES
-(1, 'Public Auction', 'Sold through public bidding', NULL),
-(2, 'Donation', 'Donated to qualified institutions', NULL),
-(3, 'Destruction', 'Physically destroyed', NULL),
-(4, 'Transfer to COA', 'Transferred to Commission on Audit', NULL),
-(5, 'Condemnation', 'Officially condemned and disposed', NULL);
+INSERT INTO `disposalmethod` (`DisposalMethodID`, `MethodName`, `Description`, `IconKey`, `deleted_at`) VALUES
+(1, 'Public Auction', 'Sold through public bidding', 'hand-coins', NULL),
+(2, 'Donation', 'Donated to qualified institutions', 'gift', NULL),
+(3, 'Destruction', 'Physically destroyed', 'trash-2', NULL),
+(4, 'Transfer to COA', 'Transferred to Commission on Audit', 'recycle', NULL),
+(5, 'Condemnation', 'Officially condemned and disposed', 'gavel', NULL);
 
 -- --------------------------------------------------------
 
@@ -1205,7 +1217,41 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (117, 6, '2026-03-29 21:30:08', 'Login', '127.0.0.1'),
 (118, 6, '2026-03-29 21:31:30', 'Logout', '127.0.0.1'),
 (119, 3, '2026-03-29 21:31:45', 'Login', '127.0.0.1'),
-(120, 1, '2026-04-03 19:17:21', 'Login', '127.0.0.1');
+(120, 1, '2026-04-03 19:17:21', 'Login', '127.0.0.1'),
+(121, 3, '2026-04-03 21:23:47', 'Login', '127.0.0.1'),
+(122, 3, '2026-04-04 01:07:11', 'Logout', '127.0.0.1'),
+(123, 6, '2026-04-04 01:07:24', 'Login', '127.0.0.1'),
+(124, 6, '2026-04-04 01:09:37', 'Logout', '127.0.0.1'),
+(125, 3, '2026-04-04 01:09:43', 'Login', '127.0.0.1'),
+(126, 3, '2026-04-04 01:37:42', 'Logout', '127.0.0.1'),
+(127, 6, '2026-04-04 01:37:49', 'Login', '127.0.0.1'),
+(128, 6, '2026-04-04 01:38:29', 'Logout', '127.0.0.1'),
+(129, 3, '2026-04-04 01:38:34', 'Login', '127.0.0.1'),
+(130, 3, '2026-04-04 01:39:58', 'Logout', '127.0.0.1'),
+(131, 6, '2026-04-04 01:40:06', 'Login', '127.0.0.1'),
+(132, 6, '2026-04-04 01:40:29', 'Logout', '127.0.0.1'),
+(133, 3, '2026-04-04 01:40:35', 'Login', '127.0.0.1'),
+(134, 1, '2026-04-04 21:53:17', 'Login', '127.0.0.1'),
+(135, 3, '2026-04-04 23:53:50', 'Login', '127.0.0.1'),
+(136, 3, '2026-04-05 00:00:45', 'Logout', '127.0.0.1'),
+(137, 3, '2026-04-05 00:01:03', 'FailedLogin', '127.0.0.1'),
+(138, 3, '2026-04-05 00:06:18', 'FailedLogin', '127.0.0.1'),
+(139, 3, '2026-04-05 00:06:27', 'Login', '127.0.0.1'),
+(140, 3, '2026-04-05 00:06:43', 'Logout', '127.0.0.1'),
+(141, 3, '2026-04-05 00:07:38', 'Login', '127.0.0.1'),
+(142, 3, '2026-04-05 00:07:49', 'Logout', '127.0.0.1'),
+(143, 3, '2026-04-05 00:07:59', 'Login', '127.0.0.1'),
+(144, 3, '2026-04-05 00:34:30', 'Logout', '127.0.0.1'),
+(145, 6, '2026-04-05 00:34:36', 'Login', '127.0.0.1'),
+(146, 6, '2026-04-05 00:59:32', 'Logout', '127.0.0.1'),
+(147, 3, '2026-04-05 01:00:16', 'FailedLogin', '127.0.0.1'),
+(148, 3, '2026-04-05 01:00:33', 'FailedLogin', '127.0.0.1'),
+(149, 3, '2026-04-05 01:05:54', 'Login', '127.0.0.1'),
+(150, 3, '2026-04-05 01:06:44', 'Logout', '127.0.0.1'),
+(151, 3, '2026-04-05 01:07:40', 'FailedLogin', '127.0.0.1'),
+(152, 3, '2026-04-05 01:08:22', 'Login', '127.0.0.1'),
+(153, 3, '2026-04-05 01:08:39', 'Logout', '127.0.0.1'),
+(154, 1, '2026-04-05 13:55:30', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1551,7 +1597,8 @@ INSERT INTO `propertyborrow` (`BorrowID`, `BorrowNumber`, `RequestedByUserID`, `
 (1, 'PBR-2026-0001', 6, 30, 23, 2, 4, 'Explain the temporary use case.', 1, '2026-03-26', 'approved', 1, 'ok', 3, '2026-03-18 13:19:45', 'returned', 1, '2026-03-18 13:20:42', '2026-03-18 13:20:42', NULL, '2026-03-18 13:18:19', '2026-03-18 13:25:11', NULL),
 (2, 'PBR-2026-0002', 3, 23, 30, 4, 2, 'Hulam Projector', 1, '2026-03-31', 'pending', NULL, NULL, NULL, NULL, 'pending', NULL, NULL, NULL, NULL, '2026-03-25 13:58:31', '2026-03-25 13:58:31', NULL),
 (3, 'PBR-2026-0003', 3, 23, 30, 4, 2, 'Hulam Hand Tools Set', 1, '2026-03-30', 'approved', 1, 'Okay', 6, '2026-03-25 14:01:25', 'returned', 1, '2026-03-25 14:01:58', '2026-03-25 14:01:58', NULL, '2026-03-25 14:00:36', '2026-03-25 14:03:14', NULL),
-(4, 'PBR-2026-0004', 3, 23, 30, 4, 2, 'hulam', 1, '2026-04-01', 'approved', 1, 'yes', 6, '2026-03-29 13:30:53', 'returned', 1, '2026-03-29 13:31:19', '2026-03-29 13:31:19', NULL, '2026-03-29 13:29:43', '2026-03-29 13:34:27', NULL);
+(4, 'PBR-2026-0004', 3, 23, 30, 4, 2, 'hulam', 1, '2026-04-01', 'approved', 1, 'yes', 6, '2026-03-29 13:30:53', 'returned', 1, '2026-03-29 13:31:19', '2026-03-29 13:31:19', NULL, '2026-03-29 13:29:43', '2026-03-29 13:34:27', NULL),
+(5, 'PBR-2026-0005', 3, 23, 30, 4, 2, NULL, 1, '2026-04-06', 'approved', 1, 'ok!!!!!!!!!!!!!!!!!!!', 6, '2026-04-03 17:38:24', 'returned', 1, '2026-04-03 17:37:23', '2026-04-03 17:38:56', NULL, '2026-04-03 17:36:35', '2026-04-03 17:40:55', NULL);
 
 -- --------------------------------------------------------
 
@@ -1578,7 +1625,8 @@ INSERT INTO `propertyborrowitems` (`BorrowItemID`, `BorrowID`, `InventoryDetailI
 (1, 1, 5, 1, NULL, '2026-03-18 13:18:19', '2026-03-18 13:18:19', NULL),
 (2, 2, 30, 1, NULL, '2026-03-25 13:58:31', '2026-03-25 13:58:31', NULL),
 (3, 3, 28, 1, NULL, '2026-03-25 14:00:36', '2026-03-25 14:00:36', NULL),
-(4, 4, 73, 1, NULL, '2026-03-29 13:29:43', '2026-03-29 13:29:43', NULL);
+(4, 4, 73, 1, NULL, '2026-03-29 13:29:43', '2026-03-29 13:29:43', NULL),
+(5, 5, 25, 1, NULL, '2026-04-03 17:36:35', '2026-04-03 17:36:35', NULL);
 
 -- --------------------------------------------------------
 
@@ -1601,37 +1649,6 @@ CREATE TABLE `propertyclassification` (
 INSERT INTO `propertyclassification` (`PropertyClassificationID`, `ClassificationName`, `Description`, `DocumentType`, `deleted_at`) VALUES
 (1, 'Semi-Expendable', 'Items with shorter lifespan, lower value threshold', 'ICS', NULL),
 (2, 'Non-Expendable/PPE', 'Property, Plant & Equipment with longer lifespan', 'PAR', NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `propertydisposal`
---
-
-CREATE TABLE `propertydisposal` (
-  `DisposalID` int(11) NOT NULL,
-  `DisposalNumber` varchar(50) DEFAULT NULL,
-  `WasteMaterialID` int(11) NOT NULL,
-  `ApprovedBy` int(11) NOT NULL,
-  `DisposalDate` date NOT NULL,
-  `DisposalMethodID` int(11) NOT NULL,
-  `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `propertydisposaldetail`
---
-
-CREATE TABLE `propertydisposaldetail` (
-  `DisposalDetailID` int(11) NOT NULL,
-  `DisposalID` int(11) NOT NULL,
-  `WasteDetailID` int(11) NOT NULL,
-  `PropertyID` int(11) NOT NULL,
-  `Remarks` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -2015,7 +2032,8 @@ CREATE TABLE `propertyreturn` (
 INSERT INTO `propertyreturn` (`ReturnID`, `ReturnNumber`, `BorrowID`, `ReturnedByUserID`, `ReturnedAt`, `Notes`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 'PBR-RET-2026-0001', 1, 1, '2026-03-18 13:25:11', 'done', '2026-03-18 13:25:11', '2026-03-18 13:25:11', NULL),
 (2, 'PBR-RET-2026-0002', 3, 1, '2026-03-25 14:03:14', 'Returned in good condition.', '2026-03-25 14:03:14', '2026-03-25 14:03:14', NULL),
-(3, 'PBR-RET-2026-0003', 4, 1, '2026-03-29 13:34:27', 'ty', '2026-03-29 13:34:27', '2026-03-29 13:34:27', NULL);
+(3, 'PBR-RET-2026-0003', 4, 1, '2026-03-29 13:34:27', 'ty', '2026-03-29 13:34:27', '2026-03-29 13:34:27', NULL),
+(4, 'PBR-RET-2026-0004', 5, 1, '2026-04-03 17:40:55', 'ohye', '2026-04-03 17:40:55', '2026-04-03 17:40:55', NULL);
 
 -- --------------------------------------------------------
 
@@ -2061,7 +2079,8 @@ CREATE TABLE `propertyreturnitems` (
 INSERT INTO `propertyreturnitems` (`ReturnItemID`, `ReturnID`, `BorrowItemID`, `InventoryDetailID`, `QuantityReturned`, `ConditionID`, `PrimaryConditionID`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
 (1, 1, 1, 5, 1, 1, NULL, NULL, '2026-03-18 13:25:11', '2026-03-18 13:25:11', NULL),
 (2, 2, 3, 28, 1, 1, NULL, NULL, '2026-03-25 14:03:14', '2026-03-25 14:03:14', NULL),
-(3, 3, 4, 73, 1, 1, NULL, NULL, '2026-03-29 13:34:27', '2026-03-29 13:34:27', NULL);
+(3, 3, 4, 73, 1, 1, NULL, NULL, '2026-03-29 13:34:27', '2026-03-29 13:34:27', NULL),
+(4, 4, 5, 25, 1, 1, NULL, NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:55', NULL);
 
 -- --------------------------------------------------------
 
@@ -2130,7 +2149,8 @@ INSERT INTO `propertytransfer` (`TransferID`, `TransferNumber`, `RequestedByUser
 (2, 'PTR-2026-0002', 3, 23, 30, 4, 2, 'jj', 1, 'approved', 1, NULL, 6, '2026-03-24 03:57:51', 'completed', 1, '2026-03-24 03:58:34', 3, '2026-03-24 04:00:25', '2026-03-24 03:58:56', '2026-03-24 04:00:25', NULL, '2026-03-24 03:56:24', '2026-03-24 04:00:25', NULL),
 (3, 'PTR-2026-0003', 6, 30, 23, 2, 4, NULL, 1, 'approved', 1, NULL, 3, '2026-03-24 04:04:35', 'completed', 1, '2026-03-24 04:05:16', 6, '2026-03-24 04:06:22', '2026-03-24 04:05:25', '2026-03-24 04:06:22', NULL, '2026-03-24 04:03:42', '2026-03-24 04:06:22', NULL),
 (4, 'PTR-2026-0004', 3, 23, 30, 4, 2, 'extension', 1, 'approved', 1, 'okay', 6, '2026-03-29 13:01:57', 'approved', 1, '2026-03-29 13:02:38', NULL, NULL, '2026-03-29 13:03:00', NULL, NULL, '2026-03-29 13:00:41', '2026-03-29 13:03:00', NULL),
-(5, 'PTR-2026-0005', 3, 23, 30, 4, 2, 'hulam', 1, 'approved', 1, 'okay', 6, '2026-03-29 13:24:20', 'completed', 1, '2026-03-29 13:24:53', 3, '2026-03-29 13:26:06', '2026-03-29 13:25:10', '2026-03-29 13:26:06', NULL, '2026-03-29 13:23:01', '2026-03-29 13:26:06', NULL);
+(5, 'PTR-2026-0005', 3, 23, 30, 4, 2, 'hulam', 1, 'approved', 1, 'okay', 6, '2026-03-29 13:24:20', 'completed', 1, '2026-03-29 13:24:53', 3, '2026-03-29 13:26:06', '2026-03-29 13:25:10', '2026-03-29 13:26:06', NULL, '2026-03-29 13:23:01', '2026-03-29 13:26:06', NULL),
+(6, 'PTR-2026-0006', 3, 23, 30, 4, 2, NULL, 1, 'approved', 1, 'sge', 6, '2026-04-03 17:08:28', 'completed', 1, '2026-04-03 17:06:39', 1, '2026-04-03 17:09:22', '2026-04-03 17:09:22', '2026-04-03 17:09:22', NULL, '2026-04-03 17:05:47', '2026-04-03 17:09:22', NULL);
 
 -- --------------------------------------------------------
 
@@ -2158,7 +2178,8 @@ INSERT INTO `propertytransferdetails` (`TransferItemID`, `TransferID`, `Inventor
 (2, 2, 30, 1, NULL, '2026-03-24 03:56:24', '2026-03-24 03:56:24', NULL),
 (3, 3, 30, 1, NULL, '2026-03-24 04:03:42', '2026-03-24 04:03:42', NULL),
 (4, 4, 74, 1, NULL, '2026-03-29 13:00:41', '2026-03-29 13:00:41', NULL),
-(5, 5, 28, 1, NULL, '2026-03-29 13:23:01', '2026-03-29 13:23:01', NULL);
+(5, 5, 28, 1, NULL, '2026-03-29 13:23:01', '2026-03-29 13:23:01', NULL),
+(6, 6, 29, 1, NULL, '2026-04-03 17:05:47', '2026-04-03 17:05:47', NULL);
 
 -- --------------------------------------------------------
 
@@ -2195,7 +2216,7 @@ INSERT INTO `propertytype` (`PropertyTypeID`, `PropertyClassificationID`, `Prope
 (12, 2, 'Other Machinery and Equipment', 'Miscellaneous machinery not classified elsewhere', '2026-02-10 18:35:54', '2026-02-10 20:14:24', NULL),
 (13, 2, 'Other Property, Plant and Equipment', 'Other tangible assets with long useful life', '2026-02-10 18:35:54', '2026-02-10 20:14:24', NULL),
 (14, 2, 'Technical and Scientific Equipment', 'Specialized equipment for technical, laboratory, or scientific work', '2026-02-10 18:35:54', '2026-02-10 20:57:37', NULL),
-(15, 1, 'test - 1', 'test', '2026-02-14 12:56:17', NULL, NULL);
+(15, 1, 'test - 1', 'test', '2026-02-14 12:56:17', '2026-04-03 23:52:51', '2026-04-03 15:52:51');
 
 -- --------------------------------------------------------
 
@@ -2273,7 +2294,7 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 (58, 58, 28, 30, 'http://localhost:8000/qr/scan/58?h=996fb9369fea', '2026-03-29 21:26:06'),
 (59, 59, 47, 23, 'http://localhost:3000/qr/scan/59?h=9e96df6f8440', '2026-03-24 11:55:01'),
 (60, 60, 62, 23, 'http://localhost:3000/qr/scan/60?h=b8543217fe36', '2026-03-24 11:55:01'),
-(61, 61, 29, 23, 'http://localhost:3000/qr/scan/61?h=744b1bc5086e', '2026-03-24 11:55:01'),
+(61, 61, 29, 30, 'http://localhost:8000/qr/scan/61?h=744b1bc5086e', '2026-04-04 01:09:22'),
 (62, 62, 48, 23, 'http://localhost:3000/qr/scan/62?h=03faa7ec35cf', '2026-03-24 11:55:01'),
 (63, 63, 63, 23, 'http://localhost:3000/qr/scan/63?h=2f77cc15bd27', '2026-03-24 11:55:01'),
 (64, 64, 75, 23, 'http://localhost:3000/qr/scan/64?h=bcb450fe5267', '2026-03-24 11:55:01'),
@@ -2392,7 +2413,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('AB3MY43b1J2TxO7rINTNs7fTRssbl7Gxn1Bx90l5', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRXRBZVFnNU9nSllkZWx5R2g2Sk81T1NDeDF1ZFVZb2JSSDFHUHRCdCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775222522);
+('R1lqy10ZTdQ2dbS5xd0hugiMzPGEfpbUF5urV2cJ', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiTmFGMmwyb3owVnBhSUdGWG04UVp2TVBaWHNNajRnckJTM3F4MTFuYyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1775367954),
+('zoXhHk7dxPtnPrE1WZBIrHip4ssgmRqt8gOcHiGe', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidWliTFlYRWdEZmFqTVdHdkszUlJrc0VURFhxR3lGbWZMY1R1dk56ZCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775370951);
 
 -- --------------------------------------------------------
 
@@ -2449,21 +2471,16 @@ CREATE TABLE `trusted_devices` (
 INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`, `UserAgent`, `IPAddress`, `LastUsedAt`, `ExpiresAt`, `CreatedDate`, `UpdatedAt`) VALUES
 (7, 2, 'Chrome on Windows', '5da659491728cf8cce8b7047ae8042604fa041012793d906516d7da35c598b76', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '::1', NULL, '2026-01-25 15:40:17', '2025-12-26 15:40:17', NULL),
 (16, 2, 'Chrome on Windows', 'c6ba2be624d0c8d1fbd27bb47776e15e631a2c05adb6de82b08e62ab3d5ba446', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-01-25 22:37:45', '2025-12-26 22:37:45', NULL),
-(47, 3, 'Trusted Device', 'eae6674b11022076b0035d0d920e279095e28395d698de8a44a05ebbe2d39906', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-08 19:32:31', '2026-01-09 19:32:31', NULL),
 (58, 5, 'Trusted Device', 'a1e9e29d449dca75b2cd9e4501485744923a5ae5f736e349a20344e7ba8b4fe8', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '127.0.0.1', NULL, '2026-02-13 01:57:07', '2026-01-14 01:57:07', NULL),
 (62, 5, 'Trusted Device', 'e51948396fbedb111750410a126b66113dc57fc9becd9cbaad47c8d3192d09c2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-02-14 13:48:52', '2026-01-15 13:48:52', NULL),
 (63, 1, 'Trusted Device', 'b6c42f2eda845d004d7deb90648db69686d53f5e8bf13d9a23bcc16527ae91ad', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-13 22:53:24', '2026-02-14 13:49:39', '2026-01-15 13:49:39', '2026-02-13 22:53:24'),
-(65, 3, 'Trusted Device', '07b75eea3cf03f22c7bf3f161a0c1947288c024a43583abd50dce6b369869d42', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0', '127.0.0.1', '2026-01-16 02:03:54', '2026-02-14 14:04:57', '2026-01-15 14:04:57', '2026-01-16 02:03:54'),
-(71, 3, 'Trusted Device', '82746d46bbd7ce40036f8f295e288bcdb3227d5e7191d8d0d05f1b5d1d7cc054', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', NULL, '2026-03-16 02:19:13', '2026-02-14 02:19:13', NULL),
 (72, 7, 'Trusted Device', '642de790709ab5971be725309f5f512eaba73a0ba03652b2273ad5afa1a101ca', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0', '127.0.0.1', '2026-02-15 17:27:48', '2026-03-16 03:06:09', '2026-02-14 03:06:09', '2026-02-15 17:27:48'),
 (75, 7, 'Trusted Device', '893427bf27a08ffa4fb82a1cda655b1480802abcbd45f4f1984c1fda7378771d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', NULL, '2026-03-18 21:45:14', '2026-02-16 21:45:14', NULL),
-(81, 3, 'Trusted Device', '42cc87f13c1f7053027d05e7c49d998988304b1468f72621ab50bf7ba273d6cd', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-03-19 21:05:28', '2026-02-17 21:05:28', NULL),
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (86, 1, 'Trusted Device', '92b86588f1a81d8f632b3484925ab65694afa1335866b980e6f6e563d670ed4d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-18 17:45:44', '2026-04-02 22:47:37', '2026-03-03 22:47:37', '2026-03-18 17:45:44'),
-(87, 3, 'Trusted Device', 'a6c3e3c1261a9b539ea4a47e6511694036382d051906d8f54aef7b55e1d5b1fe', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0', '127.0.0.1', '2026-03-04 00:33:22', '2026-04-02 22:58:48', '2026-03-03 22:58:48', '2026-03-04 00:33:22'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
-(98, 3, 'Trusted Device', '297d885ccb698dc6bd7ece0af703158fcff45a1af4858da1ecf53670e1e8a6b6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-03-22 17:42:23', '2026-04-19 21:48:16', '2026-03-20 21:48:16', '2026-03-22 17:42:23'),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-03 19:17:21', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-03 19:17:21');
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-05 13:55:30', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-05 13:55:30'),
+(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-05 01:08:22', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-05 01:08:22');
 
 -- --------------------------------------------------------
 
@@ -2525,8 +2542,8 @@ CREATE TABLE `user` (
 INSERT INTO `user` (`UserID`, `UserRoleID`, `DepartmentID`, `Username`, `Email`, `EmailVerifiedAt`, `ActivationTokenHash`, `ActivationSentAt`, `ActivationExpiresAt`, `Password`, `MustChangePassword`, `FullName`, `IsActive`, `MFAEnabled`, `MFASecret`, `BackupCodes`, `CreatedDate`, `UpdatedDate`) VALUES
 (1, 1, 49, 'gso.admin', 'micarte.aaron08@gmail.com', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$ftgGRhJOPo.5FWmybeLLv.Z8wX8/H.BifZNZsK51uQIsJHUB/k.h6', 0, 'GSO Administrator', 1, 1, 'eyJpdiI6ImJvcFBFdSttOHlXRGNGeVN1MytvQ2c9PSIsInZhbHVlIjoiaE56YzA0VTE1YnhwNlp0YldLY0ZYYmpHUERZa0dJb2wvcm1Id3lndFRlVT0iLCJtYWMiOiI2OGJhYjIzYTNlZDA5NDI4NjQ4MDAxMjg4NmE2OTMxZmFkNTVkNjI3ZDc2N2Y0MjY0MzQxMWM4MjZlOGZkMTM1IiwidGFnIjoiIn0=', 'eyJpdiI6Im9iWlVLSmo4ZEhkWXBSVG04MzlnakE9PSIsInZhbHVlIjoiZzNtRjlLNEhVS3FJd0VVUTd4cVNXa1BLVUlPeG9CYnMvWmZULyt1R001MVBTTzhTaE5DM2tFamNQblFkdStTL2ZUc1JLY3dEWmoyVENxdmVFQ3ZCdkcyMENaVHMxM3lUWWg0UFcwMUdBa2ovQktFeFREZFFnRkJlY1hwbENkeHpoeXZSQmljUGxYdnJ6RGFBU3RHcHE4bTREcmEzTDM5d0JkWGs5VUR3bGNjPSIsIm1hYyI6IjkxZGY5OTAyZGU1NDY4YzgxNjg5ZWM3OTg1MWZhOGE3NmE1MTE4YzNkZTZjZjFjNjI3MjllZGQ1MDI4NzJiMjkiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-02-26 23:54:52'),
 (2, 2, 49, 'gso.staff.aaronmicarte', 'aaron.micarte@gso.gov.ph', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$YU66h83wjMCOJ9LMN81o8OuWpIuFYTFQpHCxkuWDAurXbYJS9Q.Mu', 0, 'Aaron Micarte', 1, 0, 'eyJpdiI6IjlHZGd3c0dKcmxwcnBLNEdhN2pkWVE9PSIsInZhbHVlIjoiRkd3RWh6SUczdmt3NnpVU0lhUnVGazNSSmdCYkU3OCtLZzA3T1RPZW1BST0iLCJtYWMiOiI3NjliN2M0MDBjZDE4N2YyODcxMWVkMjNjODdiMmVlMDcwZDEwYWIzYTk3NzFhMDVkMjY1MTQzMDM4Y2Y0OThkIiwidGFnIjoiIn0=', 'eyJpdiI6InRLc2pkQjlRVHpZd2ZzKzZ3c0RCRmc9PSIsInZhbHVlIjoiZUlXMnFlWFZ0dkNtZmUxMVVON0VUa3lXOG1EWDNmVjdrRFUxN09TUElBR2Q1K1NNeEF1WHJjTFMyN3dNbG01alUxMGN1b0l4cE5qQmRPL1BUNGxPRU00VGFOaFVtNEd2SWpJTnlEYmhLbTFrVEk0NU51UDY1S2Z4K2RCOHhxbGVyZnkyU1lXbkp2QXFPNlZWNCtwZ0lndHVyd2ljeW4wSUdObktkajJuVkpnPSIsIm1hYyI6ImU0NDM1MWY0YzZkYTYyZmMwY2QzYWM1M2ZiYmMwZTE4MzY0NzM2OWU0YzU2YTg3ODljOWY1NzhiNWVkNWEzNWQiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-03-19 10:00:47'),
-(3, 4, 30, 'IT_Head_Chokoy', 'custodian@gso.gov.ph', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$hlU7QKnUbWphvJnFxYgaY.gJVzBnxVKKV.kjw7xB5Oh.1jN0cfA62', 0, 'Chokoy Covid', 1, 0, 'eyJpdiI6ImFvVEpuaEFUclVHYXRVSEJmV3NsYWc9PSIsInZhbHVlIjoibDM5NXorMGlPTkVqUHk1YXN0OXgzM3BWd0FoT3BkYVN0ZkdwRzkxRk9yaz0iLCJtYWMiOiJhOWI4MGQzMjUyZGMyYmJhYTNiNjI3NjVjYWI5NGYyNGIyYjUwNmFkNmM1NjAzZGM5MTE3YTIzOWVkMGQ2NDg5IiwidGFnIjoiIn0=', 'eyJpdiI6Ik1mTHF2UjNtNFlyRldRTzcwbDF5S0E9PSIsInZhbHVlIjoiNjcwdVQxeTJtNmNwOUt4Wkd5RVN1alhjcGZ5R0w5Z2g4clI4L3BvRklUbERXaGFEY1MxMHMzaGMwRGVjVmhtbXpKT1AxSlUxeUlMam9PUWRUeFBNcnpJdytsUmFubHpiSExFWEJKOXErK1dLUEtLWFZ0MDVJQ2RPYU11MHorUmRxTS8zRlpmRythNkJlUmh3ZmZUYkNScXBxRlV0YmUwN3NyUjRkQUNCazMwPSIsIm1hYyI6ImJmN2NlN2EwODAzMDNlZTEwYWZkOGRkNjQwNzYwZTE1NzY3MDEyZGMwMTZjMDRjMWQ4NzcwMzY4ZmJiYTU3NTgiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-03-22 20:58:55'),
-(5, 4, 54, 'HR_Head_Tyron', 'micarte2005@gmail.com', '2026-01-14 01:50:24', NULL, NULL, NULL, '$2y$12$UjxLHSUjJQBOZYHqrB7ajuK2rIiZ1P9962RTMFifYWMoF.fH7o3Wq', 0, 'Tyron Mecarte', 1, 1, 'eyJpdiI6Ilo3U0pYYVBOd1RFZEtTbmxxUlRXUWc9PSIsInZhbHVlIjoiYXlZTWlzemI3TlFZeWI4MUpuNC9wdEpFelN0emhnbFVWL1g2Ky9lMTFOTT0iLCJtYWMiOiIwZjY3ZjA3OTUwY2M1NGQzOTczMmNhZjA1NzI5NzU4ZDQ0MGEzNDU1NTZkMzEzMmQxYzRjZmI4NzcwYzQ0YjdkIiwidGFnIjoiIn0=', 'eyJpdiI6InplOXhDZXZEeHR1QkF6WEpGYzRjdEE9PSIsInZhbHVlIjoiRGh6cXVuaHRQRDU1aGxGd2hDZGVLdmJkcWIybDNnWkpXaXF5TkdobmpzOS9iYzlNRDNUcldyQ0VZSlR2UDlDd3JvZ1lUVjVIWWJBTWJENmRKZHhva2FNZzJOc3ZaZkordUhzTkJnbkhuNEdYWnoxWDRtVkNZVGFHZkVhb2VLcHdDWVJtYzVZYno2SmJJS1h6YytiRVMwNDZBcVN0TnR4aDBJckRPSThOMmQ4PSIsIm1hYyI6ImExZDNmMzBiN2VjNzJjNzg5ZDEyYjAxMTRmNWJmZjcwZTJjYzhkMWUwNjA0OGU3MDkxNDk5NTlkYzc2NmI2YmMiLCJ0YWciOiIifQ==', '2026-01-14 01:00:26', '2026-03-22 18:09:53'),
+(3, 4, 30, 'BJMP@Tyron', 'custodian@gso.gov.ph', '2025-12-05 02:07:29', NULL, NULL, NULL, '$2y$12$O5.33/PqZ19/QvReS4c2YenCpG8LSbDqnk/1voMGXBc6StDYf0ly2', 0, 'Tyron Micarte', 1, 1, 'eyJpdiI6ImFvVEpuaEFUclVHYXRVSEJmV3NsYWc9PSIsInZhbHVlIjoibDM5NXorMGlPTkVqUHk1YXN0OXgzM3BWd0FoT3BkYVN0ZkdwRzkxRk9yaz0iLCJtYWMiOiJhOWI4MGQzMjUyZGMyYmJhYTNiNjI3NjVjYWI5NGYyNGIyYjUwNmFkNmM1NjAzZGM5MTE3YTIzOWVkMGQ2NDg5IiwidGFnIjoiIn0=', 'eyJpdiI6Ik1mTHF2UjNtNFlyRldRTzcwbDF5S0E9PSIsInZhbHVlIjoiNjcwdVQxeTJtNmNwOUt4Wkd5RVN1alhjcGZ5R0w5Z2g4clI4L3BvRklUbERXaGFEY1MxMHMzaGMwRGVjVmhtbXpKT1AxSlUxeUlMam9PUWRUeFBNcnpJdytsUmFubHpiSExFWEJKOXErK1dLUEtLWFZ0MDVJQ2RPYU11MHorUmRxTS8zRlpmRythNkJlUmh3ZmZUYkNScXBxRlV0YmUwN3NyUjRkQUNCazMwPSIsIm1hYyI6ImJmN2NlN2EwODAzMDNlZTEwYWZkOGRkNjQwNzYwZTE1NzY3MDEyZGMwMTZjMDRjMWQ4NzcwMzY4ZmJiYTU3NTgiLCJ0YWciOiIifQ==', '2025-12-05 02:07:29', '2026-04-05 01:08:07'),
+(5, 4, 87, 'HR_Head_Tyron', 'micarte2005@gmail.com', '2026-01-14 01:50:24', NULL, NULL, NULL, '$2y$12$UjxLHSUjJQBOZYHqrB7ajuK2rIiZ1P9962RTMFifYWMoF.fH7o3Wq', 0, 'Tyron Mecarte', 1, 1, 'eyJpdiI6Ilo3U0pYYVBOd1RFZEtTbmxxUlRXUWc9PSIsInZhbHVlIjoiYXlZTWlzemI3TlFZeWI4MUpuNC9wdEpFelN0emhnbFVWL1g2Ky9lMTFOTT0iLCJtYWMiOiIwZjY3ZjA3OTUwY2M1NGQzOTczMmNhZjA1NzI5NzU4ZDQ0MGEzNDU1NTZkMzEzMmQxYzRjZmI4NzcwYzQ0YjdkIiwidGFnIjoiIn0=', 'eyJpdiI6InplOXhDZXZEeHR1QkF6WEpGYzRjdEE9PSIsInZhbHVlIjoiRGh6cXVuaHRQRDU1aGxGd2hDZGVLdmJkcWIybDNnWkpXaXF5TkdobmpzOS9iYzlNRDNUcldyQ0VZSlR2UDlDd3JvZ1lUVjVIWWJBTWJENmRKZHhva2FNZzJOc3ZaZkordUhzTkJnbkhuNEdYWnoxWDRtVkNZVGFHZkVhb2VLcHdDWVJtYzVZYno2SmJJS1h6YytiRVMwNDZBcVN0TnR4aDBJckRPSThOMmQ4PSIsIm1hYyI6ImExZDNmMzBiN2VjNzJjNzg5ZDEyYjAxMTRmNWJmZjcwZTJjYzhkMWUwNjA0OGU3MDkxNDk5NTlkYzc2NmI2YmMiLCJ0YWciOiIifQ==', '2026-01-14 01:00:26', '2026-04-05 00:59:51'),
 (6, 4, 23, 'FD_Head_Cyron', 'aaya.micarte.coc@phinmaed.com', '2026-01-15 14:01:41', NULL, NULL, NULL, '$2y$12$A/XCqp8lXrNCeYvQ6lOyUu6DXxbXtJ3Z7FJ.5q39q9yASzA1EYIKS', 0, 'Cyron Micarte', 1, 0, NULL, NULL, '2026-01-15 14:00:32', '2026-03-22 20:58:51'),
 (7, 6, 49, 'IO_Abrogar', 'cycymicarte@gmail.com', '2026-02-12 18:27:18', NULL, NULL, NULL, '$2y$12$fepSB6IGbOXf7nWvwUDb2uJjr2FJO07ckbe1cHFDkN9/hSqnu.qQe', 0, 'Francismile Noah Abrogar', 1, 0, 'eyJpdiI6IlF1RW8ybzQxNWVPcy9obHNxZnJkN2c9PSIsInZhbHVlIjoiR3lzZ2VFZldMdkFocEpoRWVaU3BEMFJzRmovYWVPY1Z3MGRZaDFmc1h5VT0iLCJtYWMiOiJiNmE2ZjNmMWU4ZDliZmQ0YTExM2ExODE1MTFjNmE5MGE0Mzc5NjYzZTliOTE2NmU3MmFmNDc3YzFmZTE4YTQwIiwidGFnIjoiIn0=', 'eyJpdiI6InNoeEFiQmczdGtPRzFJeVBtTUl0L1E9PSIsInZhbHVlIjoiZlFjTFZMQ1FJSTAyK0pCNmg1OEhKVVRzYlluZGFvMC9nWk0yOW9BVGhFczMwTWlsM0psWHpKUVM4QkpVVEtTYWFqaG5kWHlqTWNwNmpvSkE5R2MrYXZyaVZUR3crOEdQbGp6ZE0zTkFPcSswR3BnRWdITHVPZ2FsMU1MQmdjeDdueVNMdDlnMWNYRGJxaFl0VC9xZFJzT2k1YUkzaVBRNFpMeDFvcFRHbkJZPSIsIm1hYyI6IjI4ZTlmMjViYTUzOWY3MjZmOWI5MjVhOGQ4ZjE0OTFiOTdlNjJjMzE4MDFhZGJjZTk3MjY4OGQwMmRlN2RjNzIiLCJ0YWciOiIifQ==', '2026-02-12 18:26:12', '2026-02-25 15:31:42');
 
@@ -2607,8 +2624,42 @@ INSERT INTO `user_notifications` (`UserNotificationID`, `UserID`, `event_type`, 
 (5, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt d21 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"46\\\",\\\"dr_number\\\":\\\"d21\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, '2026-03-25 11:31:25', '2026-03-24 03:51:19', '2026-03-25 11:31:25'),
 (6, 6, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-2026-03-18-004 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"32\\\",\\\"dr_number\\\":\\\"DR-2026-03-18-004\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-03-24 03:55:01', '2026-03-24 03:55:01'),
 (7, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-1 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"47\\\",\\\"dr_number\\\":\\\"DR-TEST-1\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 12:56:50', '2026-03-29 12:57:24', '2026-03-29 12:56:46', '2026-03-29 12:57:24'),
-(8, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-2 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"48\\\",\\\"dr_number\\\":\\\"DR-TEST-2\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 12:58:27', NULL, '2026-03-29 12:58:25', '2026-03-29 12:58:27'),
-(9, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-3 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"49\\\",\\\"dr_number\\\":\\\"DR-TEST-3\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 13:19:46', '2026-03-29 13:20:13', '2026-03-29 13:19:44', '2026-03-29 13:20:13');
+(8, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-2 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"48\\\",\\\"dr_number\\\":\\\"DR-TEST-2\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 12:58:27', '2026-04-03 17:11:14', '2026-03-29 12:58:25', '2026-04-03 17:11:14'),
+(9, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-3 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"49\\\",\\\"dr_number\\\":\\\"DR-TEST-3\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 13:19:46', '2026-03-29 13:20:13', '2026-03-29 13:19:44', '2026-03-29 13:20:13'),
+(10, 1, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:05:53', NULL, '2026-04-03 17:05:47', '2026-04-03 17:05:53'),
+(11, 2, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:05:53', '2026-04-03 17:05:53'),
+(12, 6, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:05:53', '2026-04-03 17:05:53'),
+(13, 2, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0006 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:06:39', '2026-04-03 17:06:39'),
+(14, 3, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0006 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:06:40', '2026-04-03 17:11:14', '2026-04-03 17:06:39', '2026-04-03 17:11:14'),
+(15, 6, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0006 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:06:40', '2026-04-03 17:06:40'),
+(16, 3, 'property_transfer.approved', 'Your Transfer Request Was Approved', 'Transfer PTR-2026-0006 has been approved and is waiting for releasing department review.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:06:42', '2026-04-03 17:11:14', '2026-04-03 17:06:40', '2026-04-03 17:11:14'),
+(17, 1, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:08:30', NULL, '2026-04-03 17:08:28', '2026-04-03 17:08:30'),
+(18, 2, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:08:30', '2026-04-03 17:08:30'),
+(19, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:14', '2026-04-03 17:08:30', '2026-04-03 17:11:14'),
+(20, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department and is awaiting signatures.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:14', '2026-04-03 17:08:30', '2026-04-03 17:11:14'),
+(21, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0006 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:09:22', '2026-04-03 17:09:22'),
+(22, 3, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0006 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:14', '2026-04-03 17:09:22', '2026-04-03 17:11:14'),
+(23, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0006 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:09:24', NULL, '2026-04-03 17:09:22', '2026-04-03 17:09:24'),
+(24, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0006 has been completed.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:08', '2026-04-03 17:09:24', '2026-04-03 17:11:08'),
+(25, 1, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0005 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:36:37', NULL, '2026-04-03 17:36:35', '2026-04-03 17:36:37'),
+(26, 2, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0005 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:36:37', '2026-04-03 17:36:37'),
+(27, 6, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0005 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:36:37', '2026-04-03 17:36:37'),
+(28, 2, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0005 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:37:23', '2026-04-03 17:37:23'),
+(29, 3, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0005 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:37:24', NULL, '2026-04-03 17:37:23', '2026-04-03 17:37:24'),
+(30, 6, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0005 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:37:24', '2026-04-03 17:37:24'),
+(31, 3, 'property_borrow.approved', 'Your Borrow Request Was Approved', 'Borrow request PBR-2026-0005 was approved and is pending releasing department review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:37:25', NULL, '2026-04-03 17:37:24', '2026-04-03 17:37:25'),
+(32, 1, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by the releasing department.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:38:25', NULL, '2026-04-03 17:38:24', '2026-04-03 17:38:25'),
+(33, 2, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by the releasing department.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:25', '2026-04-03 17:38:25'),
+(34, 3, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by the releasing department.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:25', '2026-04-03 17:38:25'),
+(35, 3, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by releasing department and is waiting for final GSO action.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:25', '2026-04-03 17:38:25'),
+(36, 2, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0005 was finalized and marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:56', '2026-04-03 17:38:56'),
+(37, 3, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0005 was finalized and marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:38:58', NULL, '2026-04-03 17:38:56', '2026-04-03 17:38:58'),
+(38, 6, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0005 was finalized and marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:58', '2026-04-03 17:38:58'),
+(39, 3, 'property_borrow.borrowed', 'Borrow Request Finalized', 'Borrow request PBR-2026-0005 is now marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:38:59', NULL, '2026-04-03 17:38:58', '2026-04-03 17:38:59'),
+(40, 2, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0005 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:55'),
+(41, 3, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0005 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:40:56', NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:56'),
+(42, 6, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0005 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:40:56', '2026-04-03 17:40:56'),
+(43, 3, 'property_borrow.returned', 'Borrow Return Completed', 'Borrow request PBR-2026-0005 is now fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:40:57', NULL, '2026-04-03 17:40:56', '2026-04-03 17:40:57');
 
 -- --------------------------------------------------------
 
@@ -2633,14 +2684,14 @@ CREATE TABLE `user_push_tokens` (
 --
 
 INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_name`, `is_active`, `last_used_at`, `created_at`, `updated_at`) VALUES
-(1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-03-22 14:51:52'),
-(2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-03-22 14:51:52'),
-(3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-03-22 14:52:48'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-03 11:51:58', '2026-03-22 14:52:48', '2026-04-03 11:51:58'),
+(1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
+(2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
+(3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-05 06:15:24', '2026-03-22 14:52:48', '2026-04-05 06:15:24'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
-(6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-03-25 13:31:10'),
+(6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
-(8, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHWwS9DhEMtQP70CLVDiGNA4MxtySBMrtrpySest_P1vuv-vNG4j7K9C3dieSK_fOZPyi3N6NP764UKB3m1B_v8mOupvOlyWcUTrJHOiRBthNO93PM', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 1, '2026-03-29 13:35:12', '2026-03-28 16:03:51', '2026-03-29 13:35:12');
+(8, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHWwS9DhEMtQP70CLVDiGNA4MxtySBMrtrpySest_P1vuv-vNG4j7K9C3dieSK_fOZPyi3N6NP764UKB3m1B_v8mOupvOlyWcUTrJHOiRBthNO93PM', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 1, '2026-04-04 17:06:06', '2026-03-28 16:03:51', '2026-04-04 17:06:06');
 
 -- --------------------------------------------------------
 
@@ -3037,25 +3088,6 @@ ALTER TABLE `propertyclassification`
   ADD PRIMARY KEY (`PropertyClassificationID`);
 
 --
--- Indexes for table `propertydisposal`
---
-ALTER TABLE `propertydisposal`
-  ADD PRIMARY KEY (`DisposalID`),
-  ADD UNIQUE KEY `DisposalNumber` (`DisposalNumber`),
-  ADD KEY `WasteMaterialID` (`WasteMaterialID`),
-  ADD KEY `ApprovedBy` (`ApprovedBy`),
-  ADD KEY `DisposalMethodID` (`DisposalMethodID`);
-
---
--- Indexes for table `propertydisposaldetail`
---
-ALTER TABLE `propertydisposaldetail`
-  ADD PRIMARY KEY (`DisposalDetailID`),
-  ADD KEY `DisposalID` (`DisposalID`),
-  ADD KEY `WasteDetailID` (`WasteDetailID`),
-  ADD KEY `PropertyID` (`PropertyID`);
-
---
 -- Indexes for table `propertyinventory`
 --
 ALTER TABLE `propertyinventory`
@@ -3345,7 +3377,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=196;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=214;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -3459,7 +3491,7 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=121;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=155;
 
 --
 -- AUTO_INCREMENT for table `migrations`
@@ -3507,31 +3539,19 @@ ALTER TABLE `position`
 -- AUTO_INCREMENT for table `propertyborrow`
 --
 ALTER TABLE `propertyborrow`
-  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `propertyborrowitems`
 --
 ALTER TABLE `propertyborrowitems`
-  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `propertyclassification`
 --
 ALTER TABLE `propertyclassification`
   MODIFY `PropertyClassificationID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `propertydisposal`
---
-ALTER TABLE `propertydisposal`
-  MODIFY `DisposalID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `propertydisposaldetail`
---
-ALTER TABLE `propertydisposaldetail`
-  MODIFY `DisposalDetailID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `propertyinventory`
@@ -3567,7 +3587,7 @@ ALTER TABLE `propertyreceived`
 -- AUTO_INCREMENT for table `propertyreturn`
 --
 ALTER TABLE `propertyreturn`
-  MODIFY `ReturnID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `ReturnID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `propertyreturnitemconditions`
@@ -3579,7 +3599,7 @@ ALTER TABLE `propertyreturnitemconditions`
 -- AUTO_INCREMENT for table `propertyreturnitems`
 --
 ALTER TABLE `propertyreturnitems`
-  MODIFY `ReturnItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `ReturnItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `propertystatus`
@@ -3591,13 +3611,13 @@ ALTER TABLE `propertystatus`
 -- AUTO_INCREMENT for table `propertytransfer`
 --
 ALTER TABLE `propertytransfer`
-  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `propertytransferdetails`
 --
 ALTER TABLE `propertytransferdetails`
-  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `propertytype`
@@ -3639,7 +3659,7 @@ ALTER TABLE `supplier`
 -- AUTO_INCREMENT for table `trusted_devices`
 --
 ALTER TABLE `trusted_devices`
-  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=101;
+  MODIFY `DeviceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=103;
 
 --
 -- AUTO_INCREMENT for table `unitofmeasure`
@@ -3669,7 +3689,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT for table `user_push_tokens`

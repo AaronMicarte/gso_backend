@@ -17,7 +17,7 @@ return new class extends Migration
             ->update(['Status' => 'work_approved']);
 
         DB::table('asset_service_records')
-            ->whereIn('Status', ['closed', 'unrepairable'])
+            ->whereIn('Status', ['closed', 'unserviceable'])
             ->update(['Status' => 'fixed']);
 
         if (Schema::hasTable('asset_service_records_details')) {
@@ -26,7 +26,7 @@ return new class extends Migration
                 ->update(['Status' => 'work_approved']);
 
             DB::table('asset_service_records_details')
-                ->whereIn('Status', ['closed', 'unrepairable'])
+                ->whereIn('Status', ['closed', 'unserviceable'])
                 ->update(['Status' => 'fixed']);
         }
     }

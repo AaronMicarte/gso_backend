@@ -32,7 +32,7 @@ return new class extends Migration
             $table->string('SubmittedByName', 150)->nullable();
             $table->integer('SubmittedByEndUserID')->nullable();
             $table->integer('ReportingDepartmentID')->nullable();
-            $table->enum('Status', ['pending', 'under_review', 'work_approved', 'repair_in_progress', 'verification', 'closed', 'unrepairable'])->default('pending');
+            $table->enum('Status', ['pending', 'under_review', 'work_approved', 'repair_in_progress', 'verification', 'closed', 'unserviceable'])->default('pending');
             $table->text('RecordNotes')->nullable();
             $table->integer('CreatedByUserID');
             $table->integer('UpdatedByUserID')->nullable();
@@ -57,7 +57,7 @@ return new class extends Migration
             $table->text('ProblemDescription');
             $table->enum('HandlingDecision', ['warranty_claim', 'vendor_repair', 'replacement_evaluation'])->nullable();
             $table->enum('BudgetStatus', ['pending_check', 'warranty_covered', 'budget_available', 'budget_unavailable'])->default('pending_check');
-            $table->enum('Status', ['pending', 'under_review', 'work_approved', 'repair_in_progress', 'verification', 'closed', 'unrepairable'])->default('pending');
+            $table->enum('Status', ['pending', 'under_review', 'work_approved', 'repair_in_progress', 'verification', 'closed', 'unserviceable'])->default('pending');
             $table->bigInteger('AssignedVendorID')->unsigned()->nullable();
             $table->decimal('EstimatedCost', 12, 2)->nullable();
             $table->decimal('ActualCost', 12, 2)->nullable();

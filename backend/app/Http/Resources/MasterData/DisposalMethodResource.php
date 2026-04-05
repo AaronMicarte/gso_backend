@@ -13,6 +13,7 @@ class DisposalMethodResource extends JsonResource
             'id' => $this->DisposalMethodID,
             'name' => $this->MethodName,
             'description' => $this->Description,
+            'icon_key' => $this->IconKey,
             'deleted_at' => $this->deleted_at?->format('Y-m-d H:i:s'),
             'is_deleted' => $this->trashed(),
         ];

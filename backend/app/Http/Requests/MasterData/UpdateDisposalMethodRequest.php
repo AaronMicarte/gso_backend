@@ -24,6 +24,7 @@ class UpdateDisposalMethodRequest extends FormRequest
         return [
             'MethodName' => 'sometimes|required|string|max:100',
             'Description' => 'nullable|string|max:255',
+            'IconKey' => 'nullable|string|max:50',
         ];
     }
 }

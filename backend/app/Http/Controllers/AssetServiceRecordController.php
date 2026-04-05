@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\AssetAuditLog;
 use App\Models\AssetServiceRecord;
 use App\Models\AssetServiceRecordDetail;
+use App\Models\PropertyWasteItem;
+use App\Models\PropertyWasteReport;
 use App\Models\Auth\User;
 use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -25,7 +27,7 @@ class AssetServiceRecordController extends Controller
         'repair_in_progress',
         'verification',
         'fixed',
-        'unrepairable',
+        'unserviceable',
     ];
 
     private const STATUS_FLOW = [
@@ -34,7 +36,7 @@ class AssetServiceRecordController extends Controller
         'repair_in_progress',
         'verification',
         'fixed',
-        'unrepairable',
+        'unserviceable',
     ];
 
     private const HANDLING_DECISIONS = [
@@ -109,7 +111,7 @@ class AssetServiceRecordController extends Controller
             return $this->getConditionIdByName(self::CONDITION_SERVICEABLE);
         }
 
-        if ($status === 'unrepairable') {
+        if ($status === 'unserviceable') {
             return $this->getConditionIdByName(self::CONDITION_UNSERVICEABLE);
         }
 
@@ -128,6 +130,58 @@ class AssetServiceRecordController extends Controller
         // Keep assigned property condition in sync as well.
         \App\Models\AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)
             ->update(['ConditionID' => $conditionId]);
+    }
+
+    private function getForDisposalPropertyStatusId(): ?int
+    {
+        return \App\Models\MasterData\PropertyStatus::query()
+            ->whereRaw('LOWER(StatusName) = ?', ['for disposal'])
+            ->value('PropertyStatusID');
+    }
+
+    private function ensureWasteRecordForUnserviceable(
+        AssetServiceRecord $record,
+        AssetServiceRecordDetail $detail,
+        \App\Models\Inventory\PropertyInventoryDetail $inventoryDetail,
+        int $actorUserId
+    ): void {
+        if ((string) $detail->Status !== 'unserviceable') {
+            return;
+        }
+
+        $report = PropertyWasteReport::firstOrCreate(
+            ['SourceServiceRecordID' => (int) $record->ServiceRecordID],
+            [
+                'WasteNumber' => PropertyWasteReport::generateWasteNumber(),
+                'DepartmentID' => (int) $record->ReportSource,
+                'Status' => 'draft',
+                'Notes' => 'Auto-created from service record unserviceable outcome.',
+                'CreatedByUserID' => $actorUserId,
+                'UpdatedByUserID' => $actorUserId,
+            ]
+        );
+
+        PropertyWasteItem::firstOrCreate(
+            ['ServiceRecordDetailID' => (int) $detail->ServiceRecordDetailID],
+            [
+                'PropertyWasteReportID' => (int) $report->PropertyWasteReportID,
+                'InventoryDetailID' => (int) $detail->InventoryDetailID,
+                'PropertyNumber' => $detail->PropertyNumber ?: $inventoryDetail->PropertyNumber,
+                'ItemDescription' => $detail->ItemDescription ?: $inventoryDetail->Description,
+                'ConditionID' => (int) $inventoryDetail->ConditionID,
+                'Status' => 'pending_method',
+                'ActionedByUserID' => $actorUserId,
+            ]
+        );
+
+        $forDisposalStatusId = $this->getForDisposalPropertyStatusId();
+        if (!empty($forDisposalStatusId)) {
+            $inventoryDetail->PropertyStatusID = (int) $forDisposalStatusId;
+            $inventoryDetail->save();
+
+            \App\Models\AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)
+                ->update(['PropertyStatusID' => (int) $forDisposalStatusId]);
+        }
     }
 
     public function index(Request $request)
@@ -322,7 +376,6 @@ class AssetServiceRecordController extends Controller
                     ]
                 );
 
-                $unserviceableConditionId = $this->getConditionIdByName(self::CONDITION_UNSERVICEABLE);
                 $underRepairConditionId = $this->getConditionIdByName(self::CONDITION_UNDER_REPAIR);
 
                 // Inventory items should reflect active service workflow. Use Under Repair while in progress,
@@ -504,6 +557,7 @@ class AssetServiceRecordController extends Controller
                     $inventoryConditionId = $this->getConditionIdForStatus($detail->Status);
                     if ($inventoryConditionId !== null) {
                         $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
+                        $this->ensureWasteRecordForUnserviceable($record, $detail, $inventoryDetail, (int) $user->UserID);
                     }
                 }
             }
@@ -540,6 +594,15 @@ class AssetServiceRecordController extends Controller
                         $inventoryDetail = \App\Models\Inventory\PropertyInventoryDetail::find($serviceDetail->InventoryDetailID);
                         if ($inventoryDetail) {
                             $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
+                            if ((string) $record->Status === 'unserviceable') {
+                                $serviceDetail = AssetServiceRecordDetail::where('ServiceRecordID', (int) $record->ServiceRecordID)
+                                    ->where('InventoryDetailID', (int) $inventoryDetail->InventoryDetailID)
+                                    ->first();
+
+                                if ($serviceDetail) {
+                                    $this->ensureWasteRecordForUnserviceable($record, $serviceDetail, $inventoryDetail, (int) $user->UserID);
+                                }
+                            }
                         }
                     }
                 }
@@ -952,11 +1015,11 @@ class AssetServiceRecordController extends Controller
             return true;
         }
 
-        if ($currentStatus === 'repair_in_progress' && in_array($nextStatus, ['fixed', 'unrepairable'], true)) {
+        if ($currentStatus === 'repair_in_progress' && in_array($nextStatus, ['fixed', 'unserviceable'], true)) {
             return true;
         }
 
-        if ($currentStatus === 'verification' && in_array($nextStatus, ['fixed', 'unrepairable', 'repair_in_progress'], true)) {
+        if ($currentStatus === 'verification' && in_array($nextStatus, ['fixed', 'unserviceable', 'repair_in_progress'], true)) {
             return true;
         }
 
@@ -999,8 +1062,8 @@ class AssetServiceRecordController extends Controller
         if (in_array('verification', $statuses, true)) {
             return 'verification';
         }
-        if (in_array('unrepairable', $statuses, true)) {
-            return 'unrepairable';
+        if (in_array('unserviceable', $statuses, true)) {
+            return 'unserviceable';
         }
         if (in_array('fixed', $statuses, true)) {
             return 'fixed';

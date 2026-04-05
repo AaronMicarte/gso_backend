@@ -24,6 +24,7 @@ class StoreDisposalMethodRequest extends FormRequest
         return [
             'MethodName' => 'required|string|max:100',
             'Description' => 'nullable|string|max:255',
+            'IconKey' => 'nullable|string|max:50',
         ];
     }
 }
