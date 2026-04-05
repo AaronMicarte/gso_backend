@@ -813,6 +813,7 @@ class AssetServiceRecordController extends Controller
             ->with([
                 'propertyType:PropertyTypeID,PropertyName',
                 'condition:ConditionID,ConditionName',
+                'propertyStatus:PropertyStatusID,StatusName',
                 'inventory:InventoryID,InventoryNumber,DateReceived',
                 'drDetail:DRDetailID,DRID,ArticleID,ItemDescription',
                 'drDetail.article:ArticleID,ArticleName',
@@ -854,6 +855,14 @@ class AssetServiceRecordController extends Controller
             $query->where('PropertyStatusID', (int) $request->query('property_status_id'));
         }
 
+        // Only hide items already marked for disposal in property status.
+        $query->where(function ($q) {
+            $q->whereNull('PropertyStatusID')
+                ->orWhereHas('propertyStatus', function ($sq) {
+                    $sq->whereRaw('LOWER(StatusName) NOT LIKE ?', ['%for disposal%']);
+                });
+        });
+
         $rows = $query->limit(200)->get()->map(static function ($item) {
             $supplier = $item->drDetail?->deliveryReceipt?->supplier;
             $articleName = $item->drDetail?->article?->ArticleName;
@@ -874,6 +883,7 @@ class AssetServiceRecordController extends Controller
                 'SupplierName' => $supplier?->SupplierName,
                 'propertyType' => $item->propertyType,
                 'condition' => $item->condition,
+                'propertyStatus' => $item->propertyStatus,
                 'inventory' => $item->inventory,
             ];
         })->values();
