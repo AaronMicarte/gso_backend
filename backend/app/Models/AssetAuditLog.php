@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Auth\User;
+use App\Services\PropertyCardLedgerService;
 
 class AssetAuditLog extends Model
 {
@@ -46,7 +47,7 @@ class AssetAuditLog extends Model
         int $performedBy,
         ?array $details = null
     ): self {
-        return self::create([
+        $log = self::create([
             'EntityType' => $entityType,
             'EntityID' => $entityId,
             'Action' => $action,
@@ -56,5 +57,15 @@ class AssetAuditLog extends Model
             'UserAgent' => request()->userAgent(),
             'CreatedAt' => now(),
         ]);
+
+        if ($entityType === 'inventory_detail') {
+            try {
+                app(PropertyCardLedgerService::class)->syncForInventoryDetail($entityId);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $log;
     }
 }

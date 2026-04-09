@@ -191,6 +191,7 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::post('backfill-qr-codes', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'backfillQrCodes']);
                 Route::get('all-items', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'allItems']);
                 Route::get('details/{id}/history', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'detailHistory']);
+                Route::get('details/{id}/property-card', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'propertyCard']);
                 Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
                 Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);
                 Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);

@@ -9,10 +9,12 @@ use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\PropertyTransferItem;
 use App\Models\AssetAuditLog;
+use App\Models\PropertyCardEntry;
 use App\Models\Procurement\DeliveryReceipt;
 use App\Models\Procurement\DeliveryReceiptDetail;
 use App\Models\Procurement\IARDetail;
 use App\Models\MasterData\PropertyStatus;
+use App\Services\PropertyCardLedgerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
@@ -1067,6 +1069,287 @@ class InventoryController extends Controller
             'inventory_detail_id' => (int) $detail->InventoryDetailID,
             'history' => $history,
         ]);
+    }
+
+    // GET /api/admin/inventory/details/{id}/property-card
+    public function propertyCard($id)
+    {
+        $detail = PropertyInventoryDetail::with([
+            'inventory',
+            'drDetail.deliveryReceipt.requestedByUser',
+            'drDetail.article',
+            'propertyType',
+        ])->find($id);
+
+        if (!$detail) {
+            return response()->json(['message' => 'Inventory detail not found'], 404);
+        }
+
+        app(PropertyCardLedgerService::class)->syncForInventoryDetail((int) $detail->InventoryDetailID);
+
+        $entries = PropertyCardEntry::query()
+            ->where('InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->orderByRaw("CASE WHEN SourceType = 'opening' THEN 0 ELSE 1 END")
+            ->orderBy('EntryDate')
+            ->orderBy('EntryID')
+            ->get();
+
+        $balance = 0;
+        $fixedAmount = $detail->UnitCost !== null ? (float) $detail->UnitCost : null;
+        $rows = $entries->map(function (PropertyCardEntry $entry) use (&$balance, $detail, $fixedAmount) {
+            $rawReceiptQty = (int) ($entry->ReceiptQty ?? 0);
+            $rawIssueQty = (int) ($entry->IssueQty ?? 0);
+
+            // COA style: returns are represented as negative issue values (not a separate return column).
+            $receiptQty = $entry->EntryType === 'borrow_return' ? 0 : $rawReceiptQty;
+            $issueQty = $entry->EntryType === 'borrow_return' ? -$rawReceiptQty : $rawIssueQty;
+
+            // Running balance: Previous Balance + Receipt - Issue
+            $balance += $receiptQty;
+            $balance -= $issueQty;
+            if ($balance < 0) {
+                $balance = 0;
+            }
+
+            $officeOfficer = $this->resolvePropertyCardOfficeOfficer($entry, $detail);
+
+            return [
+                'date' => $entry->EntryDate ? $entry->EntryDate->toDateString() : null,
+                'reference' => $entry->ReferenceNo,
+                'receipt_qty' => $receiptQty > 0 ? $receiptQty : null,
+                'issue_qty' => $issueQty !== 0 ? $issueQty : null,
+                'office_officer' => $officeOfficer,
+                'balance_qty' => $balance,
+                // Amount is fixed per item (unit cost), not recalculated per transaction row.
+                'amount' => $fixedAmount,
+                'remarks' => $entry->Remarks,
+                'entry_type' => $entry->EntryType,
+                'source_type' => $entry->SourceType,
+            ];
+        })->values();
+
+        $entityName = trim((string) config('gso.entity_name', 'CITY GOVERNMENT OF EL SALVADOR'));
+        if ($entityName === '') {
+            $entityName = 'CITY GOVERNMENT OF EL SALVADOR';
+        }
+
+        $fundCluster = trim((string) config('gso.fund_cluster', ''));
+
+        $articleName = $detail->drDetail?->article?->ArticleName
+            ?? $detail->propertyType?->PropertyName
+            ?? 'Property Item';
+
+        $descriptionParts = array_values(array_filter([
+            trim((string) ($detail->Description ?? '')),
+            !empty($detail->Brand) ? ('Brand: ' . trim((string) $detail->Brand)) : null,
+            !empty($detail->ModelNumber) ? ('Model: ' . trim((string) $detail->ModelNumber)) : null,
+            !empty($detail->SerialNumber) ? ('Serial No.: ' . trim((string) $detail->SerialNumber)) : null,
+        ], static fn ($value) => is_string($value) && $value !== ''));
+
+        $composedDescription = !empty($descriptionParts)
+            ? implode(' | ', $descriptionParts)
+            : null;
+
+        return response()->json([
+            'inventory_detail_id' => (int) $detail->InventoryDetailID,
+            'header' => [
+                'entity_name' => $entityName,
+                'fund_cluster' => $fundCluster,
+                'property_plant_equipment' => $articleName,
+                'property_number' => $detail->PropertyNumber,
+                'description' => $composedDescription,
+                'unit_cost' => $detail->UnitCost !== null ? (float) $detail->UnitCost : null,
+            ],
+            'rows' => $rows,
+        ]);
+    }
+
+    private function resolvePropertyCardOfficeOfficer(PropertyCardEntry $entry, PropertyInventoryDetail $detail): string
+    {
+        $existing = trim((string) ($entry->OfficeOfficer ?? ''));
+        $genericLabels = [
+            'Borrowing office',
+            'Returned to accountable office',
+            'Transfer receiving office',
+            'Receiving office',
+            'Issued custodian',
+        ];
+
+        if ($existing !== '' && !in_array($existing, $genericLabels, true)) {
+            return $existing;
+        }
+
+        if ($entry->SourceType === 'opening') {
+            return $existing !== '' ? $existing : 'GSO';
+        }
+
+        if ($entry->SourceType !== 'audit' || empty($entry->SourceID)) {
+            return $existing !== '' ? $existing : 'Supply and Property Unit';
+        }
+
+        $audit = DB::table('asset_audit_logs')
+            ->where('AuditID', (int) $entry->SourceID)
+            ->first(['Action', 'Details']);
+
+        if (!$audit) {
+            return $existing !== '' ? $existing : 'Supply and Property Unit';
+        }
+
+        $details = [];
+        if (is_string($audit->Details) && $audit->Details !== '') {
+            $decoded = json_decode($audit->Details, true);
+            if (is_array($decoded)) {
+                $details = $decoded;
+            }
+        }
+
+        $action = strtolower((string) ($audit->Action ?? ''));
+
+        if ($action === 'issued') {
+            $issuanceId = (int) ($details['issuance_id'] ?? 0);
+            if ($issuanceId > 0) {
+                $issuanceLabel = $this->issuanceOfficeOfficer($issuanceId);
+                if ($issuanceLabel !== null && $issuanceLabel !== '') {
+                    return $issuanceLabel;
+                }
+            }
+
+            $requestId = (int) ($details['request_id'] ?? 0);
+            if ($requestId > 0) {
+                $requester = DB::table('assetrequest as ar')
+                    ->leftJoin('user as u', 'u.UserID', '=', 'ar.RequestedBy')
+                    ->leftJoin('department as d', 'd.DepartmentID', '=', 'u.DepartmentID')
+                    ->where('ar.RequestID', $requestId)
+                    ->selectRaw("TRIM(CONCAT(COALESCE(u.FullName, ''), CASE WHEN d.DepartmentName IS NOT NULL AND d.DepartmentName <> '' THEN CONCAT(' - ', d.DepartmentName) ELSE '' END)) as label")
+                    ->value('label');
+
+                if (is_string($requester) && trim($requester) !== '') {
+                    return trim($requester);
+                }
+            }
+
+            $issuedTo = trim((string) ($details['issued_to'] ?? ''));
+            if ($issuedTo !== '') {
+                return $issuedTo;
+            }
+        }
+
+        if ($action === 'transfer_completed') {
+            return $this->departmentHeadWithDepartment((int) ($details['to_department_id'] ?? 0), 'Receiving Department');
+        }
+
+        if ($action === 'borrow_requested') {
+            $borrowId = (int) ($details['borrow_id'] ?? 0);
+            if ($borrowId > 0) {
+                $borrowOffice = $this->borrowReceivingOfficeOfficer($borrowId);
+                if ($borrowOffice !== null && $borrowOffice !== '') {
+                    return $borrowOffice;
+                }
+            }
+
+            return $this->departmentHeadWithDepartment((int) ($details['to_department_id'] ?? 0), 'Borrowing Department');
+        }
+
+        if ($action === 'borrow_returned') {
+            $borrowId = (int) ($details['borrow_id'] ?? 0);
+            if ($borrowId > 0) {
+                $borrowOffice = $this->borrowReceivingOfficeOfficer($borrowId);
+                if ($borrowOffice !== null && $borrowOffice !== '') {
+                    return $borrowOffice;
+                }
+            }
+
+            return $this->departmentHeadWithDepartment((int) ($details['to_department_id'] ?? 0), 'Borrowing Department');
+        }
+
+        return $existing !== '' ? $existing : 'Supply and Property Unit';
+    }
+
+    private function departmentHeadWithDepartment(int $departmentId, string $fallback): string
+    {
+        if ($departmentId <= 0) {
+            return $fallback;
+        }
+
+        $headLabel = DB::table('user as u')
+            ->leftJoin('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+            ->leftJoin('department as d', 'd.DepartmentID', '=', 'u.DepartmentID')
+            ->where('u.DepartmentID', $departmentId)
+            ->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+            ->orderByDesc('u.UserID')
+            ->selectRaw("TRIM(CONCAT(COALESCE(u.FullName, ''), CASE WHEN d.DepartmentName IS NOT NULL AND d.DepartmentName <> '' THEN CONCAT(' - ', d.DepartmentName) ELSE '' END)) as label")
+            ->value('label');
+
+        if (is_string($headLabel) && trim($headLabel) !== '') {
+            return trim($headLabel);
+        }
+
+        $departmentName = DB::table('department')
+            ->where('DepartmentID', $departmentId)
+            ->value('DepartmentName');
+
+        if (is_string($departmentName) && trim($departmentName) !== '') {
+            return trim($departmentName);
+        }
+
+        return $fallback;
+    }
+
+    private function issuanceOfficeOfficer(int $issuanceId): ?string
+    {
+        $issuance = DB::table('propertyissuance as pi')
+            ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'pi.IssuedTo')
+            ->leftJoin('department as d', 'd.DepartmentID', '=', 'eu.DepartmentID')
+            ->leftJoin('assetrequest as ar', 'ar.RequestID', '=', 'pi.RequestID')
+            ->leftJoin('user as req', 'req.UserID', '=', 'ar.RequestedBy')
+            ->where('pi.IssuanceID', $issuanceId)
+            ->selectRaw('pi.IssuedToName, eu.DepartmentID as EndUserDepartmentID, req.DepartmentID as RequestDepartmentID')
+            ->first();
+
+        if (!$issuance) {
+            return null;
+        }
+
+        $deptId = (int) ($issuance->EndUserDepartmentID ?? $issuance->RequestDepartmentID ?? 0);
+        if ($deptId > 0) {
+            $deptHead = $this->departmentHeadWithDepartment($deptId, '');
+            if ($deptHead !== '') {
+                return $deptHead;
+            }
+        }
+
+        $issuedToName = trim((string) ($issuance->IssuedToName ?? ''));
+        return $issuedToName !== '' ? $issuedToName : null;
+    }
+
+    private function borrowReceivingOfficeOfficer(int $borrowId): ?string
+    {
+        $borrow = DB::table('propertyborrow as pb')
+            ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'pb.ToEndUserID')
+            ->leftJoin('department as d', 'd.DepartmentID', '=', 'pb.ToDepartmentID')
+            ->where('pb.BorrowID', $borrowId)
+            ->selectRaw('pb.ToDepartmentID, eu.FullName as EndUserName, d.DepartmentName')
+            ->first();
+
+        if (!$borrow) {
+            return null;
+        }
+
+        $toDepartmentId = (int) ($borrow->ToDepartmentID ?? 0);
+        if ($toDepartmentId > 0) {
+            $deptHead = $this->departmentHeadWithDepartment($toDepartmentId, '');
+            if ($deptHead !== '') {
+                return $deptHead;
+            }
+        }
+
+        $endUserName = trim((string) ($borrow->EndUserName ?? ''));
+        $departmentName = trim((string) ($borrow->DepartmentName ?? ''));
+        if ($endUserName !== '' || $departmentName !== '') {
+            return trim(implode(' - ', array_filter([$endUserName, $departmentName])));
+        }
+
+        return null;
     }
 
     // POST /api/admin/inventory/backfill-qr-codes - Generate QR codes for issued items that don't have them

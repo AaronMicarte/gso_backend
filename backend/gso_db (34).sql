@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 05, 2026 at 12:02 PM
+-- Generation Time: Apr 09, 2026 at 06:53 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -393,7 +393,22 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (231, 'property_waste_report', 1, 'updated', 1, '{\"waste_number\":\"WST-2026-0001\",\"old_status\":\"approved\",\"new_status\":\"approved\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 09:41:26'),
 (232, 'property_waste_report', 1, 'updated', 1, '{\"waste_number\":\"WST-2026-0001\",\"old_status\":\"draft\",\"new_status\":\"draft\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 09:54:58'),
 (233, 'property_waste_report', 1, 'updated', 1, '{\"waste_number\":\"WST-2026-0001\",\"old_status\":\"draft\",\"new_status\":\"draft\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 09:55:12'),
-(234, 'property_waste_report', 1, 'updated', 1, '{\"waste_number\":\"WST-2026-0001\",\"old_status\":\"draft\",\"new_status\":\"completed\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 09:55:17');
+(234, 'property_waste_report', 1, 'updated', 1, '{\"waste_number\":\"WST-2026-0001\",\"old_status\":\"draft\",\"new_status\":\"completed\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 09:55:17'),
+(235, 'inventory_detail', 143, 'service_record_created', 1, '{\"service_record_id\":5,\"service_record_detail_id\":5,\"service_number\":\"SVR-2026-0005\",\"status\":\"pending\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:23:39'),
+(236, 'asset_service_record', 5, 'created', 1, '{\"service_number\":\"SVR-2026-0005\",\"status\":\"pending\",\"details_count\":1,\"report_source_id\":30}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:23:39'),
+(237, 'asset_service_record_detail', 5, 'updated', 1, '{\"service_record_id\":5,\"old_status\":\"pending\",\"new_status\":\"work_approved\",\"inventory_detail_id\":143}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:02'),
+(238, 'asset_service_record', 5, 'updated', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"pending\",\"new_status\":\"work_approved\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:02'),
+(239, 'asset_service_record', 5, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"pending\",\"new_status\":\"work_approved\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:02'),
+(240, 'asset_service_record_detail', 5, 'updated', 1, '{\"service_record_id\":5,\"old_status\":\"work_approved\",\"new_status\":\"repair_in_progress\",\"inventory_detail_id\":143}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:08'),
+(241, 'asset_service_record', 5, 'updated', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"work_approved\",\"new_status\":\"repair_in_progress\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:08'),
+(242, 'asset_service_record', 5, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"work_approved\",\"new_status\":\"repair_in_progress\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:08'),
+(243, 'asset_service_record', 5, 'updated', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"repair_in_progress\",\"new_status\":\"verification\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:14'),
+(244, 'asset_service_record', 5, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"repair_in_progress\",\"new_status\":\"verification\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:14'),
+(245, 'asset_service_record_detail', 5, 'updated', 1, '{\"service_record_id\":5,\"old_status\":\"repair_in_progress\",\"new_status\":\"unserviceable\",\"inventory_detail_id\":143}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:24'),
+(246, 'asset_service_record', 5, 'updated', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"verification\",\"new_status\":\"unserviceable\",\"details_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:24'),
+(247, 'asset_service_record', 5, 'status_changed', 1, '{\"service_number\":\"SVR-2026-0005\",\"old_status\":\"verification\",\"new_status\":\"unserviceable\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-05 10:24:24'),
+(248, 'property_waste_report', 2, 'updated', 1, '{\"waste_number\":\"WST-2026-0002\",\"old_status\":\"draft\",\"new_status\":\"draft\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 09:37:28'),
+(249, 'property_waste_report', 2, 'updated', 1, '{\"waste_number\":\"WST-2026-0002\",\"old_status\":\"draft\",\"new_status\":\"draft\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '2026-04-09 09:37:40');
 
 -- --------------------------------------------------------
 
@@ -450,7 +465,8 @@ INSERT INTO `asset_service_records` (`ServiceRecordID`, `ServiceNumber`, `DateRe
 (1, 'SVR-2026-0001', '2026-03-25', 30, 'fixed', NULL, 'Fixed by warranty helyeah?', 1, 1, '2026-03-25 13:41:50', '2026-03-28 16:02:48', NULL),
 (2, 'SVR-2026-0002', '2026-03-29', 30, 'fixed', NULL, 'fixed', 1, 1, '2026-03-29 11:12:16', '2026-03-29 11:13:02', NULL),
 (3, 'SVR-2026-0003', '2026-03-29', 30, 'fixed', NULL, 'tulid good', 1, 1, '2026-03-29 13:37:47', '2026-03-29 13:39:14', NULL),
-(4, 'SVR-2026-0004', '2026-04-05', 30, 'unserviceable', NULL, 'wajud', 1, 1, '2026-04-05 09:22:05', '2026-04-05 09:22:46', NULL);
+(4, 'SVR-2026-0004', '2026-04-05', 30, 'unserviceable', NULL, 'wajud', 1, 1, '2026-04-05 09:22:05', '2026-04-05 09:22:46', NULL),
+(5, 'SVR-2026-0005', '2026-04-05', 30, 'unserviceable', NULL, 'hahahahaha guba di na maayo', 1, 1, '2026-04-05 10:23:39', '2026-04-05 10:24:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -492,7 +508,8 @@ INSERT INTO `asset_service_records_details` (`ServiceRecordDetailID`, `ServiceRe
 (1, 1, 96, '2026-000092', 'Office Chair (CH-ERG-22)', 'naguba ang ligid', 'warranty', 'warranty_covered', 'fixed', NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-03-25 13:41:50', '2026-03-28 16:02:48', NULL),
 (2, 2, 138, '2026-000111', 'MSI', 'guba ang monitor', 'warranty', 'warranty_covered', 'fixed', NULL, NULL, 4, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-03-29 11:12:16', '2026-03-29 11:13:02', NULL),
 (3, 3, 138, '2026-000111', 'MSI', 'monitor issue', 'warranty', 'warranty_covered', 'fixed', NULL, NULL, 4, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-03-29 13:37:47', '2026-03-29 13:39:14', NULL),
-(4, 4, 144, '2026-000117', 'Brother DCP-L5650DN', 'di mo print', 'warranty', 'warranty_covered', 'unserviceable', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-04-05 09:22:05', '2026-04-05 09:22:46', NULL);
+(4, 4, 144, '2026-000117', 'Brother DCP-L5650DN', 'di mo print', 'warranty', 'warranty_covered', 'unserviceable', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-04-05 09:22:05', '2026-04-05 09:22:46', NULL),
+(5, 5, 143, '2026-000116', 'Ergonomic Mesh Chair', 'haha', 'warranty', 'warranty_covered', 'unserviceable', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '[]', 1, 1, '2026-04-05 10:23:39', '2026-04-05 10:24:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -590,8 +607,8 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (72, 139, 2, 30, 'PAR-2026-0010', 'Lenovo ThinkCentre M70', '2026-03-29', 2, 1, 'Auto-created from DR inspection', '2026-03-29 20:32:46', '2026-03-29 20:56:46'),
 (73, 140, 2, 30, 'PAR-2026-0010', 'Ergonomic Mesh Chair', '2026-03-29', 2, 1, 'Auto-created from DR inspection', '2026-03-29 20:32:46', '2026-03-29 20:56:46'),
 (74, 141, 2, 30, 'PAR-2026-0011', 'Ergonomic Mesh Chair', '2026-03-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-29 20:52:16', '2026-03-29 20:58:25'),
-(75, 142, 2, 30, 'PAR-2026-0011', 'Brother DCP-L5650DN', '2026-03-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-29 20:52:16', '2026-03-29 20:58:25'),
-(76, 143, 2, 30, 'PAR-2026-0012', 'Ergonomic Mesh Chair', '2026-03-29', 2, 1, 'Auto-created from DR inspection', '2026-03-29 21:15:35', '2026-03-29 21:19:44'),
+(75, 142, 2, 30, 'PAR-2026-0011', 'Brother DCP-L5650DN', '2026-03-29', 2, 2, 'Auto-created from DR acknowledgment', '2026-03-29 20:52:16', '2026-04-05 18:29:04'),
+(76, 143, 2, 30, 'PAR-2026-0012', 'Ergonomic Mesh Chair', '2026-03-29', 4, 2, 'Auto-created from DR inspection', '2026-03-29 21:15:35', '2026-04-05 18:24:24'),
 (77, 144, 2, 30, 'PAR-2026-0012', 'Brother DCP-L5650DN', '2026-03-29', 4, 2, 'Auto-created from DR inspection', '2026-03-29 21:15:35', '2026-04-05 17:22:46');
 
 -- --------------------------------------------------------
@@ -605,6 +622,13 @@ CREATE TABLE `cache` (
   `value` mediumtext NOT NULL,
   `expiration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `cache`
+--
+
+INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
+('gsoiams-cache-fcm_oauth_access_token', 's:1024:\"ya29.c.c0AZ4bNpbFMPyfuckhi8zIdnhu7mKY1W_tBQg5hcXt4Da-PgQMW5r65F5V47nrq_CUzuUOkBU-6OkARCNLeEa3OVMXYoF2qKhTJWhoq8NM_7UfpUBSQ-bFrE-BlEukibUdwcSPl-RUmfD5lh5UXs3DKDY-QboU534CqEhkVEEBtnUDo6UtLuBHQylHO-CcHyQO_Lw21ALGnJdzp0ndEjRczfydwJPhITFXIbnYnL2ofgN3OU6SkGSePMvTUGI5C0eGbPTkPWg5H0J70FHofaz7pLv2b6392jiNFmbfFGfhbIDlfZUqn77h0V7dM7zn6MnaqjJItMsPJcdEhIhu-xczyv-8mHJjmjJev5jMQ-jYnPPahJF5FBO0Vv0hT385A0euYe48i-lJrgvtew233-aR7dO2gyIltWzY8vdzBU6hlJ23Ipd53bWSR46vB6a_6Ro3llgZ_13bFn3ug8ROisjYjlsZ8Vp-iZIpI-pc7lM6QqJ6unqdzbdzIQmaxYod049zcQg4_B7vR-bbhu5x-niJFujI4d4mcaqvVU9viF2kilId8o585rqqOh7vo4pqz5e7lmQ89gVQSgiqoIX6_k26UUsgV7JMF8h1fq3li8vV9yXwUsxc5cy9nI7qVBU_-kehRFF4FqQuc4w4Wsv5wFOjp7oeMverIhnQhXqZ5w2zZmoqoI2I9cOmB-2juxMc59hZ-hr1v4YScX2rZF11dQqqvgd51w7v0Ipunol3nfQQqVd8YBcfjtUzp8RSZFM9p1flnIat54eXqtYSqWb1fXd6ktU6y2hq1ZsZr_5ih_BSJQrxpa47tnOyp7e3w-01sjrfM35r18upVXXwe-p-afh8pMbtljgF-mVtMM-jrQMnaznJSmitsppjdOzl_52szrgI1YYBSlZgRstqhMOg73UYlvSigfW_Zt2px99xfe1fs9ngZo2Uzs0s-1fnFd9Xcs5Y2MmiOScm4e5vssRXwUnkIkwtqvuo4dgcO0xczRVsrYxyQsgb021dMBs\";', 1775388099);
 
 -- --------------------------------------------------------
 
@@ -1275,7 +1299,11 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (152, 3, '2026-04-05 01:08:22', 'Login', '127.0.0.1'),
 (153, 3, '2026-04-05 01:08:39', 'Logout', '127.0.0.1'),
 (154, 1, '2026-04-05 13:55:30', 'Login', '127.0.0.1'),
-(155, 3, '2026-04-05 17:23:13', 'Login', '127.0.0.1');
+(155, 3, '2026-04-05 17:23:13', 'Login', '127.0.0.1'),
+(156, 1, '2026-04-06 17:53:23', 'FailedLogin', '127.0.0.1'),
+(157, 1, '2026-04-06 17:55:44', 'Login', '127.0.0.1'),
+(158, 1, '2026-04-09 14:28:51', 'Login', '127.0.0.1'),
+(159, 3, '2026-04-09 19:36:46', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1455,7 +1483,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (165, '2026_04_03_193500_add_unique_indexes_to_iar_number_columns', 68),
 (166, '2026_04_05_080000_create_property_waste_reports_table', 69),
 (167, '2026_04_05_081000_rename_unrepairable_to_unserviceable_in_service_statuses', 69),
-(168, '2026_04_05_100000_simplify_property_waste_status_flow', 70);
+(168, '2026_04_05_100000_simplify_property_waste_status_flow', 70),
+(169, '2026_04_05_101000_enforce_simplified_property_waste_status_enum', 71),
+(170, '2026_04_09_130000_create_property_card_entries_table', 72);
 
 -- --------------------------------------------------------
 
@@ -1868,8 +1898,8 @@ INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `Prop
 (139, 19, 7, NULL, 'Lenovo ThinkCentre M70', '2026-000112', 'LNV2026-001', 1, 0, 2, 2, 42500.00, 42500.00, NULL, 105, 1, 'Lenovo', 'M70', NULL, '2026-03-29 20:32:46', '2026-03-29 20:56:46', NULL),
 (140, 19, 6, NULL, 'Ergonomic Mesh Chair', '2026-000113', 'ERGO-2026-002', 1, 0, 2, 2, 3200.00, 3200.00, NULL, 106, 1, 'ErgoSeat', 'CH-ERG-22', NULL, '2026-03-29 20:32:46', '2026-03-29 20:56:46', NULL),
 (141, 20, 6, NULL, 'Ergonomic Mesh Chair', '2026-000114', 'ERGO-2026-002', 1, 0, 2, 2, 3200.00, 3200.00, NULL, 107, 1, 'ErgoSeat', 'CH-ERG-22', NULL, '2026-03-29 20:52:16', '2026-03-29 20:58:25', NULL),
-(142, 20, 6, NULL, 'Brother DCP-L5650DN', '2026-000115', 'BR-2026-003', 1, 0, 2, 2, 18900.00, 18900.00, NULL, 108, 1, 'Brother', 'DCP-L5650DN', NULL, '2026-03-29 20:52:16', '2026-03-29 20:58:25', NULL),
-(143, 21, 6, NULL, 'Ergonomic Mesh Chair', '2026-000116', 'ERGO-2026-002', 1, 0, 2, 2, 3200.00, 3200.00, NULL, 109, 1, 'ErgoSeat', 'CH-ERG-22', NULL, '2026-03-29 21:15:35', '2026-03-29 21:19:44', NULL),
+(142, 20, 6, NULL, 'Brother DCP-L5650DN', '2026-000115', 'BR-2026-003', 1, 0, 2, 2, 18900.00, 18900.00, NULL, 108, 2, 'Brother', 'DCP-L5650DN', NULL, '2026-03-29 20:52:16', '2026-04-05 18:29:04', NULL),
+(143, 21, 6, NULL, 'Ergonomic Mesh Chair', '2026-000116', 'ERGO-2026-002', 1, 0, 4, 2, 3200.00, 3200.00, NULL, 109, 2, 'ErgoSeat', 'CH-ERG-22', NULL, '2026-03-29 21:15:35', '2026-04-05 18:24:24', NULL),
 (144, 21, 7, NULL, 'Brother DCP-L5650DN', '2026-000117', 'BR-2026-003', 1, 0, 4, 2, 18900.00, 18900.00, NULL, 110, 2, 'Brother', 'DCP-L5650DN', NULL, '2026-03-29 21:15:35', '2026-04-05 17:22:46', NULL);
 
 -- --------------------------------------------------------
@@ -2248,6 +2278,43 @@ INSERT INTO `propertytype` (`PropertyTypeID`, `PropertyClassificationID`, `Prope
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `property_card_entries`
+--
+
+CREATE TABLE `property_card_entries` (
+  `EntryID` bigint(20) UNSIGNED NOT NULL,
+  `InventoryDetailID` int(11) NOT NULL,
+  `EntryDate` datetime NOT NULL,
+  `EntryType` varchar(40) NOT NULL,
+  `ReceiptQty` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `IssueQty` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `ReferenceNo` varchar(100) DEFAULT NULL,
+  `OfficeOfficer` varchar(255) DEFAULT NULL,
+  `UnitCost` decimal(15,2) DEFAULT NULL,
+  `Amount` decimal(15,2) DEFAULT NULL,
+  `Remarks` text DEFAULT NULL,
+  `SourceType` varchar(40) NOT NULL,
+  `SourceID` bigint(20) UNSIGNED DEFAULT NULL,
+  `SourceKey` varchar(100) NOT NULL,
+  `CreatedBy` bigint(20) UNSIGNED DEFAULT NULL,
+  `CreatedAt` datetime NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `property_card_entries`
+--
+
+INSERT INTO `property_card_entries` (`EntryID`, `InventoryDetailID`, `EntryDate`, `EntryType`, `ReceiptQty`, `IssueQty`, `ReferenceNo`, `OfficeOfficer`, `UnitCost`, `Amount`, `Remarks`, `SourceType`, `SourceID`, `SourceKey`, `CreatedBy`, `CreatedAt`) VALUES
+(1, 14, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'IAR-2026-0015', 'Supply and Property Unit', 165000.00, 165000.00, 'Opening entry from IAR/Inventory', 'opening', 14, 'opening:14', NULL, '2026-04-10 00:42:27'),
+(2, 5, '2026-03-18 18:11:05', 'acquisition', 1, 0, 'PAR-2026-0001', 'GSO', 100.00, 100.00, 'Opening entry from PAR/IAR source', 'opening', 5, 'opening:5', NULL, '2026-04-10 00:52:42'),
+(3, 5, '2026-03-18 21:18:19', 'borrow', 0, 1, 'PBR-2026-0001', 'Borrowing office', 100.00, 100.00, 'Released under borrow transaction', 'audit', 25, 'audit:25', 6, '2026-03-18 21:18:19'),
+(4, 5, '2026-03-18 21:25:11', 'borrow_return', 1, 0, 'PBR-2026-0001', 'Returned to accountable office', 100.00, 100.00, 'Returned from borrow transaction', 'audit', 32, 'audit:32', 1, '2026-03-18 21:25:11'),
+(5, 8, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'IAR-2026-0014', 'Supply and Property Unit', 3200.00, 3200.00, 'Opening entry from IAR/Inventory', 'opening', 8, 'opening:8', NULL, '2026-04-10 00:48:55'),
+(6, 9, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 11500.00, 11500.00, 'Opening entry from PAR/IAR source', 'opening', 9, 'opening:9', NULL, '2026-04-10 00:52:24');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `property_waste_items`
 --
 
@@ -2273,7 +2340,8 @@ CREATE TABLE `property_waste_items` (
 --
 
 INSERT INTO `property_waste_items` (`PropertyWasteItemID`, `PropertyWasteReportID`, `ServiceRecordDetailID`, `InventoryDetailID`, `PropertyNumber`, `ItemDescription`, `ConditionID`, `DisposalMethodID`, `DisposalMethodNote`, `Status`, `ActionedByUserID`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 4, 144, '2026-000117', 'Brother DCP-L5650DN', 2, 3, NULL, 'disposed', 1, '2026-04-05 09:22:46', '2026-04-05 09:55:17', NULL);
+(1, 1, 4, 144, '2026-000117', 'Brother DCP-L5650DN', 2, 3, NULL, 'disposed', 1, '2026-04-05 09:22:46', '2026-04-05 09:55:17', NULL),
+(2, 2, 5, 143, '2026-000116', 'Ergonomic Mesh Chair', 2, 3, NULL, 'method_selected', 1, '2026-04-05 10:24:24', '2026-04-09 09:37:40', NULL);
 
 -- --------------------------------------------------------
 
@@ -2300,7 +2368,8 @@ CREATE TABLE `property_waste_reports` (
 --
 
 INSERT INTO `property_waste_reports` (`PropertyWasteReportID`, `WasteNumber`, `SourceServiceRecordID`, `DepartmentID`, `Status`, `Notes`, `CreatedByUserID`, `UpdatedByUserID`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'WST-2026-0001', 4, 30, 'completed', 'Auto-created from service record unserviceable outcome.', 1, 1, '2026-04-05 09:22:46', '2026-04-05 09:55:17', NULL);
+(1, 'WST-2026-0001', 4, 30, 'completed', 'Auto-created from service record unserviceable outcome.', 1, 1, '2026-04-05 09:22:46', '2026-04-05 09:55:17', NULL),
+(2, 'WST-2026-0002', 5, 30, 'draft', 'Auto-created from service record unserviceable outcome.', 1, 1, '2026-04-05 10:24:24', '2026-04-05 10:24:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -2497,8 +2566,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('0MtFEQDR1cvZvmfUgXGutTgSiwz1uftv6DccCSjp', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoicGlVU2FZTmpJUDNZQ21NV3ZReEptN055eVpXZGx3VFJycXRLc3FlSSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRPNS4zMy9QcVoxOS9RdlJlUzRjMlllbkNwRzhMU2JEcW5rLzF2b01HWEJjNlN0RFlmMGx5MiI7fQ==', 1775383371),
-('zoXhHk7dxPtnPrE1WZBIrHip4ssgmRqt8gOcHiGe', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoidWliTFlYRWdEZmFqTVdHdkszUlJrc0VURFhxR3lGbWZMY1R1dk56ZCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775383363);
+('1y5PonkgbrBwSVVDkfdoR4ausc9H2QQ4APDRE3kS', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiZXlKQU5ob3ZUSFVzeUw3M1daODZ0WUJOZUYxcDk5NjhkTVFqR2tIMiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775753627),
+('7nD4CJ5cXeTxgGMg9nn6qLwAvxzQGoP31Ldyh4rR', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoieElHbkRLMlY2MEpENXp4akJlREJhY1dWNnpLMXdHa3p4SDBSV2lrSCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRPNS4zMy9QcVoxOS9RdlJlUzRjMlllbkNwRzhMU2JEcW5rLzF2b01HWEJjNlN0RFlmMGx5MiI7fQ==', 1775753609);
 
 -- --------------------------------------------------------
 
@@ -2563,8 +2632,8 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (86, 1, 'Trusted Device', '92b86588f1a81d8f632b3484925ab65694afa1335866b980e6f6e563d670ed4d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-18 17:45:44', '2026-04-02 22:47:37', '2026-03-03 22:47:37', '2026-03-18 17:45:44'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-05 13:55:30', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-05 13:55:30'),
-(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-05 17:23:13', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-05 17:23:13');
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-09 14:28:51', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-09 14:28:51'),
+(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-09 19:36:46', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-09 19:36:46');
 
 -- --------------------------------------------------------
 
@@ -2753,7 +2822,17 @@ INSERT INTO `user_notifications` (`UserNotificationID`, `UserID`, `event_type`, 
 (50, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:37', '2026-04-05 09:22:37'),
 (51, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:37', '2026-04-05 09:22:37'),
 (52, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:46', '2026-04-05 09:22:46'),
-(53, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:46', '2026-04-05 09:22:46');
+(53, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:46', '2026-04-05 09:22:46'),
+(54, 2, 'asset_service_record.created', 'Asset Service Record Created', 'Service record SVR-2026-0005 has been created.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:23:39', '2026-04-05 10:23:39'),
+(55, 3, 'asset_service_record.created', 'Asset Service Record Created', 'Service record SVR-2026-0005 has been created.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:23:41', NULL, '2026-04-05 10:23:39', '2026-04-05 10:23:41'),
+(56, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from pending to work_approved.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"pending\\\",\\\"status\\\":\\\"work_approved\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:02', '2026-04-05 10:24:02'),
+(57, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from pending to work_approved.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"pending\\\",\\\"status\\\":\\\"work_approved\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:03', NULL, '2026-04-05 10:24:02', '2026-04-05 10:24:03'),
+(58, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from work_approved to repair_in_progress.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"work_approved\\\",\\\"status\\\":\\\"repair_in_progress\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:08', '2026-04-05 10:24:08'),
+(59, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from work_approved to repair_in_progress.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"work_approved\\\",\\\"status\\\":\\\"repair_in_progress\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:10', NULL, '2026-04-05 10:24:08', '2026-04-05 10:24:10'),
+(60, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:14', '2026-04-05 10:24:14'),
+(61, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:15', NULL, '2026-04-05 10:24:14', '2026-04-05 10:24:15'),
+(62, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:24', '2026-04-05 10:24:24'),
+(63, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:26', NULL, '2026-04-05 10:24:24', '2026-04-05 10:24:26');
 
 -- --------------------------------------------------------
 
@@ -2781,11 +2860,11 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-05 09:24:07', '2026-03-22 14:52:48', '2026-04-05 09:24:07'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-09 16:52:44', '2026-03-22 14:52:48', '2026-04-09 16:52:44'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
-(8, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHWwS9DhEMtQP70CLVDiGNA4MxtySBMrtrpySest_P1vuv-vNG4j7K9C3dieSK_fOZPyi3N6NP764UKB3m1B_v8mOupvOlyWcUTrJHOiRBthNO93PM', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 1, '2026-04-05 09:55:45', '2026-03-28 16:03:51', '2026-04-05 09:55:45');
+(8, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHWwS9DhEMtQP70CLVDiGNA4MxtySBMrtrpySest_P1vuv-vNG4j7K9C3dieSK_fOZPyi3N6NP764UKB3m1B_v8mOupvOlyWcUTrJHOiRBthNO93PM', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 1, '2026-04-09 11:37:00', '2026-03-28 16:03:51', '2026-04-09 11:37:00');
 
 -- --------------------------------------------------------
 
@@ -3305,6 +3384,15 @@ ALTER TABLE `propertytype`
   ADD KEY `PropertyClassificationID` (`PropertyClassificationID`);
 
 --
+-- Indexes for table `property_card_entries`
+--
+ALTER TABLE `property_card_entries`
+  ADD PRIMARY KEY (`EntryID`),
+  ADD UNIQUE KEY `property_card_entries_sourcekey_unique` (`SourceKey`),
+  ADD KEY `idx_pc_entries_detail_date` (`InventoryDetailID`,`EntryDate`),
+  ADD KEY `idx_pc_entries_source` (`SourceType`,`SourceID`);
+
+--
 -- Indexes for table `property_waste_items`
 --
 ALTER TABLE `property_waste_items`
@@ -3494,7 +3582,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=235;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=250;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -3506,13 +3594,13 @@ ALTER TABLE `asset_request_signatures`
 -- AUTO_INCREMENT for table `asset_service_records`
 --
 ALTER TABLE `asset_service_records`
-  MODIFY `ServiceRecordID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `ServiceRecordID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `asset_service_records_details`
 --
 ALTER TABLE `asset_service_records_details`
-  MODIFY `ServiceRecordDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `ServiceRecordDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `assignedproperty`
@@ -3608,13 +3696,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=156;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=160;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=169;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=171;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -3743,16 +3831,22 @@ ALTER TABLE `propertytype`
   MODIFY `PropertyTypeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
+-- AUTO_INCREMENT for table `property_card_entries`
+--
+ALTER TABLE `property_card_entries`
+  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT for table `property_waste_items`
 --
 ALTER TABLE `property_waste_items`
-  MODIFY `PropertyWasteItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `PropertyWasteItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `property_waste_reports`
 --
 ALTER TABLE `property_waste_reports`
-  MODIFY `PropertyWasteReportID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `PropertyWasteReportID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `qrcode`
@@ -3818,7 +3912,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT for table `user_push_tokens`
@@ -4019,6 +4113,12 @@ ALTER TABLE `propertytransfer`
 ALTER TABLE `propertytransferdetails`
   ADD CONSTRAINT `propertytransferdetails_inventorydetailid_foreign` FOREIGN KEY (`InventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`),
   ADD CONSTRAINT `propertytransferdetails_transferid_foreign` FOREIGN KEY (`TransferID`) REFERENCES `propertytransfer` (`TransferID`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `property_card_entries`
+--
+ALTER TABLE `property_card_entries`
+  ADD CONSTRAINT `fk_pc_entries_inventory_detail` FOREIGN KEY (`InventoryDetailID`) REFERENCES `propertyinventorydetail` (`InventoryDetailID`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `property_waste_items`
