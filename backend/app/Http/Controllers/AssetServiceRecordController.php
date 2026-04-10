@@ -196,6 +196,7 @@ class AssetServiceRecordController extends Controller
         $query = AssetServiceRecord::query()
             ->with([
                 'details.inventoryDetail.drDetail:DRDetailID,DRID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
+                'details.inventoryDetail.drDetail.article:ArticleID,ArticleName',
                 'details.inventoryDetail.propertyType:PropertyTypeID,PropertyName',
                 'details.inventoryDetail.condition:ConditionID,ConditionName',
                 'details.inventoryDetail.inventory:InventoryID,InventoryNumber,DateReceived',
@@ -236,6 +237,21 @@ class AssetServiceRecordController extends Controller
                             ->orWhere('ProblemDescription', 'like', "%{$search}%")
                             ->orWhereHas('vendor', function ($vq) use ($search) {
                                 $vq->where('VendorName', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('inventoryDetail', function ($iq) use ($search) {
+                                $iq->where('Description', 'like', "%{$search}%")
+                                    ->orWhere('Brand', 'like', "%{$search}%")
+                                    ->orWhere('ModelNumber', 'like', "%{$search}%")
+                                    ->orWhere('SerialNumber', 'like', "%{$search}%")
+                                    ->orWhereHas('drDetail', function ($drq) use ($search) {
+                                        $drq->where('ItemDescription', 'like', "%{$search}%")
+                                            ->orWhere('Brand', 'like', "%{$search}%")
+                                            ->orWhere('ModelNumber', 'like', "%{$search}%")
+                                            ->orWhere('SerialNumber', 'like', "%{$search}%")
+                                            ->orWhereHas('article', function ($aq) use ($search) {
+                                                $aq->where('ArticleName', 'like', "%{$search}%");
+                                            });
+                                    });
                             });
                     })
                     ->orWhereHas('reportingDepartment', function ($dq) use ($search) {
@@ -268,6 +284,7 @@ class AssetServiceRecordController extends Controller
             'details.inventoryDetail.condition:ConditionID,ConditionName',
             'details.inventoryDetail.inventory:InventoryID,InventoryNumber,DateReceived',
             'details.inventoryDetail.drDetail:DRDetailID,DRID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
+            'details.inventoryDetail.drDetail.article:ArticleID,ArticleName',
             'details.vendor:VendorID,VendorName,Address,ContactPerson,ContactNumber,Email',
             'details.supplier:SupplierID,SupplierName,ContactPerson,ContactNumber,Email',
             'reportingDepartment:DepartmentID,DepartmentName,DepartmentCode',
