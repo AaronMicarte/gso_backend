@@ -65,7 +65,7 @@ class DeliveryReceiptController extends Controller
 
             // Generic search across DR number, IAR number, PO number, and supplier
             if ($request->has('query')) {
-                $search = trim((string) $request->query);
+                $search = trim((string) $request->query('query', ''));
                 if ($search !== '') {
                     $query->where(function ($q) use ($search) {
                         $q->where('deliveryreceipt.DRNumber', 'like', '%' . $search . '%')
@@ -81,6 +81,8 @@ class DeliveryReceiptController extends Controller
             // Workflow status filtering for delivery receipts
             // Pending inspection is intentionally excluded from this listing.
             $status = trim((string) $request->input('status', ''));
+            $hasSearchQuery = trim((string) $request->query('query', '')) !== '';
+            $statusProvided = $request->filled('status');
 
             if ($status === 'to_be_issued') {
                 $query->where('deliveryreceipt.InspectionStatus', 'inspected')
@@ -99,7 +101,7 @@ class DeliveryReceiptController extends Controller
                         ->where('propertyissuance.Status', 'acknowledged')
                         ->whereNull('propertyissuance.deleted_at');
                 });
-            } else {
+            } elseif (!$statusProvided && !$hasSearchQuery) {
                 // Default listing: inspected receipts only (issuance workflow view).
                 $query->where('deliveryreceipt.InspectionStatus', 'inspected');
             }

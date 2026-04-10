@@ -235,12 +235,44 @@ class InventoryController extends Controller
             LIMIT 1
         )";
 
+        $resolvedDrIdSql = "COALESCE(
+            propertyinventory.DRID,
+            (
+                SELECT drd.DRID
+                FROM propertyinventorydetail invd
+                JOIN deliveryreceiptdetail drd ON drd.DRDetailID = invd.SourceDRDetailID
+                WHERE invd.InventoryID = propertyinventory.InventoryID
+                ORDER BY drd.DRDetailID ASC
+                LIMIT 1
+            )
+        )";
+
+        $resolvedDrNumberSql = "COALESCE(
+            (
+                SELECT dr.DRNumber
+                FROM deliveryreceipt dr
+                WHERE dr.DRID = propertyinventory.DRID
+                LIMIT 1
+            ),
+            (
+                SELECT dr.DRNumber
+                FROM propertyinventorydetail invd
+                JOIN deliveryreceiptdetail drd ON drd.DRDetailID = invd.SourceDRDetailID
+                JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                WHERE invd.InventoryID = propertyinventory.InventoryID
+                ORDER BY drd.DRDetailID ASC
+                LIMIT 1
+            )
+        )";
+
         $query = PropertyInventory::query()
             ->select('propertyinventory.*')
             ->addSelect(DB::raw($custodianSql . ' as CurrentCustodianName'))
             ->addSelect(DB::raw($locationSql . ' as CurrentLocation'))
             ->addSelect(DB::raw($locationDepartmentIdSql . ' as CurrentLocationDepartmentID'))
             ->addSelect(DB::raw($lastIssuedDateSql . ' as LastIssuedDate'))
+            ->addSelect(DB::raw($resolvedDrIdSql . ' as ResolvedDRID'))
+            ->addSelect(DB::raw($resolvedDrNumberSql . ' as ResolvedDRNumber'))
             ->with([
                 'details' => function($query) {
                     $query->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
@@ -280,6 +312,14 @@ class InventoryController extends Controller
                   ->orWhere('Remarks', 'like', '%' . $search . '%')
                   ->orWhereHas('deliveryReceipt', function ($drQuery) use ($search) {
                       $drQuery->where('DRNumber', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereExists(function ($sub) use ($search) {
+                      $sub->select(DB::raw(1))
+                          ->from('propertyinventorydetail as invd')
+                          ->join('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'invd.SourceDRDetailID')
+                          ->join('deliveryreceipt as dr', 'dr.DRID', '=', 'drd.DRID')
+                          ->whereColumn('invd.InventoryID', 'propertyinventory.InventoryID')
+                          ->where('dr.DRNumber', 'like', '%' . $search . '%');
                   });
             });
         }
@@ -342,6 +382,15 @@ class InventoryController extends Controller
                 $inventory->CurrentCustodianName = 'Requester not set';
             }
             $inventory->CurrentLocation = $inventory->CurrentLocation ?: 'Department not set';
+
+            if (!empty($inventory->ResolvedDRID) && !empty($inventory->ResolvedDRNumber)) {
+                $inventory->ResolvedDeliveryReceipt = [
+                    'DRID' => (int) $inventory->ResolvedDRID,
+                    'DRNumber' => (string) $inventory->ResolvedDRNumber,
+                ];
+            } else {
+                $inventory->ResolvedDeliveryReceipt = null;
+            }
 
             return $inventory;
         });
