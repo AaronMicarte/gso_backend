@@ -1418,9 +1418,10 @@ class InventoryController extends Controller
     {
         $page = max(1, (int) $request->query('page', 1));
         $perPage = max(10, (int) $request->query('per_page', 10));
-        $search = $request->query('search');
-        $statusId = $request->query('property_status_id');
-        $propertyTypeId = $request->query('property_type_id');
+        $search = trim((string) $request->query('search', ''));
+        $search = $search !== '' ? $search : null;
+        $statusId = $request->filled('property_status_id') ? (int) $request->query('property_status_id') : null;
+        $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
 
         $query = PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
             ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
@@ -1609,18 +1610,24 @@ class InventoryController extends Controller
                   ->orWhere('propertyinventorydetail.ModelNumber', 'like', '%' . $search . '%')
                   ->orWhere('propertyinventorydetail.SerialNumber', 'like', '%' . $search . '%')
                   ->orWhere('propertyinventorydetail.PropertyNumber', 'like', '%' . $search . '%')
+                  ->orWhere('propertyinventorydetail.Description', 'like', '%' . $search . '%')
+                  ->orWhere('propertyinventorydetail.Remarks', 'like', '%' . $search . '%')
                   ->orWhere('propertyinventory.InventoryNumber', 'like', '%' . $search . '%')
                   ->orWhere('propertytype.PropertyName', 'like', '%' . $search . '%')
+                  ->orWhere('propertyclassification.ClassificationName', 'like', '%' . $search . '%')
                   ->orWhere('deliveryreceiptdetail.ItemDescription', 'like', '%' . $search . '%')
+                  ->orWhere('deliveryreceiptdetail.Brand', 'like', '%' . $search . '%')
+                  ->orWhere('deliveryreceiptdetail.ModelNumber', 'like', '%' . $search . '%')
+                  ->orWhere('deliveryreceiptdetail.SerialNumber', 'like', '%' . $search . '%')
                   ->orWhere('articles.ArticleName', 'like', '%' . $search . '%');
             });
         }
 
-        if ($statusId) {
+        if ($statusId !== null && $statusId > 0) {
             $query->where('propertyinventorydetail.PropertyStatusID', $statusId);
         }
 
-        if ($propertyTypeId) {
+        if ($propertyTypeId !== null && $propertyTypeId > 0) {
             $query->where('propertyinventorydetail.PropertyTypeID', $propertyTypeId);
         }
 
