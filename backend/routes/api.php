@@ -29,6 +29,7 @@ use App\Http\Controllers\department_head\DashboardController as DepartmentHeadDa
 use App\Http\Controllers\department_head\ReceivedItemsController as DepartmentHeadReceivedItemsController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\RequisitionIssueSlipController;
+use App\Http\Controllers\RsmiReportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AssetServiceRecordController;
 use App\Http\Controllers\PropertyWasteController;
@@ -300,6 +301,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('', [RequisitionIssueSlipController::class, 'store']);
         Route::get('by-request/{requestId}', [RequisitionIssueSlipController::class, 'showByRequest']);
         Route::get('{id}', [RequisitionIssueSlipController::class, 'show']);
+    });
+
+    // Report of Supplies and Materials Issued (RSMI)
+    Route::prefix('rsmi-reports')->group(function () {
+        Route::get('', [RsmiReportController::class, 'index']);
+        Route::get('{id}', [RsmiReportController::class, 'show']);
     });
 
     // QR management (assignedproperty + qrcode)

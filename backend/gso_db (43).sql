@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 09, 2026 at 06:53 PM
+-- Generation Time: Apr 14, 2026 at 10:42 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1303,7 +1303,9 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (156, 1, '2026-04-06 17:53:23', 'FailedLogin', '127.0.0.1'),
 (157, 1, '2026-04-06 17:55:44', 'Login', '127.0.0.1'),
 (158, 1, '2026-04-09 14:28:51', 'Login', '127.0.0.1'),
-(159, 3, '2026-04-09 19:36:46', 'Login', '127.0.0.1');
+(159, 3, '2026-04-09 19:36:46', 'Login', '127.0.0.1'),
+(160, 1, '2026-04-10 20:42:25', 'Login', '127.0.0.1'),
+(161, 1, '2026-04-14 15:17:29', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1485,7 +1487,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (167, '2026_04_05_081000_rename_unrepairable_to_unserviceable_in_service_statuses', 69),
 (168, '2026_04_05_100000_simplify_property_waste_status_flow', 70),
 (169, '2026_04_05_101000_enforce_simplified_property_waste_status_enum', 71),
-(170, '2026_04_09_130000_create_property_card_entries_table', 72);
+(170, '2026_04_09_130000_create_property_card_entries_table', 72),
+(171, '2026_04_14_150000_create_rsmi_reports_tables', 73),
+(172, '2026_04_14_180000_rename_rsmi_tables_remove_signature_columns', 74);
 
 -- --------------------------------------------------------
 
@@ -2310,7 +2314,8 @@ INSERT INTO `property_card_entries` (`EntryID`, `InventoryDetailID`, `EntryDate`
 (3, 5, '2026-03-18 21:18:19', 'borrow', 0, 1, 'PBR-2026-0001', 'Borrowing office', 100.00, 100.00, 'Released under borrow transaction', 'audit', 25, 'audit:25', 6, '2026-03-18 21:18:19'),
 (4, 5, '2026-03-18 21:25:11', 'borrow_return', 1, 0, 'PBR-2026-0001', 'Returned to accountable office', 100.00, 100.00, 'Returned from borrow transaction', 'audit', 32, 'audit:32', 1, '2026-03-18 21:25:11'),
 (5, 8, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'IAR-2026-0014', 'Supply and Property Unit', 3200.00, 3200.00, 'Opening entry from IAR/Inventory', 'opening', 8, 'opening:8', NULL, '2026-04-10 00:48:55'),
-(6, 9, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 11500.00, 11500.00, 'Opening entry from PAR/IAR source', 'opening', 9, 'opening:9', NULL, '2026-04-10 00:52:24');
+(6, 9, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 11500.00, 11500.00, 'Opening entry from PAR/IAR source', 'opening', 9, 'opening:9', NULL, '2026-04-10 00:52:24'),
+(7, 139, '2026-03-29 20:32:46', 'acquisition', 1, 0, 'PAR-2026-0010', 'GSO', 42500.00, 42500.00, 'Opening entry from PAR/IAR source', 'opening', 139, 'opening:139', NULL, '2026-04-10 20:46:14');
 
 -- --------------------------------------------------------
 
@@ -2549,6 +2554,47 @@ CREATE TABLE `requisition_issue_slip_signatures` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `rsmi_header`
+--
+
+CREATE TABLE `rsmi_header` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `report_date` date NOT NULL,
+  `serial_no` varchar(20) NOT NULL,
+  `serial_year` smallint(5) UNSIGNED NOT NULL,
+  `serial_month` tinyint(3) UNSIGNED NOT NULL,
+  `serial_sequence` int(10) UNSIGNED NOT NULL,
+  `entity_name` varchar(255) NOT NULL,
+  `fund_cluster` varchar(50) DEFAULT NULL,
+  `created_by_user_id` int(11) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rsmi_items`
+--
+
+CREATE TABLE `rsmi_items` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `rsmi_header_id` bigint(20) UNSIGNED NOT NULL,
+  `ris_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `ris_no` varchar(20) DEFAULT NULL,
+  `responsibility_center_code` varchar(50) DEFAULT NULL,
+  `stock_no` varchar(80) NOT NULL,
+  `item_description` varchar(255) NOT NULL,
+  `unit` varchar(50) NOT NULL DEFAULT 'N/A',
+  `quantity_issued` int(10) UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sessions`
 --
 
@@ -2566,8 +2612,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('1y5PonkgbrBwSVVDkfdoR4ausc9H2QQ4APDRE3kS', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiZXlKQU5ob3ZUSFVzeUw3M1daODZ0WUJOZUYxcDk5NjhkTVFqR2tIMiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1775753627),
-('7nD4CJ5cXeTxgGMg9nn6qLwAvxzQGoP31Ldyh4rR', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoieElHbkRLMlY2MEpENXp4akJlREJhY1dWNnpLMXdHa3p4SDBSV2lrSCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRPNS4zMy9QcVoxOS9RdlJlUzRjMlllbkNwRzhMU2JEcW5rLzF2b01HWEJjNlN0RFlmMGx5MiI7fQ==', 1775753609);
+('7x0IsAdLtQWDhNW1b9gHN0W7HaJXFeGQA9S0Ot3L', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidFl1d3lsenkwUUtNWVkyRnJCc3VjQnhGSnVhTzdKUlN4Rk9VMWJvNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYXNzZXQtc2VydmljZXM/cGFnZT0xJnBlcl9wYWdlPTE1IjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1776151043),
+('xU6gZMGYmTwV2wlhLGydsUimprTRT2BaOArKttxZ', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUm5xQWplN3lrM3haNWdxRTN5ZW5JbGNoR296TzVYVG1kanhWd3BWZSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1776156142),
+('YDj48tWKV5rc2DZtUcVSalMpZGLYB3NVPAhYMKPv', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQzVLUzEwRXkxT2NLSEZIZmFFR01wanJrU1hwM3BzS0VHdUNNSXFxYiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1776151044);
 
 -- --------------------------------------------------------
 
@@ -2632,7 +2679,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (86, 1, 'Trusted Device', '92b86588f1a81d8f632b3484925ab65694afa1335866b980e6f6e563d670ed4d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-18 17:45:44', '2026-04-02 22:47:37', '2026-03-03 22:47:37', '2026-03-18 17:45:44'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-09 14:28:51', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-09 14:28:51'),
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-14 15:17:29', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-14 15:17:29'),
 (102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-09 19:36:46', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-09 19:36:46');
 
 -- --------------------------------------------------------
@@ -2860,7 +2907,7 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-09 16:52:44', '2026-03-22 14:52:48', '2026-04-09 16:52:44'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-14 07:17:41', '2026-03-22 14:52:48', '2026-04-14 07:17:41'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
@@ -3458,6 +3505,26 @@ ALTER TABLE `requisition_issue_slip_signatures`
   ADD KEY `requisition_issue_slip_signatures_sha256_hash_index` (`sha256_hash`);
 
 --
+-- Indexes for table `rsmi_header`
+--
+ALTER TABLE `rsmi_header`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `rsmi_serial_unique` (`serial_year`,`serial_month`,`serial_sequence`),
+  ADD UNIQUE KEY `rsmi_reports_report_date_unique` (`report_date`),
+  ADD UNIQUE KEY `rsmi_reports_serial_no_unique` (`serial_no`),
+  ADD KEY `rsmi_reports_report_date_index` (`report_date`),
+  ADD KEY `rsmi_reports_created_by_user_id_foreign` (`created_by_user_id`);
+
+--
+-- Indexes for table `rsmi_items`
+--
+ALTER TABLE `rsmi_items`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `rsmi_report_items_stock_no_index` (`stock_no`),
+  ADD KEY `rsmi_report_items_ris_id_foreign` (`ris_id`),
+  ADD KEY `rsmi_items_rsmi_header_id_index` (`rsmi_header_id`);
+
+--
 -- Indexes for table `sessions`
 --
 ALTER TABLE `sessions`
@@ -3696,13 +3763,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=160;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=162;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=171;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=173;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -3834,7 +3901,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `property_card_entries`
 --
 ALTER TABLE `property_card_entries`
-  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `property_waste_items`
@@ -3870,6 +3937,18 @@ ALTER TABLE `requisition_issue_slip_items`
 -- AUTO_INCREMENT for table `requisition_issue_slip_signatures`
 --
 ALTER TABLE `requisition_issue_slip_signatures`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `rsmi_header`
+--
+ALTER TABLE `rsmi_header`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `rsmi_items`
+--
+ALTER TABLE `rsmi_items`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -4139,6 +4218,19 @@ ALTER TABLE `property_waste_reports`
   ADD CONSTRAINT `property_waste_reports_departmentid_foreign` FOREIGN KEY (`DepartmentID`) REFERENCES `department` (`DepartmentID`) ON DELETE SET NULL,
   ADD CONSTRAINT `property_waste_reports_sourceservicerecordid_foreign` FOREIGN KEY (`SourceServiceRecordID`) REFERENCES `asset_service_records` (`ServiceRecordID`) ON DELETE SET NULL,
   ADD CONSTRAINT `property_waste_reports_updatedbyuserid_foreign` FOREIGN KEY (`UpdatedByUserID`) REFERENCES `user` (`UserID`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `rsmi_header`
+--
+ALTER TABLE `rsmi_header`
+  ADD CONSTRAINT `rsmi_reports_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `user` (`UserID`);
+
+--
+-- Constraints for table `rsmi_items`
+--
+ALTER TABLE `rsmi_items`
+  ADD CONSTRAINT `rsmi_items_rsmi_header_id_foreign` FOREIGN KEY (`rsmi_header_id`) REFERENCES `rsmi_header` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `rsmi_report_items_ris_id_foreign` FOREIGN KEY (`ris_id`) REFERENCES `requisition_issue_slips` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `user_notifications`
