@@ -35,7 +35,7 @@ class PropertyCardLedgerService
         $unitCost = $detail->UnitCost !== null ? (float) $detail->UnitCost : null;
 
         foreach ($logs as $log) {
-            $mapped = $this->mapAuditLogToEntry($log);
+            $mapped = $this->mapAuditLogToEntry($log, $inventoryDetailId);
             if ($mapped === null) {
                 continue;
             }
@@ -44,7 +44,7 @@ class PropertyCardLedgerService
             $receiptQty = $mapped['direction'] === 'receipt' ? $qty : 0;
             $issueQty = $mapped['direction'] === 'issue' ? $qty : 0;
 
-            PropertyCardEntry::firstOrCreate(
+            PropertyCardEntry::updateOrCreate(
                 ['SourceKey' => 'audit:' . (int) $log->AuditID],
                 [
                     'InventoryDetailID' => $inventoryDetailId,
@@ -94,13 +94,28 @@ class PropertyCardLedgerService
                 'OfficeOfficer' => $openingOfficeOfficer,
                 'UnitCost' => $unitCost,
                 'Amount' => $unitCost !== null ? $qty * $unitCost : null,
-                'Remarks' => 'Opening entry from PAR/IAR source',
+                'Remarks' => $this->resolveOpeningRemarks($detail),
                 'SourceType' => 'opening',
                 'SourceID' => (int) $detail->InventoryDetailID,
                 'CreatedBy' => null,
                 'CreatedAt' => now(),
             ]
         );
+    }
+
+    private function resolveOpeningRemarks(PropertyInventoryDetail $detail): string
+    {
+        $inventoryDetailRemarks = $this->stringOrNull($detail->Remarks ?? null);
+        if ($inventoryDetailRemarks !== null) {
+            return $inventoryDetailRemarks;
+        }
+
+        $inventoryRemarks = $this->stringOrNull($detail->inventory?->Remarks ?? null);
+        if ($inventoryRemarks !== null) {
+            return $inventoryRemarks;
+        }
+
+        return 'Opening entry from PAR/IAR source';
     }
 
     private function resolveOpeningReference(PropertyInventoryDetail $detail): string
@@ -158,52 +173,62 @@ class PropertyCardLedgerService
         return (string) ($detail->inventory?->InventoryNumber ?? 'PAR/IAR-N/A');
     }
 
-    private function mapAuditLogToEntry(AssetAuditLog $log): ?array
+    private function mapAuditLogToEntry(AssetAuditLog $log, int $inventoryDetailId): ?array
     {
         $action = strtolower((string) $log->Action);
         $details = is_array($log->Details) ? $log->Details : [];
 
         if ($action === 'issued') {
+            $issuanceId = (int) ($details['issuance_id'] ?? 0);
+
             return [
                 'entry_type' => 'issuance',
                 'direction' => 'issue',
                 'quantity' => 1,
                 'reference' => $this->stringOrNull($details['document_number'] ?? null) ?? 'Issuance',
                 'office_officer' => $this->stringOrNull($details['issued_to'] ?? null) ?? 'Issued custodian',
-                'remarks' => 'Issued for accountability',
+                'remarks' => $this->resolveIssuanceRemarks($issuanceId, $inventoryDetailId),
             ];
         }
 
         if ($action === 'transfer_completed') {
+            $transferId = (int) ($details['transfer_id'] ?? 0);
+
             return [
                 'entry_type' => 'transfer',
                 'direction' => 'issue',
                 'quantity' => 1,
                 'reference' => $this->stringOrNull($details['transfer_number'] ?? null) ?? 'Transfer',
                 'office_officer' => $this->buildTransferOfficeOfficer($details),
-                'remarks' => 'Transferred to receiving office',
+                'remarks' => $this->resolveTransferRemarks($transferId, $inventoryDetailId),
             ];
         }
 
         if ($action === 'borrow_requested') {
+            $borrowId = (int) ($details['borrow_id'] ?? 0);
+
             return [
                 'entry_type' => 'borrow',
                 'direction' => 'issue',
                 'quantity' => 1,
                 'reference' => $this->stringOrNull($details['borrow_number'] ?? null) ?? 'Borrow',
                 'office_officer' => 'Borrowing office',
-                'remarks' => 'Released under borrow transaction',
+                'remarks' => $this->resolveBorrowRemarks($borrowId, $inventoryDetailId),
             ];
         }
 
         if ($action === 'borrow_returned') {
+            $returnId = (int) ($details['return_id'] ?? 0);
+
             return [
                 'entry_type' => 'borrow_return',
                 'direction' => 'receipt',
                 'quantity' => (int) ($details['quantity'] ?? 1),
-                'reference' => $this->stringOrNull($details['borrow_number'] ?? null) ?? 'Borrow Return',
+                'reference' => $this->resolveBorrowReturnReference($returnId)
+                    ?? $this->stringOrNull($details['borrow_number'] ?? null)
+                    ?? 'Borrow Return',
                 'office_officer' => 'Returned to accountable office',
-                'remarks' => 'Returned from borrow transaction',
+                'remarks' => $this->resolveBorrowReturnRemarks($returnId, $inventoryDetailId),
             ];
         }
 
@@ -214,7 +239,7 @@ class PropertyCardLedgerService
                 'quantity' => (int) ($details['quantity'] ?? 1),
                 'reference' => $this->stringOrNull($details['waste_number'] ?? null) ?? 'Disposal',
                 'office_officer' => 'Disposal committee',
-                'remarks' => 'Disposed item',
+                'remarks' => $this->resolveDisposalRemarks($details),
             ];
         }
 
@@ -247,5 +272,154 @@ class PropertyCardLedgerService
 
         $text = trim((string) $value);
         return $text !== '' ? $text : null;
+    }
+
+    private function resolveIssuanceRemarks(int $issuanceId, int $inventoryDetailId): string
+    {
+        if ($issuanceId > 0) {
+            $itemRemarks = DB::table('propertyissuancedetail')
+                ->where('IssuanceID', $issuanceId)
+                ->where('InventoryDetailID', $inventoryDetailId)
+                ->whereNull('deleted_at')
+                ->value('Remarks');
+
+            $itemRemarksText = $this->stringOrNull($itemRemarks);
+            if ($itemRemarksText !== null) {
+                return $itemRemarksText;
+            }
+
+            $headerRemarks = DB::table('propertyissuance')
+                ->where('IssuanceID', $issuanceId)
+                ->whereNull('deleted_at')
+                ->value('Remarks');
+
+            $headerRemarksText = $this->stringOrNull($headerRemarks);
+            if ($headerRemarksText !== null) {
+                return $headerRemarksText;
+            }
+        }
+
+        return 'Issued for accountability';
+    }
+
+    private function resolveTransferRemarks(int $transferId, int $inventoryDetailId): string
+    {
+        if ($transferId > 0) {
+            $itemRemarks = DB::table('propertytransferdetails')
+                ->where('TransferID', $transferId)
+                ->where('InventoryDetailID', $inventoryDetailId)
+                ->whereNull('deleted_at')
+                ->value('Remarks');
+
+            $itemRemarksText = $this->stringOrNull($itemRemarks);
+            if ($itemRemarksText !== null) {
+                return $itemRemarksText;
+            }
+
+            $reason = DB::table('propertytransfer')
+                ->where('TransferID', $transferId)
+                ->whereNull('deleted_at')
+                ->value('Reason');
+
+            $reasonText = $this->stringOrNull($reason);
+            if ($reasonText !== null) {
+                return $reasonText;
+            }
+        }
+
+        return 'Transferred to receiving office';
+    }
+
+    private function resolveBorrowRemarks(int $borrowId, int $inventoryDetailId): string
+    {
+        if ($borrowId > 0) {
+            $itemRemarks = DB::table('propertyborrowitems')
+                ->where('BorrowID', $borrowId)
+                ->where('InventoryDetailID', $inventoryDetailId)
+                ->whereNull('deleted_at')
+                ->value('Remarks');
+
+            $itemRemarksText = $this->stringOrNull($itemRemarks);
+            if ($itemRemarksText !== null) {
+                return $itemRemarksText;
+            }
+
+            $purpose = DB::table('propertyborrow')
+                ->where('BorrowID', $borrowId)
+                ->whereNull('deleted_at')
+                ->value('Purpose');
+
+            $purposeText = $this->stringOrNull($purpose);
+            if ($purposeText !== null) {
+                return $purposeText;
+            }
+        }
+
+        return 'Released under borrow transaction';
+    }
+
+    private function resolveBorrowReturnReference(int $returnId): ?string
+    {
+        if ($returnId <= 0) {
+            return null;
+        }
+
+        $returnNumber = DB::table('propertyreturn')
+            ->where('ReturnID', $returnId)
+            ->whereNull('deleted_at')
+            ->value('ReturnNumber');
+
+        return $this->stringOrNull($returnNumber);
+    }
+
+    private function resolveBorrowReturnRemarks(int $returnId, int $inventoryDetailId): string
+    {
+        if ($returnId > 0) {
+            $itemRemarks = DB::table('propertyreturnitems')
+                ->where('ReturnID', $returnId)
+                ->where('InventoryDetailID', $inventoryDetailId)
+                ->whereNull('deleted_at')
+                ->value('Remarks');
+
+            $itemRemarksText = $this->stringOrNull($itemRemarks);
+            if ($itemRemarksText !== null) {
+                return $itemRemarksText;
+            }
+
+            $notes = DB::table('propertyreturn')
+                ->where('ReturnID', $returnId)
+                ->whereNull('deleted_at')
+                ->value('Notes');
+
+            $notesText = $this->stringOrNull($notes);
+            if ($notesText !== null) {
+                return $notesText;
+            }
+        }
+
+        return 'Returned from borrow transaction';
+    }
+
+    private function resolveDisposalRemarks(array $details): string
+    {
+        $directReason = $this->stringOrNull($details['disposal_reason'] ?? null);
+        if ($directReason !== null) {
+            return $directReason;
+        }
+
+        $wasteNumber = $this->stringOrNull($details['waste_number'] ?? null);
+        if ($wasteNumber !== null) {
+            $notes = DB::table('property_waste_reports')
+                ->where('WasteNumber', $wasteNumber)
+                ->whereNull('deleted_at')
+                ->value('Notes');
+
+            $notesText = $this->stringOrNull($notes);
+            if ($notesText !== null) {
+                return $notesText;
+            }
+        }
+
+        return 'Disposed item';
     }
 }

@@ -1149,9 +1149,9 @@ class InventoryController extends Controller
             $rawReceiptQty = (int) ($entry->ReceiptQty ?? 0);
             $rawIssueQty = (int) ($entry->IssueQty ?? 0);
 
-            // COA style: returns are represented as negative issue values (not a separate return column).
-            $receiptQty = $entry->EntryType === 'borrow_return' ? 0 : $rawReceiptQty;
-            $issueQty = $entry->EntryType === 'borrow_return' ? -$rawReceiptQty : $rawIssueQty;
+            // Represent returns as receipt movements to keep ledger columns audit-friendly.
+            $receiptQty = $rawReceiptQty;
+            $issueQty = $rawIssueQty;
 
             // Running balance: Previous Balance + Receipt - Issue
             $balance += $receiptQty;
