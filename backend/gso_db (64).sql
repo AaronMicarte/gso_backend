@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 14, 2026 at 10:42 AM
+-- Generation Time: Apr 19, 2026 at 10:10 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -1305,7 +1305,12 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (158, 1, '2026-04-09 14:28:51', 'Login', '127.0.0.1'),
 (159, 3, '2026-04-09 19:36:46', 'Login', '127.0.0.1'),
 (160, 1, '2026-04-10 20:42:25', 'Login', '127.0.0.1'),
-(161, 1, '2026-04-14 15:17:29', 'Login', '127.0.0.1');
+(161, 1, '2026-04-14 15:17:29', 'Login', '127.0.0.1'),
+(162, 1, '2026-04-14 20:59:26', 'Login', '127.0.0.1'),
+(163, 1, '2026-04-15 20:28:10', 'Login', '127.0.0.1'),
+(164, 1, '2026-04-16 20:12:23', 'Login', '127.0.0.1'),
+(165, 1, '2026-04-17 19:41:46', 'Login', '127.0.0.1'),
+(166, 1, '2026-04-19 15:39:18', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1489,7 +1494,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (169, '2026_04_05_101000_enforce_simplified_property_waste_status_enum', 71),
 (170, '2026_04_09_130000_create_property_card_entries_table', 72),
 (171, '2026_04_14_150000_create_rsmi_reports_tables', 73),
-(172, '2026_04_14_180000_rename_rsmi_tables_remove_signature_columns', 74);
+(172, '2026_04_14_180000_rename_rsmi_tables_remove_signature_columns', 74),
+(173, '2026_04_16_150000_create_rpc_inventory_tables', 75);
 
 -- --------------------------------------------------------
 
@@ -2309,13 +2315,14 @@ CREATE TABLE `property_card_entries` (
 --
 
 INSERT INTO `property_card_entries` (`EntryID`, `InventoryDetailID`, `EntryDate`, `EntryType`, `ReceiptQty`, `IssueQty`, `ReferenceNo`, `OfficeOfficer`, `UnitCost`, `Amount`, `Remarks`, `SourceType`, `SourceID`, `SourceKey`, `CreatedBy`, `CreatedAt`) VALUES
-(1, 14, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'IAR-2026-0015', 'Supply and Property Unit', 165000.00, 165000.00, 'Opening entry from IAR/Inventory', 'opening', 14, 'opening:14', NULL, '2026-04-10 00:42:27'),
-(2, 5, '2026-03-18 18:11:05', 'acquisition', 1, 0, 'PAR-2026-0001', 'GSO', 100.00, 100.00, 'Opening entry from PAR/IAR source', 'opening', 5, 'opening:5', NULL, '2026-04-10 00:52:42'),
-(3, 5, '2026-03-18 21:18:19', 'borrow', 0, 1, 'PBR-2026-0001', 'Borrowing office', 100.00, 100.00, 'Released under borrow transaction', 'audit', 25, 'audit:25', 6, '2026-03-18 21:18:19'),
-(4, 5, '2026-03-18 21:25:11', 'borrow_return', 1, 0, 'PBR-2026-0001', 'Returned to accountable office', 100.00, 100.00, 'Returned from borrow transaction', 'audit', 32, 'audit:32', 1, '2026-03-18 21:25:11'),
+(1, 14, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'IAR-2026-0015', 'GSO', 165000.00, 165000.00, 'Opening entry from PAR/IAR source', 'opening', 14, 'opening:14', NULL, '2026-04-14 19:37:22'),
+(2, 5, '2026-03-18 18:11:05', 'acquisition', 1, 0, 'PAR-2026-0001', 'GSO', 100.00, 100.00, 'Auto-ingested from DR #dr21', 'opening', 5, 'opening:5', NULL, '2026-04-15 21:21:18'),
+(3, 5, '2026-03-18 21:18:19', 'borrow', 0, 1, 'PBR-2026-0001', 'Borrowing office', 100.00, 100.00, 'Explain the temporary use case.', 'audit', 25, 'audit:25', 6, '2026-03-18 21:18:19'),
+(4, 5, '2026-03-18 21:25:11', 'borrow_return', 1, 0, 'PBR-RET-2026-0001', 'Returned to accountable office', 100.00, 100.00, 'done', 'audit', 32, 'audit:32', 1, '2026-03-18 21:25:11'),
 (5, 8, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'IAR-2026-0014', 'Supply and Property Unit', 3200.00, 3200.00, 'Opening entry from IAR/Inventory', 'opening', 8, 'opening:8', NULL, '2026-04-10 00:48:55'),
 (6, 9, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 11500.00, 11500.00, 'Opening entry from PAR/IAR source', 'opening', 9, 'opening:9', NULL, '2026-04-10 00:52:24'),
-(7, 139, '2026-03-29 20:32:46', 'acquisition', 1, 0, 'PAR-2026-0010', 'GSO', 42500.00, 42500.00, 'Opening entry from PAR/IAR source', 'opening', 139, 'opening:139', NULL, '2026-04-10 20:46:14');
+(7, 139, '2026-03-29 20:32:46', 'acquisition', 1, 0, 'PAR-2026-0010', 'GSO', 42500.00, 42500.00, 'Opening entry from PAR/IAR source', 'opening', 139, 'opening:139', NULL, '2026-04-10 20:46:14'),
+(8, 7, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 8500.00, 8500.00, 'Opening entry from PAR/IAR source', 'opening', 7, 'opening:7', NULL, '2026-04-15 20:40:26');
 
 -- --------------------------------------------------------
 
@@ -2554,6 +2561,65 @@ CREATE TABLE `requisition_issue_slip_signatures` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `rpc_inventory_cycles`
+--
+
+CREATE TABLE `rpc_inventory_cycles` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `cycle_label` varchar(50) NOT NULL,
+  `start_year` smallint(5) UNSIGNED NOT NULL,
+  `end_year` smallint(5) UNSIGNED NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'active',
+  `started_at` datetime DEFAULT NULL,
+  `closed_at` datetime DEFAULT NULL,
+  `created_by_user_id` int(11) NOT NULL,
+  `updated_by_user_id` int(11) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `rpc_inventory_cycles`
+--
+
+INSERT INTO `rpc_inventory_cycles` (`id`, `cycle_label`, `start_year`, `end_year`, `status`, `started_at`, `closed_at`, `created_by_user_id`, `updated_by_user_id`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 'Inventory Cycle 2026-2027', 2026, 2027, 'active', '2026-04-19 16:05:57', NULL, 1, NULL, '2026-04-19 08:05:57', '2026-04-19 08:05:57', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rpc_inventory_scans`
+--
+
+CREATE TABLE `rpc_inventory_scans` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `rpc_inventory_cycle_id` bigint(20) UNSIGNED NOT NULL,
+  `inventory_detail_id` bigint(20) UNSIGNED NOT NULL,
+  `property_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `rpc_type` varchar(10) NOT NULL,
+  `property_classification_id` int(10) UNSIGNED DEFAULT NULL,
+  `condition_id` int(11) NOT NULL,
+  `scanned_at` datetime NOT NULL,
+  `scanned_by_user_id` int(11) NOT NULL,
+  `end_user_id` int(10) UNSIGNED DEFAULT NULL,
+  `department_id` int(10) UNSIGNED DEFAULT NULL,
+  `article` varchar(255) DEFAULT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `property_number` varchar(100) DEFAULT NULL,
+  `unit_of_measure` varchar(50) DEFAULT NULL,
+  `unit_value` decimal(15,2) DEFAULT NULL,
+  `quantity_per_card` int(10) UNSIGNED NOT NULL DEFAULT 1,
+  `quantity_per_count` int(10) UNSIGNED NOT NULL DEFAULT 1,
+  `remarks` varchar(255) DEFAULT NULL,
+  `accountable_officer` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `rsmi_header`
 --
 
@@ -2571,6 +2637,16 @@ CREATE TABLE `rsmi_header` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `rsmi_header`
+--
+
+INSERT INTO `rsmi_header` (`id`, `report_date`, `serial_no`, `serial_year`, `serial_month`, `serial_sequence`, `entity_name`, `fund_cluster`, `created_by_user_id`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, '2026-03-18', '0001-03-2026', 2026, 3, 1, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-14 09:04:25', '2026-04-14 09:04:25', NULL),
+(2, '2026-03-22', '0002-03-2026', 2026, 3, 2, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-14 09:04:25', '2026-04-14 09:04:25', NULL),
+(3, '2026-03-24', '0003-03-2026', 2026, 3, 3, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-14 09:04:26', '2026-04-14 09:04:26', NULL),
+(4, '2026-03-29', '0004-03-2026', 2026, 3, 4, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-14 09:04:26', '2026-04-14 09:04:26', NULL);
 
 -- --------------------------------------------------------
 
@@ -2592,6 +2668,85 @@ CREATE TABLE `rsmi_items` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `rsmi_items`
+--
+
+INSERT INTO `rsmi_items` (`id`, `rsmi_header_id`, `ris_id`, `ris_no`, `responsibility_center_code`, `stock_no`, `item_description`, `unit`, `quantity_issued`, `created_at`, `updated_at`) VALUES
+(947, 1, NULL, 'N/A', '', '2026-000001', 'smsmsmsm', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(948, 1, NULL, 'N/A', '', '2026-000002', 'bugnaw', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(949, 2, NULL, 'N/A', '', '2026-000003', 'Office Desk', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(950, 2, NULL, 'N/A', '', '2026-000004', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(951, 2, NULL, 'N/A', '', '2026-000005', 'Filing Cabinet', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(952, 2, NULL, 'N/A', '', '2026-000006', 'Desktop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(953, 2, NULL, 'N/A', '', '2026-000007', 'Printer/Scanner', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(954, 2, NULL, 'N/A', '', '2026-000008', 'Telephone Set', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(955, 2, NULL, 'N/A', '', '2026-000027', 'Office Desk', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(956, 2, NULL, 'N/A', '', '2026-000028', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(957, 2, NULL, 'N/A', '', '2026-000029', 'Filing Cabinet', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(958, 2, NULL, 'N/A', '', '2026-000030', 'Desktop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(959, 2, NULL, 'N/A', '', '2026-000031', 'Printer/Scanner', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(960, 2, NULL, 'N/A', '', '2026-000045', 'Office Desk', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(961, 2, NULL, 'N/A', '', '2026-000046', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(962, 2, NULL, 'N/A', '', '2026-000047', 'Desktop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(963, 2, NULL, 'N/A', '', '2026-000060', 'Office Desk', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(964, 2, NULL, 'N/A', '', '2026-000061', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(965, 2, NULL, 'N/A', '', '2026-000062', 'Desktop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(966, 2, NULL, 'N/A', '', '2026-000072', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(967, 2, NULL, 'N/A', '', '2026-000073', 'Desktop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(968, 2, NULL, 'N/A', '', '2026-000080', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(969, 2, NULL, 'N/A', '', '2026-000081', 'Desktop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(970, 2, NULL, 'N/A', '', '2026-000087', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(971, 2, NULL, 'N/A', '', '2026-000092', 'Office Chair', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(972, 2, NULL, 'N/A', '', '2026-000107', 'Calculator', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(973, 2, NULL, 'N/A', '', '2026-000108', 'Calculator', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(974, 2, NULL, 'N/A', '', '2026-000109', 'Calculator', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(975, 3, NULL, 'N/A', '', '2026-000021', 'Laptop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(976, 3, NULL, 'N/A', '', '2026-000022', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(977, 3, NULL, 'N/A', '', '2026-000023', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(978, 3, NULL, 'N/A', '', '2026-000024', 'Hand Tools Set', 'set', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(979, 3, NULL, 'N/A', '', '2026-000025', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(980, 3, NULL, 'N/A', '', '2026-000026', 'Projector', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(981, 3, NULL, 'N/A', '', '2026-000041', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(982, 3, NULL, 'N/A', '', '2026-000042', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(983, 3, NULL, 'N/A', '', '2026-000043', 'Hand Tools Set', 'set', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(984, 3, NULL, 'N/A', '', '2026-000044', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(985, 3, NULL, 'N/A', '', '2026-000056', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(986, 3, NULL, 'N/A', '', '2026-000057', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(987, 3, NULL, 'N/A', '', '2026-000058', 'Hand Tools Set', 'set', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(988, 3, NULL, 'N/A', '', '2026-000059', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(989, 3, NULL, 'N/A', '', '2026-000069', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(990, 3, NULL, 'N/A', '', '2026-000070', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(991, 3, NULL, 'N/A', '', '2026-000071', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(992, 3, NULL, 'N/A', '', '2026-000077', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(993, 3, NULL, 'N/A', '', '2026-000078', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(994, 3, NULL, 'N/A', '', '2026-000079', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(995, 3, NULL, 'N/A', '', '2026-000084', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(996, 3, NULL, 'N/A', '', '2026-000085', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(997, 3, NULL, 'N/A', '', '2026-000086', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(998, 3, NULL, 'N/A', '', '2026-000089', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(999, 3, NULL, 'N/A', '', '2026-000090', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1000, 3, NULL, 'N/A', '', '2026-000091', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1001, 3, NULL, 'N/A', '', '2026-000094', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1002, 3, NULL, 'N/A', '', '2026-000095', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1003, 3, NULL, 'N/A', '', '2026-000096', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1004, 3, NULL, 'N/A', '', '2026-000098', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1005, 3, NULL, 'N/A', '', '2026-000099', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1006, 3, NULL, 'N/A', '', '2026-000100', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1007, 3, NULL, 'N/A', '', '2026-000102', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1008, 3, NULL, 'N/A', '', '2026-000103', 'Extension Cord', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1009, 3, NULL, 'N/A', '', '2026-000104', 'Waste Basket', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1010, 3, NULL, 'N/A', '', '2026-000105', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1011, 3, NULL, 'N/A', '', '2026-000106', 'Office Lamp', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1012, 3, NULL, 'N/A', '', '2026-000110', 'Laptop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1013, 3, NULL, 'N/A', '', '2026-000111', 'Laptop Computer', 'unit', 1, '2026-04-14 11:25:20', '2026-04-14 11:25:20'),
+(1032, 4, NULL, 'N/A', '', '2026-000112', 'Desktop Computer', 'unit', 1, '2026-04-14 11:35:32', '2026-04-14 11:35:32'),
+(1033, 4, NULL, 'N/A', '', '2026-000113', 'Office Chair', 'unit', 1, '2026-04-14 11:35:32', '2026-04-14 11:35:32'),
+(1034, 4, NULL, 'N/A', '', '2026-000114', 'Office Chair', 'unit', 1, '2026-04-14 11:35:32', '2026-04-14 11:35:32'),
+(1035, 4, NULL, 'N/A', '', '2026-000115', 'Office Chair', 'unit', 1, '2026-04-14 11:35:32', '2026-04-14 11:35:32'),
+(1036, 4, NULL, 'N/A', '', '2026-000116', 'Office Chair', 'unit', 1, '2026-04-14 11:35:32', '2026-04-14 11:35:32'),
+(1037, 4, NULL, 'N/A', '', '2026-000117', 'Printer/Scanner', 'unit', 1, '2026-04-14 11:35:32', '2026-04-14 11:35:32');
+
 -- --------------------------------------------------------
 
 --
@@ -2612,9 +2767,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('7x0IsAdLtQWDhNW1b9gHN0W7HaJXFeGQA9S0Ot3L', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidFl1d3lsenkwUUtNWVkyRnJCc3VjQnhGSnVhTzdKUlN4Rk9VMWJvNCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTk6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYXNzZXQtc2VydmljZXM/cGFnZT0xJnBlcl9wYWdlPTE1IjtzOjU6InJvdXRlIjtOO31zOjY6Il9mbGFzaCI7YToyOntzOjM6Im9sZCI7YTowOnt9czozOiJuZXciO2E6MDp7fX19', 1776151043),
-('xU6gZMGYmTwV2wlhLGydsUimprTRT2BaOArKttxZ', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiUm5xQWplN3lrM3haNWdxRTN5ZW5JbGNoR296TzVYVG1kanhWd3BWZSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1776156142),
-('YDj48tWKV5rc2DZtUcVSalMpZGLYB3NVPAhYMKPv', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiQzVLUzEwRXkxT2NLSEZIZmFFR01wanJrU1hwM3BzS0VHdUNNSXFxYiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvdXNlciI7czo1OiJyb3V0ZSI7Tjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1776151044);
+('2ypiOAWVsetwWpmQvd4xRFTi8n9IYKNic5NJuaRj', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiWUljU0JqREo4SkgyRVgwYXVmTzVWVmk2azVmckRLWUhSbWx6cHhyaiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1776586199);
 
 -- --------------------------------------------------------
 
@@ -2679,7 +2832,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (86, 1, 'Trusted Device', '92b86588f1a81d8f632b3484925ab65694afa1335866b980e6f6e563d670ed4d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-18 17:45:44', '2026-04-02 22:47:37', '2026-03-03 22:47:37', '2026-03-18 17:45:44'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-14 15:17:29', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-14 15:17:29'),
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-19 15:39:18', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-19 15:39:18'),
 (102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-09 19:36:46', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-09 19:36:46');
 
 -- --------------------------------------------------------
@@ -2907,7 +3060,7 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-04-14 07:17:41', '2026-03-22 14:52:48', '2026-04-14 07:17:41'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-04-17 11:41:55', '2026-03-22 14:52:48', '2026-04-17 11:41:55'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
@@ -2938,39 +3091,6 @@ CREATE TABLE `vendor` (
 
 INSERT INTO `vendor` (`VendorID`, `VendorName`, `Address`, `ContactPerson`, `ContactNumber`, `Email`, `IsActive`, `CreatedDate`, `UpdatedDate`, `deleted_at`) VALUES
 (1, 'Andre Repair', 'secrte', 'Andre Clement Louie S. Malinao', '09925077173', 'andremalinao@gmail.com', 1, '2026-03-25 00:03:37', NULL, NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `wastematerialdetail`
---
-
-CREATE TABLE `wastematerialdetail` (
-  `WasteDetailID` int(11) NOT NULL,
-  `WasteMaterialID` int(11) NOT NULL,
-  `PropertyID` int(11) NOT NULL,
-  `ConditionID` int(11) NOT NULL,
-  `DisposalMethodID` int(11) DEFAULT NULL,
-  `Remarks` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `wastematerialreport`
---
-
-CREATE TABLE `wastematerialreport` (
-  `WasteMaterialID` int(11) NOT NULL,
-  `WMRNumber` varchar(50) DEFAULT NULL,
-  `ReportedBy` int(11) NOT NULL,
-  `ApprovedBy` int(11) DEFAULT NULL,
-  `DateReported` date NOT NULL,
-  `DateApproved` date DEFAULT NULL,
-  `Status` varchar(50) DEFAULT 'Pending',
-  `Remarks` text DEFAULT NULL,
-  `CreatedDate` datetime DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Indexes for dumped tables
@@ -3505,6 +3625,28 @@ ALTER TABLE `requisition_issue_slip_signatures`
   ADD KEY `requisition_issue_slip_signatures_sha256_hash_index` (`sha256_hash`);
 
 --
+-- Indexes for table `rpc_inventory_cycles`
+--
+ALTER TABLE `rpc_inventory_cycles`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `rpc_inventory_cycles_year_unique` (`start_year`,`end_year`),
+  ADD UNIQUE KEY `rpc_inventory_cycles_cycle_label_unique` (`cycle_label`),
+  ADD KEY `rpc_inventory_cycles_status_index` (`status`),
+  ADD KEY `rpc_inventory_cycles_created_by_user_id_foreign` (`created_by_user_id`),
+  ADD KEY `rpc_inventory_cycles_updated_by_user_id_foreign` (`updated_by_user_id`);
+
+--
+-- Indexes for table `rpc_inventory_scans`
+--
+ALTER TABLE `rpc_inventory_scans`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `rpc_inventory_cycle_detail_unique` (`rpc_inventory_cycle_id`,`inventory_detail_id`),
+  ADD KEY `rpc_inventory_cycle_type_idx` (`rpc_inventory_cycle_id`,`rpc_type`),
+  ADD KEY `rpc_inventory_scans_property_number_index` (`property_number`),
+  ADD KEY `rpc_inventory_scans_condition_id_foreign` (`condition_id`),
+  ADD KEY `rpc_inventory_scans_scanned_by_user_id_foreign` (`scanned_by_user_id`);
+
+--
 -- Indexes for table `rsmi_header`
 --
 ALTER TABLE `rsmi_header`
@@ -3597,25 +3739,6 @@ ALTER TABLE `vendor`
   ADD PRIMARY KEY (`VendorID`),
   ADD KEY `vendor_vendorname_index` (`VendorName`),
   ADD KEY `vendor_isactive_index` (`IsActive`);
-
---
--- Indexes for table `wastematerialdetail`
---
-ALTER TABLE `wastematerialdetail`
-  ADD PRIMARY KEY (`WasteDetailID`),
-  ADD KEY `WasteMaterialID` (`WasteMaterialID`),
-  ADD KEY `PropertyID` (`PropertyID`),
-  ADD KEY `ConditionID` (`ConditionID`),
-  ADD KEY `DisposalMethodID` (`DisposalMethodID`);
-
---
--- Indexes for table `wastematerialreport`
---
-ALTER TABLE `wastematerialreport`
-  ADD PRIMARY KEY (`WasteMaterialID`),
-  ADD UNIQUE KEY `WMRNumber` (`WMRNumber`),
-  ADD KEY `ReportedBy` (`ReportedBy`),
-  ADD KEY `ApprovedBy` (`ApprovedBy`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -3763,13 +3886,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=162;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=167;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=173;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -3901,7 +4024,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `property_card_entries`
 --
 ALTER TABLE `property_card_entries`
-  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `property_waste_items`
@@ -3940,16 +4063,28 @@ ALTER TABLE `requisition_issue_slip_signatures`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `rpc_inventory_cycles`
+--
+ALTER TABLE `rpc_inventory_cycles`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `rpc_inventory_scans`
+--
+ALTER TABLE `rpc_inventory_scans`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `rsmi_header`
 --
 ALTER TABLE `rsmi_header`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `rsmi_items`
 --
 ALTER TABLE `rsmi_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1038;
 
 --
 -- AUTO_INCREMENT for table `supplier`
@@ -4004,18 +4139,6 @@ ALTER TABLE `user_push_tokens`
 --
 ALTER TABLE `vendor`
   MODIFY `VendorID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT for table `wastematerialdetail`
---
-ALTER TABLE `wastematerialdetail`
-  MODIFY `WasteDetailID` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `wastematerialreport`
---
-ALTER TABLE `wastematerialreport`
-  MODIFY `WasteMaterialID` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -4218,6 +4341,21 @@ ALTER TABLE `property_waste_reports`
   ADD CONSTRAINT `property_waste_reports_departmentid_foreign` FOREIGN KEY (`DepartmentID`) REFERENCES `department` (`DepartmentID`) ON DELETE SET NULL,
   ADD CONSTRAINT `property_waste_reports_sourceservicerecordid_foreign` FOREIGN KEY (`SourceServiceRecordID`) REFERENCES `asset_service_records` (`ServiceRecordID`) ON DELETE SET NULL,
   ADD CONSTRAINT `property_waste_reports_updatedbyuserid_foreign` FOREIGN KEY (`UpdatedByUserID`) REFERENCES `user` (`UserID`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `rpc_inventory_cycles`
+--
+ALTER TABLE `rpc_inventory_cycles`
+  ADD CONSTRAINT `rpc_inventory_cycles_created_by_user_id_foreign` FOREIGN KEY (`created_by_user_id`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `rpc_inventory_cycles_updated_by_user_id_foreign` FOREIGN KEY (`updated_by_user_id`) REFERENCES `user` (`UserID`);
+
+--
+-- Constraints for table `rpc_inventory_scans`
+--
+ALTER TABLE `rpc_inventory_scans`
+  ADD CONSTRAINT `rpc_inventory_scans_condition_id_foreign` FOREIGN KEY (`condition_id`) REFERENCES `condition` (`ConditionID`),
+  ADD CONSTRAINT `rpc_inventory_scans_rpc_inventory_cycle_id_foreign` FOREIGN KEY (`rpc_inventory_cycle_id`) REFERENCES `rpc_inventory_cycles` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `rpc_inventory_scans_scanned_by_user_id_foreign` FOREIGN KEY (`scanned_by_user_id`) REFERENCES `user` (`UserID`);
 
 --
 -- Constraints for table `rsmi_header`

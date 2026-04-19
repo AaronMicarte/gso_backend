@@ -33,6 +33,7 @@ use App\Http\Controllers\RsmiReportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AssetServiceRecordController;
 use App\Http\Controllers\PropertyWasteController;
+use App\Http\Controllers\RpcInventoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -315,6 +316,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('properties/{propertyId}/generate', [QrCodeController::class, 'generate']);
         Route::put('properties/{propertyId}', [QrCodeController::class, 'update']);
         Route::get('scan/{propertyId}', [QrCodeController::class, 'scan']);
+    });
+
+    // RPCPPE / RPCSEP inventory cycles and scanning
+    Route::prefix('rpc-inventory')->group(function () {
+        Route::get('cycles', [RpcInventoryController::class, 'index']);
+        Route::post('cycles/current', [RpcInventoryController::class, 'createCurrentCycle']);
+        Route::get('cycles/{id}', [RpcInventoryController::class, 'show']);
+        Route::get('cycles/{id}/scans', [RpcInventoryController::class, 'scans']);
+        Route::post('cycles/{id}/scan-preview', [RpcInventoryController::class, 'previewScan']);
+        Route::post('cycles/{id}/scans', [RpcInventoryController::class, 'storeScan']);
+        Route::get('cycles/{id}/report', [RpcInventoryController::class, 'report']);
+
+        Route::patch('scans/{scanId}', [RpcInventoryController::class, 'updateScan']);
+        Route::delete('scans/{scanId}', [RpcInventoryController::class, 'destroyScan']);
+
+        Route::get('helpers/conditions', [RpcInventoryController::class, 'conditions']);
     });
 
     // Inspection Officer routes
