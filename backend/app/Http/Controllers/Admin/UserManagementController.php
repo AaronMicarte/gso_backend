@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\AccountActivationMail;
 use App\Models\Auth\User;
+use App\Models\MasterData\EndUser;
 use App\Services\MFAService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -253,6 +254,9 @@ class UserManagementController extends Controller
             return response()->json(['message' => 'You cannot disable your own account'], 422);
         }
 
+        $previousFullName = $user->FullName;
+        $previousDepartmentId = $user->DepartmentID ? (int) $user->DepartmentID : null;
+
         $currentEmail = strtolower((string) $user->Email);
         $emailChanged = $currentEmail !== $email;
         $resetPassword = (bool) ($validated['ResetPasswordToDefault'] ?? false);
@@ -283,6 +287,7 @@ class UserManagementController extends Controller
 
         $user->UpdatedDate = Carbon::now();
         $user->save();
+        $this->syncEndUserMirror($user, $previousFullName, $previousDepartmentId);
 
         return response()->json([
             'message' => 'User updated',
@@ -400,6 +405,44 @@ class UserManagementController extends Controller
                 'email_sent' => false,
                 'activation_link' => $activationLink,
             ];
+        }
+    }
+
+    private function syncEndUserMirror(User $user, ?string $previousFullName, ?int $previousDepartmentId): void
+    {
+        $newName = trim((string) ($user->FullName ?? ''));
+        $newDepartmentId = $user->DepartmentID ? (int) $user->DepartmentID : null;
+
+        if ($newName === '' || !$newDepartmentId || $newDepartmentId <= 0) {
+            return;
+        }
+
+        $updatePayload = [
+            'FullName' => $newName,
+            'DepartmentID' => $newDepartmentId,
+            'UpdatedDate' => Carbon::now(),
+        ];
+
+        $normalizedEmail = strtolower(trim((string) ($user->Email ?? '')));
+        $updatedRows = 0;
+
+        if ($normalizedEmail !== '') {
+            $updatedRows = EndUser::query()
+                ->whereNotNull('Email')
+                ->whereRaw('LOWER(Email) = ?', [$normalizedEmail])
+                ->update($updatePayload);
+        }
+
+        $oldName = trim((string) ($previousFullName ?? ''));
+        if ($updatedRows === 0 && $oldName !== '') {
+            $departmentToMatch = $previousDepartmentId && $previousDepartmentId > 0
+                ? $previousDepartmentId
+                : $newDepartmentId;
+
+            EndUser::query()
+                ->where('DepartmentID', $departmentToMatch)
+                ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($oldName)])
+                ->update($updatePayload);
         }
     }
 }

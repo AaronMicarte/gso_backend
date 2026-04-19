@@ -22,6 +22,11 @@ class RpcInventoryController extends Controller
     private const CLASSIFICATION_SEMI_EXPENDABLE = 1;
     private const CLASSIFICATION_NON_EXPENDABLE = 2;
 
+    /**
+     * @var array<int, string|null>
+     */
+    private array $departmentOfficerNameCache = [];
+
     public function index(Request $request): JsonResponse
     {
         $this->authorizeGso();
@@ -193,15 +198,18 @@ class RpcInventoryController extends Controller
             return response()->json(['message' => 'Property not found for the provided input'], 404);
         }
 
-        $duplicate = RpcInventoryScan::query()
-            ->where('rpc_inventory_cycle_id', (int) $cycle->id)
-            ->where('inventory_detail_id', (int) $mapped['inventory_detail_id'])
-            ->first();
+        $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
+
+        $duplicate = $groupContext['existing_scans_by_detail'][(int) $mapped['inventory_detail_id']] ?? null;
 
         return response()->json([
             'asset' => $mapped,
             'already_scanned' => (bool) $duplicate,
             'existing_scan_id' => $duplicate ? (int) $duplicate->id : null,
+            'group_total_count' => (int) $groupContext['group_total_count'],
+            'group_scanned_count' => (int) $groupContext['group_scanned_count'],
+            'group_remaining_count' => (int) $groupContext['group_remaining_count'],
+            'candidates' => array_values($groupContext['candidates']),
         ]);
     }
 
@@ -213,6 +221,8 @@ class RpcInventoryController extends Controller
         $validated = $request->validate([
             'property_id' => 'nullable|integer|min:1',
             'inventory_detail_id' => 'nullable|integer|min:1',
+            'selected_inventory_detail_ids' => 'nullable|array|min:1',
+            'selected_inventory_detail_ids.*' => 'integer|min:1',
             'condition_id' => 'required|integer|exists:condition,ConditionID',
             'quantity_per_count' => 'nullable|integer|in:1',
             'remarks' => 'nullable|string|max:255',
@@ -241,32 +251,90 @@ class RpcInventoryController extends Controller
             $mapped = $this->mapInventoryDetail($inventoryDetail);
         }
 
+        $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
+
+        $requestedDetailIds = array_values(array_unique(array_map(
+            static fn ($value) => (int) $value,
+            (array) ($validated['selected_inventory_detail_ids'] ?? [])
+        )));
+
+        if (count($requestedDetailIds) === 0) {
+            $requestedDetailIds = [(int) $mapped['inventory_detail_id']];
+        }
+
+        $mappedByDetail = $groupContext['mapped_by_detail'];
+        $invalidDetailIds = array_values(array_filter($requestedDetailIds, static function (int $detailId) use ($mappedByDetail): bool {
+            return $detailId <= 0 || !array_key_exists($detailId, $mappedByDetail);
+        }));
+
+        if (count($invalidDetailIds) > 0) {
+            return response()->json([
+                'message' => 'One or more selected property numbers do not belong to this asset group.',
+                'invalid_inventory_detail_ids' => $invalidDetailIds,
+            ], 422);
+        }
+
+        $existingScansByDetail = $groupContext['existing_scans_by_detail'];
+        $alreadyScannedDetailIds = array_values(array_filter($requestedDetailIds, static function (int $detailId) use ($existingScansByDetail): bool {
+            return array_key_exists($detailId, $existingScansByDetail);
+        }));
+
+        if (count($alreadyScannedDetailIds) > 0) {
+            $alreadyScannedPropertyNumbers = array_values(array_filter(array_map(function (int $detailId) use ($mappedByDetail): ?string {
+                $value = $mappedByDetail[$detailId]['property_number'] ?? null;
+                return is_string($value) ? $value : null;
+            }, $alreadyScannedDetailIds)));
+
+            return response()->json([
+                'message' => 'Some selected property numbers are already scanned in this cycle.',
+                'already_scanned_inventory_detail_ids' => $alreadyScannedDetailIds,
+                'already_scanned_property_numbers' => $alreadyScannedPropertyNumbers,
+            ], 409);
+        }
+
+        $createdScans = [];
+
         try {
-            $scan = RpcInventoryScan::create([
-                'rpc_inventory_cycle_id' => (int) $cycle->id,
-                'inventory_detail_id' => (int) $mapped['inventory_detail_id'],
-                'property_id' => (int) $mapped['property_id'],
-                'rpc_type' => (string) $mapped['rpc_type'],
-                'property_classification_id' => $mapped['property_classification_id'],
-                'condition_id' => (int) $validated['condition_id'],
-                'scanned_at' => now(),
-                'scanned_by_user_id' => (int) $user->UserID,
-                'end_user_id' => $mapped['end_user_id'],
-                'department_id' => $mapped['department_id'],
-                'article' => $mapped['article'],
-                'description' => $mapped['description'],
-                'property_number' => $mapped['property_number'],
-                'unit_of_measure' => $mapped['unit_of_measure'],
-                'unit_value' => $mapped['unit_value'],
-                'quantity_per_card' => 1,
-                'quantity_per_count' => 1,
-                'remarks' => $validated['remarks'] ?? null,
-                'accountable_officer' => $mapped['accountable_officer'],
-            ]);
+            DB::transaction(function () use (
+                &$createdScans,
+                $cycle,
+                $requestedDetailIds,
+                $mappedByDetail,
+                $validated,
+                $user
+            ): void {
+                foreach ($requestedDetailIds as $detailId) {
+                    $row = $mappedByDetail[$detailId];
+
+                    $createdScans[] = RpcInventoryScan::create([
+                        'rpc_inventory_cycle_id' => (int) $cycle->id,
+                        'inventory_detail_id' => (int) $row['inventory_detail_id'],
+                        'property_id' => isset($row['property_id']) && $row['property_id'] !== null ? (int) $row['property_id'] : null,
+                        'rpc_type' => (string) $row['rpc_type'],
+                        'property_classification_id' => isset($row['property_classification_id']) && $row['property_classification_id'] !== null
+                            ? (int) $row['property_classification_id']
+                            : null,
+                        'condition_id' => (int) $validated['condition_id'],
+                        'scanned_at' => now(),
+                        'scanned_by_user_id' => (int) $user->UserID,
+                        'end_user_id' => isset($row['end_user_id']) && $row['end_user_id'] !== null ? (int) $row['end_user_id'] : null,
+                        'department_id' => isset($row['department_id']) && $row['department_id'] !== null ? (int) $row['department_id'] : null,
+                        'article' => $row['article'] ?? null,
+                        'description' => $row['description'] ?? null,
+                        'property_number' => $row['property_number'] ?? null,
+                        'unit_of_measure' => $row['unit_of_measure'] ?? null,
+                        'unit_value' => $row['unit_value'] ?? null,
+                        'quantity_per_card' => 1,
+                        'quantity_per_count' => 1,
+                        'remarks' => $validated['remarks'] ?? null,
+                        'accountable_officer' => $row['accountable_officer'] ?? null,
+                    ]);
+                }
+            });
         } catch (\Illuminate\Database\QueryException $e) {
             if ((string) $e->getCode() === '23000') {
                 return response()->json([
-                    'message' => 'This asset is already scanned in this cycle.',
+                    'message' => 'One or more selected property numbers are already scanned in this cycle.',
                 ], 409);
             }
 
@@ -274,8 +342,12 @@ class RpcInventoryController extends Controller
         }
 
         return response()->json([
-            'message' => 'Asset scan recorded.',
-            'scan' => $scan->load(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName']),
+            'message' => count($createdScans) > 1
+                ? sprintf('%d asset scans recorded.', count($createdScans))
+                : 'Asset scan recorded.',
+            'scans' => collect($createdScans)->map(
+                fn (RpcInventoryScan $scan) => $scan->load(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName'])
+            )->values(),
         ], 201);
     }
 
@@ -358,6 +430,11 @@ class RpcInventoryController extends Controller
             'RPCSEP' => [],
         ];
 
+        $totalsByType = [
+            'RPCPPE' => ['scanned' => 0, 'total' => 0],
+            'RPCSEP' => ['scanned' => 0, 'total' => 0],
+        ];
+
         $mappedByInventoryDetail = [];
 
         foreach ($assigned as $property) {
@@ -395,6 +472,11 @@ class RpcInventoryController extends Controller
             $quantityCount = $scan ? (int) $scan->quantity_per_count : 0;
             $shortageOverageQty = $quantityCount - $quantityCard;
 
+            $totalsByType[$rpcType]['total']++;
+            if ($scan) {
+                $totalsByType[$rpcType]['scanned']++;
+            }
+
             $rowsByType[$rpcType][] = [
                 'property_type' => $mapped['property_type_name'] ?? '-',
                 'article' => $mapped['article'] ?? '-',
@@ -415,10 +497,17 @@ class RpcInventoryController extends Controller
         }
 
         foreach (['RPCPPE', 'RPCSEP'] as $type) {
+            $rowsByType[$type] = $this->aggregateRpcRows($rowsByType[$type]);
+
             usort($rowsByType[$type], static function (array $a, array $b) {
                 $byType = strcmp((string) ($a['property_type'] ?? ''), (string) ($b['property_type'] ?? ''));
                 if ($byType !== 0) {
                     return $byType;
+                }
+
+                $byArticle = strcmp((string) ($a['article'] ?? ''), (string) ($b['article'] ?? ''));
+                if ($byArticle !== 0) {
+                    return $byArticle;
                 }
 
                 return strcmp((string) $a['property_number'], (string) $b['property_number']);
@@ -448,14 +537,14 @@ class RpcInventoryController extends Controller
             'rpcppe' => [
                 'rows' => $rowsByType['RPCPPE'],
                 'property_types' => $propertyTypesByRpcType['RPCPPE'],
-                'scanned_count' => count(array_filter($rowsByType['RPCPPE'], static fn ($row) => $row['is_scanned'])),
-                'total_count' => count($rowsByType['RPCPPE']),
+                'scanned_count' => $totalsByType['RPCPPE']['scanned'],
+                'total_count' => $totalsByType['RPCPPE']['total'],
             ],
             'rpcsep' => [
                 'rows' => $rowsByType['RPCSEP'],
                 'property_types' => $propertyTypesByRpcType['RPCSEP'],
-                'scanned_count' => count(array_filter($rowsByType['RPCSEP'], static fn ($row) => $row['is_scanned'])),
-                'total_count' => count($rowsByType['RPCSEP']),
+                'scanned_count' => $totalsByType['RPCSEP']['scanned'],
+                'total_count' => $totalsByType['RPCSEP']['total'],
             ],
         ]);
     }
@@ -596,10 +685,14 @@ class RpcInventoryController extends Controller
 
         $rpcType = $this->determineRpcType($classificationId);
         $fallback = $this->resolveCustodianFallbackByInventoryDetailId((int) ($detail?->InventoryDetailID ?? 0));
+        $departmentId = $property->DepartmentID ? (int) $property->DepartmentID : ($fallback['department_id'] ?? null);
+        $baseName = $property->endUser?->FullName ?: ($fallback['name'] ?? null);
 
         return [
             'property_id' => (int) $property->PropertyID,
             'inventory_detail_id' => (int) ($property->InventoryDetailID ?? 0),
+            'source_dr_detail_id' => $detail?->SourceDRDetailID ? (int) $detail->SourceDRDetailID : null,
+            'source_iar_detail_id' => $detail?->SourceIARDetailID ? (int) $detail->SourceIARDetailID : null,
             'property_classification_id' => $classificationId,
             'property_type_name' => $propertyType?->PropertyName,
             'rpc_type' => $rpcType,
@@ -607,13 +700,18 @@ class RpcInventoryController extends Controller
                 ?? $detail?->drDetail?->ItemDescription
                 ?? $detail?->Description
                 ?? $property->Description,
-            'description' => $detail?->Description ?? $property->Description,
+            'description' => $this->composeAssetDescription(
+                $detail?->Description ?? $property->Description,
+                $detail?->Brand,
+                $detail?->ModelNumber,
+                $detail?->SerialNumber
+            ),
             'property_number' => $detail?->PropertyNumber,
             'unit_of_measure' => $detail?->unitOfMeasure?->UnitName,
             'unit_value' => $detail?->UnitCost !== null ? (float) $detail->UnitCost : null,
-            'accountable_officer' => $property->endUser?->FullName ?: ($fallback['name'] ?? null),
+            'accountable_officer' => $this->resolveCurrentDepartmentOfficerName($departmentId, $baseName),
             'end_user_id' => $property->EndUserID ? (int) $property->EndUserID : null,
-            'department_id' => $property->DepartmentID ? (int) $property->DepartmentID : ($fallback['department_id'] ?? null),
+            'department_id' => $departmentId,
             'department_name' => $property->department?->DepartmentName ?: ($fallback['department_name'] ?? null),
         ];
     }
@@ -633,25 +731,454 @@ class RpcInventoryController extends Controller
             ->sortByDesc('PropertyID')
             ->first();
         $fallback = $this->resolveCustodianFallbackByInventoryDetailId((int) ($detail->InventoryDetailID ?? 0));
+        $departmentId = $latestAssigned?->DepartmentID ? (int) $latestAssigned->DepartmentID : ($fallback['department_id'] ?? null);
+        $baseName = $latestAssigned?->endUser?->FullName ?: ($fallback['name'] ?? null);
 
         return [
             'property_id' => $latestAssigned ? (int) $latestAssigned->PropertyID : null,
             'inventory_detail_id' => (int) ($detail->InventoryDetailID ?? 0),
+            'source_dr_detail_id' => $detail->SourceDRDetailID ? (int) $detail->SourceDRDetailID : null,
+            'source_iar_detail_id' => $detail->SourceIARDetailID ? (int) $detail->SourceIARDetailID : null,
             'property_classification_id' => $classificationId,
             'property_type_name' => $propertyType?->PropertyName,
             'rpc_type' => $rpcType,
             'article' => $detail->drDetail?->article?->ArticleName
                 ?? $detail->drDetail?->ItemDescription
                 ?? $detail->Description,
-            'description' => $detail->Description,
+            'description' => $this->composeAssetDescription(
+                $detail->Description,
+                $detail->Brand,
+                $detail->ModelNumber,
+                $detail->SerialNumber
+            ),
             'property_number' => $detail->PropertyNumber,
             'unit_of_measure' => $detail->unitOfMeasure?->UnitName,
             'unit_value' => $detail->UnitCost !== null ? (float) $detail->UnitCost : null,
-            'accountable_officer' => $latestAssigned?->endUser?->FullName ?: ($fallback['name'] ?? null),
+            'accountable_officer' => $this->resolveCurrentDepartmentOfficerName($departmentId, $baseName),
             'end_user_id' => $latestAssigned?->EndUserID ? (int) $latestAssigned->EndUserID : null,
-            'department_id' => $latestAssigned?->DepartmentID ? (int) $latestAssigned->DepartmentID : ($fallback['department_id'] ?? null),
+            'department_id' => $departmentId,
             'department_name' => $latestAssigned?->department?->DepartmentName ?: ($fallback['department_name'] ?? null),
         ];
+    }
+
+    /**
+     * @param array<string, int|string|float|null> $seedMapped
+     * @return array{
+     *     group_total_count:int,
+     *     group_scanned_count:int,
+     *     group_remaining_count:int,
+     *     candidates:array<int, array<string, int|string|bool|null>>,
+     *     mapped_by_detail:array<int, array<string, int|string|float|null>>,
+     *     existing_scans_by_detail:array<int, RpcInventoryScan>
+     * }
+     */
+    private function resolveScanGroupContext(array $seedMapped, int $cycleId): array
+    {
+        $seedDetailId = (int) ($seedMapped['inventory_detail_id'] ?? 0);
+        $seedRpcType = (string) ($seedMapped['rpc_type'] ?? '');
+        $seedKey = $this->buildScanGroupingKey($seedMapped);
+        $seedRelaxedKey = $this->buildScanRelaxedGroupingKey($seedMapped);
+        $seedSourceDrDetailId = (int) ($seedMapped['source_dr_detail_id'] ?? 0);
+        $seedSourceIarDetailId = (int) ($seedMapped['source_iar_detail_id'] ?? 0);
+
+        $allMappedByDetail = [];
+
+        $assignedRows = AssignedProperty::query()
+            ->with([
+                'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+                'inventoryDetail.drDetail.article:ArticleID,ArticleName',
+                'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
+                'endUser:EndUserID,FullName,DepartmentID',
+                'department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
+            ->get();
+
+        foreach ($assignedRows as $assigned) {
+            $mapped = $this->mapAssignedProperty($assigned);
+            $inventoryDetailId = (int) ($mapped['inventory_detail_id'] ?? 0);
+
+            if ($inventoryDetailId <= 0) {
+                continue;
+            }
+
+            if ((string) ($mapped['rpc_type'] ?? '') !== $seedRpcType) {
+                continue;
+            }
+
+            $allMappedByDetail[$inventoryDetailId] = $mapped;
+        }
+
+        $inventoryDetails = PropertyInventoryDetail::query()
+            ->with([
+                'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+                'drDetail.article:ArticleID,ArticleName',
+                'unitOfMeasure:UnitOfMeasureID,UnitName',
+                'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
+                'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
+            ->whereHas('propertyType', function ($query) {
+                $query->whereIn('PropertyClassificationID', [
+                    self::CLASSIFICATION_NON_EXPENDABLE,
+                    self::CLASSIFICATION_SEMI_EXPENDABLE,
+                ]);
+            })
+            ->get();
+
+        foreach ($inventoryDetails as $detail) {
+            $mapped = $this->mapInventoryDetail($detail);
+            $inventoryDetailId = (int) ($mapped['inventory_detail_id'] ?? 0);
+
+            if ($inventoryDetailId <= 0 || isset($allMappedByDetail[$inventoryDetailId])) {
+                continue;
+            }
+
+            if ((string) ($mapped['rpc_type'] ?? '') !== $seedRpcType) {
+                continue;
+            }
+
+            $allMappedByDetail[$inventoryDetailId] = $mapped;
+        }
+
+        if ($seedDetailId > 0 && !array_key_exists($seedDetailId, $allMappedByDetail)) {
+            $allMappedByDetail[$seedDetailId] = $seedMapped;
+        }
+
+        if (count($allMappedByDetail) === 0 && $seedDetailId > 0) {
+            $allMappedByDetail[$seedDetailId] = $seedMapped;
+        }
+
+        $mappedByDetail = [];
+
+        if ($seedSourceDrDetailId > 0 || $seedSourceIarDetailId > 0) {
+            foreach ($allMappedByDetail as $inventoryDetailId => $mapped) {
+                $candidateSourceDr = (int) ($mapped['source_dr_detail_id'] ?? 0);
+                $candidateSourceIar = (int) ($mapped['source_iar_detail_id'] ?? 0);
+
+                $sameSourceDr = $seedSourceDrDetailId > 0 && $candidateSourceDr === $seedSourceDrDetailId;
+                $sameSourceIar = $seedSourceIarDetailId > 0 && $candidateSourceIar === $seedSourceIarDetailId;
+
+                if ($sameSourceDr || $sameSourceIar) {
+                    $mappedByDetail[$inventoryDetailId] = $mapped;
+                }
+            }
+        }
+
+        if (count($mappedByDetail) <= 1) {
+            $mappedByDetail = [];
+            foreach ($allMappedByDetail as $inventoryDetailId => $mapped) {
+                if ($this->buildScanGroupingKey($mapped) === $seedKey) {
+                    $mappedByDetail[$inventoryDetailId] = $mapped;
+                }
+            }
+        }
+
+        if (count($mappedByDetail) <= 1) {
+            $mappedByDetail = [];
+            foreach ($allMappedByDetail as $inventoryDetailId => $mapped) {
+                if ($this->buildScanRelaxedGroupingKey($mapped) === $seedRelaxedKey) {
+                    $mappedByDetail[$inventoryDetailId] = $mapped;
+                }
+            }
+        }
+
+        if (count($mappedByDetail) === 0 && $seedDetailId > 0) {
+            $mappedByDetail[$seedDetailId] = $seedMapped;
+        }
+
+        $detailIds = array_map(static fn ($value) => (int) $value, array_keys($mappedByDetail));
+
+        $existingScansByDetail = [];
+        if (count($detailIds) > 0) {
+            $existingScansByDetail = RpcInventoryScan::query()
+                ->where('rpc_inventory_cycle_id', $cycleId)
+                ->whereIn('inventory_detail_id', $detailIds)
+                ->get()
+                ->keyBy('inventory_detail_id')
+                ->all();
+        }
+
+        $orderedDetailIds = $detailIds;
+        usort($orderedDetailIds, function (int $a, int $b) use ($mappedByDetail): int {
+            $left = (string) ($mappedByDetail[$a]['property_number'] ?? '');
+            $right = (string) ($mappedByDetail[$b]['property_number'] ?? '');
+
+            return strnatcasecmp($left, $right);
+        });
+
+        $candidates = [];
+        foreach ($orderedDetailIds as $detailId) {
+            $mapped = $mappedByDetail[$detailId];
+            $existingScan = $existingScansByDetail[$detailId] ?? null;
+
+            $candidates[] = [
+                'inventory_detail_id' => $detailId,
+                'property_id' => isset($mapped['property_id']) && $mapped['property_id'] !== null
+                    ? (int) $mapped['property_id']
+                    : null,
+                'property_number' => $mapped['property_number'] ?? null,
+                'is_scanned' => (bool) $existingScan,
+                'existing_scan_id' => $existingScan ? (int) $existingScan->id : null,
+            ];
+        }
+
+        $groupTotalCount = count($candidates);
+        $groupScannedCount = count($existingScansByDetail);
+
+        return [
+            'group_total_count' => $groupTotalCount,
+            'group_scanned_count' => $groupScannedCount,
+            'group_remaining_count' => max(0, $groupTotalCount - $groupScannedCount),
+            'candidates' => $candidates,
+            'mapped_by_detail' => $mappedByDetail,
+            'existing_scans_by_detail' => $existingScansByDetail,
+        ];
+    }
+
+    /**
+     * @param array<string, int|string|float|null> $mapped
+     */
+    private function buildScanGroupingKey(array $mapped): string
+    {
+        return implode('|', [
+            strtolower(trim((string) ($mapped['rpc_type'] ?? ''))),
+            strtolower(trim((string) ($mapped['property_type_name'] ?? ''))),
+            strtolower(trim((string) ($mapped['article'] ?? ''))),
+            strtolower(trim((string) ($mapped['description'] ?? ''))),
+            strtolower(trim((string) ($mapped['unit_of_measure'] ?? ''))),
+            number_format((float) ($mapped['unit_value'] ?? 0), 4, '.', ''),
+            strtolower(trim((string) ($mapped['accountable_officer'] ?? ''))),
+            strtolower(trim((string) ($mapped['department_name'] ?? ''))),
+        ]);
+    }
+
+    /**
+     * @param array<string, int|string|float|null> $mapped
+     */
+    private function buildScanRelaxedGroupingKey(array $mapped): string
+    {
+        return implode('|', [
+            strtolower(trim((string) ($mapped['rpc_type'] ?? ''))),
+            strtolower(trim((string) ($mapped['article'] ?? ''))),
+            strtolower(trim((string) ($mapped['description'] ?? ''))),
+            strtolower(trim((string) ($mapped['unit_of_measure'] ?? ''))),
+            number_format((float) ($mapped['unit_value'] ?? 0), 4, '.', ''),
+            (string) ((int) ($mapped['department_id'] ?? 0)),
+        ]);
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function aggregateRpcRows(array $rows): array
+    {
+        $groups = [];
+
+        foreach ($rows as $row) {
+            $key = implode('|', [
+                strtolower(trim((string) ($row['property_type'] ?? ''))),
+                strtolower(trim((string) ($row['article'] ?? ''))),
+                strtolower(trim((string) ($row['description'] ?? ''))),
+                strtolower(trim((string) ($row['unit_of_measure'] ?? ''))),
+                number_format((float) ($row['unit_value'] ?? 0), 4, '.', ''),
+                strtolower(trim((string) ($row['accountable_officer'] ?? ''))),
+                strtolower(trim((string) ($row['department'] ?? ''))),
+            ]);
+
+            if (!isset($groups[$key])) {
+                $seedRow = $row;
+                $seedRow['quantity_per_card'] = 0;
+                $seedRow['quantity_per_count'] = 0;
+                $seedRow['shortage_overage_qty'] = 0;
+                $seedRow['shortage_overage_value'] = 0;
+                $seedRow['is_scanned'] = false;
+
+                $groups[$key] = [
+                    'row' => $seedRow,
+                    'property_numbers' => [],
+                    'remarks' => [],
+                    'conditions' => [],
+                ];
+            }
+
+            $groups[$key]['property_numbers'][] = trim((string) ($row['property_number'] ?? ''));
+            $groups[$key]['row']['quantity_per_card'] = (int) ($groups[$key]['row']['quantity_per_card'] ?? 0) + (int) ($row['quantity_per_card'] ?? 0);
+            $groups[$key]['row']['quantity_per_count'] = (int) ($groups[$key]['row']['quantity_per_count'] ?? 0) + (int) ($row['quantity_per_count'] ?? 0);
+            $groups[$key]['row']['is_scanned'] = (bool) ($groups[$key]['row']['is_scanned'] ?? false) || (bool) ($row['is_scanned'] ?? false);
+
+            $remarks = trim((string) ($row['remarks'] ?? ''));
+            if ($remarks !== '') {
+                $groups[$key]['remarks'][$remarks] = true;
+            }
+
+            $condition = trim((string) ($row['condition'] ?? ''));
+            if ($condition !== '') {
+                $groups[$key]['conditions'][$condition] = true;
+            }
+        }
+
+        $result = [];
+
+        foreach ($groups as $group) {
+            $finalRow = $group['row'];
+            $finalRow['property_number'] = $this->summarizePropertyNumberRange($group['property_numbers']);
+
+            $qtyCard = (int) ($finalRow['quantity_per_card'] ?? 0);
+            $qtyCount = (int) ($finalRow['quantity_per_count'] ?? 0);
+            $unitValue = (float) ($finalRow['unit_value'] ?? 0);
+            $shortage = $qtyCount - $qtyCard;
+
+            $finalRow['shortage_overage_qty'] = $shortage;
+            $finalRow['shortage_overage_value'] = round($shortage * $unitValue, 2);
+
+            $remarksList = array_keys($group['remarks']);
+            $finalRow['remarks'] = count($remarksList) <= 1
+                ? ($remarksList[0] ?? '-')
+                : 'mixed';
+
+            $conditionList = array_keys($group['conditions']);
+            $finalRow['condition'] = count($conditionList) <= 1
+                ? ($conditionList[0] ?? null)
+                : 'mixed';
+
+            $result[] = $finalRow;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<int, string> $propertyNumbers
+     */
+    private function summarizePropertyNumberRange(array $propertyNumbers): string
+    {
+        $normalized = array_values(array_filter(array_unique(array_map(static function (string $value) {
+            return trim($value);
+        }, $propertyNumbers)), static function (string $value) {
+            return $value !== '' && $value !== '-';
+        }));
+
+        if (count($normalized) === 0) {
+            return '-';
+        }
+
+        sort($normalized, SORT_NATURAL | SORT_FLAG_CASE);
+        if (count($normalized) === 1) {
+            return $normalized[0];
+        }
+
+        $parsed = [];
+        foreach ($normalized as $value) {
+            if (preg_match('/^(.*?)(\d+)$/', $value, $match) !== 1) {
+                return implode(', ', $this->compactPropertyNumberList($normalized));
+            }
+
+            $parsed[] = [
+                'prefix' => (string) ($match[1] ?? ''),
+                'number' => (int) ($match[2] ?? 0),
+                'width' => strlen((string) ($match[2] ?? '')),
+                'raw' => $value,
+            ];
+        }
+
+        $prefixes = array_values(array_unique(array_map(static function (array $item): string {
+            return $item['prefix'];
+        }, $parsed)));
+
+        if (count($prefixes) !== 1) {
+            return implode(', ', $this->compactPropertyNumberList($normalized));
+        }
+
+        usort($parsed, static function (array $a, array $b): int {
+            return $a['number'] <=> $b['number'];
+        });
+
+        $isContiguous = true;
+        for ($i = 1; $i < count($parsed); $i++) {
+            if (($parsed[$i]['number'] - $parsed[$i - 1]['number']) !== 1) {
+                $isContiguous = false;
+                break;
+            }
+        }
+
+        if (! $isContiguous) {
+            return implode(', ', $this->compactPropertyNumberList($normalized));
+        }
+
+        $prefix = (string) $parsed[0]['prefix'];
+        $width = (int) $parsed[0]['width'];
+        $firstNum = str_pad((string) $parsed[0]['number'], $width, '0', STR_PAD_LEFT);
+        $lastNum = str_pad((string) $parsed[count($parsed) - 1]['number'], $width, '0', STR_PAD_LEFT);
+
+        return $prefix . $firstNum . '/' . $lastNum;
+    }
+
+    /**
+     * @param array<int, string> $numbers
+     * @return array<int, string>
+     */
+    private function compactPropertyNumberList(array $numbers): array
+    {
+        $total = count($numbers);
+        if ($total <= 5) {
+            return $numbers;
+        }
+
+        $visible = array_slice($numbers, 0, 5);
+        $visible[] = sprintf('... (%d items)', $total);
+
+        return $visible;
+    }
+
+    private function composeAssetDescription(?string $baseDescription, ?string $brand, ?string $model, ?string $serial): string
+    {
+        $base = trim((string) ($baseDescription ?? ''));
+
+        if ($base !== '') {
+            return $base;
+        }
+
+        $parts = array_values(array_filter([
+            trim((string) ($brand ?? '')),
+            trim((string) ($model ?? '')),
+            trim((string) ($serial ?? '')),
+        ], static function (string $value) {
+            return $value !== '';
+        }));
+
+        if (count($parts) === 0) {
+            return '-';
+        }
+
+        return implode(' / ', $parts);
+    }
+
+    private function resolveCurrentDepartmentOfficerName(?int $departmentId, ?string $fallbackName): ?string
+    {
+        $normalizedFallback = is_string($fallbackName) ? trim($fallbackName) : null;
+
+        if (!$departmentId || $departmentId <= 0) {
+            return $normalizedFallback !== '' ? $normalizedFallback : null;
+        }
+
+        if (array_key_exists($departmentId, $this->departmentOfficerNameCache)) {
+            return $this->departmentOfficerNameCache[$departmentId] ?: ($normalizedFallback !== '' ? $normalizedFallback : null);
+        }
+
+        $currentName = DB::table('user')
+            ->where('DepartmentID', $departmentId)
+            ->where('IsActive', 1)
+            ->whereNotNull('FullName')
+            ->whereRaw("TRIM(FullName) <> ''")
+            ->orderByRaw('CASE WHEN UserRoleID = 4 THEN 0 WHEN UserRoleID = 5 THEN 1 ELSE 2 END')
+            ->orderByDesc('UpdatedDate')
+            ->orderByDesc('UserID')
+            ->value('FullName');
+
+        $resolved = is_string($currentName) ? trim($currentName) : null;
+        $this->departmentOfficerNameCache[$departmentId] = $resolved !== '' ? $resolved : null;
+
+        return $this->departmentOfficerNameCache[$departmentId] ?: ($normalizedFallback !== '' ? $normalizedFallback : null);
     }
 
     /**

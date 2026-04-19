@@ -885,18 +885,6 @@ class DeliveryReceiptController extends Controller
                 ->value('PropertyStatusID') ?? 1;
         }
 
-        $year = date('Y');
-        $prefix = $year . '-';
-        $latestItem = PropertyInventoryDetail::where('PropertyNumber', 'like', $prefix . '%')
-            ->orderBy('PropertyNumber', 'desc')
-            ->withTrashed()
-            ->first();
-
-        $currentSequence = 0;
-        if ($latestItem && preg_match('/-(\d+)$/', (string) $latestItem->PropertyNumber, $matches)) {
-            $currentSequence = (int) $matches[1];
-        }
-
         foreach ($details as $detail) {
             $deliveredQty = (int) ($detail->QuantityDelivered ?? 0);
             if ($deliveredQty <= 0) {
@@ -908,9 +896,9 @@ class DeliveryReceiptController extends Controller
             $serial = $detail->SerialNumber;
             $conditionId = 1;
 
-            for ($i = 0; $i < $deliveredQty; $i++) {
-                $currentSequence++;
-                $propertyNumber = $prefix . str_pad((string) $currentSequence, 6, '0', STR_PAD_LEFT);
+            $propertyNumbers = $this->reservePropertyNumbers($deliveredQty);
+
+            foreach ($propertyNumbers as $propertyNumber) {
 
                 $inventoryDetail = PropertyInventoryDetail::create([
                     'InventoryID' => $inventory->InventoryID,
@@ -980,6 +968,41 @@ class DeliveryReceiptController extends Controller
                 );
             }
         }
+    }
+
+    /**
+     * Reserve a contiguous set of property numbers for the current year.
+     *
+     * @return array<int, string>
+     */
+    private function reservePropertyNumbers(int $count): array
+    {
+        if ($count <= 0) {
+            return [];
+        }
+
+        $year = (int) date('Y');
+        $prefix = $year . '-';
+
+        $latestItem = PropertyInventoryDetail::withTrashed()
+            ->where('PropertyNumber', 'like', $prefix . '%')
+            ->lockForUpdate()
+            ->orderByRaw('CAST(SUBSTRING_INDEX(PropertyNumber, \"-\", -1) AS UNSIGNED) DESC')
+            ->orderBy('PropertyNumber', 'desc')
+            ->first();
+
+        $currentSequence = 0;
+        if ($latestItem && preg_match('/-(\d+)$/', (string) $latestItem->PropertyNumber, $matches)) {
+            $currentSequence = (int) $matches[1];
+        }
+
+        $numbers = [];
+        for ($i = 0; $i < $count; $i++) {
+            $currentSequence++;
+            $numbers[] = $prefix . str_pad((string) $currentSequence, 6, '0', STR_PAD_LEFT);
+        }
+
+        return $numbers;
     }
 
     private function createIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
