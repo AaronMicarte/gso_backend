@@ -150,11 +150,13 @@ class RpcInventoryController extends Controller
 
         $validated = $request->validate([
             'property_id' => 'nullable|integer|min:1',
+            'inventory_detail_id' => 'nullable|integer|min:1',
             'property_number' => 'nullable|string|max:100',
             'qr_value' => 'nullable|string|max:2048',
         ]);
 
         $propertyId = isset($validated['property_id']) ? (int) $validated['property_id'] : null;
+        $inventoryDetailId = isset($validated['inventory_detail_id']) ? (int) $validated['inventory_detail_id'] : null;
         $propertyNumber = isset($validated['property_number'])
             ? trim((string) $validated['property_number'])
             : null;
@@ -181,6 +183,11 @@ class RpcInventoryController extends Controller
                 if ($inventoryDetail) {
                     $mapped = $this->mapInventoryDetail($inventoryDetail);
                 }
+            }
+        } elseif ($inventoryDetailId) {
+            $inventoryDetail = $this->resolveInventoryDetailById($inventoryDetailId);
+            if ($inventoryDetail) {
+                $mapped = $this->mapInventoryDetail($inventoryDetail);
             }
         } elseif ($propertyNumber) {
             $assignedProperty = $this->resolveAssignedPropertyByPropertyNumber((string) $propertyNumber);
