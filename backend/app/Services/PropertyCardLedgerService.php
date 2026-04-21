@@ -110,6 +110,11 @@ class PropertyCardLedgerService
             return $inventoryDetailRemarks;
         }
 
+        $deliveryReceiptRemarks = $this->stringOrNull($detail->drDetail?->deliveryReceipt?->Remarks ?? null);
+        if ($deliveryReceiptRemarks !== null) {
+            return $deliveryReceiptRemarks;
+        }
+
         $inventoryRemarks = $this->stringOrNull($detail->inventory?->Remarks ?? null);
         if ($inventoryRemarks !== null) {
             return $inventoryRemarks;

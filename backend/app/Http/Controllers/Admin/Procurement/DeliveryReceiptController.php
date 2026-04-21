@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -153,11 +154,11 @@ class DeliveryReceiptController extends Controller
                 ] : null;
 
                 // Convenience fields for legacy frontend usage
-                $dr->RequestedByName = $dr->requestedByUser->FullName ?? null;
-                $dr->DepartmentName = $dr->requestedByUser->department->DepartmentName ?? null;
-                $dr->DepartmentID = $dr->requestedByUser->DepartmentID ?? null;
-                $dr->SupplierName = $dr->supplier->SupplierName ?? null;
-                $dr->supplier_name = $dr->supplier->SupplierName ?? null;
+                $dr->RequestedByName = $dr->requestedByUser?->FullName;
+                $dr->DepartmentName = $dr->requestedByUser?->department?->DepartmentName;
+                $dr->DepartmentID = $dr->requestedByUser?->DepartmentID;
+                $dr->SupplierName = $dr->supplier?->SupplierName;
+                $dr->supplier_name = $dr->supplier?->SupplierName;
                 // Remove the temporary field
                 unset($dr->received_by_name);
                 return $dr;
@@ -168,6 +169,11 @@ class DeliveryReceiptController extends Controller
                 'data' => $deliveryReceipts
             ]);
         } catch (\Exception $e) {
+            Log::error('DeliveryReceiptController@index failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'query' => $request->query(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch delivery receipts',
@@ -414,14 +420,14 @@ class DeliveryReceiptController extends Controller
             ] : null;
 
             // Convenience fields for legacy frontend usage
-            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
-            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
-            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
-            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
-            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
+            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser?->FullName;
+            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser?->department?->DepartmentName;
+            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser?->DepartmentID;
+            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier?->SupplierName;
+            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier?->SupplierName;
 
             $recipientUserIds = $this->getProcurementNotificationUserIds(
-                (int) ($deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+                (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0),
                 (int) (Auth::id() ?? 0)
             );
 
@@ -460,7 +466,15 @@ class DeliveryReceiptController extends Controller
                 'dr_picture_url' => Storage::disk('public')->url($deliveryReceipt->dr_picture)
             ], 201);
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            Log::error('DeliveryReceiptController@store failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'payload' => $request->except(['dr_picture']),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create delivery receipt',
@@ -523,11 +537,11 @@ class DeliveryReceiptController extends Controller
             ] : null;
 
             // Convenience fields for legacy frontend usage
-            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
-            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
-            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
-            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
-            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
+            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser?->FullName;
+            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser?->department?->DepartmentName;
+            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser?->DepartmentID;
+            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier?->SupplierName;
+            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier?->SupplierName;
 
             // Normalize relationship keys for frontend by converting the model to an array
             $data = $deliveryReceipt->toArray();
@@ -797,14 +811,14 @@ class DeliveryReceiptController extends Controller
             ] : null;
 
             // Convenience fields for legacy frontend usage
-            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser->FullName ?? null;
-            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser->department->DepartmentName ?? null;
-            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser->DepartmentID ?? null;
-            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier->SupplierName ?? null;
-            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier->SupplierName ?? null;
+            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser?->FullName;
+            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser?->department?->DepartmentName;
+            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser?->DepartmentID;
+            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier?->SupplierName;
+            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier?->SupplierName;
 
             $recipientUserIds = $this->getProcurementNotificationUserIds(
-                (int) ($deliveryReceipt->requestedByUser->DepartmentID ?? 0),
+                (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0),
                 (int) (Auth::id() ?? 0)
             );
 
@@ -843,7 +857,16 @@ class DeliveryReceiptController extends Controller
                 'dr_picture_url' => Storage::disk('public')->url($deliveryReceipt->dr_picture)
             ]);
         } catch (\Exception $e) {
-            DB::rollBack();
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            Log::error('DeliveryReceiptController@update failed', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'dr_id' => $id,
+                'user_id' => Auth::id(),
+                'payload' => $request->except(['dr_picture']),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update delivery receipt',
@@ -871,7 +894,9 @@ class DeliveryReceiptController extends Controller
             'DRID' => $deliveryReceipt->DRID,
             'IARID' => null,
             'DateReceived' => $deliveryReceipt->DateInspected ?? $deliveryReceipt->DateReceived ?? now(),
-            'Remarks' => 'Auto-ingested from DR #' . $deliveryReceipt->DRNumber,
+            'Remarks' => trim((string) ($deliveryReceipt->Remarks ?? '')) !== ''
+                ? trim((string) $deliveryReceipt->Remarks)
+                : 'Auto-ingested from DR #' . $deliveryReceipt->DRNumber,
             'CreatedDate' => now(),
         ]);
 
@@ -987,7 +1012,7 @@ class DeliveryReceiptController extends Controller
         $latestItem = PropertyInventoryDetail::withTrashed()
             ->where('PropertyNumber', 'like', $prefix . '%')
             ->lockForUpdate()
-            ->orderByRaw('CAST(SUBSTRING_INDEX(PropertyNumber, \"-\", -1) AS UNSIGNED) DESC')
+            ->orderByRaw("CAST(SUBSTRING_INDEX(PropertyNumber, '-', -1) AS UNSIGNED) DESC")
             ->orderBy('PropertyNumber', 'desc')
             ->first();
 

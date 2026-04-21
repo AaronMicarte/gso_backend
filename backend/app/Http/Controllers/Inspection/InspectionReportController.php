@@ -1036,7 +1036,7 @@ class InspectionReportController extends Controller
         $latestItem = PropertyInventoryDetail::withTrashed()
             ->where('PropertyNumber', 'like', $prefix . '%')
             ->lockForUpdate()
-            ->orderByRaw('CAST(SUBSTRING_INDEX(PropertyNumber, \"-\", -1) AS UNSIGNED) DESC')
+            ->orderByRaw("CAST(SUBSTRING_INDEX(PropertyNumber, '-', -1) AS UNSIGNED) DESC")
             ->orderBy('PropertyNumber', 'desc')
             ->first();
 

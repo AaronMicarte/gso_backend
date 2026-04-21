@@ -978,7 +978,9 @@ class PropertyIssuanceController extends Controller
             'InventoryNumber' => 'INV-' . date('Ymd-His') . '-' . $iar->IARID,
             'IARID' => $iar->IARID,
             'DateReceived' => $iar->DateAccepted ?? now(),
-            'Remarks' => 'Auto-ingested from IAR #' . $iar->IARNumber,
+            'Remarks' => trim((string) ($iar->Remarks ?? '')) !== ''
+                ? trim((string) $iar->Remarks)
+                : 'Auto-ingested from IAR #' . $iar->IARNumber,
             'CreatedDate' => now(),
         ]);
 
@@ -1052,7 +1054,7 @@ class PropertyIssuanceController extends Controller
         $latestItem = PropertyInventoryDetail::withTrashed()
             ->where('PropertyNumber', 'like', $prefix . '%')
             ->lockForUpdate()
-            ->orderByRaw('CAST(SUBSTRING_INDEX(PropertyNumber, \"-\", -1) AS UNSIGNED) DESC')
+            ->orderByRaw("CAST(SUBSTRING_INDEX(PropertyNumber, '-', -1) AS UNSIGNED) DESC")
             ->orderBy('PropertyNumber', 'desc')
             ->first();
 
@@ -2229,7 +2231,9 @@ class PropertyIssuanceController extends Controller
             'DRID' => (int) $deliveryReceipt->DRID,
             'IARID' => null,
             'DateReceived' => $deliveryReceipt->DateInspected ?? $deliveryReceipt->DateReceived ?? now(),
-            'Remarks' => 'Auto-ingested from DR #' . $deliveryReceipt->DRNumber,
+            'Remarks' => trim((string) ($deliveryReceipt->Remarks ?? '')) !== ''
+                ? trim((string) $deliveryReceipt->Remarks)
+                : 'Auto-ingested from DR #' . $deliveryReceipt->DRNumber,
             'CreatedDate' => now(),
         ]);
 
