@@ -18,6 +18,43 @@ class RsmiReportController extends Controller
         $this->ensureTablesInstalled();
         $user = $this->authorizeGso();
 
+        $startDate = trim((string) $request->query('start_date', ''));
+        $endDate = trim((string) $request->query('end_date', ''));
+
+        if ($startDate !== '' || $endDate !== '') {
+            if ($startDate === '' || $endDate === '') {
+                return response()->json([
+                    'message' => 'Both start_date and end_date are required for date range filtering.',
+                ], 422);
+            }
+
+            try {
+                $start = Carbon::createFromFormat('Y-m-d', $startDate)->startOfDay();
+                $end = Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay();
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'message' => 'Invalid date format. Use YYYY-MM-DD for start_date and end_date.',
+                ], 422);
+            }
+
+            if ($start->gt($end)) {
+                return response()->json([
+                    'message' => 'start_date must be less than or equal to end_date.',
+                ], 422);
+            }
+
+            $this->syncReportsForRange($start->toDateString(), $end->toDateString(), (int) $user->UserID);
+
+            $reports = RsmiReport::query()
+                ->withCount('items')
+                ->withSum('items', 'quantity_issued')
+                ->whereBetween('report_date', [$start->toDateString(), $end->toDateString()])
+                ->orderByDesc('report_date')
+                ->get();
+
+            return response()->json($reports);
+        }
+
         $month = (int) $request->get('month', now()->month);
         $year = (int) $request->get('year', now()->year);
 
@@ -37,6 +74,27 @@ class RsmiReportController extends Controller
         }
 
         return response()->json($query->get());
+    }
+
+    private function syncReportsForRange(string $startDate, string $endDate, int $userId): void
+    {
+        $issuedDates = $this->issuedDatesForRange($startDate, $endDate);
+
+        foreach ($issuedDates as $issuedDate) {
+            $this->syncReportForDate($issuedDate, $userId, null);
+        }
+
+        $existingForRange = RsmiReport::withTrashed()
+            ->whereBetween('report_date', [$startDate, $endDate])
+            ->get();
+
+        foreach ($existingForRange as $report) {
+            $dateKey = optional($report->report_date)->toDateString() ?? '';
+            if (!in_array($dateKey, $issuedDates, true)) {
+                RsmiReportItem::where('rsmi_header_id', (int) $report->id)->delete();
+                $report->forceDelete();
+            }
+        }
     }
 
     public function show(int $id): JsonResponse
@@ -169,6 +227,24 @@ class RsmiReportController extends Controller
             ->whereNull('pi.deleted_at')
             ->whereMonth('pi.DateIssued', $month)
             ->whereYear('pi.DateIssued', $year)
+            ->selectRaw('DATE(pi.DateIssued) as report_date')
+            ->distinct()
+            ->orderBy('report_date')
+            ->pluck('report_date')
+            ->map(static fn ($date) => (string) $date)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function issuedDatesForRange(string $startDate, string $endDate): array
+    {
+        return DB::table('propertyissuance as pi')
+            ->whereNull('pi.deleted_at')
+            ->whereDate('pi.DateIssued', '>=', $startDate)
+            ->whereDate('pi.DateIssued', '<=', $endDate)
             ->selectRaw('DATE(pi.DateIssued) as report_date')
             ->distinct()
             ->orderBy('report_date')
