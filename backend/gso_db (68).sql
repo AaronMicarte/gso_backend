@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 23, 2026 at 09:27 AM
+-- Generation Time: Apr 23, 2026 at 03:02 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -432,7 +432,16 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (270, 'inventory_detail', 48, 'transfer_completed', 1, '{\"transfer_id\":7,\"transfer_number\":\"PTR-2026-0007\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-20 05:26:45'),
 (271, 'property_transfer', 7, 'completed', 1, '{\"transfer_number\":\"PTR-2026-0007\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-20 05:26:45'),
 (272, 'property_borrow', 6, 'approved', 1, '{\"borrow_number\":\"PBR-2026-0006\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-20 05:27:04'),
-(273, 'inventory_detail', 47, 'borrow_approved', 1, '{\"borrow_id\":6,\"borrow_number\":\"PBR-2026-0006\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-20 05:27:04');
+(273, 'inventory_detail', 47, 'borrow_approved', 1, '{\"borrow_id\":6,\"borrow_number\":\"PBR-2026-0006\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-20 05:27:04'),
+(274, 'property_transfer', 8, 'created', 1, '{\"transfer_number\":\"PTR-2026-0008\",\"from_department_id\":23,\"to_department_id\":30,\"items\":[25]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 07:46:21'),
+(275, 'inventory_detail', 25, 'transfer_requested', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 07:46:21'),
+(276, 'property_transfer', 8, 'approved', 1, '{\"transfer_number\":\"PTR-2026-0008\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:01:18'),
+(277, 'inventory_detail', 25, 'transfer_approved', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:01:18'),
+(278, 'property_transfer', 8, 'releasing_approved', 1, '{\"transfer_number\":\"PTR-2026-0008\",\"requested_count\":1,\"approved_count\":1,\"approved_quantities\":{\"8\":1},\"reason\":null}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:01:51'),
+(279, 'inventory_detail', 25, 'transfer_releasing_approved', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"approved_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:01:51'),
+(280, 'property_transfer_item', 8, 'transferred', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"inventory_detail_id\":25,\"from_department_id\":23,\"to_department_id\":30}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02'),
+(281, 'inventory_detail', 25, 'transfer_completed', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02'),
+(282, 'property_transfer', 8, 'completed', 1, '{\"transfer_number\":\"PTR-2026-0008\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02');
 
 -- --------------------------------------------------------
 
@@ -591,7 +600,7 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (32, 136, 2, 30, 'PAR-2026-0006', 'ha', '2026-03-22', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-22 23:22:27', '2026-03-29 15:37:00'),
 (33, 137, 2, 30, 'PAR-2026-0007', 'ASUS', '2026-03-24', 2, 1, 'Auto-created from DR inspection', '2026-03-24 11:40:12', '2026-03-29 15:37:05'),
 (34, 138, 2, 30, 'PAR-2026-0008', 'MSI', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:43:37', '2026-03-29 21:39:14'),
-(35, 25, 4, 23, 'PAR-2026-0009', 'Laptop Computer (TravelMate-P2)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
+(35, 25, 2, 30, 'PTR-2026-0008', 'Laptop Computer (TravelMate-P2)', '2026-04-23', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-04-23 16:02:02'),
 (36, 26, 4, 23, 'PAR-2026-0009', 'Office Lamp (OFL-9W)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
 (37, 45, 4, 23, 'PAR-2026-0009', 'Office Lamp (OFL-9W)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
 (38, 60, 4, 23, 'PAR-2026-0009', 'Office Lamp (OFL-9W)', '2026-03-24', 2, 1, 'Auto-created from DR acknowledgment', '2026-03-24 11:55:01', '2026-03-24 11:55:01'),
@@ -655,7 +664,7 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('gsoiams-cache-fcm_oauth_access_token', 's:1024:\"ya29.c.c0AZ4bNpZhsVQe3plwMQmCEDjahr_DaqOqHfMpCaXBidI_JdRNTCE7tGQuEu-7IA94NOdWnmUT8KWLujtj6ruI_i8mTmbJH9DMbYit0QWH9nCuomcdW_yMHEWiQqqwQYgRkmUsm4nPjaaCCBlLDZBWKKivPOGqCl7xtKnUsK6Ehigz461nckbmg9iiDm8Ku-UVFVgqfERkdnLJGo4SSN2fCzgRubOlritZ9D-znv1kinlACP-72qHsZl1rYM8jr8caUftPQ81ZNvQJTHowFKPj4RCU8OTOKwaaSctgTvYmnNu-fMjrtQEOZUK_yQBJMhx5yWfU0Q9NN_dvYBAki_RtoIFeYxfuV86r7Bn7sPhnEYtGuGqrZ9Lo-YgL384AoOo6I3_n4cZuhsYu1aJIVscsdIU3iz_QZ-16QvhjSvSpq2Mj3s2krOzrU7oqj-7Ycl6flWJ25OhwsoW40n6dM630cu94ka0dMn2idedQ5dczggbVVJ4d1hBBUUdwik_0ja1X1S7417fau0W_dnWliiW75ko8tId1ctagSewiwczRoXZvJInQMh26h7Zgo-xBcX-wiMp1zZSoMkl11FQ-Fr4d9jI2-1ni-9x47i1pwmIouY2mVUufl6a3t5hz_coIZQ0u54Xt_wthU8WYQZZtnaMIQpmwVJpvZ1VJtJFoZxuYxukcwlj5FtF4grB0Yn3VmfkducgWwj3iB2aXnOl49bq_feUb-zf8n6JtRehWivjmyM7_mp-wvUfikguxXkBI1IfSoO_jp_7wWo12IIaVygYV4eB6-pild1QpOut-efRQk9QgRscV0wqczn5V3tng8z6r4xSyRu-g0jdWuXUbW_eo8-1mM37lcF8iuO_FUobbQWfySrv8B5hoddbhIMe9rMj2hRpvQXF-98mqIp4tVfByo5JsdkWSh6tjO6Wm3ab2Jc06Rt2foOv0WOt9WbBqyYX6OwQu8Mxb_Jq90iii9jMQ4W1a0Yhjj3pwfh2aYaZUBZ7SzjWRc0l15Mo\";', 1776665793);
+('gsoiams-cache-fcm_oauth_access_token', 's:1024:\"ya29.c.c0AZ4bNpYRCq__IPUHeHu7KxF5Yy2IJtMpGoyN5du5pEr9uPqpUoRQmk93INqWQCbYDVME8YOOx12J8_ckmzdtZ5IYAfl41M4n3cY5iJJdDHxkTCHrRCc5zYDrVR1Na69LesvU-YpwflMH0FGH-VhUQx5V2iv1LXet3vcBQxbO3oGMMfUnxMCeKcE2LU3moJWi9f6c8h-GR8LJB6gdfK66jzPLFwxYJd54tDPq19kGi2TLdrIj3EkgTon5dto2n084lfL8QvCkWISEbAhgUWYtZemYVW1Ao1uvVbzDiYXE95Q2m8Gz6vDyJEXwx4hwDw_SYUFYG38MQ3SSOVsX4tVE3bGc5b6LnEAN5eO_REqYyfS94vIr7C8lrs2aN385DJydfV9yzImzQfBZ-j7RImMe4Xt4W65yUawMuU0s3Q_yMVU1mVceSO9UMr_ipUWW3JksdcJfQ6Q7r0qnYqU8JFwh-iQS7ufzpFBgszwV3ZbJl77_d1nvq8n6MqZyc2dIeyZucR1irtWjf8jtQ1ezOu7rj3Vbne_VlU2YsMwFZaUzodh83xrcYi6F1wbbnwtk4x4aiQ7tcFcQM9v_0154kpty83gxFlmSqfOwh-cg1ByXR5z8W-9fInZRdJRgjXxFJY4Xrlk4VySmz6Y3vIomqIdb08cVwU85WwclVn8VI-8hY4iQ_tlh5l9FmnjReFFWsJYo181alsaMwd4RnO7aVe24SuFq6WFktVq6OeSb4sOwXpzl2rrWZQw0q-Jp3nBOUb6JOakz_Mnepzb7X_rc2QuQXMvcZeYsdUzrFrIpl_Vre6z2qhtc4ysxeSZpXkUUgnOk7BYlmBi2_pcS3cz-1vUc-Up-wj9Ur79Funa8h3wJ2doaewgh8r13lI5hjg3hw7m8yIJSiFoMZbynImRuXtOy1kQWUl8z414OWQuxZlr5YydbZaOWsVzBwRlipl2bhXYm_Men1Bpceoa9vXq0stkz-ecp6lgI9qkl9OwwMdOWsn0Icnq-a-7uj-2\";', 1776933861);
 
 -- --------------------------------------------------------
 
@@ -1349,7 +1358,15 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (170, 3, '2026-04-20 10:23:22', 'Login', '127.0.0.1'),
 (171, 3, '2026-04-20 13:25:39', 'Logout', '127.0.0.1'),
 (172, 6, '2026-04-20 13:26:01', 'Login', '127.0.0.1'),
-(173, 1, '2026-04-22 21:07:37', 'Login', '127.0.0.1');
+(173, 1, '2026-04-22 21:07:37', 'Login', '127.0.0.1'),
+(174, 1, '2026-04-23 15:28:01', 'Login', '127.0.0.1'),
+(175, 3, '2026-04-23 15:28:21', 'Login', '127.0.0.1'),
+(176, 3, '2026-04-23 15:49:52', 'Logout', '127.0.0.1'),
+(177, 6, '2026-04-23 15:49:57', 'Login', '127.0.0.1'),
+(178, 6, '2026-04-23 15:50:30', 'Logout', '127.0.0.1'),
+(179, 3, '2026-04-23 15:50:37', 'Login', '127.0.0.1'),
+(180, 1, '2026-04-23 19:53:00', 'Login', '127.0.0.1'),
+(181, 3, '2026-04-23 19:53:10', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1535,7 +1552,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (171, '2026_04_14_150000_create_rsmi_reports_tables', 73),
 (172, '2026_04_14_180000_rename_rsmi_tables_remove_signature_columns', 74),
 (173, '2026_04_16_150000_create_rpc_inventory_tables', 75),
-(174, '2026_04_23_000001_enforce_gso_requesters_on_property_transfer_and_borrow', 76);
+(174, '2026_04_23_000001_enforce_gso_requesters_on_property_transfer_and_borrow', 76),
+(175, '2026_04_23_000002_align_requester_triggers_with_receiving_department', 77),
+(176, '2026_04_23_000003_add_completed_status_to_propertyborrow', 78);
 
 -- --------------------------------------------------------
 
@@ -1686,7 +1705,7 @@ CREATE TABLE `propertyborrow` (
   `ReleasingDecisionReason` text DEFAULT NULL,
   `ReleasingReviewedByUserID` int(11) DEFAULT NULL,
   `ReleasingReviewedAt` timestamp NULL DEFAULT NULL,
-  `Status` enum('pending','approved','rejected','borrowed','partially_returned','returned','cancelled') NOT NULL DEFAULT 'pending',
+  `Status` enum('pending','approved','rejected','borrowed','partially_returned','returned','completed','cancelled') NOT NULL DEFAULT 'pending',
   `ApprovedByUserID` int(11) DEFAULT NULL,
   `ApprovedAt` timestamp NULL DEFAULT NULL,
   `BorrowedAt` timestamp NULL DEFAULT NULL,
@@ -1713,37 +1732,35 @@ INSERT INTO `propertyborrow` (`BorrowID`, `BorrowNumber`, `RequestedByUserID`, `
 --
 DELIMITER $$
 CREATE TRIGGER `trg_propertyborrow_requester_role_check` BEFORE INSERT ON `propertyborrow` FOR EACH ROW BEGIN
-        DECLARE role_name VARCHAR(50);
+        DECLARE requester_department_id INT;
 
-        SELECT ur.RoleName
-        INTO role_name
+        SELECT u.DepartmentID
+        INTO requester_department_id
         FROM `user` u
-        LEFT JOIN userrole ur ON ur.UserRoleID = u.UserRoleID
         WHERE u.UserID = NEW.RequestedByUserID
         LIMIT 1;
 
-        IF role_name IS NULL OR role_name NOT IN ('Admin', 'GSO Staff') THEN
+        IF requester_department_id IS NULL OR requester_department_id <> NEW.ToDepartmentID THEN
             SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Only Admin or GSO Staff can create PBR requests';
+            SET MESSAGE_TEXT = 'PBR requester must belong to borrowing department';
         END IF;
     END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `trg_propertyborrow_requester_role_check_update` BEFORE UPDATE ON `propertyborrow` FOR EACH ROW BEGIN
-        DECLARE role_name VARCHAR(50);
+        DECLARE requester_department_id INT;
 
-        IF NEW.RequestedByUserID <> OLD.RequestedByUserID THEN
-            SELECT ur.RoleName
-            INTO role_name
+        IF NEW.RequestedByUserID <> OLD.RequestedByUserID OR NEW.ToDepartmentID <> OLD.ToDepartmentID THEN
+            SELECT u.DepartmentID
+            INTO requester_department_id
             FROM `user` u
-            LEFT JOIN userrole ur ON ur.UserRoleID = u.UserRoleID
             WHERE u.UserID = NEW.RequestedByUserID
             LIMIT 1;
 
-            IF role_name IS NULL OR role_name NOT IN ('Admin', 'GSO Staff') THEN
+            IF requester_department_id IS NULL OR requester_department_id <> NEW.ToDepartmentID THEN
                 SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Only Admin or GSO Staff can be PBR requester';
+                SET MESSAGE_TEXT = 'PBR requester must belong to borrowing department';
             END IF;
         END IF;
     END
@@ -2312,44 +2329,43 @@ INSERT INTO `propertytransfer` (`TransferID`, `TransferNumber`, `RequestedByUser
 (4, 'PTR-2026-0004', 3, 23, 30, 4, 2, 'extension', 1, 'approved', 1, 'okay', 6, '2026-03-29 13:01:57', 'completed', 1, '2026-03-29 13:02:38', 1, '2026-04-20 03:53:09', '2026-03-29 13:03:00', '2026-04-20 03:53:09', NULL, '2026-03-29 13:00:41', '2026-04-20 03:53:09', NULL),
 (5, 'PTR-2026-0005', 3, 23, 30, 4, 2, 'hulam', 1, 'approved', 1, 'okay', 6, '2026-03-29 13:24:20', 'completed', 1, '2026-03-29 13:24:53', 3, '2026-03-29 13:26:06', '2026-03-29 13:25:10', '2026-03-29 13:26:06', NULL, '2026-03-29 13:23:01', '2026-03-29 13:26:06', NULL),
 (6, 'PTR-2026-0006', 3, 23, 30, 4, 2, NULL, 1, 'approved', 1, 'sge', 6, '2026-04-03 17:08:28', 'completed', 1, '2026-04-03 17:06:39', 1, '2026-04-03 17:09:22', '2026-04-03 17:09:22', '2026-04-03 17:09:22', NULL, '2026-04-03 17:05:47', '2026-04-03 17:09:22', NULL),
-(7, 'PTR-2026-0007', 3, 23, 30, 4, 2, 'kk', 1, 'approved', 1, NULL, 6, '2026-04-20 05:26:28', 'completed', 1, '2026-04-20 05:25:24', 1, '2026-04-20 05:26:45', '2026-04-20 05:26:45', '2026-04-20 05:26:45', NULL, '2026-04-20 05:24:37', '2026-04-20 05:26:45', NULL);
+(7, 'PTR-2026-0007', 3, 23, 30, 4, 2, 'kk', 1, 'approved', 1, NULL, 6, '2026-04-20 05:26:28', 'completed', 1, '2026-04-20 05:25:24', 1, '2026-04-20 05:26:45', '2026-04-20 05:26:45', '2026-04-20 05:26:45', NULL, '2026-04-20 05:24:37', '2026-04-20 05:26:45', NULL),
+(8, 'PTR-2026-0008', 3, 23, 30, 4, 2, 'balhin', 1, 'approved', 1, NULL, 1, '2026-04-23 08:01:51', 'completed', 1, '2026-04-23 08:01:18', 1, '2026-04-23 08:02:02', '2026-04-23 08:02:02', '2026-04-23 08:02:02', NULL, '2026-04-23 07:46:21', '2026-04-23 08:02:02', NULL);
 
 --
 -- Triggers `propertytransfer`
 --
 DELIMITER $$
 CREATE TRIGGER `trg_propertytransfer_requester_role_check` BEFORE INSERT ON `propertytransfer` FOR EACH ROW BEGIN
-        DECLARE role_name VARCHAR(50);
+        DECLARE requester_department_id INT;
 
-        SELECT ur.RoleName
-        INTO role_name
+        SELECT u.DepartmentID
+        INTO requester_department_id
         FROM `user` u
-        LEFT JOIN userrole ur ON ur.UserRoleID = u.UserRoleID
         WHERE u.UserID = NEW.RequestedByUserID
         LIMIT 1;
 
-        IF role_name IS NULL OR role_name NOT IN ('Admin', 'GSO Staff') THEN
+        IF requester_department_id IS NULL OR requester_department_id <> NEW.ToDepartmentID THEN
             SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Only Admin or GSO Staff can create PTR requests';
+            SET MESSAGE_TEXT = 'PTR requester must belong to receiving department';
         END IF;
     END
 $$
 DELIMITER ;
 DELIMITER $$
 CREATE TRIGGER `trg_propertytransfer_requester_role_check_update` BEFORE UPDATE ON `propertytransfer` FOR EACH ROW BEGIN
-        DECLARE role_name VARCHAR(50);
+        DECLARE requester_department_id INT;
 
-        IF NEW.RequestedByUserID <> OLD.RequestedByUserID THEN
-            SELECT ur.RoleName
-            INTO role_name
+        IF NEW.RequestedByUserID <> OLD.RequestedByUserID OR NEW.ToDepartmentID <> OLD.ToDepartmentID THEN
+            SELECT u.DepartmentID
+            INTO requester_department_id
             FROM `user` u
-            LEFT JOIN userrole ur ON ur.UserRoleID = u.UserRoleID
             WHERE u.UserID = NEW.RequestedByUserID
             LIMIT 1;
 
-            IF role_name IS NULL OR role_name NOT IN ('Admin', 'GSO Staff') THEN
+            IF requester_department_id IS NULL OR requester_department_id <> NEW.ToDepartmentID THEN
                 SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Only Admin or GSO Staff can be PTR requester';
+                SET MESSAGE_TEXT = 'PTR requester must belong to receiving department';
             END IF;
         END IF;
     END
@@ -2384,7 +2400,8 @@ INSERT INTO `propertytransferdetails` (`TransferItemID`, `TransferID`, `Inventor
 (4, 4, 74, 1, NULL, '2026-03-29 13:00:41', '2026-03-29 13:00:41', NULL),
 (5, 5, 28, 1, NULL, '2026-03-29 13:23:01', '2026-03-29 13:23:01', NULL),
 (6, 6, 29, 1, NULL, '2026-04-03 17:05:47', '2026-04-03 17:05:47', NULL),
-(7, 7, 48, 1, NULL, '2026-04-20 05:24:37', '2026-04-20 05:24:37', NULL);
+(7, 7, 48, 1, NULL, '2026-04-20 05:24:37', '2026-04-20 05:24:37', NULL),
+(8, 8, 25, 1, NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:21', NULL);
 
 -- --------------------------------------------------------
 
@@ -2472,7 +2489,11 @@ INSERT INTO `property_card_entries` (`EntryID`, `InventoryDetailID`, `EntryDate`
 (17, 47, '2026-04-20 13:24:28', 'borrow', 0, 1, 'PBR-2026-0006', 'Borrowing office', 4200.00, 4200.00, 'll', 'audit', 262, 'audit:262', 3, '2026-04-20 13:24:28'),
 (18, 48, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 420.00, 420.00, 'Batch 4 additional non-expendable units.', 'opening', 48, 'opening:48', NULL, '2026-04-20 13:26:45'),
 (19, 48, '2026-04-20 13:26:45', 'transfer', 0, 1, 'PTR-2026-0007', 'Department #30 / EndUser #2', 420.00, 420.00, 'kk', 'audit', 270, 'audit:270', 1, '2026-04-20 13:26:45'),
-(20, 12, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 2350.00, 2350.00, 'Batch 1 office and ICT assets for operational rollout.', 'opening', 12, 'opening:12', NULL, '2026-04-20 13:27:57');
+(20, 12, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 2350.00, 2350.00, 'Batch 1 office and ICT assets for operational rollout.', 'opening', 12, 'opening:12', NULL, '2026-04-20 13:27:57'),
+(21, 25, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 49900.00, 49900.00, 'Batch 4 additional non-expendable units.', 'opening', 25, 'opening:25', NULL, '2026-04-23 16:02:02'),
+(22, 25, '2026-04-04 01:36:35', 'borrow', 0, 1, 'PBR-2026-0005', 'Borrowing office', 49900.00, 49900.00, 'Released under borrow transaction', 'audit', 206, 'audit:206', 3, '2026-04-04 01:36:35'),
+(23, 25, '2026-04-04 01:40:55', 'borrow_return', 1, 0, 'PBR-RET-2026-0004', 'Returned to accountable office', 49900.00, 49900.00, 'ohye', 'audit', 213, 'audit:213', 1, '2026-04-04 01:40:55'),
+(24, 25, '2026-04-23 16:02:02', 'transfer', 0, 1, 'PTR-2026-0008', 'Department #30 / EndUser #2', 49900.00, 49900.00, 'balhin', 'audit', 281, 'audit:281', 1, '2026-04-23 16:02:02');
 
 -- --------------------------------------------------------
 
@@ -2583,7 +2604,7 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 (32, 32, 136, 30, 'http://localhost:3000/qr/scan/32?h=f7d1d50763e3', '2026-03-22 23:22:27'),
 (33, 33, 137, 30, 'http://localhost:3000/qr/scan/33?h=1fd2068b4c4b', '2026-03-24 11:40:12'),
 (34, 34, 138, 30, 'http://localhost:3000/qr/scan/34?h=c54deffee3ca', '2026-03-24 11:43:37'),
-(35, 35, 25, 23, 'http://localhost:3000/qr/scan/35?h=c4d4216993be', '2026-03-24 11:55:01'),
+(35, 35, 25, 30, 'http://localhost:8000/qr/scan/35?h=c4d4216993be', '2026-04-23 16:02:02'),
 (36, 36, 26, 23, 'http://localhost:3000/qr/scan/36?h=ce464a891374', '2026-03-24 11:55:01'),
 (37, 37, 45, 23, 'http://localhost:3000/qr/scan/37?h=aec340323004', '2026-03-24 11:55:01'),
 (38, 38, 60, 23, 'http://localhost:3000/qr/scan/38?h=ebab3c505b56', '2026-03-24 11:55:01'),
@@ -2933,8 +2954,10 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('mWm2Okj26GIF6hcpid3yrL1kjHoedbAX5kdzulAL', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiczZxbm1WMzhkVHQ1WWlsekVOV2JOalR1WnNhdDV0R1ZybkVmVThRRSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1776874314),
-('rw0gJBcJVbPl6mhwaYWRySpjjti3xNZe5aZ75zV5', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiZFhnS01aOWpGT1VqVGROYXVFQVdzMlA5TUNtUTB0Mzd2R2xUcmVZaSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1776891921);
+('2YjCU6RmdvaVhRBNqsqJllCPM8K7XgoMtcZFtgrN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidzh1dkVtNE1ZTDhFZTZrbzdJbEhEbFdmUXNlaGp0enNRZkZjZm13NyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1776944793),
+('aIi7kjF6DPpJsWA8u5Ilb3GvOyzF2jYUktP8oCME', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoieDdNWGs5U2JDWktCbmo4NDlMVDZ6eFBJTEpwblhvYnRzVWFuVzBXeiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRPNS4zMy9QcVoxOS9RdlJlUzRjMlllbkNwRzhMU2JEcW5rLzF2b01HWEJjNlN0RFlmMGx5MiI7fQ==', 1776949307),
+('JFty0ysBv9a3aiPLsV9TJ8Z8e1EBr9tIGuOpqU4O', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiYUlCYmlrSWM5ZFUyYTltSHYzZXE1Z3ZvNVV5NWJiWHRYYkpHZXVtYyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1776949336),
+('uZbt9vvzAn1daV9VaaN4K35i2CWj4iCAQhzapoiV', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieFYyTXZOTVJYenhMRnhqcnpMbDYzQ2VZeTVtN25JWVIwYjRmbW1vOCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1776944793);
 
 -- --------------------------------------------------------
 
@@ -2999,8 +3022,8 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (86, 1, 'Trusted Device', '92b86588f1a81d8f632b3484925ab65694afa1335866b980e6f6e563d670ed4d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-18 17:45:44', '2026-04-02 22:47:37', '2026-03-03 22:47:37', '2026-03-18 17:45:44'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-22 21:07:37', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-22 21:07:37'),
-(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-20 10:23:22', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-20 10:23:22');
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-23 19:52:59', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-23 19:52:59'),
+(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-23 19:53:10', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-23 19:53:10');
 
 -- --------------------------------------------------------
 
@@ -3233,7 +3256,22 @@ INSERT INTO `user_notifications` (`UserNotificationID`, `UserID`, `event_type`, 
 (94, 2, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0006 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:04', '2026-04-20 05:27:04'),
 (95, 3, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0006 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:04', '2026-04-20 05:27:04'),
 (96, 6, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0006 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'sent', NULL, '2026-04-20 05:27:09', NULL, '2026-04-20 05:27:04', '2026-04-20 05:27:09'),
-(97, 3, 'property_borrow.approved', 'Your Borrow Request Was Approved', 'Borrow request PBR-2026-0006 was approved and is pending releasing department review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:09', '2026-04-20 05:27:09');
+(97, 3, 'property_borrow.approved', 'Your Borrow Request Was Approved', 'Borrow request PBR-2026-0006 was approved and is pending releasing department review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:09', '2026-04-20 05:27:09'),
+(98, 2, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0008 was submitted by GSO Administrator.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:21'),
+(99, 3, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0008 was submitted by GSO Administrator.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 07:46:24', NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:24'),
+(100, 6, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0008 was submitted by GSO Administrator.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 07:46:24', '2026-04-23 07:46:24'),
+(101, 2, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0008 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:18', '2026-04-23 08:01:18'),
+(102, 3, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0008 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:18', '2026-04-23 08:01:18'),
+(103, 6, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0008 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 08:01:19', NULL, '2026-04-23 08:01:18', '2026-04-23 08:01:19'),
+(104, 3, 'property_transfer.approved', 'Your Transfer Request Was Approved', 'Transfer PTR-2026-0008 has been approved and is waiting for releasing department review.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:19', '2026-04-23 08:01:19'),
+(105, 2, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:51', '2026-04-23 08:01:51'),
+(106, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:51', '2026-04-23 08:01:51'),
+(107, 6, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 08:01:53', NULL, '2026-04-23 08:01:51', '2026-04-23 08:01:53'),
+(108, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department and is awaiting signatures.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:53', '2026-04-23 08:01:53'),
+(109, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0008 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:02:02', '2026-04-23 08:02:02'),
+(110, 3, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0008 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:02:02', '2026-04-23 08:02:02'),
+(111, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0008 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 08:02:03', NULL, '2026-04-23 08:02:02', '2026-04-23 08:02:03'),
+(112, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0008 has been completed.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:02:03', '2026-04-23 08:02:03');
 
 -- --------------------------------------------------------
 
@@ -3261,11 +3299,11 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-04-22 13:07:48', '2026-03-22 14:52:48', '2026-04-22 13:07:48'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-04-23 12:10:21', '2026-03-22 14:52:48', '2026-04-23 12:10:21'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
-(8, 6, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHWwS9DhEMtQP70CLVDiGNA4MxtySBMrtrpySest_P1vuv-vNG4j7K9C3dieSK_fOZPyi3N6NP764UKB3m1B_v8mOupvOlyWcUTrJHOiRBthNO93PM', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.', 1, '2026-04-20 05:26:17', '2026-03-28 16:03:51', '2026-04-20 05:26:17');
+(8, 6, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHWwS9DhEMtQP70CLVDiGNA4MxtySBMrtrpySest_P1vuv-vNG4j7K9C3dieSK_fOZPyi3N6NP764UKB3m1B_v8mOupvOlyWcUTrJHOiRBthNO93PM', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.', 1, '2026-04-23 07:50:09', '2026-03-28 16:03:51', '2026-04-23 07:50:09');
 
 -- --------------------------------------------------------
 
@@ -3973,7 +4011,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=274;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=283;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -4087,13 +4125,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=174;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=175;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=177;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -4207,13 +4245,13 @@ ALTER TABLE `propertystatus`
 -- AUTO_INCREMENT for table `propertytransfer`
 --
 ALTER TABLE `propertytransfer`
-  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `propertytransferdetails`
 --
 ALTER TABLE `propertytransferdetails`
-  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `propertytype`
@@ -4225,7 +4263,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `property_card_entries`
 --
 ALTER TABLE `property_card_entries`
-  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `property_waste_items`
@@ -4327,7 +4365,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=98;
+  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
 
 --
 -- AUTO_INCREMENT for table `user_push_tokens`
