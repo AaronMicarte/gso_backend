@@ -272,7 +272,9 @@ class PropertyTransferController extends Controller
                 'Reason' => $validated['reason'] ?? null,
                 'RequestedItemsCount' => (int) $inventoryDetailIds->count(),
                 'ReleasingDecision' => 'pending',
-                'Status' => 'pending',
+                'Status' => 'approved',
+                'ApprovedByUserID' => (int) $user->UserID,
+                'ApprovedAt' => now(),
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -332,14 +334,14 @@ class PropertyTransferController extends Controller
             $this->notifyTransferRoles(
                 $transfer,
                 'property_transfer.created',
-                'New Property Transfer Request',
-                sprintf('Transfer %s was submitted by %s.', (string) $transfer->TransferNumber, (string) ($user->FullName ?? 'Department Head')),
-                'pending',
+                'New Property Transfer Request (Auto-Approved)',
+                sprintf('Transfer %s was submitted by %s and auto-approved by GSO workflow.', (string) $transfer->TransferNumber, (string) ($user->FullName ?? 'Department Head')),
+                'approved',
                 (int) $user->UserID
             );
 
             return response()->json([
-                'message' => 'Transfer request submitted',
+                'message' => 'Transfer request submitted and auto-approved',
                 'transfer' => $transfer,
             ], 201);
         });
@@ -1070,10 +1072,6 @@ class PropertyTransferController extends Controller
 
             if ($transfer->Status !== 'approved') {
                 return response()->json(['message' => 'Only approved transfers can be completed'], 422);
-            }
-
-            if (($transfer->ReleasingDecision ?? 'pending') !== 'approved') {
-                return response()->json(['message' => 'Releasing custody must approve first before GSO finalization'], 422);
             }
 
             $completionTime = now();

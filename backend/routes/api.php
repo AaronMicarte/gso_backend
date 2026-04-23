@@ -269,8 +269,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('{id}', [\App\Http\Controllers\PropertyBorrowController::class, 'show']);
         Route::post('{id}/releasing-review', [\App\Http\Controllers\PropertyBorrowController::class, 'releasingReview']);
         Route::post('{id}/approve', [\App\Http\Controllers\PropertyBorrowController::class, 'approve']);
+        Route::post('{id}/deliver', [\App\Http\Controllers\PropertyBorrowController::class, 'deliver']);
         Route::post('{id}/reject', [\App\Http\Controllers\PropertyBorrowController::class, 'reject']);
         Route::post('{id}/return', [\App\Http\Controllers\PropertyBorrowController::class, 'markReturned']);
+        Route::post('{id}/complete', [\App\Http\Controllers\PropertyBorrowController::class, 'complete']);
     });
 
     // Service & Repair

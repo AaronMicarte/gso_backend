@@ -297,7 +297,9 @@ class PropertyBorrowController extends Controller
                 'RequestedItemsCount' => (int) $inventoryDetailIds->count(),
                 'DueDate' => $dueDate->toDateString(),
                 'ReleasingDecision' => 'pending',
-                'Status' => 'pending',
+                'Status' => 'approved',
+                'ApprovedByUserID' => (int) $user->UserID,
+                'ApprovedAt' => now(),
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -359,14 +361,14 @@ class PropertyBorrowController extends Controller
             $this->notifyBorrowRoles(
                 $borrow,
                 'property_borrow.created',
-                'New Property Borrow Request',
-                sprintf('Borrow request %s was submitted by %s.', (string) $borrow->BorrowNumber, (string) ($user->FullName ?? 'Department Head')),
-                'pending',
+                'New Property Borrow Request (Auto-Approved)',
+                sprintf('Borrow request %s was submitted by %s and auto-approved by GSO workflow.', (string) $borrow->BorrowNumber, (string) ($user->FullName ?? 'Department Head')),
+                'approved',
                 (int) $user->UserID
             );
 
             return response()->json([
-                'message' => 'Borrow request submitted',
+                'message' => 'Borrow request submitted and auto-approved',
                 'borrow' => $borrow,
             ], 201);
         });
@@ -428,17 +430,30 @@ class PropertyBorrowController extends Controller
             );
 
             return response()->json([
-                'message' => 'Borrow request approved by GSO/Admin. Waiting for releasing custody review.',
+                'message' => 'Borrow request approved',
                 'borrow' => $borrow,
             ]);
         }
 
         if ($borrow->Status !== 'approved') {
-            return response()->json(['message' => 'Only approved borrow requests can be finalized'], 422);
+            return response()->json(['message' => 'Only pending borrow requests can be approved'], 422);
         }
 
-        if (($borrow->ReleasingDecision ?? 'pending') !== 'approved') {
-            return response()->json(['message' => 'Releasing department must approve first before final GSO action'], 422);
+        return response()->json(['message' => 'Borrow request is already approved. Use the delivered action.'], 422);
+    }
+
+    public function deliver(int $id)
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if (!$this->isPrivileged($roleName)) {
+            return response()->json(['message' => 'Unauthorized to mark borrows as delivered'], 403);
+        }
+
+        $borrow = PropertyBorrow::findOrFail($id);
+        if ($borrow->Status !== 'approved') {
+            return response()->json(['message' => 'Only approved borrow requests can be marked as delivered'], 422);
         }
 
         $borrow->update([
@@ -458,19 +473,19 @@ class PropertyBorrowController extends Controller
             $borrow,
             'property_borrow.borrowed',
             'Property Borrow Released',
-            sprintf('Borrow request %s was finalized and marked as borrowed.', (string) $borrow->BorrowNumber),
+            sprintf('Borrow request %s was marked as delivered.', (string) $borrow->BorrowNumber),
             'borrowed',
             (int) $user->UserID
         );
         $this->notifyBorrowRequester(
             $borrow,
             'property_borrow.borrowed',
-            'Borrow Request Finalized',
-            sprintf('Borrow request %s is now marked as borrowed.', (string) $borrow->BorrowNumber),
+            'Borrow Request Delivered',
+            sprintf('Borrow request %s is now marked as delivered.', (string) $borrow->BorrowNumber),
             'borrowed'
         );
 
-        return response()->json(['message' => 'Borrow finalized and marked as borrowed', 'borrow' => $borrow]);
+        return response()->json(['message' => 'Borrow marked as delivered', 'borrow' => $borrow]);
     }
 
     public function releasingReview(Request $request, int $id)
@@ -902,6 +917,56 @@ class PropertyBorrowController extends Controller
 
             return response()->json(['message' => 'Return recorded', 'borrow' => $borrow]);
         });
+    }
+
+    public function complete(Request $request, int $id)
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if (!$this->isPrivileged($roleName)) {
+            return response()->json(['message' => 'Unauthorized to complete borrows'], 403);
+        }
+
+        $validated = $request->validate([
+            'notes' => 'nullable|string|max:2000',
+        ]);
+
+        $borrow = PropertyBorrow::findOrFail($id);
+        if ($borrow->Status !== 'returned') {
+            return response()->json(['message' => 'Only fully returned borrows can be completed'], 422);
+        }
+
+        $borrow->update([
+            'Status' => 'completed',
+            'GsoNotes' => $validated['notes'] ?? $borrow->GsoNotes,
+        ]);
+
+        AssetAuditLog::createLog(
+            'property_borrow',
+            (int) $borrow->BorrowID,
+            'completed',
+            (int) $user->UserID,
+            ['borrow_number' => $borrow->BorrowNumber]
+        );
+
+        $this->notifyBorrowRoles(
+            $borrow,
+            'property_borrow.completed',
+            'Property Borrow Completed',
+            sprintf('Borrow request %s has been marked as completed.', (string) $borrow->BorrowNumber),
+            'completed',
+            (int) $user->UserID
+        );
+        $this->notifyBorrowRequester(
+            $borrow,
+            'property_borrow.completed',
+            'Borrow Request Completed',
+            sprintf('Borrow request %s has been completed.', (string) $borrow->BorrowNumber),
+            'completed'
+        );
+
+        return response()->json(['message' => 'Borrow completed', 'borrow' => $borrow]);
     }
 
     public function availableItems(Request $request)
