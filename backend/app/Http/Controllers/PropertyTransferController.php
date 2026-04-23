@@ -190,27 +190,6 @@ class PropertyTransferController extends Controller
             'items.*.quantity' => 'required|integer|in:1',
         ]);
 
-        $requesterDepartmentId = (int) ($user?->DepartmentID ?? 0);
-        if ($requesterDepartmentId && (int) $validated['to_department_id'] !== $requesterDepartmentId) {
-            return response()->json(['message' => 'Receiving department must be your department'], 422);
-        }
-
-        $requesterName = trim((string) ($user?->FullName ?? ''));
-        if ($requesterDepartmentId && $requesterName !== '') {
-            $requesterEndUser = EndUser::where('DepartmentID', $requesterDepartmentId)
-                ->whereRaw('LOWER(FullName) = ?', [strtolower($requesterName)])
-                ->first();
-
-            if (!$requesterEndUser) {
-                return response()->json([
-                    'message' => 'Requester must have a matching End User record in their department before creating a transfer.'
-                ], 422);
-            }
-
-            $validated['to_end_user_id'] = (int) $requesterEndUser->EndUserID;
-            $validated['to_department_id'] = $requesterDepartmentId;
-        }
-
         $fromEndUser = EndUser::find((int) $validated['from_end_user_id']);
         $toEndUser = EndUser::find((int) $validated['to_end_user_id']);
 
@@ -220,6 +199,17 @@ class PropertyTransferController extends Controller
 
         if ($toEndUser && (int) $toEndUser->DepartmentID !== (int) $validated['to_department_id']) {
             return response()->json(['message' => 'Receiving custodian must belong to the receiving department'], 422);
+        }
+
+        $requesterUserId = $this->resolveRequesterUserId(
+            (int) $validated['to_department_id'],
+            $toEndUser?->FullName
+        );
+
+        if (!$requesterUserId) {
+            return response()->json([
+                'message' => 'Receiving department requester is missing. Assign an active user (preferably Department Head) in the receiving department.'
+            ], 422);
         }
 
         $inventoryDetailIds = collect($validated['items'])->pluck('inventory_detail_id')->map(fn ($id) => (int) $id)->values();
@@ -244,7 +234,7 @@ class PropertyTransferController extends Controller
             return response()->json(['message' => 'One or more items are currently under an active borrow request'], 422);
         }
 
-        return DB::transaction(function () use ($validated, $user, $inventoryDetailIds) {
+        return DB::transaction(function () use ($validated, $user, $inventoryDetailIds, $requesterUserId) {
             $assignedProperties = AssignedProperty::query()
                 ->join('propertyinventorydetail as pid', 'assignedproperty.InventoryDetailID', '=', 'pid.InventoryDetailID')
                 ->whereIn('assignedproperty.InventoryDetailID', $inventoryDetailIds)
@@ -274,7 +264,7 @@ class PropertyTransferController extends Controller
 
             $transfer = PropertyTransfer::create([
                 'TransferNumber' => PropertyTransfer::generateTransferNumber(),
-                'RequestedByUserID' => (int) $user->UserID,
+                'RequestedByUserID' => $requesterUserId,
                 'FromDepartmentID' => (int) $validated['from_department_id'],
                 'ToDepartmentID' => (int) $validated['to_department_id'],
                 'FromEndUserID' => (int) $validated['from_end_user_id'],
@@ -421,16 +411,12 @@ class PropertyTransferController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if ($roleName !== self::ROLE_DEPARTMENT_HEAD) {
-            return response()->json(['message' => 'Only Department Head can perform releasing review'], 403);
+        if (!$this->isPrivileged($roleName)) {
+            return response()->json(['message' => 'Only GSO/Admin can perform releasing review'], 403);
         }
 
         return DB::transaction(function () use ($request, $id, $user) {
             $transfer = PropertyTransfer::with(['items.inventoryDetail'])->lockForUpdate()->findOrFail($id);
-
-            if ((int) ($user?->DepartmentID ?? 0) !== (int) $transfer->FromDepartmentID) {
-                return response()->json(['message' => 'Only releasing department can review this request'], 403);
-            }
 
             if ($transfer->Status !== 'approved') {
                 return response()->json(['message' => 'GSO/Admin must approve first before releasing department review'], 422);
@@ -911,16 +897,12 @@ class PropertyTransferController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if ($roleName !== self::ROLE_DEPARTMENT_HEAD) {
-            return response()->json(['message' => 'Only receiving department can confirm receipt'], 403);
+        if (!$this->isPrivileged($roleName)) {
+            return response()->json(['message' => 'Only GSO/Admin can confirm receipt'], 403);
         }
 
         return DB::transaction(function () use ($id, $user) {
             $transfer = PropertyTransfer::lockForUpdate()->findOrFail($id);
-
-            if ((int) ($user?->DepartmentID ?? 0) !== (int) $transfer->ToDepartmentID) {
-                return response()->json(['message' => 'Only the receiving department can confirm receipt'], 403);
-            }
 
             if ($transfer->Status !== 'approved') {
                 return response()->json(['message' => 'Receiving signature is only allowed for approved transfers'], 422);
@@ -1343,7 +1325,42 @@ class PropertyTransferController extends Controller
 
     private function canCreate(string $roleName): bool
     {
-        return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF, self::ROLE_DEPARTMENT_HEAD], true);
+        return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF], true);
+    }
+
+    private function resolveRequesterUserId(int $departmentId, ?string $receivingEndUserName): ?int
+    {
+        $normalizedName = trim((string) $receivingEndUserName);
+
+        if ($departmentId > 0 && $normalizedName !== '') {
+            $matchingCustodianUser = User::query()
+                ->where('IsActive', 1)
+                ->where('DepartmentID', $departmentId)
+                ->whereRaw('LOWER(FullName) = ?', [strtolower($normalizedName)])
+                ->orderByDesc('UserID')
+                ->first(['UserID']);
+
+            if ($matchingCustodianUser) {
+                return (int) $matchingCustodianUser->UserID;
+            }
+        }
+
+        if ($departmentId > 0) {
+            $departmentHeadUser = User::query()
+                ->where('IsActive', 1)
+                ->where('DepartmentID', $departmentId)
+                ->whereHas('userRole', function ($q) {
+                    $q->where('RoleName', self::ROLE_DEPARTMENT_HEAD);
+                })
+                ->orderByDesc('UserID')
+                ->first(['UserID']);
+
+            if ($departmentHeadUser) {
+                return (int) $departmentHeadUser->UserID;
+            }
+        }
+
+        return null;
     }
 
     private function notifyTransferRoles(

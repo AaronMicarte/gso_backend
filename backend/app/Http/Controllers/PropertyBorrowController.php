@@ -203,27 +203,6 @@ class PropertyBorrowController extends Controller
             'items.*.quantity' => 'required|integer|in:1',
         ]);
 
-        $requesterDepartmentId = (int) ($user?->DepartmentID ?? 0);
-        if ($requesterDepartmentId && (int) $validated['to_department_id'] !== $requesterDepartmentId) {
-            return response()->json(['message' => 'Borrowing department must be your department'], 422);
-        }
-
-        $requesterName = trim((string) ($user?->FullName ?? ''));
-        if ($requesterDepartmentId && $requesterName !== '') {
-            $requesterEndUser = EndUser::where('DepartmentID', $requesterDepartmentId)
-                ->whereRaw('LOWER(FullName) = ?', [strtolower($requesterName)])
-                ->first();
-
-            if (!$requesterEndUser) {
-                return response()->json([
-                    'message' => 'Requester must have a matching End User record in their department before creating a borrow request.'
-                ], 422);
-            }
-
-            $validated['to_end_user_id'] = (int) $requesterEndUser->EndUserID;
-            $validated['to_department_id'] = $requesterDepartmentId;
-        }
-
         $fromEndUser = EndUser::find((int) $validated['from_end_user_id']);
         $toEndUser = EndUser::find((int) $validated['to_end_user_id']);
 
@@ -233,6 +212,17 @@ class PropertyBorrowController extends Controller
 
         if ($toEndUser && (int) $toEndUser->DepartmentID !== (int) $validated['to_department_id']) {
             return response()->json(['message' => 'Borrowing custodian must belong to the borrowing department'], 422);
+        }
+
+        $requesterUserId = $this->resolveRequesterUserId(
+            (int) $validated['to_department_id'],
+            $toEndUser?->FullName
+        );
+
+        if (!$requesterUserId) {
+            return response()->json([
+                'message' => 'Borrowing department requester is missing. Assign an active user (preferably Department Head) in the borrowing department.'
+            ], 422);
         }
 
         $dueDate = Carbon::parse((string) $validated['due_date'])->timezone('Asia/Manila')->startOfDay();
@@ -264,7 +254,7 @@ class PropertyBorrowController extends Controller
             return response()->json(['message' => 'One or more items already have an active borrow request'], 422);
         }
 
-        return DB::transaction(function () use ($validated, $user, $inventoryDetailIds, $dueDate) {
+        return DB::transaction(function () use ($validated, $user, $inventoryDetailIds, $dueDate, $requesterUserId) {
             $assignedProperties = AssignedProperty::query()
                 ->join('propertyinventorydetail as pid', 'assignedproperty.InventoryDetailID', '=', 'pid.InventoryDetailID')
                 ->whereIn('assignedproperty.InventoryDetailID', $inventoryDetailIds)
@@ -298,7 +288,7 @@ class PropertyBorrowController extends Controller
 
             $borrow = PropertyBorrow::create([
                 'BorrowNumber' => PropertyBorrow::generateBorrowNumber(),
-                'RequestedByUserID' => (int) $user->UserID,
+                'RequestedByUserID' => $requesterUserId,
                 'FromDepartmentID' => (int) $validated['from_department_id'],
                 'ToDepartmentID' => (int) $validated['to_department_id'],
                 'FromEndUserID' => (int) $validated['from_end_user_id'],
@@ -488,16 +478,12 @@ class PropertyBorrowController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if ($roleName !== self::ROLE_DEPARTMENT_HEAD) {
-            return response()->json(['message' => 'Only Department Head can perform releasing review'], 403);
+        if (!$this->isPrivileged($roleName)) {
+            return response()->json(['message' => 'Only GSO/Admin can perform releasing review'], 403);
         }
 
         return DB::transaction(function () use ($request, $id, $user) {
             $borrow = PropertyBorrow::with(['items.inventoryDetail'])->lockForUpdate()->findOrFail($id);
-
-            if ((int) ($user?->DepartmentID ?? 0) !== (int) $borrow->FromDepartmentID) {
-                return response()->json(['message' => 'Only releasing department can review this request'], 403);
-            }
 
             if ($borrow->Status !== 'approved') {
                 return response()->json(['message' => 'GSO/Admin must approve first before releasing review'], 422);
@@ -1073,7 +1059,42 @@ class PropertyBorrowController extends Controller
 
     private function canCreate(string $roleName): bool
     {
-        return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF, self::ROLE_DEPARTMENT_HEAD], true);
+        return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF], true);
+    }
+
+    private function resolveRequesterUserId(int $departmentId, ?string $receivingEndUserName): ?int
+    {
+        $normalizedName = trim((string) $receivingEndUserName);
+
+        if ($departmentId > 0 && $normalizedName !== '') {
+            $matchingCustodianUser = User::query()
+                ->where('IsActive', 1)
+                ->where('DepartmentID', $departmentId)
+                ->whereRaw('LOWER(FullName) = ?', [strtolower($normalizedName)])
+                ->orderByDesc('UserID')
+                ->first(['UserID']);
+
+            if ($matchingCustodianUser) {
+                return (int) $matchingCustodianUser->UserID;
+            }
+        }
+
+        if ($departmentId > 0) {
+            $departmentHeadUser = User::query()
+                ->where('IsActive', 1)
+                ->where('DepartmentID', $departmentId)
+                ->whereHas('userRole', function ($q) {
+                    $q->where('RoleName', self::ROLE_DEPARTMENT_HEAD);
+                })
+                ->orderByDesc('UserID')
+                ->first(['UserID']);
+
+            if ($departmentHeadUser) {
+                return (int) $departmentHeadUser->UserID;
+            }
+        }
+
+        return null;
     }
 
     private function notifyBorrowRoles(
