@@ -8,6 +8,7 @@ use App\Models\Inventory\PropertyInventory;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\PropertyTransferItem;
+use App\Models\PropertyBorrowItem;
 use App\Models\AssetAuditLog;
 use App\Models\PropertyCardEntry;
 use App\Models\Procurement\DeliveryReceipt;
@@ -737,6 +738,20 @@ class InventoryController extends Controller
         }
 
         $history = [];
+        $historyFingerprints = [];
+
+        $normalizeMeta = function ($value) use (&$normalizeMeta) {
+            if (is_array($value)) {
+                $isAssoc = array_keys($value) !== range(0, count($value) - 1);
+                if ($isAssoc) {
+                    ksort($value);
+                }
+                foreach ($value as $k => $v) {
+                    $value[$k] = $normalizeMeta($v);
+                }
+            }
+            return $value;
+        };
 
         $pushEvent = function (
             string $type,
@@ -746,10 +761,26 @@ class InventoryController extends Controller
             ?string $occurredAt,
             ?array $actor,
             ?array $meta = null
-        ) use (&$history) {
+        ) use (&$history, &$historyFingerprints, $normalizeMeta) {
             if (!$occurredAt) {
                 return;
             }
+
+            $normalizedMeta = $meta ? $normalizeMeta($meta) : null;
+            $fingerprint = implode('|', [
+                $type,
+                $action,
+                (string) $occurredAt,
+                (string) ($actor['id'] ?? 0),
+                trim((string) $title),
+                trim((string) ($description ?? '')),
+                json_encode($normalizedMeta),
+            ]);
+
+            if (isset($historyFingerprints[$fingerprint])) {
+                return;
+            }
+            $historyFingerprints[$fingerprint] = true;
 
             $history[] = [
                 'type' => $type,
@@ -758,7 +789,7 @@ class InventoryController extends Controller
                 'description' => $description,
                 'occurred_at' => $occurredAt,
                 'actor' => $actor,
-                'meta' => $meta,
+                'meta' => $normalizedMeta,
             ];
         };
 
@@ -1033,6 +1064,115 @@ class InventoryController extends Controller
                     (string) $transfer->CompletedAt,
                     $completedBy,
                     $transferBaseMeta
+                );
+            }
+        }
+
+        $borrowItems = PropertyBorrowItem::with([
+            'borrow.requestedBy',
+            'borrow.fromDepartment',
+            'borrow.toDepartment',
+            'borrow.fromEndUser',
+            'borrow.toEndUser',
+            'borrow.approvedBy',
+            'borrow.returns.returnedBy',
+            'borrow.returns.items',
+        ])
+            ->where('InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->orderBy('BorrowItemID')
+            ->get();
+
+        foreach ($borrowItems as $borrowItem) {
+            $borrow = $borrowItem->borrow;
+            if (!$borrow) {
+                continue;
+            }
+
+            $borrowBaseMeta = [
+                'borrow_id' => (int) $borrow->BorrowID,
+                'borrow_number' => $borrow->BorrowNumber,
+                'from_department' => $borrow->fromDepartment?->DepartmentName,
+                'to_department' => $borrow->toDepartment?->DepartmentName,
+                'from_end_user' => $borrow->fromEndUser?->FullName,
+                'to_end_user' => $borrow->toEndUser?->FullName,
+            ];
+
+            if (!empty($borrow->created_at)) {
+                $requestedBy = $borrow->requestedBy
+                    ? ['id' => (int) $borrow->requestedBy->UserID, 'name' => (string) $borrow->requestedBy->FullName]
+                    : null;
+                $pushEvent(
+                    'borrow',
+                    'requested',
+                    'Borrow requested',
+                    $borrow->BorrowNumber ? 'PBR ' . $borrow->BorrowNumber : null,
+                    (string) $borrow->created_at,
+                    $requestedBy,
+                    $borrowBaseMeta
+                );
+            }
+
+            if (!empty($borrow->ApprovedAt)) {
+                $approvedBy = $borrow->approvedBy
+                    ? ['id' => (int) $borrow->approvedBy->UserID, 'name' => (string) $borrow->approvedBy->FullName]
+                    : null;
+                $pushEvent(
+                    'borrow',
+                    $borrow->Status === 'rejected' ? 'rejected' : 'approved',
+                    $borrow->Status === 'rejected' ? 'Borrow rejected' : 'Borrow approved',
+                    $borrow->GsoNotes ?? null,
+                    (string) $borrow->ApprovedAt,
+                    $approvedBy,
+                    $borrowBaseMeta
+                );
+            }
+
+            if (!empty($borrow->BorrowedAt)) {
+                $pushEvent(
+                    'borrow',
+                    'delivered',
+                    'Borrow delivered',
+                    null,
+                    (string) $borrow->BorrowedAt,
+                    null,
+                    $borrowBaseMeta
+                );
+            }
+
+            foreach (($borrow->returns ?? collect()) as $returnRecord) {
+                foreach (($returnRecord->items ?? collect()) as $returnItem) {
+                    if ((int) $returnItem->InventoryDetailID !== (int) $detail->InventoryDetailID) {
+                        continue;
+                    }
+
+                    $returnedBy = $returnRecord->returnedBy
+                        ? ['id' => (int) $returnRecord->returnedBy->UserID, 'name' => (string) $returnRecord->returnedBy->FullName]
+                        : null;
+
+                    $pushEvent(
+                        'borrow',
+                        'returned',
+                        'Borrow item returned',
+                        !empty($returnRecord->ReturnNumber) ? 'Return ' . $returnRecord->ReturnNumber : null,
+                        (string) ($returnRecord->ReturnedAt ?? $returnRecord->created_at),
+                        $returnedBy,
+                        array_merge($borrowBaseMeta, [
+                            'return_id' => (int) ($returnRecord->ReturnID ?? 0),
+                            'quantity_returned' => (int) ($returnItem->QuantityReturned ?? 0),
+                        ])
+                    );
+                }
+            }
+
+            if ($borrow->Status === 'completed' && !empty($borrow->updated_at)) {
+                $pushEvent(
+                    'borrow',
+                    'completed',
+                    'Borrow completed',
+                    null,
+                    (string) $borrow->updated_at,
+                    null,
+                    $borrowBaseMeta
                 );
             }
         }
