@@ -520,6 +520,9 @@ class PropertyBorrowController extends Controller
                 return (int) ($item->Quantity ?? 0);
             });
 
+            $approvedQuantitiesRaw = collect($validated['approved_quantities'] ?? [])
+                ->mapWithKeys(fn ($qty, $itemId) => [(int) $itemId => (int) $qty]);
+
             if ($validated['decision'] === 'rejected') {
                 if ($reason === '') {
                     return response()->json(['message' => 'Reason is required when releasing department rejects the request'], 422);
@@ -565,12 +568,26 @@ class PropertyBorrowController extends Controller
             }
 
             $approvedCount = 0;
-            $approvedQuantities = $validated['approved_quantities'] ?? [];
+            $hasShortfall = false;
             foreach ($borrow->items as $item) {
                 $requestedQty = (int) ($item->Quantity ?? 0);
-                $approvedQty = (int) ($approvedQuantities[$item->BorrowItemID] ?? $requestedQty);
-                $approvedQty = max(0, min($approvedQty, $requestedQty));
+                $itemId = (int) $item->BorrowItemID;
+                $approvedQty = $approvedQuantitiesRaw->has($itemId)
+                    ? (int) $approvedQuantitiesRaw->get($itemId)
+                    : $requestedQty;
+
+                if ($approvedQty < 0) {
+                    return response()->json(['message' => 'Approved quantity cannot be negative'], 422);
+                }
+
+                if ($approvedQty > $requestedQty) {
+                    return response()->json(['message' => 'Approved quantity cannot exceed requested quantity for any item'], 422);
+                }
+
                 $approvedCount += $approvedQty;
+                if ($approvedQty < $requestedQty) {
+                    $hasShortfall = true;
+                }
             }
 
             if ($approvedCount < 1) {
@@ -626,8 +643,37 @@ class PropertyBorrowController extends Controller
                 return response()->json(['message' => 'Approved quantity cannot exceed requested quantity'], 422);
             }
 
-            if ($approvedCount < $requestedCount && $reason === '') {
+            if ($hasShortfall && $reason === '') {
                 return response()->json(['message' => 'Reason is required when provided quantity is less than requested'], 422);
+            }
+
+            foreach ($borrow->items as $item) {
+                $itemId = (int) $item->BorrowItemID;
+                $requestedQty = (int) ($item->Quantity ?? 0);
+                $approvedQty = $approvedQuantitiesRaw->has($itemId)
+                    ? (int) $approvedQuantitiesRaw->get($itemId)
+                    : $requestedQty;
+
+                if ($approvedQty === $requestedQty) {
+                    continue;
+                }
+
+                $existingRemarks = trim((string) ($item->Remarks ?? ''));
+                $newRemarks = $existingRemarks;
+                if ($reason !== '') {
+                    $newRemarks = trim(($existingRemarks !== '' ? $existingRemarks . ' | ' : '') . 'Shortfall reason: ' . $reason);
+                }
+
+                if ($approvedQty <= 0) {
+                    $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
+                    $item->save();
+                    $item->delete();
+                    continue;
+                }
+
+                $item->Quantity = $approvedQty;
+                $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
+                $item->save();
             }
 
             $borrow->update([
@@ -647,6 +693,7 @@ class PropertyBorrowController extends Controller
                     'borrow_number' => $borrow->BorrowNumber,
                     'requested_count' => $requestedCount,
                     'approved_count' => $approvedCount,
+                    'approved_quantities' => $approvedQuantitiesRaw->all(),
                     'reason' => $reason ?: null,
                 ]
             );
@@ -932,9 +979,30 @@ class PropertyBorrowController extends Controller
             'notes' => 'nullable|string|max:2000',
         ]);
 
-        $borrow = PropertyBorrow::findOrFail($id);
+        $borrow = PropertyBorrow::with(['items', 'returns.items'])->findOrFail($id);
         if ($borrow->Status !== 'returned') {
             return response()->json(['message' => 'Only fully returned borrows can be completed'], 422);
+        }
+
+        $returnedByItem = [];
+        foreach ($borrow->returns as $returnRecord) {
+            foreach ($returnRecord->items as $returnItem) {
+                $borrowItemId = (int) ($returnItem->BorrowItemID ?? 0);
+                if ($borrowItemId <= 0) {
+                    continue;
+                }
+                $returnedByItem[$borrowItemId] = ($returnedByItem[$borrowItemId] ?? 0)
+                    + (int) ($returnItem->QuantityReturned ?? 0);
+            }
+        }
+
+        foreach ($borrow->items as $borrowItem) {
+            $itemId = (int) ($borrowItem->BorrowItemID ?? 0);
+            $requestedQty = (int) ($borrowItem->Quantity ?? 0);
+            $returnedQty = (int) ($returnedByItem[$itemId] ?? 0);
+            if ($returnedQty < $requestedQty) {
+                return response()->json(['message' => 'Cannot complete borrow: not all items are fully returned yet'], 422);
+            }
         }
 
         $borrow->update([
