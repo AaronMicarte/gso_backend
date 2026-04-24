@@ -1016,6 +1016,7 @@ class PropertyBorrowController extends Controller
                 'pt.PropertyName as PropertyTypeName',
                 'drd.ItemDescription as ItemDescription',
                 'a.ArticleName as ArticleName',
+                'a.ArticleImage as ArticleImage',
                 'uom.UnitName',
                 'd.DepartmentName',
                 'eu.FullName as EndUserName',
