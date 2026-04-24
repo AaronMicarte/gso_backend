@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 23, 2026 at 03:02 PM
+-- Generation Time: Apr 24, 2026 at 09:59 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -441,7 +441,31 @@ INSERT INTO `asset_audit_logs` (`AuditID`, `EntityType`, `EntityID`, `Action`, `
 (279, 'inventory_detail', 25, 'transfer_releasing_approved', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"approved_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:01:51'),
 (280, 'property_transfer_item', 8, 'transferred', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"inventory_detail_id\":25,\"from_department_id\":23,\"to_department_id\":30}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02'),
 (281, 'inventory_detail', 25, 'transfer_completed', 1, '{\"transfer_id\":8,\"transfer_number\":\"PTR-2026-0008\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02'),
-(282, 'property_transfer', 8, 'completed', 1, '{\"transfer_number\":\"PTR-2026-0008\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02');
+(282, 'property_transfer', 8, 'completed', 1, '{\"transfer_number\":\"PTR-2026-0008\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 08:02:02'),
+(283, 'property_transfer', 9, 'created', 1, '{\"transfer_number\":\"PTR-2026-0009\",\"from_department_id\":30,\"to_department_id\":23,\"items\":[147]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:03:36'),
+(284, 'inventory_detail', 147, 'transfer_requested', 1, '{\"transfer_id\":9,\"transfer_number\":\"PTR-2026-0009\",\"from_department_id\":30,\"to_department_id\":23,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:03:36'),
+(285, 'property_transfer', 9, 'rejected', 1, '{\"transfer_number\":\"PTR-2026-0009\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:04:20'),
+(286, 'inventory_detail', 147, 'transfer_rejected', 1, '{\"transfer_id\":9,\"transfer_number\":\"PTR-2026-0009\",\"notes\":\"basta\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:04:20'),
+(287, 'property_transfer', 10, 'created', 1, '{\"transfer_number\":\"PTR-2026-0010\",\"from_department_id\":30,\"to_department_id\":23,\"items\":[147]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:05:06'),
+(288, 'inventory_detail', 147, 'transfer_requested', 1, '{\"transfer_id\":10,\"transfer_number\":\"PTR-2026-0010\",\"from_department_id\":30,\"to_department_id\":23,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:05:06'),
+(289, 'property_transfer_item', 10, 'transferred', 1, '{\"transfer_id\":10,\"transfer_number\":\"PTR-2026-0010\",\"inventory_detail_id\":147,\"from_department_id\":30,\"to_department_id\":23}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:05:32'),
+(290, 'inventory_detail', 147, 'transfer_completed', 1, '{\"transfer_id\":10,\"transfer_number\":\"PTR-2026-0010\",\"from_department_id\":30,\"to_department_id\":23,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:05:32'),
+(291, 'property_transfer', 10, 'completed', 1, '{\"transfer_number\":\"PTR-2026-0010\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:05:32'),
+(292, 'property_borrow', 7, 'created', 1, '{\"borrow_number\":\"PBR-2026-0007\",\"from_department_id\":23,\"to_department_id\":30,\"due_date\":\"2026-04-26\",\"items\":[26]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:08:44'),
+(293, 'inventory_detail', 26, 'borrow_requested', 1, '{\"borrow_id\":7,\"borrow_number\":\"PBR-2026-0007\",\"from_department_id\":23,\"to_department_id\":30,\"from_end_user_id\":4,\"to_end_user_id\":2}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:08:44'),
+(294, 'property_borrow', 7, 'borrowed', 1, '{\"borrow_number\":\"PBR-2026-0007\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:08:59'),
+(295, 'property_return', 5, 'created', 1, '{\"borrow_id\":7,\"borrow_number\":\"PBR-2026-0007\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:09:24'),
+(296, 'property_borrow', 7, 'returned', 1, '{\"borrow_number\":\"PBR-2026-0007\",\"items_returned\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:09:24'),
+(297, 'inventory_detail', 26, 'borrow_returned', 1, '{\"borrow_id\":7,\"borrow_number\":\"PBR-2026-0007\",\"return_id\":5,\"quantity\":1,\"condition_id\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:09:24'),
+(298, 'property_borrow', 7, 'completed', 1, '{\"borrow_number\":\"PBR-2026-0007\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-23 13:09:32'),
+(299, 'property_transfer', 11, 'created', 1, '{\"transfer_number\":\"PTR-2026-0011\",\"from_department_id\":30,\"to_department_id\":23,\"items\":[146,12,29]}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:25:23'),
+(300, 'inventory_detail', 146, 'transfer_requested', 1, '{\"transfer_id\":11,\"transfer_number\":\"PTR-2026-0011\",\"from_department_id\":30,\"to_department_id\":23,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:25:23'),
+(301, 'inventory_detail', 12, 'transfer_requested', 1, '{\"transfer_id\":11,\"transfer_number\":\"PTR-2026-0011\",\"from_department_id\":30,\"to_department_id\":23,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:25:23'),
+(302, 'inventory_detail', 29, 'transfer_requested', 1, '{\"transfer_id\":11,\"transfer_number\":\"PTR-2026-0011\",\"from_department_id\":30,\"to_department_id\":23,\"from_end_user_id\":2,\"to_end_user_id\":4}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:25:23'),
+(303, 'property_transfer', 11, 'releasing_approved', 1, '{\"transfer_number\":\"PTR-2026-0011\",\"requested_count\":3,\"approved_count\":1,\"approved_quantities\":{\"11\":1,\"12\":0,\"13\":0},\"reason\":\"basta\"}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:26:33'),
+(304, 'inventory_detail', 146, 'transfer_releasing_approved', 1, '{\"transfer_id\":11,\"transfer_number\":\"PTR-2026-0011\",\"approved_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:26:33'),
+(305, 'inventory_detail', 12, 'transfer_releasing_approved', 1, '{\"transfer_id\":11,\"transfer_number\":\"PTR-2026-0011\",\"approved_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:26:33'),
+(306, 'inventory_detail', 29, 'transfer_releasing_approved', 1, '{\"transfer_id\":11,\"transfer_number\":\"PTR-2026-0011\",\"approved_count\":1}', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '2026-04-24 07:26:33');
 
 -- --------------------------------------------------------
 
@@ -645,7 +669,7 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (77, 144, 2, 30, 'PAR-2026-0012', 'Brother DCP-L5650DN', '2026-03-29', 4, 2, 'Auto-created from DR inspection', '2026-03-29 21:15:35', '2026-04-05 17:22:46'),
 (78, 145, 2, 30, 'PAR-2026-0013', 'sd', '2026-04-20', 2, 1, 'Auto-created from DR inspection', '2026-04-20 12:05:52', '2026-04-20 12:09:16'),
 (79, 146, 2, 30, 'PAR-2026-0014', 'Calculator mo work', '2026-04-20', 2, 1, 'Auto-created from DR inspection', '2026-04-20 13:18:33', '2026-04-20 13:20:37'),
-(80, 147, 2, 30, 'PAR-2026-0014', 'bugnaw', '2026-04-20', 2, 1, 'Auto-created from DR inspection', '2026-04-20 13:18:33', '2026-04-20 13:20:37');
+(80, 147, 4, 23, 'PTR-2026-0010', 'bugnaw', '2026-04-23', 2, 1, 'Auto-created from DR inspection', '2026-04-20 13:18:33', '2026-04-23 21:05:32');
 
 -- --------------------------------------------------------
 
@@ -664,7 +688,7 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('gsoiams-cache-fcm_oauth_access_token', 's:1024:\"ya29.c.c0AZ4bNpYRCq__IPUHeHu7KxF5Yy2IJtMpGoyN5du5pEr9uPqpUoRQmk93INqWQCbYDVME8YOOx12J8_ckmzdtZ5IYAfl41M4n3cY5iJJdDHxkTCHrRCc5zYDrVR1Na69LesvU-YpwflMH0FGH-VhUQx5V2iv1LXet3vcBQxbO3oGMMfUnxMCeKcE2LU3moJWi9f6c8h-GR8LJB6gdfK66jzPLFwxYJd54tDPq19kGi2TLdrIj3EkgTon5dto2n084lfL8QvCkWISEbAhgUWYtZemYVW1Ao1uvVbzDiYXE95Q2m8Gz6vDyJEXwx4hwDw_SYUFYG38MQ3SSOVsX4tVE3bGc5b6LnEAN5eO_REqYyfS94vIr7C8lrs2aN385DJydfV9yzImzQfBZ-j7RImMe4Xt4W65yUawMuU0s3Q_yMVU1mVceSO9UMr_ipUWW3JksdcJfQ6Q7r0qnYqU8JFwh-iQS7ufzpFBgszwV3ZbJl77_d1nvq8n6MqZyc2dIeyZucR1irtWjf8jtQ1ezOu7rj3Vbne_VlU2YsMwFZaUzodh83xrcYi6F1wbbnwtk4x4aiQ7tcFcQM9v_0154kpty83gxFlmSqfOwh-cg1ByXR5z8W-9fInZRdJRgjXxFJY4Xrlk4VySmz6Y3vIomqIdb08cVwU85WwclVn8VI-8hY4iQ_tlh5l9FmnjReFFWsJYo181alsaMwd4RnO7aVe24SuFq6WFktVq6OeSb4sOwXpzl2rrWZQw0q-Jp3nBOUb6JOakz_Mnepzb7X_rc2QuQXMvcZeYsdUzrFrIpl_Vre6z2qhtc4ysxeSZpXkUUgnOk7BYlmBi2_pcS3cz-1vUc-Up-wj9Ur79Funa8h3wJ2doaewgh8r13lI5hjg3hw7m8yIJSiFoMZbynImRuXtOy1kQWUl8z414OWQuxZlr5YydbZaOWsVzBwRlipl2bhXYm_Men1Bpceoa9vXq0stkz-ecp6lgI9qkl9OwwMdOWsn0Icnq-a-7uj-2\";', 1776933861);
+('gsoiams-cache-fcm_oauth_access_token', 's:1024:\"ya29.c.c0AZ4bNpY3i8cv2k5SNxIaAxOwzG892dDnp04azzAL9SB2OZp-R4BGfiyOlPklrePORcfS_1sjUpuZB130SU0GwRWe0pkUe8KlgYiLEKg-IX2cHBGzP6H1s6knzyfavYsTvTXD__P0C_lB8z72oQ4VFW_zV-SaMTUuH6KcY5aLX9aZp3BVXfPOQ9KCpilZjPCRvHoTZHrD1WozHrf7AcSdj_p723keU6kscaydz6A_lLhubjUO_XoxC3JQ19fBdffbeS9G5lqLQd_4G_dLeCT2fJsWqvQ5CiJuWy_Pto2agihjqdB2aUqDrI_krv2pcxQGpqcpqK58eFy5eLWETnlwqH_1b6dw6XDQn0w-3K6bKi14_2LQLY8IOlML384Co-jt2pmIMhlcZleIS55k03SkBk8QshYrXVgWv0IMachgg0bYtRvRSUzvmlwOgj-aYJZaZlVQXazF5V-rqpOshcmnW_8i1_kgYI7vtd0Yadbs5rusdxMzRBFmbWxh1hlutf4vllYdBmzUr4_BXYzIz2V9Ug1-O4lj0r-t_z57chuBkj-1fJFtRxm-V43xcznXBsO_iR9o0hWRyB5Rm182kUcQ6FfBezxS4Rtc8qVXnX2FqVWfO_i-lyFbdz-hplx1by-hFUsw_9MuoRWe7ff2Y2pnn6iWVj5_WulUQFWcl9egh9MyW5kRpBUV0hVci9cBYBhbgveraWeRcbWgvB6pkBRpMoq7MlR30g0ZfX4_gfh0JZxlaVmp5lO159ZcI2mkuxZ0sUlWdlaUb9SwFxW6FVMbwery-mfsu3Zpjtc_7ouSd8ZOnUaFtxawfzke0kX7cV-yMUzYFrZVe1rgaYs8Sa0szIXnxZo1WQj-U0cwgxZmbo69BdVmmfBwJcUaaq1R7Z_32xkkZ9bjvz5BOVz0kx12ynnpvu5Z8lVvW2mveM9QepcXa7wt2BwwmliXeg308zu4MwZoQBI2UzuafXyB6571ismSJ4Xxhs1aQw6k34xU0b1m54gJW6q3khS\";', 1777019003);
 
 -- --------------------------------------------------------
 
@@ -1366,7 +1390,9 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (178, 6, '2026-04-23 15:50:30', 'Logout', '127.0.0.1'),
 (179, 3, '2026-04-23 15:50:37', 'Login', '127.0.0.1'),
 (180, 1, '2026-04-23 19:53:00', 'Login', '127.0.0.1'),
-(181, 3, '2026-04-23 19:53:10', 'Login', '127.0.0.1');
+(181, 3, '2026-04-23 19:53:10', 'Login', '127.0.0.1'),
+(182, 1, '2026-04-24 14:12:54', 'Login', '127.0.0.1'),
+(183, 3, '2026-04-24 15:26:52', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1554,7 +1580,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (173, '2026_04_16_150000_create_rpc_inventory_tables', 75),
 (174, '2026_04_23_000001_enforce_gso_requesters_on_property_transfer_and_borrow', 76),
 (175, '2026_04_23_000002_align_requester_triggers_with_receiving_department', 77),
-(176, '2026_04_23_000003_add_completed_status_to_propertyborrow', 78);
+(176, '2026_04_23_000003_add_completed_status_to_propertyborrow', 78),
+(177, '2026_04_24_000001_add_approved_quantity_to_transfer_and_borrow_items', 79);
 
 -- --------------------------------------------------------
 
@@ -1725,7 +1752,8 @@ INSERT INTO `propertyborrow` (`BorrowID`, `BorrowNumber`, `RequestedByUserID`, `
 (3, 'PBR-2026-0003', 3, 23, 30, 4, 2, 'Hulam Hand Tools Set', 1, '2026-03-30', 'approved', 1, 'Okay', 6, '2026-03-25 14:01:25', 'returned', 1, '2026-03-25 14:01:58', '2026-03-25 14:01:58', NULL, '2026-03-25 14:00:36', '2026-03-25 14:03:14', NULL),
 (4, 'PBR-2026-0004', 3, 23, 30, 4, 2, 'hulam', 1, '2026-04-01', 'approved', 1, 'yes', 6, '2026-03-29 13:30:53', 'returned', 1, '2026-03-29 13:31:19', '2026-03-29 13:31:19', NULL, '2026-03-29 13:29:43', '2026-03-29 13:34:27', NULL),
 (5, 'PBR-2026-0005', 3, 23, 30, 4, 2, NULL, 1, '2026-04-06', 'approved', 1, 'ok!!!!!!!!!!!!!!!!!!!', 6, '2026-04-03 17:38:24', 'returned', 1, '2026-04-03 17:37:23', '2026-04-03 17:38:56', NULL, '2026-04-03 17:36:35', '2026-04-03 17:40:55', NULL),
-(6, 'PBR-2026-0006', 3, 23, 30, 4, 2, 'll', 1, '2026-04-30', 'pending', NULL, NULL, NULL, NULL, 'approved', 1, '2026-04-20 05:27:04', NULL, NULL, '2026-04-20 05:24:28', '2026-04-20 05:27:04', NULL);
+(6, 'PBR-2026-0006', 3, 23, 30, 4, 2, 'll', 1, '2026-04-30', 'pending', NULL, NULL, NULL, NULL, 'approved', 1, '2026-04-20 05:27:04', NULL, NULL, '2026-04-20 05:24:28', '2026-04-20 05:27:04', NULL),
+(7, 'PBR-2026-0007', 3, 23, 30, 4, 2, 'basta', 1, '2026-04-26', 'pending', NULL, NULL, NULL, NULL, 'completed', 1, '2026-04-23 13:08:44', '2026-04-23 13:08:59', NULL, '2026-04-23 13:08:44', '2026-04-23 13:09:32', NULL);
 
 --
 -- Triggers `propertyborrow`
@@ -1778,6 +1806,7 @@ CREATE TABLE `propertyborrowitems` (
   `BorrowID` bigint(20) UNSIGNED NOT NULL,
   `InventoryDetailID` int(11) NOT NULL,
   `Quantity` int(11) NOT NULL DEFAULT 1,
+  `ApprovedQuantity` int(10) UNSIGNED DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1788,13 +1817,14 @@ CREATE TABLE `propertyborrowitems` (
 -- Dumping data for table `propertyborrowitems`
 --
 
-INSERT INTO `propertyborrowitems` (`BorrowItemID`, `BorrowID`, `InventoryDetailID`, `Quantity`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 5, 1, NULL, '2026-03-18 13:18:19', '2026-03-18 13:18:19', NULL),
-(2, 2, 30, 1, NULL, '2026-03-25 13:58:31', '2026-03-25 13:58:31', NULL),
-(3, 3, 28, 1, NULL, '2026-03-25 14:00:36', '2026-03-25 14:00:36', NULL),
-(4, 4, 73, 1, NULL, '2026-03-29 13:29:43', '2026-03-29 13:29:43', NULL),
-(5, 5, 25, 1, NULL, '2026-04-03 17:36:35', '2026-04-03 17:36:35', NULL),
-(6, 6, 47, 1, NULL, '2026-04-20 05:24:28', '2026-04-20 05:24:28', NULL);
+INSERT INTO `propertyborrowitems` (`BorrowItemID`, `BorrowID`, `InventoryDetailID`, `Quantity`, `ApprovedQuantity`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 1, 5, 1, NULL, NULL, '2026-03-18 13:18:19', '2026-03-18 13:18:19', NULL),
+(2, 2, 30, 1, NULL, NULL, '2026-03-25 13:58:31', '2026-03-25 13:58:31', NULL),
+(3, 3, 28, 1, NULL, NULL, '2026-03-25 14:00:36', '2026-03-25 14:00:36', NULL),
+(4, 4, 73, 1, NULL, NULL, '2026-03-29 13:29:43', '2026-03-29 13:29:43', NULL),
+(5, 5, 25, 1, NULL, NULL, '2026-04-03 17:36:35', '2026-04-03 17:36:35', NULL),
+(6, 6, 47, 1, NULL, NULL, '2026-04-20 05:24:28', '2026-04-20 05:24:28', NULL),
+(7, 7, 26, 1, NULL, NULL, '2026-04-23 13:08:44', '2026-04-23 13:08:44', NULL);
 
 -- --------------------------------------------------------
 
@@ -2211,7 +2241,8 @@ INSERT INTO `propertyreturn` (`ReturnID`, `ReturnNumber`, `BorrowID`, `ReturnedB
 (1, 'PBR-RET-2026-0001', 1, 1, '2026-03-18 13:25:11', 'done', '2026-03-18 13:25:11', '2026-03-18 13:25:11', NULL),
 (2, 'PBR-RET-2026-0002', 3, 1, '2026-03-25 14:03:14', 'Returned in good condition.', '2026-03-25 14:03:14', '2026-03-25 14:03:14', NULL),
 (3, 'PBR-RET-2026-0003', 4, 1, '2026-03-29 13:34:27', 'ty', '2026-03-29 13:34:27', '2026-03-29 13:34:27', NULL),
-(4, 'PBR-RET-2026-0004', 5, 1, '2026-04-03 17:40:55', 'ohye', '2026-04-03 17:40:55', '2026-04-03 17:40:55', NULL);
+(4, 'PBR-RET-2026-0004', 5, 1, '2026-04-03 17:40:55', 'ohye', '2026-04-03 17:40:55', '2026-04-03 17:40:55', NULL),
+(5, 'PBR-RET-2026-0005', 7, 1, '2026-04-23 13:09:24', 'goods.', '2026-04-23 13:09:24', '2026-04-23 13:09:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -2258,7 +2289,8 @@ INSERT INTO `propertyreturnitems` (`ReturnItemID`, `ReturnID`, `BorrowItemID`, `
 (1, 1, 1, 5, 1, 1, NULL, NULL, '2026-03-18 13:25:11', '2026-03-18 13:25:11', NULL),
 (2, 2, 3, 28, 1, 1, NULL, NULL, '2026-03-25 14:03:14', '2026-03-25 14:03:14', NULL),
 (3, 3, 4, 73, 1, 1, NULL, NULL, '2026-03-29 13:34:27', '2026-03-29 13:34:27', NULL),
-(4, 4, 5, 25, 1, 1, NULL, NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:55', NULL);
+(4, 4, 5, 25, 1, 1, NULL, NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:55', NULL),
+(5, 5, 7, 26, 1, 1, NULL, NULL, '2026-04-23 13:09:24', '2026-04-23 13:09:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -2330,7 +2362,10 @@ INSERT INTO `propertytransfer` (`TransferID`, `TransferNumber`, `RequestedByUser
 (5, 'PTR-2026-0005', 3, 23, 30, 4, 2, 'hulam', 1, 'approved', 1, 'okay', 6, '2026-03-29 13:24:20', 'completed', 1, '2026-03-29 13:24:53', 3, '2026-03-29 13:26:06', '2026-03-29 13:25:10', '2026-03-29 13:26:06', NULL, '2026-03-29 13:23:01', '2026-03-29 13:26:06', NULL),
 (6, 'PTR-2026-0006', 3, 23, 30, 4, 2, NULL, 1, 'approved', 1, 'sge', 6, '2026-04-03 17:08:28', 'completed', 1, '2026-04-03 17:06:39', 1, '2026-04-03 17:09:22', '2026-04-03 17:09:22', '2026-04-03 17:09:22', NULL, '2026-04-03 17:05:47', '2026-04-03 17:09:22', NULL),
 (7, 'PTR-2026-0007', 3, 23, 30, 4, 2, 'kk', 1, 'approved', 1, NULL, 6, '2026-04-20 05:26:28', 'completed', 1, '2026-04-20 05:25:24', 1, '2026-04-20 05:26:45', '2026-04-20 05:26:45', '2026-04-20 05:26:45', NULL, '2026-04-20 05:24:37', '2026-04-20 05:26:45', NULL),
-(8, 'PTR-2026-0008', 3, 23, 30, 4, 2, 'balhin', 1, 'approved', 1, NULL, 1, '2026-04-23 08:01:51', 'completed', 1, '2026-04-23 08:01:18', 1, '2026-04-23 08:02:02', '2026-04-23 08:02:02', '2026-04-23 08:02:02', NULL, '2026-04-23 07:46:21', '2026-04-23 08:02:02', NULL);
+(8, 'PTR-2026-0008', 3, 23, 30, 4, 2, 'balhin', 1, 'approved', 1, NULL, 1, '2026-04-23 08:01:51', 'completed', 1, '2026-04-23 08:01:18', 1, '2026-04-23 08:02:02', '2026-04-23 08:02:02', '2026-04-23 08:02:02', NULL, '2026-04-23 07:46:21', '2026-04-23 08:02:02', NULL),
+(9, 'PTR-2026-0009', 6, 30, 23, 2, 4, 'basta', 1, 'pending', NULL, NULL, NULL, NULL, 'rejected', 1, '2026-04-23 13:04:20', NULL, NULL, NULL, NULL, 'basta', '2026-04-23 13:03:36', '2026-04-23 13:04:20', NULL),
+(10, 'PTR-2026-0010', 6, 30, 23, 2, 4, 'hahahehe', 1, 'pending', NULL, NULL, NULL, NULL, 'completed', 1, '2026-04-23 13:05:06', 1, '2026-04-23 13:05:32', '2026-04-23 13:05:32', '2026-04-23 13:05:32', 'humana goods na', '2026-04-23 13:05:06', '2026-04-23 13:05:32', NULL),
+(11, 'PTR-2026-0011', 6, 30, 23, 2, 4, NULL, 3, 'approved', 1, 'basta', 1, '2026-04-24 07:26:33', 'approved', 1, '2026-04-24 07:25:23', NULL, NULL, NULL, NULL, NULL, '2026-04-24 07:25:23', '2026-04-24 07:26:33', NULL);
 
 --
 -- Triggers `propertytransfer`
@@ -2383,6 +2418,7 @@ CREATE TABLE `propertytransferdetails` (
   `TransferID` bigint(20) UNSIGNED NOT NULL,
   `InventoryDetailID` int(11) NOT NULL,
   `Quantity` int(11) NOT NULL DEFAULT 1,
+  `ApprovedQuantity` int(10) UNSIGNED DEFAULT NULL,
   `Remarks` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2393,15 +2429,20 @@ CREATE TABLE `propertytransferdetails` (
 -- Dumping data for table `propertytransferdetails`
 --
 
-INSERT INTO `propertytransferdetails` (`TransferItemID`, `TransferID`, `InventoryDetailID`, `Quantity`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, 6, 1, NULL, '2026-03-18 12:53:37', '2026-03-18 12:53:37', NULL),
-(2, 2, 30, 1, NULL, '2026-03-24 03:56:24', '2026-03-24 03:56:24', NULL),
-(3, 3, 30, 1, NULL, '2026-03-24 04:03:42', '2026-03-24 04:03:42', NULL),
-(4, 4, 74, 1, NULL, '2026-03-29 13:00:41', '2026-03-29 13:00:41', NULL),
-(5, 5, 28, 1, NULL, '2026-03-29 13:23:01', '2026-03-29 13:23:01', NULL),
-(6, 6, 29, 1, NULL, '2026-04-03 17:05:47', '2026-04-03 17:05:47', NULL),
-(7, 7, 48, 1, NULL, '2026-04-20 05:24:37', '2026-04-20 05:24:37', NULL),
-(8, 8, 25, 1, NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:21', NULL);
+INSERT INTO `propertytransferdetails` (`TransferItemID`, `TransferID`, `InventoryDetailID`, `Quantity`, `ApprovedQuantity`, `Remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
+(1, 1, 6, 1, NULL, NULL, '2026-03-18 12:53:37', '2026-03-18 12:53:37', NULL),
+(2, 2, 30, 1, NULL, NULL, '2026-03-24 03:56:24', '2026-03-24 03:56:24', NULL),
+(3, 3, 30, 1, NULL, NULL, '2026-03-24 04:03:42', '2026-03-24 04:03:42', NULL),
+(4, 4, 74, 1, NULL, NULL, '2026-03-29 13:00:41', '2026-03-29 13:00:41', NULL),
+(5, 5, 28, 1, NULL, NULL, '2026-03-29 13:23:01', '2026-03-29 13:23:01', NULL),
+(6, 6, 29, 1, NULL, NULL, '2026-04-03 17:05:47', '2026-04-03 17:05:47', NULL),
+(7, 7, 48, 1, NULL, NULL, '2026-04-20 05:24:37', '2026-04-20 05:24:37', NULL),
+(8, 8, 25, 1, NULL, NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:21', NULL),
+(9, 9, 147, 1, NULL, NULL, '2026-04-23 13:03:36', '2026-04-23 13:03:36', NULL),
+(10, 10, 147, 1, NULL, NULL, '2026-04-23 13:05:06', '2026-04-23 13:05:06', NULL),
+(11, 11, 146, 1, NULL, NULL, '2026-04-24 07:25:23', '2026-04-24 07:25:23', NULL),
+(12, 11, 12, 1, NULL, 'Shortfall reason: basta', '2026-04-24 07:25:23', '2026-04-24 07:26:33', '2026-04-24 07:26:33'),
+(13, 11, 29, 1, NULL, 'Shortfall reason: basta', '2026-04-24 07:25:23', '2026-04-24 07:26:33', '2026-04-24 07:26:33');
 
 -- --------------------------------------------------------
 
@@ -2483,17 +2524,23 @@ INSERT INTO `property_card_entries` (`EntryID`, `InventoryDetailID`, `EntryDate`
 (11, 145, '2026-04-20 12:05:52', 'acquisition', 1, 0, 'PAR-2026-0013', 'GSO', 2400.00, 2400.00, 'Auto-ingested from DR #drtest12321', 'opening', 145, 'opening:145', NULL, '2026-04-20 12:20:12'),
 (12, 143, '2026-03-29 21:15:35', 'acquisition', 1, 0, 'PAR-2026-0012', 'GSO', 3200.00, 3200.00, 'Auto-ingested from DR #DR-TEST-3', 'opening', 143, 'opening:143', NULL, '2026-04-20 12:20:31'),
 (13, 140, '2026-03-29 20:32:46', 'acquisition', 1, 0, 'PAR-2026-0010', 'GSO', 3200.00, 3200.00, 'good', 'opening', 140, 'opening:140', NULL, '2026-04-20 12:51:17'),
-(14, 146, '2026-04-20 13:18:33', 'acquisition', 1, 0, 'IAR-2026-0025', 'GSO', 9998.90, 9998.90, 'All Good', 'opening', 146, 'opening:146', NULL, '2026-04-20 13:18:33'),
-(15, 147, '2026-04-20 13:18:33', 'acquisition', 1, 0, 'IAR-2026-0025', 'GSO', 19000.00, 19000.00, 'All Good', 'opening', 147, 'opening:147', NULL, '2026-04-20 13:18:33'),
+(14, 146, '2026-04-20 13:18:33', 'acquisition', 1, 0, 'PAR-2026-0014', 'GSO', 9998.90, 9998.90, 'All Good', 'opening', 146, 'opening:146', NULL, '2026-04-24 15:26:33'),
+(15, 147, '2026-04-20 13:18:33', 'acquisition', 1, 0, 'PAR-2026-0014', 'GSO', 19000.00, 19000.00, 'All Good', 'opening', 147, 'opening:147', NULL, '2026-04-23 21:05:32'),
 (16, 47, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 4200.00, 4200.00, 'Batch 4 additional non-expendable units.', 'opening', 47, 'opening:47', NULL, '2026-04-20 13:27:04'),
 (17, 47, '2026-04-20 13:24:28', 'borrow', 0, 1, 'PBR-2026-0006', 'Borrowing office', 4200.00, 4200.00, 'll', 'audit', 262, 'audit:262', 3, '2026-04-20 13:24:28'),
 (18, 48, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 420.00, 420.00, 'Batch 4 additional non-expendable units.', 'opening', 48, 'opening:48', NULL, '2026-04-20 13:26:45'),
 (19, 48, '2026-04-20 13:26:45', 'transfer', 0, 1, 'PTR-2026-0007', 'Department #30 / EndUser #2', 420.00, 420.00, 'kk', 'audit', 270, 'audit:270', 1, '2026-04-20 13:26:45'),
-(20, 12, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 2350.00, 2350.00, 'Batch 1 office and ICT assets for operational rollout.', 'opening', 12, 'opening:12', NULL, '2026-04-20 13:27:57'),
+(20, 12, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0003', 'GSO', 2350.00, 2350.00, 'Batch 1 office and ICT assets for operational rollout.', 'opening', 12, 'opening:12', NULL, '2026-04-24 15:26:33'),
 (21, 25, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 49900.00, 49900.00, 'Batch 4 additional non-expendable units.', 'opening', 25, 'opening:25', NULL, '2026-04-23 16:02:02'),
 (22, 25, '2026-04-04 01:36:35', 'borrow', 0, 1, 'PBR-2026-0005', 'Borrowing office', 49900.00, 49900.00, 'Released under borrow transaction', 'audit', 206, 'audit:206', 3, '2026-04-04 01:36:35'),
 (23, 25, '2026-04-04 01:40:55', 'borrow_return', 1, 0, 'PBR-RET-2026-0004', 'Returned to accountable office', 49900.00, 49900.00, 'ohye', 'audit', 213, 'audit:213', 1, '2026-04-04 01:40:55'),
-(24, 25, '2026-04-23 16:02:02', 'transfer', 0, 1, 'PTR-2026-0008', 'Department #30 / EndUser #2', 49900.00, 49900.00, 'balhin', 'audit', 281, 'audit:281', 1, '2026-04-23 16:02:02');
+(24, 25, '2026-04-23 16:02:02', 'transfer', 0, 1, 'PTR-2026-0008', 'Department #30 / EndUser #2', 49900.00, 49900.00, 'balhin', 'audit', 281, 'audit:281', 1, '2026-04-23 16:02:02'),
+(25, 147, '2026-04-23 21:05:32', 'transfer', 0, 1, 'PTR-2026-0010', 'Department #23 / EndUser #4', 19000.00, 19000.00, 'hahahehe', 'audit', 290, 'audit:290', 1, '2026-04-23 21:05:32'),
+(26, 26, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 980.00, 980.00, 'Batch 4 additional non-expendable units.', 'opening', 26, 'opening:26', NULL, '2026-04-23 21:09:24'),
+(27, 26, '2026-04-23 21:08:44', 'borrow', 0, 1, 'PBR-2026-0007', 'Borrowing office', 980.00, 980.00, 'basta', 'audit', 293, 'audit:293', 1, '2026-04-23 21:08:44'),
+(28, 26, '2026-04-23 21:09:24', 'borrow_return', 1, 0, 'PBR-RET-2026-0005', 'Returned to accountable office', 980.00, 980.00, 'goods.', 'audit', 297, 'audit:297', 1, '2026-04-23 21:09:24'),
+(29, 29, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 420.00, 420.00, 'Batch 4 additional non-expendable units.', 'opening', 29, 'opening:29', NULL, '2026-04-24 15:26:33'),
+(30, 29, '2026-04-04 01:09:22', 'transfer', 0, 1, 'PTR-2026-0006', 'Department #30 / EndUser #2', 420.00, 420.00, 'Transferred to receiving office', 'audit', 203, 'audit:203', 1, '2026-04-04 01:09:22');
 
 -- --------------------------------------------------------
 
@@ -2649,7 +2696,7 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 (77, 77, 144, 30, 'http://localhost:3000/qr/scan/77?h=ceff6ffd2404', '2026-03-29 21:15:35'),
 (78, 78, 145, 30, 'http://localhost:3000/qr/scan/78?h=c7a6f64e7fd5', '2026-04-20 12:05:52'),
 (79, 79, 146, 30, 'http://localhost:3000/qr/scan/79?h=5de5d2a4c59c', '2026-04-20 13:18:33'),
-(80, 80, 147, 30, 'http://localhost:3000/qr/scan/80?h=2e3d18602c10', '2026-04-20 13:18:33');
+(80, 80, 147, 23, 'http://localhost:8000/qr/scan/80?h=2e3d18602c10', '2026-04-23 21:05:32');
 
 -- --------------------------------------------------------
 
@@ -2954,10 +3001,8 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('2YjCU6RmdvaVhRBNqsqJllCPM8K7XgoMtcZFtgrN', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoidzh1dkVtNE1ZTDhFZTZrbzdJbEhEbFdmUXNlaGp0enNRZkZjZm13NyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1776944793),
-('aIi7kjF6DPpJsWA8u5Ilb3GvOyzF2jYUktP8oCME', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoieDdNWGs5U2JDWktCbmo4NDlMVDZ6eFBJTEpwblhvYnRzVWFuVzBXeiI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRPNS4zMy9QcVoxOS9RdlJlUzRjMlllbkNwRzhMU2JEcW5rLzF2b01HWEJjNlN0RFlmMGx5MiI7fQ==', 1776949307),
-('JFty0ysBv9a3aiPLsV9TJ8Z8e1EBr9tIGuOpqU4O', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiYUlCYmlrSWM5ZFUyYTltSHYzZXE1Z3ZvNVV5NWJiWHRYYkpHZXVtYyI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1776949336),
-('uZbt9vvzAn1daV9VaaN4K35i2CWj4iCAQhzapoiV', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoieFYyTXZOTVJYenhMRnhqcnpMbDYzQ2VZeTVtN25JWVIwYjRmbW1vOCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fX0=', 1776944793);
+('91b9ToJuTiLMozuBbnemg041kVQuIFZO7QQBNVah', 3, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiTDh4VHZ1bkdMNm9tYUI2T1ZZUWFRUEszWmFuUVlOejF4YURJRFRxViI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjM7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRPNS4zMy9QcVoxOS9RdlJlUzRjMlllbkNwRzhMU2JEcW5rLzF2b01HWEJjNlN0RFlmMGx5MiI7fQ==', 1777017522),
+('IdsIoDkRuAIVSKUDQFhpAjwFB8BOENDQtnSdWNHs', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiRTNGZHpSRmQyazRSMVhZSDVuNDJWbkJsWkNsMHg5QzhwNnRkTDE5TSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NzA6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvYWRtaW4vaW52ZW50b3J5L2FsbC1pdGVtcz9wYWdlPTEmcGVyX3BhZ2U9MTAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1777017575);
 
 -- --------------------------------------------------------
 
@@ -3022,8 +3067,8 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (82, 1, 'Trusted Device', 'aaa20777586ad3f1fd3ccf8af7303b0edbb80624e9e90f7a2e63950d16730fa6', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36', '127.0.0.1', '2026-02-18 21:47:15', '2026-03-19 21:32:15', '2026-02-17 21:32:15', '2026-02-18 21:47:15'),
 (86, 1, 'Trusted Device', '92b86588f1a81d8f632b3484925ab65694afa1335866b980e6f6e563d670ed4d', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', '2026-03-18 17:45:44', '2026-04-02 22:47:37', '2026-03-03 22:47:37', '2026-03-18 17:45:44'),
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
-(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-23 19:52:59', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-23 19:52:59'),
-(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-23 19:53:10', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-23 19:53:10');
+(100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-24 14:12:54', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-24 14:12:54'),
+(102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-24 15:26:52', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-24 15:26:52');
 
 -- --------------------------------------------------------
 
@@ -3160,81 +3205,41 @@ CREATE TABLE `user_notifications` (
 --
 
 INSERT INTO `user_notifications` (`UserNotificationID`, `UserID`, `event_type`, `title`, `message`, `payload`, `status`, `error_message`, `sent_at`, `read_at`, `created_at`, `updated_at`) VALUES
-(1, 3, 'debug.test', 'Debug Notification', 'Payload serialization test', '{\"link\":\"/department_head/dashboard\",\"meta\":{\"ok\":true}}', 'failed', 'No active push token', NULL, '2026-03-25 11:31:29', '2026-03-22 14:59:44', '2026-03-25 11:31:29'),
-(2, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt dr31 has been acknowledged and inventory is ready.', '{\"dr_id\":\"43\",\"dr_number\":\"dr31\",\"status\":\"acknowledged\",\"link\":\"/department_head/delivery-receipts\"}', 'failed', 'No active push token', NULL, '2026-03-22 15:58:41', '2026-03-22 15:17:39', '2026-03-22 15:58:41'),
-(3, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt dr11 has been acknowledged and inventory is ready.', '{\"dr_id\":\"44\",\"dr_number\":\"dr11\",\"status\":\"acknowledged\",\"link\":\"/department_head/delivery-receipts\"}', 'sent', NULL, '2026-03-22 15:23:30', '2026-03-25 11:31:29', '2026-03-22 15:23:28', '2026-03-25 11:31:29'),
-(4, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt d2 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"45\\\",\\\"dr_number\\\":\\\"d2\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, '2026-03-25 11:31:29', '2026-03-24 03:49:38', '2026-03-25 11:31:29'),
-(5, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt d21 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"46\\\",\\\"dr_number\\\":\\\"d21\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, '2026-03-25 11:31:25', '2026-03-24 03:51:19', '2026-03-25 11:31:25'),
 (6, 6, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-2026-03-18-004 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"32\\\",\\\"dr_number\\\":\\\"DR-2026-03-18-004\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-03-24 03:55:01', '2026-03-24 03:55:01'),
-(7, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-1 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"47\\\",\\\"dr_number\\\":\\\"DR-TEST-1\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 12:56:50', '2026-03-29 12:57:24', '2026-03-29 12:56:46', '2026-03-29 12:57:24'),
-(8, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-2 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"48\\\",\\\"dr_number\\\":\\\"DR-TEST-2\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 12:58:27', '2026-04-03 17:11:14', '2026-03-29 12:58:25', '2026-04-03 17:11:14'),
-(9, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-TEST-3 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"49\\\",\\\"dr_number\\\":\\\"DR-TEST-3\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-03-29 13:19:46', '2026-03-29 13:20:13', '2026-03-29 13:19:44', '2026-03-29 13:20:13'),
 (10, 1, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:05:53', NULL, '2026-04-03 17:05:47', '2026-04-03 17:05:53'),
 (11, 2, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:05:53', '2026-04-03 17:05:53'),
 (12, 6, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:05:53', '2026-04-03 17:05:53'),
 (13, 2, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0006 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:06:39', '2026-04-03 17:06:39'),
-(14, 3, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0006 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:06:40', '2026-04-03 17:11:14', '2026-04-03 17:06:39', '2026-04-03 17:11:14'),
 (15, 6, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0006 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:06:40', '2026-04-03 17:06:40'),
-(16, 3, 'property_transfer.approved', 'Your Transfer Request Was Approved', 'Transfer PTR-2026-0006 has been approved and is waiting for releasing department review.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:06:42', '2026-04-03 17:11:14', '2026-04-03 17:06:40', '2026-04-03 17:11:14'),
 (17, 1, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:08:30', NULL, '2026-04-03 17:08:28', '2026-04-03 17:08:30'),
 (18, 2, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:08:30', '2026-04-03 17:08:30'),
-(19, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:14', '2026-04-03 17:08:30', '2026-04-03 17:11:14'),
-(20, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0006 was approved by the releasing department and is awaiting signatures.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:14', '2026-04-03 17:08:30', '2026-04-03 17:11:14'),
 (21, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0006 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:09:22', '2026-04-03 17:09:22'),
-(22, 3, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0006 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:14', '2026-04-03 17:09:22', '2026-04-03 17:11:14'),
 (23, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0006 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'sent', NULL, '2026-04-03 17:09:24', NULL, '2026-04-03 17:09:22', '2026-04-03 17:09:24'),
-(24, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0006 has been completed.', '\"{\\\"transfer_id\\\":\\\"6\\\",\\\"transfer_number\\\":\\\"PTR-2026-0006\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/6\\\"}\"', 'failed', 'No active push token', NULL, '2026-04-03 17:11:08', '2026-04-03 17:09:24', '2026-04-03 17:11:08'),
 (25, 1, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0005 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:36:37', NULL, '2026-04-03 17:36:35', '2026-04-03 17:36:37'),
 (26, 2, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0005 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:36:37', '2026-04-03 17:36:37'),
 (27, 6, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0005 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:36:37', '2026-04-03 17:36:37'),
 (28, 2, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0005 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:37:23', '2026-04-03 17:37:23'),
-(29, 3, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0005 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:37:24', NULL, '2026-04-03 17:37:23', '2026-04-03 17:37:24'),
 (30, 6, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0005 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:37:24', '2026-04-03 17:37:24'),
-(31, 3, 'property_borrow.approved', 'Your Borrow Request Was Approved', 'Borrow request PBR-2026-0005 was approved and is pending releasing department review.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:37:25', NULL, '2026-04-03 17:37:24', '2026-04-03 17:37:25'),
 (32, 1, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by the releasing department.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:38:25', NULL, '2026-04-03 17:38:24', '2026-04-03 17:38:25'),
 (33, 2, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by the releasing department.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:25', '2026-04-03 17:38:25'),
-(34, 3, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by the releasing department.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:25', '2026-04-03 17:38:25'),
-(35, 3, 'property_borrow.releasing_approved', 'Borrow Request Cleared By Releasing Department', 'Borrow request PBR-2026-0005 was approved by releasing department and is waiting for final GSO action.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:25', '2026-04-03 17:38:25'),
 (36, 2, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0005 was finalized and marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:56', '2026-04-03 17:38:56'),
-(37, 3, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0005 was finalized and marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:38:58', NULL, '2026-04-03 17:38:56', '2026-04-03 17:38:58'),
 (38, 6, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0005 was finalized and marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:38:58', '2026-04-03 17:38:58'),
-(39, 3, 'property_borrow.borrowed', 'Borrow Request Finalized', 'Borrow request PBR-2026-0005 is now marked as borrowed.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:38:59', NULL, '2026-04-03 17:38:58', '2026-04-03 17:38:59'),
 (40, 2, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0005 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:55'),
-(41, 3, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0005 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:40:56', NULL, '2026-04-03 17:40:55', '2026-04-03 17:40:56'),
 (42, 6, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0005 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-03 17:40:56', '2026-04-03 17:40:56'),
-(43, 3, 'property_borrow.returned', 'Borrow Return Completed', 'Borrow request PBR-2026-0005 is now fully returned.', '\"{\\\"borrow_id\\\":\\\"5\\\",\\\"borrow_number\\\":\\\"PBR-2026-0005\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/5\\\"}\"', 'sent', NULL, '2026-04-03 17:40:57', NULL, '2026-04-03 17:40:56', '2026-04-03 17:40:57'),
 (44, 2, 'asset_service_record.created', 'Asset Service Record Created', 'Service record SVR-2026-0004 has been created.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"status\\\":\\\"pending\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:05', '2026-04-05 09:22:05'),
-(45, 3, 'asset_service_record.created', 'Asset Service Record Created', 'Service record SVR-2026-0004 has been created.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"status\\\":\\\"pending\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:05', '2026-04-05 09:22:05'),
 (46, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from pending to work_approved.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"pending\\\",\\\"status\\\":\\\"work_approved\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:28', '2026-04-05 09:22:28'),
-(47, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from pending to work_approved.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"pending\\\",\\\"status\\\":\\\"work_approved\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:28', '2026-04-05 09:22:28'),
 (48, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from work_approved to repair_in_progress.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"work_approved\\\",\\\"status\\\":\\\"repair_in_progress\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:33', '2026-04-05 09:22:33'),
-(49, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from work_approved to repair_in_progress.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"work_approved\\\",\\\"status\\\":\\\"repair_in_progress\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:33', '2026-04-05 09:22:33'),
 (50, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:37', '2026-04-05 09:22:37'),
-(51, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:37', '2026-04-05 09:22:37'),
 (52, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 09:22:46', '2026-04-05 09:22:46'),
-(53, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0004 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"4\\\",\\\"service_number\\\":\\\"SVR-2026-0004\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/4\\\"}\"', 'failed', 'No active push token or FCM disabled', NULL, NULL, '2026-04-05 09:22:46', '2026-04-05 09:22:46'),
 (54, 2, 'asset_service_record.created', 'Asset Service Record Created', 'Service record SVR-2026-0005 has been created.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:23:39', '2026-04-05 10:23:39'),
-(55, 3, 'asset_service_record.created', 'Asset Service Record Created', 'Service record SVR-2026-0005 has been created.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"status\\\":\\\"pending\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:23:41', NULL, '2026-04-05 10:23:39', '2026-04-05 10:23:41'),
 (56, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from pending to work_approved.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"pending\\\",\\\"status\\\":\\\"work_approved\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:02', '2026-04-05 10:24:02'),
-(57, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from pending to work_approved.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"pending\\\",\\\"status\\\":\\\"work_approved\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:03', NULL, '2026-04-05 10:24:02', '2026-04-05 10:24:03'),
 (58, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from work_approved to repair_in_progress.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"work_approved\\\",\\\"status\\\":\\\"repair_in_progress\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:08', '2026-04-05 10:24:08'),
-(59, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from work_approved to repair_in_progress.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"work_approved\\\",\\\"status\\\":\\\"repair_in_progress\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:10', NULL, '2026-04-05 10:24:08', '2026-04-05 10:24:10'),
 (60, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:14', '2026-04-05 10:24:14'),
-(61, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from repair_in_progress to verification.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"repair_in_progress\\\",\\\"status\\\":\\\"verification\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:15', NULL, '2026-04-05 10:24:14', '2026-04-05 10:24:15'),
 (62, 2, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-05 10:24:24', '2026-04-05 10:24:24'),
-(63, 3, 'asset_service_record.updated', 'Asset Service Record Updated', 'Service record SVR-2026-0005 status changed from verification to unserviceable.', '\"{\\\"service_record_id\\\":\\\"5\\\",\\\"service_number\\\":\\\"SVR-2026-0005\\\",\\\"old_status\\\":\\\"verification\\\",\\\"status\\\":\\\"unserviceable\\\",\\\"report_source_id\\\":\\\"30\\\",\\\"link\\\":\\\"\\/service-records\\/5\\\"}\"', 'sent', NULL, '2026-04-05 10:24:26', NULL, '2026-04-05 10:24:24', '2026-04-05 10:24:26'),
 (64, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0004 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"4\\\",\\\"transfer_number\\\":\\\"PTR-2026-0004\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 03:53:09', '2026-04-20 03:53:09'),
-(65, 3, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0004 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"4\\\",\\\"transfer_number\\\":\\\"PTR-2026-0004\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/4\\\"}\"', 'sent', NULL, '2026-04-20 03:53:11', NULL, '2026-04-20 03:53:09', '2026-04-20 03:53:11'),
 (66, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0004 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"4\\\",\\\"transfer_number\\\":\\\"PTR-2026-0004\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/4\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 03:53:11', '2026-04-20 03:53:11'),
-(67, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0004 has been completed.', '\"{\\\"transfer_id\\\":\\\"4\\\",\\\"transfer_number\\\":\\\"PTR-2026-0004\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/4\\\"}\"', 'sent', NULL, '2026-04-20 03:53:18', NULL, '2026-04-20 03:53:11', '2026-04-20 03:53:18'),
 (68, 2, 'delivery_receipt.created', 'Delivery Receipt Created', 'Delivery receipt drtest12321 has been created and inspected.', '\"{\\\"dr_id\\\":\\\"86\\\",\\\"dr_number\\\":\\\"drtest12321\\\",\\\"status\\\":\\\"inspected\\\",\\\"link\\\":\\\"\\/procurement\\/delivery-receipts\\/86\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 04:05:52', '2026-04-20 04:05:52'),
-(69, 3, 'delivery_receipt.created', 'Delivery Receipt Created', 'Delivery receipt drtest12321 has been created and inspected.', '\"{\\\"dr_id\\\":\\\"86\\\",\\\"dr_number\\\":\\\"drtest12321\\\",\\\"status\\\":\\\"inspected\\\",\\\"link\\\":\\\"\\/procurement\\/delivery-receipts\\/86\\\"}\"', 'sent', NULL, '2026-04-20 04:05:54', NULL, '2026-04-20 04:05:52', '2026-04-20 04:05:54'),
-(70, 3, 'delivery_receipt.created', 'Delivery Receipt Processed', 'Delivery receipt drtest12321 for your request has been created and inspected.', '\"{\\\"dr_id\\\":\\\"86\\\",\\\"dr_number\\\":\\\"drtest12321\\\",\\\"status\\\":\\\"inspected\\\",\\\"link\\\":\\\"\\/procurement\\/delivery-receipts\\/86\\\"}\"', 'sent', NULL, '2026-04-20 04:05:55', NULL, '2026-04-20 04:05:54', '2026-04-20 04:05:55'),
-(71, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt drtest12321 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"86\\\",\\\"dr_number\\\":\\\"drtest12321\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-04-20 04:09:20', NULL, '2026-04-20 04:09:16', '2026-04-20 04:09:20'),
 (72, 2, 'delivery_receipt.created', 'Delivery Receipt Created', 'Delivery receipt dr-malinao has been created and inspected.', '\"{\\\"dr_id\\\":\\\"87\\\",\\\"dr_number\\\":\\\"dr-malinao\\\",\\\"status\\\":\\\"inspected\\\",\\\"link\\\":\\\"\\/procurement\\/delivery-receipts\\/87\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:18:33', '2026-04-20 05:18:33'),
-(73, 3, 'delivery_receipt.created', 'Delivery Receipt Created', 'Delivery receipt dr-malinao has been created and inspected.', '\"{\\\"dr_id\\\":\\\"87\\\",\\\"dr_number\\\":\\\"dr-malinao\\\",\\\"status\\\":\\\"inspected\\\",\\\"link\\\":\\\"\\/procurement\\/delivery-receipts\\/87\\\"}\"', 'sent', NULL, '2026-04-20 05:18:36', NULL, '2026-04-20 05:18:33', '2026-04-20 05:18:36'),
-(74, 3, 'delivery_receipt.created', 'Delivery Receipt Processed', 'Delivery receipt dr-malinao for your request has been created and inspected.', '\"{\\\"dr_id\\\":\\\"87\\\",\\\"dr_number\\\":\\\"dr-malinao\\\",\\\"status\\\":\\\"inspected\\\",\\\"link\\\":\\\"\\/procurement\\/delivery-receipts\\/87\\\"}\"', 'sent', NULL, '2026-04-20 05:18:37', NULL, '2026-04-20 05:18:36', '2026-04-20 05:18:37'),
-(75, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt dr-malinao has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"87\\\",\\\"dr_number\\\":\\\"dr-malinao\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-04-20 05:20:38', NULL, '2026-04-20 05:20:37', '2026-04-20 05:20:38'),
 (76, 1, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'sent', NULL, '2026-04-20 05:24:30', NULL, '2026-04-20 05:24:28', '2026-04-20 05:24:30'),
 (77, 2, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:24:30', '2026-04-20 05:24:30'),
 (78, 6, 'property_borrow.created', 'New Property Borrow Request', 'Borrow request PBR-2026-0006 was submitted by Chokoy Covid.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:24:30', '2026-04-20 05:24:30'),
@@ -3242,36 +3247,46 @@ INSERT INTO `user_notifications` (`UserNotificationID`, `UserID`, `event_type`, 
 (80, 2, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0007 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:24:39', '2026-04-20 05:24:39'),
 (81, 6, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0007 was submitted by Chokoy Covid.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:24:39', '2026-04-20 05:24:39'),
 (82, 2, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0007 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:25:24', '2026-04-20 05:25:24'),
-(83, 3, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0007 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'sent', NULL, '2026-04-20 05:25:26', NULL, '2026-04-20 05:25:24', '2026-04-20 05:25:26'),
 (84, 6, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0007 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:25:26', '2026-04-20 05:25:26'),
-(85, 3, 'property_transfer.approved', 'Your Transfer Request Was Approved', 'Transfer PTR-2026-0007 has been approved and is waiting for releasing department review.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'sent', NULL, '2026-04-20 05:25:28', NULL, '2026-04-20 05:25:26', '2026-04-20 05:25:28'),
 (86, 1, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0007 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'sent', NULL, '2026-04-20 05:26:31', '2026-04-22 14:02:22', '2026-04-20 05:26:28', '2026-04-22 14:02:22'),
 (87, 2, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0007 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:26:31', '2026-04-20 05:26:31'),
-(88, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0007 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:26:31', '2026-04-20 05:26:31'),
-(89, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0007 was approved by the releasing department and is awaiting signatures.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:26:31', '2026-04-20 05:26:31'),
 (90, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0007 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:26:45', '2026-04-20 05:26:45'),
-(91, 3, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0007 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:26:45', '2026-04-20 05:26:45'),
 (92, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0007 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'sent', NULL, '2026-04-20 05:26:46', NULL, '2026-04-20 05:26:45', '2026-04-20 05:26:46'),
-(93, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0007 has been completed.', '\"{\\\"transfer_id\\\":\\\"7\\\",\\\"transfer_number\\\":\\\"PTR-2026-0007\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:26:46', '2026-04-20 05:26:46'),
 (94, 2, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0006 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:04', '2026-04-20 05:27:04'),
-(95, 3, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0006 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:04', '2026-04-20 05:27:04'),
 (96, 6, 'property_borrow.approved', 'Property Borrow Approved', 'Borrow request PBR-2026-0006 was approved by GSO/Admin and is awaiting releasing review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'sent', NULL, '2026-04-20 05:27:09', NULL, '2026-04-20 05:27:04', '2026-04-20 05:27:09'),
-(97, 3, 'property_borrow.approved', 'Your Borrow Request Was Approved', 'Borrow request PBR-2026-0006 was approved and is pending releasing department review.', '\"{\\\"borrow_id\\\":\\\"6\\\",\\\"borrow_number\\\":\\\"PBR-2026-0006\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/6\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-20 05:27:09', '2026-04-20 05:27:09'),
 (98, 2, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0008 was submitted by GSO Administrator.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:21'),
-(99, 3, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0008 was submitted by GSO Administrator.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 07:46:24', NULL, '2026-04-23 07:46:21', '2026-04-23 07:46:24'),
 (100, 6, 'property_transfer.created', 'New Property Transfer Request', 'Transfer PTR-2026-0008 was submitted by GSO Administrator.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"pending\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 07:46:24', '2026-04-23 07:46:24'),
 (101, 2, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0008 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:18', '2026-04-23 08:01:18'),
-(102, 3, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0008 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:18', '2026-04-23 08:01:18'),
 (103, 6, 'property_transfer.approved', 'Property Transfer Approved', 'Transfer PTR-2026-0008 was approved by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 08:01:19', NULL, '2026-04-23 08:01:18', '2026-04-23 08:01:19'),
-(104, 3, 'property_transfer.approved', 'Your Transfer Request Was Approved', 'Transfer PTR-2026-0008 has been approved and is waiting for releasing department review.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:19', '2026-04-23 08:01:19'),
 (105, 2, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:51', '2026-04-23 08:01:51'),
-(106, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:51', '2026-04-23 08:01:51'),
 (107, 6, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 08:01:53', NULL, '2026-04-23 08:01:51', '2026-04-23 08:01:53'),
-(108, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0008 was approved by the releasing department and is awaiting signatures.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:01:53', '2026-04-23 08:01:53'),
 (109, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0008 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:02:02', '2026-04-23 08:02:02'),
-(110, 3, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0008 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:02:02', '2026-04-23 08:02:02'),
 (111, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0008 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'sent', NULL, '2026-04-23 08:02:03', NULL, '2026-04-23 08:02:02', '2026-04-23 08:02:03'),
-(112, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0008 has been completed.', '\"{\\\"transfer_id\\\":\\\"8\\\",\\\"transfer_number\\\":\\\"PTR-2026-0008\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/8\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 08:02:03', '2026-04-23 08:02:03');
+(113, 2, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0009 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"9\\\",\\\"transfer_number\\\":\\\"PTR-2026-0009\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/9\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:03:36', '2026-04-23 13:03:36'),
+(115, 6, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0009 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"9\\\",\\\"transfer_number\\\":\\\"PTR-2026-0009\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/9\\\"}\"', 'sent', NULL, '2026-04-23 13:03:38', NULL, '2026-04-23 13:03:36', '2026-04-23 13:03:38'),
+(116, 2, 'property_transfer.rejected', 'Property Transfer Rejected', 'Transfer PTR-2026-0009 was rejected by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"9\\\",\\\"transfer_number\\\":\\\"PTR-2026-0009\\\",\\\"status\\\":\\\"rejected\\\",\\\"link\\\":\\\"\\/property-transfer\\/9\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:04:20', '2026-04-23 13:04:20'),
+(118, 6, 'property_transfer.rejected', 'Property Transfer Rejected', 'Transfer PTR-2026-0009 was rejected by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"9\\\",\\\"transfer_number\\\":\\\"PTR-2026-0009\\\",\\\"status\\\":\\\"rejected\\\",\\\"link\\\":\\\"\\/property-transfer\\/9\\\"}\"', 'sent', NULL, '2026-04-23 13:04:22', NULL, '2026-04-23 13:04:20', '2026-04-23 13:04:22'),
+(119, 6, 'property_transfer.rejected', 'Your Transfer Request Was Rejected', 'Transfer PTR-2026-0009 was rejected by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"9\\\",\\\"transfer_number\\\":\\\"PTR-2026-0009\\\",\\\"status\\\":\\\"rejected\\\",\\\"link\\\":\\\"\\/property-transfer\\/9\\\"}\"', 'sent', NULL, '2026-04-23 13:04:23', NULL, '2026-04-23 13:04:22', '2026-04-23 13:04:23'),
+(120, 2, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0010 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"10\\\",\\\"transfer_number\\\":\\\"PTR-2026-0010\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/10\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:05:06', '2026-04-23 13:05:06'),
+(122, 6, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0010 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"10\\\",\\\"transfer_number\\\":\\\"PTR-2026-0010\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/10\\\"}\"', 'sent', NULL, '2026-04-23 13:05:07', NULL, '2026-04-23 13:05:06', '2026-04-23 13:05:07'),
+(123, 2, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0010 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"10\\\",\\\"transfer_number\\\":\\\"PTR-2026-0010\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/10\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:05:32', '2026-04-23 13:05:32'),
+(125, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0010 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"10\\\",\\\"transfer_number\\\":\\\"PTR-2026-0010\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/10\\\"}\"', 'sent', NULL, '2026-04-23 13:05:33', NULL, '2026-04-23 13:05:32', '2026-04-23 13:05:33'),
+(126, 6, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0010 has been completed.', '\"{\\\"transfer_id\\\":\\\"10\\\",\\\"transfer_number\\\":\\\"PTR-2026-0010\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/10\\\"}\"', 'sent', NULL, '2026-04-23 13:05:34', NULL, '2026-04-23 13:05:33', '2026-04-23 13:05:34'),
+(127, 2, 'property_borrow.created', 'New Property Borrow Request (Auto-Approved)', 'Borrow request PBR-2026-0007 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:08:44', '2026-04-23 13:08:44'),
+(129, 6, 'property_borrow.created', 'New Property Borrow Request (Auto-Approved)', 'Borrow request PBR-2026-0007 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'sent', NULL, '2026-04-23 13:08:46', NULL, '2026-04-23 13:08:44', '2026-04-23 13:08:46'),
+(130, 2, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0007 was marked as delivered.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:08:59', '2026-04-23 13:08:59'),
+(132, 6, 'property_borrow.borrowed', 'Property Borrow Released', 'Borrow request PBR-2026-0007 was marked as delivered.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"borrowed\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'sent', NULL, '2026-04-23 13:09:00', NULL, '2026-04-23 13:08:59', '2026-04-23 13:09:00'),
+(134, 2, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0007 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:09:24', '2026-04-23 13:09:24'),
+(136, 6, 'property_borrow.returned', 'Borrow Fully Returned', 'Borrow request PBR-2026-0007 has been fully returned.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"returned\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'sent', NULL, '2026-04-23 13:09:27', NULL, '2026-04-23 13:09:24', '2026-04-23 13:09:27'),
+(138, 2, 'property_borrow.completed', 'Property Borrow Completed', 'Borrow request PBR-2026-0007 has been marked as completed.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-23 13:09:32', '2026-04-23 13:09:32'),
+(140, 6, 'property_borrow.completed', 'Property Borrow Completed', 'Borrow request PBR-2026-0007 has been marked as completed.', '\"{\\\"borrow_id\\\":\\\"7\\\",\\\"borrow_number\\\":\\\"PBR-2026-0007\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-borrow\\/7\\\"}\"', 'sent', NULL, '2026-04-23 13:09:33', NULL, '2026-04-23 13:09:32', '2026-04-23 13:09:33'),
+(142, 2, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0011 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-24 07:25:23', '2026-04-24 07:25:23'),
+(143, 3, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0011 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-24 07:25:23', '2026-04-24 07:25:23'),
+(144, 6, 'property_transfer.created', 'New Property Transfer Request (Auto-Approved)', 'Transfer PTR-2026-0011 was submitted by GSO Administrator and auto-approved by GSO workflow.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'sent', NULL, '2026-04-24 07:25:25', NULL, '2026-04-24 07:25:23', '2026-04-24 07:25:25'),
+(145, 2, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0011 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-24 07:26:33', '2026-04-24 07:26:33'),
+(146, 3, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0011 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-24 07:26:33', '2026-04-24 07:26:33'),
+(147, 6, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0011 was approved by the releasing department.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'sent', NULL, '2026-04-24 07:26:34', NULL, '2026-04-24 07:26:33', '2026-04-24 07:26:34'),
+(148, 6, 'property_transfer.releasing_approved', 'Transfer Cleared By Releasing Department', 'Transfer PTR-2026-0011 was approved by the releasing department and is awaiting signatures.', '\"{\\\"transfer_id\\\":\\\"11\\\",\\\"transfer_number\\\":\\\"PTR-2026-0011\\\",\\\"status\\\":\\\"approved\\\",\\\"link\\\":\\\"\\/property-transfer\\/11\\\"}\"', 'sent', NULL, '2026-04-24 07:26:35', NULL, '2026-04-24 07:26:34', '2026-04-24 07:26:35');
 
 -- --------------------------------------------------------
 
@@ -3299,7 +3314,7 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-04-23 12:10:21', '2026-03-22 14:52:48', '2026-04-23 12:10:21'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-04-24 06:38:49', '2026-03-22 14:52:48', '2026-04-24 06:38:49'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
@@ -4011,7 +4026,7 @@ ALTER TABLE `asset_assignments`
 -- AUTO_INCREMENT for table `asset_audit_logs`
 --
 ALTER TABLE `asset_audit_logs`
-  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=283;
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=307;
 
 --
 -- AUTO_INCREMENT for table `asset_request_signatures`
@@ -4125,13 +4140,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=182;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=184;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=177;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=178;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -4173,13 +4188,13 @@ ALTER TABLE `position`
 -- AUTO_INCREMENT for table `propertyborrow`
 --
 ALTER TABLE `propertyborrow`
-  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `BorrowID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `propertyborrowitems`
 --
 ALTER TABLE `propertyborrowitems`
-  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `BorrowItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `propertyclassification`
@@ -4221,7 +4236,7 @@ ALTER TABLE `propertyreceived`
 -- AUTO_INCREMENT for table `propertyreturn`
 --
 ALTER TABLE `propertyreturn`
-  MODIFY `ReturnID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `ReturnID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `propertyreturnitemconditions`
@@ -4233,7 +4248,7 @@ ALTER TABLE `propertyreturnitemconditions`
 -- AUTO_INCREMENT for table `propertyreturnitems`
 --
 ALTER TABLE `propertyreturnitems`
-  MODIFY `ReturnItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `ReturnItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `propertystatus`
@@ -4245,13 +4260,13 @@ ALTER TABLE `propertystatus`
 -- AUTO_INCREMENT for table `propertytransfer`
 --
 ALTER TABLE `propertytransfer`
-  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `TransferID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `propertytransferdetails`
 --
 ALTER TABLE `propertytransferdetails`
-  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `TransferItemID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `propertytype`
@@ -4263,7 +4278,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `property_card_entries`
 --
 ALTER TABLE `property_card_entries`
-  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `property_waste_items`
@@ -4365,7 +4380,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=149;
 
 --
 -- AUTO_INCREMENT for table `user_push_tokens`

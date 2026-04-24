@@ -548,6 +548,15 @@ class PropertyBorrowController extends Controller
                     ]
                 );
 
+                foreach ($borrow->items as $item) {
+                    $item->update([
+                        'ApprovedQuantity' => 0,
+                        'Remarks' => trim((string) ($item->Remarks ?? '')) !== ''
+                            ? trim((string) $item->Remarks) . ' | Rejected: ' . $reason
+                            : 'Rejected: ' . $reason,
+                    ]);
+                }
+
                 $this->notifyBorrowRoles(
                     $borrow,
                     'property_borrow.releasing_rejected',
@@ -617,6 +626,15 @@ class PropertyBorrowController extends Controller
                     ]
                 );
 
+                foreach ($borrow->items as $item) {
+                    $item->update([
+                        'ApprovedQuantity' => 0,
+                        'Remarks' => trim((string) ($item->Remarks ?? '')) !== ''
+                            ? trim((string) $item->Remarks) . ' | Rejected: ' . $autoRejectReason
+                            : 'Rejected: ' . $autoRejectReason,
+                    ]);
+                }
+
                 $this->notifyBorrowRoles(
                     $borrow,
                     'property_borrow.releasing_rejected',
@@ -655,6 +673,8 @@ class PropertyBorrowController extends Controller
                     : $requestedQty;
 
                 if ($approvedQty === $requestedQty) {
+                    $item->ApprovedQuantity = $requestedQty;
+                    $item->save();
                     continue;
                 }
 
@@ -665,13 +685,14 @@ class PropertyBorrowController extends Controller
                 }
 
                 if ($approvedQty <= 0) {
+                    $item->ApprovedQuantity = 0;
                     $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
                     $item->save();
-                    $item->delete();
                     continue;
                 }
 
                 $item->Quantity = $approvedQty;
+                $item->ApprovedQuantity = $approvedQty;
                 $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
                 $item->save();
             }
@@ -870,7 +891,7 @@ class PropertyBorrowController extends Controller
                 ]);
             }
 
-            $totalBorrowed = (int) $borrow->items->sum(fn ($item) => (int) ($item->Quantity ?? 0));
+            $totalBorrowed = (int) $borrow->items->sum(fn ($item) => (int) ($item->ApprovedQuantity ?? $item->Quantity ?? 0));
             $previousReturned = array_sum($alreadyReturnedByItem);
             $totalReturned = $previousReturned + $totalNewReturned;
             $newStatus = $totalReturned >= $totalBorrowed ? 'returned' : 'partially_returned';
@@ -981,7 +1002,7 @@ class PropertyBorrowController extends Controller
 
         $borrow = PropertyBorrow::with(['items', 'returns.items'])->findOrFail($id);
         if ($borrow->Status !== 'returned') {
-            return response()->json(['message' => 'Only fully returned borrows can be completed'], 422);
+            return response()->json(['message' => 'Only fully returned borrows can be completed.'], 422);
         }
 
         $returnedByItem = [];
@@ -998,7 +1019,7 @@ class PropertyBorrowController extends Controller
 
         foreach ($borrow->items as $borrowItem) {
             $itemId = (int) ($borrowItem->BorrowItemID ?? 0);
-            $requestedQty = (int) ($borrowItem->Quantity ?? 0);
+            $requestedQty = (int) ($borrowItem->ApprovedQuantity ?? $borrowItem->Quantity ?? 0);
             $returnedQty = (int) ($returnedByItem[$itemId] ?? 0);
             if ($returnedQty < $requestedQty) {
                 return response()->json(['message' => 'Cannot complete borrow: not all items are fully returned yet'], 422);

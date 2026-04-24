@@ -594,6 +594,12 @@ class PropertyTransferController extends Controller
                 );
 
                 foreach ($transfer->items as $item) {
+                    $item->update([
+                        'ApprovedQuantity' => 0,
+                        'Remarks' => trim((string) ($item->Remarks ?? '')) !== ''
+                            ? trim((string) $item->Remarks) . ' | Rejected: ' . $autoRejectReason
+                            : 'Rejected: ' . $autoRejectReason,
+                    ]);
                     AssetAuditLog::createLog(
                         'inventory_detail',
                         (int) $item->InventoryDetailID,
@@ -671,13 +677,14 @@ class PropertyTransferController extends Controller
                 }
 
                 if ($approvedQty <= 0) {
+                    $item->ApprovedQuantity = 0;
                     $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
                     $item->save();
-                    $item->delete();
                     continue;
                 }
 
                 $item->Quantity = $approvedQty;
+                $item->ApprovedQuantity = $approvedQty;
                 $item->Remarks = $newRemarks !== '' ? $newRemarks : null;
                 $item->save();
             }
@@ -950,6 +957,11 @@ class PropertyTransferController extends Controller
 
             $completionTime = now();
             foreach ($transfer->items as $item) {
+                $approvedQuantity = (int) ($item->ApprovedQuantity ?? $item->Quantity ?? 0);
+                if ($approvedQuantity < 1) {
+                    continue;
+                }
+
                 $assignedProperty = AssignedProperty::where('InventoryDetailID', $item->InventoryDetailID)
                     ->where('DepartmentID', (int) $transfer->FromDepartmentID)
                     ->where('EndUserID', (int) $transfer->FromEndUserID)
@@ -994,6 +1006,7 @@ class PropertyTransferController extends Controller
                         'transfer_id' => (int) $transfer->TransferID,
                         'transfer_number' => $transfer->TransferNumber,
                         'inventory_detail_id' => (int) $item->InventoryDetailID,
+                        'approved_quantity' => $approvedQuantity,
                         'from_department_id' => (int) $transfer->FromDepartmentID,
                         'to_department_id' => (int) $transfer->ToDepartmentID,
                     ]

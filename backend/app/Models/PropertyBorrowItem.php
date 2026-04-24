@@ -21,11 +21,13 @@ class PropertyBorrowItem extends Model
         'BorrowID',
         'InventoryDetailID',
         'Quantity',
+        'ApprovedQuantity',
         'Remarks',
     ];
 
     protected $casts = [
         'Quantity' => 'integer',
+        'ApprovedQuantity' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
