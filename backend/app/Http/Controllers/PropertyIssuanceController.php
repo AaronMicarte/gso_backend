@@ -450,6 +450,14 @@ class PropertyIssuanceController extends Controller
                 return (int) $id;
             })->values()->all();
 
+            $risItemsByDetail = RequisitionIssueSlipItem::where('ris_id', (int) $ris->id)
+                ->whereNull('deleted_at')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('asset_request_detail_id');
+
+            $consumedRisItemIds = [];
+
             if (empty($risDetailIds)) {
                 return response()->json([
                     'message' => 'RIS has no approved items for issuance.',
@@ -544,6 +552,28 @@ class PropertyIssuanceController extends Controller
                         // Create one issuance detail per assigned inventory item
                         foreach ($inventoryMap[$detail->RequestDetailID] as $inventoryItem) {
                             $qtyIssued = $inventoryItem['quantity_issued'];
+                            $inventoryDetailId = (int) $inventoryItem['inventory_detail_id'];
+
+                            $risCandidates = collect($risItemsByDetail->get((int) $detail->RequestDetailID, collect()));
+                            $selectedRisItem = $risCandidates->first(function ($risItem) use ($inventoryDetailId, $consumedRisItemIds) {
+                                return
+                                    !isset($consumedRisItemIds[(int) $risItem->id])
+                                    && (int) ($risItem->inventory_detail_id ?? 0) === $inventoryDetailId;
+                            })
+                                ?? $risCandidates->first(function ($risItem) use ($consumedRisItemIds) {
+                                    return
+                                        !isset($consumedRisItemIds[(int) $risItem->id])
+                                        && empty($risItem->inventory_detail_id);
+                                })
+                                ?? $risCandidates->first(function ($risItem) use ($consumedRisItemIds) {
+                                    return !isset($consumedRisItemIds[(int) $risItem->id]);
+                                });
+
+                            if (!$selectedRisItem) {
+                                throw new \Exception('Unable to resolve RIS line for request detail ' . $detail->RequestDetailID . '.');
+                            }
+
+                            $consumedRisItemIds[(int) $selectedRisItem->id] = true;
 
                             if ((int) $qtyIssued !== 1) {
                                 throw new \Exception('Issuance quantities must be 1 per InventoryDetailID for QR/accountability tracking. InventoryDetailID ' . $inventoryItem['inventory_detail_id'] . ' has quantity_issued=' . $qtyIssued);
@@ -552,7 +582,8 @@ class PropertyIssuanceController extends Controller
                             PropertyIssuanceDetail::create([
                                 'IssuanceID' => $issuance->IssuanceID,
                                 'RequestDetailID' => $detail->RequestDetailID,
-                                'InventoryDetailID' => $inventoryItem['inventory_detail_id'],
+                                'ris_item_id' => (int) $selectedRisItem->id,
+                                'InventoryDetailID' => $inventoryDetailId,
                                 'ItemDescription' => $detail->ItemDescription,
                                 'Unit' => $detail->Unit,
                                 'QuantityIssued' => $qtyIssued, // 1 per item usually
@@ -562,7 +593,7 @@ class PropertyIssuanceController extends Controller
 
                             // Update Inventory Status
                             // Lock the inventory row to prevent concurrent allocation races
-                            $invDetail = PropertyInventoryDetail::where('InventoryDetailID', $inventoryItem['inventory_detail_id'])->lockForUpdate()->first();
+                            $invDetail = PropertyInventoryDetail::where('InventoryDetailID', $inventoryDetailId)->lockForUpdate()->first();
                             if ($invDetail) {
                                 // Decrease available quantity
                                 $invDetail->decrement('QuantityAvailable', $qtyIssued);
@@ -612,6 +643,12 @@ class PropertyIssuanceController extends Controller
                                         ]
                                     );
                                 }
+
+                                if (empty($selectedRisItem->inventory_detail_id)) {
+                                    $selectedRisItem->inventory_detail_id = $invDetail->InventoryDetailID;
+                                    $selectedRisItem->stock_no = trim((string) ($invDetail->PropertyNumber ?? '')) ?: $selectedRisItem->stock_no;
+                                    $selectedRisItem->save();
+                                }
                             }
                         }
                     }
@@ -642,43 +679,38 @@ class PropertyIssuanceController extends Controller
             $ris->status = 'issued';
             $ris->save();
 
-            // Update RIS line items based on what was actually issued.
-            $issuedCounts = [];
-            foreach ($validated['inventory_items'] as $invItem) {
-                $rd = (int) $invItem['request_detail_id'];
-                $issuedCounts[$rd] = ($issuedCounts[$rd] ?? 0) + (int) $invItem['quantity_issued'];
-            }
+            // Update RIS line issued quantities using direct issuance detail linkage.
+            $issuedByRisItem = DB::table('propertyissuancedetail as pid')
+                ->join('propertyissuance as pi', 'pid.IssuanceID', '=', 'pi.IssuanceID')
+                ->whereNull('pid.deleted_at')
+                ->whereNull('pi.deleted_at')
+                ->where('pi.RequestID', (int) $assetRequest->RequestID)
+                ->whereNotNull('pid.ris_item_id')
+                ->groupBy('pid.ris_item_id')
+                ->selectRaw('pid.ris_item_id as ris_item_id, SUM(pid.QuantityIssued) as qty_issued')
+                ->pluck('qty_issued', 'ris_item_id');
+
+            $issuedByRequestDetailFallback = DB::table('propertyissuancedetail as pid')
+                ->join('propertyissuance as pi', 'pid.IssuanceID', '=', 'pi.IssuanceID')
+                ->whereNull('pid.deleted_at')
+                ->whereNull('pi.deleted_at')
+                ->where('pi.RequestID', (int) $assetRequest->RequestID)
+                ->groupBy('pid.RequestDetailID')
+                ->selectRaw('pid.RequestDetailID as request_detail_id, SUM(pid.QuantityIssued) as qty_issued')
+                ->pluck('qty_issued', 'request_detail_id');
 
             $risItems = RequisitionIssueSlipItem::where('ris_id', (int) $ris->id)->get();
             foreach ($risItems as $risItem) {
-                $reqDetailId = (int) $risItem->asset_request_detail_id;
-                $qtyIssued = (int) ($issuedCounts[$reqDetailId] ?? 0);
+                $qtyIssued = isset($issuedByRisItem[(int) $risItem->id])
+                    ? (int) $issuedByRisItem[(int) $risItem->id]
+                    : (int) ($issuedByRequestDetailFallback[(int) $risItem->asset_request_detail_id] ?? 0);
                 $qtyReq = (int) $risItem->quantity_requested;
 
                 $risItem->quantity_issued = $qtyIssued;
-                $risItem->stock_available = $qtyIssued > 0;
                 $risItem->issue_remarks = $qtyIssued >= $qtyReq && $qtyReq > 0
                     ? 'Issued in full'
-                    : ($qtyIssued > 0 ? 'Partially issued' : 'For issuance');
+                    : ($qtyIssued > 0 ? 'Partially issued' : ($risItem->issue_remarks ?: 'For issuance'));
                 $risItem->save();
-            }
-
-            // Persist allocated inventory_detail_id & stock_no back to the RIS items so
-            // the RIS remains the single source of truth for printed forms.
-            foreach ($validated['inventory_items'] as $invItem) {
-                $rdId = (int) $invItem['request_detail_id'];
-                $invDetailId = (int) $invItem['inventory_detail_id'];
-
-                $invDetail = PropertyInventoryDetail::find($invDetailId);
-                $stockNo = trim((string) ($invDetail?->PropertyNumber ?? '')) ?: 'N/A';
-
-                RequisitionIssueSlipItem::where('ris_id', (int) $ris->id)
-                    ->where('asset_request_detail_id', $rdId)
-                    ->whereNull('inventory_detail_id')
-                    ->update([
-                        'inventory_detail_id' => $invDetailId,
-                        'stock_no' => $stockNo
-                    ]);
             }
 
             // Create audit log

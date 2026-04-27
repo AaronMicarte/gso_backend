@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Inventory\PropertyInventoryDetail;
+use App\Models\RequisitionIssueSlipItem;
 
 class PropertyIssuanceDetail extends Model
 {
@@ -18,6 +19,7 @@ class PropertyIssuanceDetail extends Model
     protected $fillable = [
         'IssuanceID',
         'RequestDetailID',
+        'ris_item_id',
         'InventoryDetailID',
         'ItemDescription',
         'Unit',
@@ -46,5 +48,10 @@ class PropertyIssuanceDetail extends Model
     public function requestDetail(): BelongsTo
     {
         return $this->belongsTo(AssetRequestDetail::class, 'RequestDetailID', 'RequestDetailID');
+    }
+
+    public function risItem(): BelongsTo
+    {
+        return $this->belongsTo(RequisitionIssueSlipItem::class, 'ris_item_id', 'id');
     }
 }

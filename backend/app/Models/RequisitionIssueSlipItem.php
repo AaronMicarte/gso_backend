@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RequisitionIssueSlipItem extends Model
 {
@@ -47,5 +48,10 @@ class RequisitionIssueSlipItem extends Model
     public function inventoryDetail(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Inventory\PropertyInventoryDetail::class, 'inventory_detail_id', 'InventoryDetailID');
+    }
+
+    public function issuanceDetails(): HasMany
+    {
+        return $this->hasMany(PropertyIssuanceDetail::class, 'ris_item_id', 'id');
     }
 }

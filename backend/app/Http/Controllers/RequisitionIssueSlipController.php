@@ -386,7 +386,18 @@ class RequisitionIssueSlipController extends Controller
 
         $assetRequest = $ris->assetRequest;
 
-        // Issued quantities (based on propertyissuancedetail)
+        // Issued quantities based on direct RIS item linkage.
+        $issuedByRisItem = DB::table('propertyissuancedetail as pid')
+            ->join('propertyissuance as pi', 'pid.IssuanceID', '=', 'pi.IssuanceID')
+            ->whereNull('pid.deleted_at')
+            ->whereNull('pi.deleted_at')
+            ->where('pi.RequestID', $ris->asset_request_id)
+            ->whereNotNull('pid.ris_item_id')
+            ->groupBy('pid.ris_item_id')
+            ->selectRaw('pid.ris_item_id as ris_item_id, SUM(pid.QuantityIssued) as qty_issued')
+            ->pluck('qty_issued', 'ris_item_id');
+
+        // Backward-compatible fallback for older rows without ris_item_id.
         $issuedByDetail = DB::table('propertyissuancedetail as pid')
             ->join('propertyissuance as pi', 'pid.IssuanceID', '=', 'pi.IssuanceID')
             ->whereNull('pid.deleted_at')
@@ -428,10 +439,12 @@ class RequisitionIssueSlipController extends Controller
                 'issuer' => $assetRequest->issuer,
             ] : null,
 
-            'items' => $ris->items->map(function ($item) use ($issuedByDetail) {
+            'items' => $ris->items->map(function ($item) use ($issuedByDetail, $issuedByRisItem) {
                 $reqId = (int) $item->asset_request_detail_id;
                 $qtyReq = (int) $item->quantity_requested;
-                $qtyIssued = (int) ($issuedByDetail[$reqId] ?? 0);
+                $qtyIssued = isset($issuedByRisItem[(int) $item->id])
+                    ? (int) $issuedByRisItem[(int) $item->id]
+                    : (int) ($issuedByDetail[$reqId] ?? 0);
                 // stock_available is the availability tickbox captured at RIS preparation time.
                 $stockAvailable = (bool) $item->stock_available;
 

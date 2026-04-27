@@ -282,14 +282,36 @@ class RsmiReportController extends Controller
     {
         $rows = DB::table('propertyissuance as pi')
             ->join('propertyissuancedetail as pid', 'pid.IssuanceID', '=', 'pi.IssuanceID')
-            ->leftJoin('requisition_issue_slips as ris', function ($join) {
-                $join->on('ris.asset_request_id', '=', 'pi.RequestID')
-                    ->whereNull('ris.deleted_at');
+            ->leftJoin('requisition_issue_slip_items as rii_link', function ($join) {
+                $join->on('rii_link.id', '=', 'pid.ris_item_id')
+                    ->whereNull('rii_link.deleted_at');
             })
-            ->leftJoin('requisition_issue_slip_items as rii', function ($join) {
-                $join->on('rii.ris_id', '=', 'ris.id')
-                    ->on('rii.asset_request_detail_id', '=', 'pid.RequestDetailID')
-                    ->whereNull('rii.deleted_at');
+            ->leftJoin('requisition_issue_slips as ris_link', function ($join) {
+                $join->on('ris_link.id', '=', 'rii_link.ris_id')
+                    ->whereNull('ris_link.deleted_at');
+            })
+            ->leftJoin('requisition_issue_slips as ris_fallback', function ($join) {
+                $join->on('ris_fallback.id', '=', DB::raw("(
+                    SELECT rf.id
+                    FROM requisition_issue_slips rf
+                    WHERE rf.asset_request_id = pi.RequestID
+                      AND rf.deleted_at IS NULL
+                    ORDER BY rf.id DESC
+                    LIMIT 1
+                )"));
+            })
+            ->leftJoin('requisition_issue_slip_items as rii_fallback', function ($join) {
+                $join->on('rii_fallback.id', '=', DB::raw("(
+                    SELECT rif.id
+                    FROM requisition_issue_slip_items rif
+                    WHERE rif.ris_id = ris_fallback.id
+                      AND rif.asset_request_detail_id = pid.RequestDetailID
+                      AND rif.deleted_at IS NULL
+                    ORDER BY
+                        (CASE WHEN rif.inventory_detail_id = pid.InventoryDetailID THEN 1 ELSE 0 END) DESC,
+                        rif.id ASC
+                    LIMIT 1
+                )"));
             })
             ->leftJoin('propertyinventorydetail as inv', function ($join) {
                 $join->on('inv.InventoryDetailID', '=', 'pid.InventoryDetailID')
@@ -300,12 +322,12 @@ class RsmiReportController extends Controller
             ->whereDate('pi.DateIssued', $reportDate)
             ->selectRaw(
                 "
-                ris.id as ris_id,
-                COALESCE(ris.ris_number, 'N/A') as ris_no,
-                COALESCE(ris.responsibility_center_code, '') as responsibility_center_code,
-                COALESCE(NULLIF(rii.stock_no, ''), NULLIF(inv.PropertyNumber, ''), 'N/A') as stock_no,
-                COALESCE(NULLIF(rii.description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
-                COALESCE(NULLIF(rii.unit, ''), NULLIF(pid.Unit, ''), 'N/A') as unit,
+                COALESCE(ris_link.id, ris_fallback.id) as ris_id,
+                COALESCE(ris_link.ris_number, ris_fallback.ris_number, 'N/A') as ris_no,
+                COALESCE(ris_link.responsibility_center_code, ris_fallback.responsibility_center_code, '') as responsibility_center_code,
+                COALESCE(NULLIF(rii_link.stock_no, ''), NULLIF(rii_fallback.stock_no, ''), NULLIF(inv.PropertyNumber, ''), 'N/A') as stock_no,
+                COALESCE(NULLIF(rii_link.description, ''), NULLIF(rii_fallback.description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
+                COALESCE(NULLIF(rii_link.unit, ''), NULLIF(rii_fallback.unit, ''), NULLIF(pid.Unit, ''), 'N/A') as unit,
                 pid.QuantityIssued as quantity_issued
             "
             )
@@ -407,6 +429,7 @@ class RsmiReportController extends Controller
             'items' => $items->map(function (RsmiReportItem $item) {
                 return [
                     'id' => (int) $item->id,
+                    'ris_id' => $item->ris_id ? (int) $item->ris_id : null,
                     'ris_no' => (string) ($item->ris_no ?? 'N/A'),
                     'responsibility_center_code' => (string) ($item->responsibility_center_code ?? ''),
                     'stock_no' => (string) $item->stock_no,
