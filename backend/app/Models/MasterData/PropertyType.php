@@ -28,6 +28,8 @@ class PropertyType extends Model
         'UpdatedDate' => 'datetime',
     ];
 
+    protected $with = ['propertyClassification'];
+
     protected static function boot()
     {
         parent::boot();
