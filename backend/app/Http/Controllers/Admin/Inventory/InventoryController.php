@@ -1791,6 +1791,30 @@ class InventoryController extends Controller
                                         ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
                                         LIMIT 1
                                 ) as currentBorrowerName"),
+                                'currentBorrowerDepartment' => DB::raw("(
+                                        SELECT COALESCE(depTo.DepartmentName, depBEU.DepartmentName, depBU.DepartmentName)
+                                        FROM propertyborrowitems pbi
+                                        JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
+                                        LEFT JOIN department depTo ON depTo.DepartmentID = pb.ToDepartmentID
+                                        LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
+                                        LEFT JOIN department depBEU ON depBEU.DepartmentID = beu.DepartmentID
+                                        LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
+                                        LEFT JOIN department depBU ON depBU.DepartmentID = bu.DepartmentID
+                                        WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                            AND pb.deleted_at IS NULL
+                                            AND pbi.deleted_at IS NULL
+                                            AND pb.Status IN ('borrowed','partially_returned')
+                                            AND NOT EXISTS (
+                                                SELECT 1
+                                                FROM propertyreturnitems pri
+                                                JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
+                                                WHERE pri.BorrowItemID = pbi.BorrowItemID
+                                                    AND pri.deleted_at IS NULL
+                                                    AND pr.deleted_at IS NULL
+                                            )
+                                        ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
+                                        LIMIT 1
+                                ) as currentBorrowerDepartment"),
             ]);
 
         if ($search) {
