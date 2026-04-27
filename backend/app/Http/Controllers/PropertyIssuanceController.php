@@ -66,6 +66,7 @@ class PropertyIssuanceController extends Controller
         }
 
         $issuances = $query->orderBy('DateIssued', 'desc')
+            ->orderBy('IssuanceID', 'desc')
             ->paginate($request->get('per_page', 15));
 
         // Transform data to group by request
@@ -363,6 +364,28 @@ class PropertyIssuanceController extends Controller
                         'ModelNumber' => $inventoryDetail?->ModelNumber,
                         'SerialNumber' => $inventoryDetail?->SerialNumber,
                     ],
+                ],
+            ];
+        });
+
+        $relatedIssuancesQuery = PropertyIssuance::query()
+            ->select('IssuanceID', 'DocumentType', 'DocumentNumber', 'Status');
+
+        if (!empty($issuance->RequestID)) {
+            $relatedIssuancesQuery->where('RequestID', (int) $issuance->RequestID);
+        } elseif (!empty($issuance->DRID)) {
+            $relatedIssuancesQuery->where('DRID', (int) $issuance->DRID);
+        }
+
+        $transformedIssuance['issuances_by_document_type'] = $relatedIssuancesQuery->get()->mapWithKeys(function ($row) {
+            $documentType = $row->DocumentType ?: 'ICS';
+
+            return [
+                $documentType => [
+                    'IssuanceID' => (int) $row->IssuanceID,
+                    'DocumentType' => $row->DocumentType,
+                    'DocumentNumber' => $row->DocumentNumber,
+                    'Status' => $row->Status,
                 ],
             ];
         });
