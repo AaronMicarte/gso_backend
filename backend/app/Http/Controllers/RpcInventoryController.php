@@ -430,6 +430,23 @@ class RpcInventoryController extends Controller
             })
             ->get();
 
+        // Build a map of inventory_detail_id -> latest issuance status
+        $issuanceStatuses = \DB::table('propertyissuancedetail')
+            ->selectRaw('propertyissuancedetail.InventoryDetailID, propertyissuance.Status')
+            ->join('propertyissuance', 'propertyissuance.IssuanceID', '=', 'propertyissuancedetail.IssuanceID')
+            ->where('propertyissuance.deleted_at', null)
+            ->where('propertyissuancedetail.deleted_at', null)
+            ->get();
+        
+        $issuanceStatusMap = \collect([]);
+        foreach ($issuanceStatuses as $row) {
+            $detailId = (int) $row->InventoryDetailID;
+            // Keep the first (latest) status found per inventory detail
+            if (!$issuanceStatusMap->has($detailId)) {
+                $issuanceStatusMap->put($detailId, $row->Status);
+            }
+        }
+
         $scannedByDetailId = $scans->keyBy('inventory_detail_id');
 
         $rowsByType = [
@@ -471,8 +488,14 @@ class RpcInventoryController extends Controller
             $mappedByInventoryDetail[$inventoryDetailId] = $mapped;
         }
 
-        foreach ($mappedByInventoryDetail as $mapped) {
+        foreach ($mappedByInventoryDetail as $inventoryDetailId => $mapped) {
             $rpcType = (string) $mapped['rpc_type'];
+
+            // Filter by issuance status: only include items that got acknowledged
+            $issuanceStatus = $issuanceStatusMap->get($inventoryDetailId);
+            if ($issuanceStatus !== 'acknowledged') {
+                continue;
+            }
 
             $scan = $scannedByDetailId->get((int) $mapped['inventory_detail_id']);
             $quantityCard = 1;
