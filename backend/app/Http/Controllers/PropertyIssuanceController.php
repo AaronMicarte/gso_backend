@@ -1425,6 +1425,7 @@ class PropertyIssuanceController extends Controller
                     'reqU.FullName as RequestedBy',
                     'reqU.DepartmentID as DepartmentID',
                     'deliveryreceipt.DateReceived',
+                    'deliveryreceipt.CreatedDate',
                     'deliveryreceipt.InspectionStatus',
                     'department.DepartmentName',
                     // Determine acceptance status based on propertyissuance records, not IAR
@@ -1438,10 +1439,11 @@ class PropertyIssuanceController extends Controller
                     'reqU.FullName',
                     'reqU.DepartmentID',
                     'deliveryreceipt.DateReceived',
+                    'deliveryreceipt.CreatedDate',
                     'deliveryreceipt.InspectionStatus',
                     'department.DepartmentName'
                 )
-                ->orderBy('deliveryreceipt.DateReceived', 'desc');
+                ->orderBy('deliveryreceipt.CreatedDate', 'desc');
 
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -1466,11 +1468,13 @@ class PropertyIssuanceController extends Controller
                 $items = DB::table('deliveryreceiptdetail as drd')
                     ->leftJoin('propertytype as pt', 'drd.PropertyTypeID', '=', 'pt.PropertyTypeID')
                     ->leftJoin('propertyclassification as pc', 'pt.PropertyClassificationID', '=', 'pc.PropertyClassificationID')
+                    ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
                     ->where('drd.DRID', $row->DRID)
                     ->select(
                         'drd.DRDetailID',
                         'drd.QuantityDelivered as QuantityAccepted',
-                        'drd.ItemDescription',
+                        // Prefer official ArticleName when available, fallback to ItemDescription
+                        DB::raw('COALESCE(a.ArticleName, drd.ItemDescription) as ItemDescription'),
                         'drd.Brand',
                         'drd.ModelNumber', 
                         'drd.SerialNumber',
