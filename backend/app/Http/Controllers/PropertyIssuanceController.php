@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssetRequest;
+use App\Models\AssetRequestDetail;
 use App\Models\PropertyIssuance;
 use App\Models\PropertyIssuanceDetail;
 use App\Models\AssetAuditLog;
@@ -23,6 +24,7 @@ use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 
 class PropertyIssuanceController extends Controller
@@ -38,6 +40,7 @@ class PropertyIssuanceController extends Controller
         $query = PropertyIssuance::with([
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName',
+            'request.ris.items',
             'deliveryReceipt.requestedByUser:UserID,FullName,DepartmentID',
             'deliveryReceipt.requestedByUser.department:DepartmentID,DepartmentName',
             'issuedBy',
@@ -214,6 +217,7 @@ class PropertyIssuanceController extends Controller
             'request.requester.department:DepartmentID,DepartmentName',
             'request.department:DepartmentID,DepartmentName,DepartmentCode',
             'request.signatures',
+            'request.ris.items',
             'deliveryReceipt.requestedByUser:UserID,FullName,DepartmentID',
             'deliveryReceipt.requestedByUser.department:DepartmentID,DepartmentName',
             'issuedBy',
@@ -1545,7 +1549,10 @@ class PropertyIssuanceController extends Controller
         }
 
         $drId = (int) $request->dr_id;
-        $deliveryReceipt = DeliveryReceipt::with(['requestedByUser:UserID,FullName,DepartmentID'])
+            $deliveryReceipt = DeliveryReceipt::with([
+                'requestedByUser:UserID,FullName,DepartmentID',
+                'requestedByUser.department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
             ->find($drId);
         
         if (! $deliveryReceipt) {
@@ -1579,6 +1586,7 @@ class PropertyIssuanceController extends Controller
 
             // Create issuances directly from DR
             $issuances = $this->createIssuancesFromDeliveryReceipt($deliveryReceipt, $resolvedEndUser);
+            $ris = $this->createRisFromDeliveryReceiptAcknowledgment($deliveryReceipt, $resolvedEndUser, $issuances);
 
             DB::commit();
 
@@ -1609,6 +1617,8 @@ class PropertyIssuanceController extends Controller
             'data' => [
                 'DRID' => (int) $deliveryReceipt->DRID,
                 'issuances_created' => count($issuances ?? []),
+                'ris_id' => $ris?->id,
+                'ris_number' => $ris?->ris_number,
             ]
         ]);
     }
@@ -1895,6 +1905,8 @@ class PropertyIssuanceController extends Controller
         $issuedToName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? null;
         $departmentId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0) ?: null;
         $issuedAt = $iar->DateAccepted ?? now();
+        $canStoreAcknowledgedBy = Schema::hasColumn('propertyissuance', 'AcknowledgedBy');
+        $canStoreAcknowledgedAt = Schema::hasColumn('propertyissuance', 'AcknowledgedAt');
 
         foreach ($groupedByType as $documentType => $details) {
             $documentType = (string) $documentType;
@@ -1916,21 +1928,27 @@ class PropertyIssuanceController extends Controller
                     'DateIssued' => $issuedAt,
                     'Remarks' => 'Auto-created from IAR acknowledgement',
                     'Status' => 'acknowledged',
-                    'AcknowledgedBy' => (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null,
-                    'AcknowledgedAt' => $issuedAt,
                     'CreatedDate' => now(),
                 ];
 
                 $issuance = PropertyIssuance::create($issuanceData);
-                $issuance->AcknowledgedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
-                $issuance->AcknowledgedAt = $issuedAt;
+                if ($canStoreAcknowledgedBy) {
+                    $issuance->AcknowledgedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
+                }
+                if ($canStoreAcknowledgedAt) {
+                    $issuance->AcknowledgedAt = $issuedAt;
+                }
                 $issuance->Status = 'acknowledged';
                 $issuance->save();
 
                 $existingDetailIds = [];
             } else {
-                $issuance->AcknowledgedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
-                $issuance->AcknowledgedAt = $issuedAt;
+                if ($canStoreAcknowledgedBy) {
+                    $issuance->AcknowledgedBy = (int) ($deliveryReceipt->RequestedBy ?? 0) ?: null;
+                }
+                if ($canStoreAcknowledgedAt) {
+                    $issuance->AcknowledgedAt = $issuedAt;
+                }
                 $issuance->Status = 'acknowledged';
                 $issuance->save();
 
@@ -2019,6 +2037,163 @@ class PropertyIssuanceController extends Controller
         }
 
         return $issuances;
+    }
+
+    /**
+     * Create a synthetic RIS for delivery-receipt acknowledgments so RSMI can use a real RIS number.
+     *
+     * The DR flow does not originate from an Asset Request, so we create a lightweight request
+     * and attach the issued rows to it to preserve the existing RIS/RSMI reporting contract.
+     */
+    private function createRisFromDeliveryReceiptAcknowledgment(DeliveryReceipt $deliveryReceipt, EndUser $resolvedEndUser, array $issuances): ?RequisitionIssueSlip
+    {
+        $deliveryReceipt->loadMissing([
+            'requestedByUser.department:DepartmentID,DepartmentName,DepartmentCode',
+        ]);
+
+        $issuanceCollection = collect($issuances)
+            ->filter(fn ($issuance) => $issuance instanceof PropertyIssuance)
+            ->values();
+
+        if ($issuanceCollection->isEmpty()) {
+            return null;
+        }
+
+        $issuedDetails = $issuanceCollection->flatMap(function (PropertyIssuance $issuance) {
+            $issuance->loadMissing([
+                'details.inventoryDetail.propertyType.propertyClassification',
+                'details.inventoryDetail.unitOfMeasure',
+            ]);
+
+            return $issuance->details->map(function (PropertyIssuanceDetail $detail) use ($issuance) {
+                return [
+                    'issuance' => $issuance,
+                    'detail' => $detail,
+                ];
+            });
+        })->values();
+
+        if ($issuedDetails->isEmpty()) {
+            return null;
+        }
+
+        $syntheticRequestNumber = 'REQ-' . date('Y') . '-DR-' . str_pad((string) $deliveryReceipt->DRID, 4, '0', STR_PAD_LEFT);
+        $syntheticPurpose = trim((string) ($deliveryReceipt->Remarks ?? '')) ?: sprintf('Auto-generated from delivery receipt %s acknowledgement', (string) $deliveryReceipt->DRNumber);
+        $requesterUserId = (int) ($deliveryReceipt->RequestedBy ?? 0);
+        $requesterDepartmentId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? $resolvedEndUser->DepartmentID ?? Auth::user()?->DepartmentID ?? 0) ?: null;
+        $requesterDepartmentName = (string) ($deliveryReceipt->requestedByUser?->department?->DepartmentName ?? 'Delivery Receipt');
+        $requesterDepartmentCode = (string) ($deliveryReceipt->requestedByUser?->department?->DepartmentCode ?? $requesterDepartmentId ?? 'N/A');
+        $issuedAt = $deliveryReceipt->DateInspected ?? now();
+
+        $syntheticRequest = AssetRequest::updateOrCreate(
+            ['RequestNumber' => $syntheticRequestNumber],
+            [
+                'RequestedBy' => $requesterUserId > 0 ? $requesterUserId : (int) Auth::id(),
+                'DepartmentID' => $requesterDepartmentId ?? (int) ($resolvedEndUser->DepartmentID ?? 0),
+                'Purpose' => $syntheticPurpose,
+                'Status' => 'issued',
+                'ReviewedBy' => (int) Auth::id(),
+                'ReviewedAt' => now(),
+                'ReviewNotes' => 'Auto-generated from delivery receipt acknowledgment',
+                'IssuedBy' => (int) Auth::id(),
+                'IssuedAt' => now(),
+                'RequestDate' => $issuedAt,
+            ]
+        );
+
+        $existingRis = RequisitionIssueSlip::with('items')
+            ->where('asset_request_id', (int) $syntheticRequest->RequestID)
+            ->first();
+
+        if ($existingRis) {
+            return $existingRis;
+        }
+
+        $lastRisNumber = RequisitionIssueSlip::lockForUpdate()
+            ->orderByDesc('id')
+            ->value('ris_number');
+
+        $nextSerial = 1;
+        if ($lastRisNumber) {
+            $parts = explode('-', (string) $lastRisNumber);
+            if (count($parts) === 3) {
+                $nextSerial = (int) $parts[2] + 1;
+            }
+        }
+
+        $risDate = now()->setTimezone('Asia/Manila');
+        $risNumber = sprintf('%04d-%02d-%04d', (int) $risDate->year, (int) $risDate->month, $nextSerial);
+
+        $ris = RequisitionIssueSlip::create([
+            'asset_request_id' => (int) $syntheticRequest->RequestID,
+            'ris_number' => $risNumber,
+            'entity_name' => (string) ($deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? 'Unknown Entity'),
+            'fund_cluster' => 'AUTO',
+            'division' => $requesterDepartmentName,
+            'responsibility_center_code' => $requesterDepartmentCode,
+            'purpose' => $syntheticPurpose,
+            'status' => 'issued',
+            'requested_by_user_id' => $requesterUserId > 0 ? $requesterUserId : null,
+            'requested_at' => $issuedAt,
+            'approved_by_user_id' => (int) Auth::id(),
+            'approved_at' => now(),
+            'prepared_by_user_id' => (int) Auth::id(),
+            'prepared_at' => now(),
+            'issued_by_user_id' => (int) Auth::id(),
+            'issued_at' => now(),
+            'remarks' => 'Auto-generated from delivery receipt acknowledgment',
+        ]);
+
+        foreach ($issuedDetails as $entry) {
+            /** @var PropertyIssuance $issuance */
+            $issuance = $entry['issuance'];
+            /** @var PropertyIssuanceDetail $detail */
+            $detail = $entry['detail'];
+            $inventoryDetail = $detail->inventoryDetail;
+            $quantityIssued = (int) ($detail->QuantityIssued ?? 1);
+
+            $requestDetail = AssetRequestDetail::create([
+                'RequestID' => (int) $syntheticRequest->RequestID,
+                'PropertyInventoryDetailID' => $detail->InventoryDetailID,
+                'ItemDescription' => (string) ($detail->ItemDescription ?? $inventoryDetail?->Description ?? 'Item'),
+                'Unit' => (string) ($detail->Unit ?? $inventoryDetail?->unitOfMeasure?->UnitName ?? 'N/A'),
+                'QuantityRequested' => $quantityIssued,
+                'Purpose' => $syntheticPurpose,
+                'IntendedEndUser' => $resolvedEndUser->FullName ?? null,
+                'AdditionalNotes' => 'Auto-generated from delivery receipt acknowledgment',
+                'PropertyClassification' => (string) ($inventoryDetail?->propertyType?->propertyClassification?->DocumentType ?? $issuance->DocumentType ?? 'ICS'),
+                'AssignedEndUserID' => (int) $resolvedEndUser->EndUserID,
+                'AssignedDepartmentID' => (int) ($resolvedEndUser->DepartmentID ?? $deliveryReceipt->requestedByUser?->DepartmentID ?? 0) ?: null,
+                'AdminNotes' => 'Auto-generated from delivery receipt acknowledgment',
+                'IsApprovedForIssuance' => true,
+            ]);
+
+            $risItem = RequisitionIssueSlipItem::create([
+                'ris_id' => (int) $ris->id,
+                'asset_request_detail_id' => (int) $requestDetail->RequestDetailID,
+                'inventory_detail_id' => $detail->InventoryDetailID ? (int) $detail->InventoryDetailID : null,
+                'stock_no' => trim((string) ($inventoryDetail?->PropertyNumber ?? '')) ?: 'N/A',
+                'unit' => trim((string) ($detail->Unit ?? $inventoryDetail?->unitOfMeasure?->UnitName ?? '')) ?: 'N/A',
+                'description' => trim((string) ($detail->ItemDescription ?? $inventoryDetail?->Description ?? 'Item')) ?: 'Item',
+                'quantity_requested' => $quantityIssued,
+                'stock_available' => true,
+                'quantity_issued' => $quantityIssued,
+                'issue_remarks' => $quantityIssued > 0 ? 'Issued in full' : 'For issuance',
+            ]);
+
+            $detail->update([
+                'RequestDetailID' => (int) $requestDetail->RequestDetailID,
+                'ris_item_id' => (int) $risItem->id,
+            ]);
+        }
+
+        $issuanceCollection->each(function (PropertyIssuance $issuance) use ($syntheticRequest) {
+            $issuance->update([
+                'RequestID' => (int) $syntheticRequest->RequestID,
+            ]);
+        });
+
+        return $ris;
     }
 
     private function createPendingIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt, EndUser $resolvedEndUser): array
