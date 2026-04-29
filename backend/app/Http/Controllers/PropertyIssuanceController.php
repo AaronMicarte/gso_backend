@@ -1540,6 +1540,7 @@ class PropertyIssuanceController extends Controller
 
         $request->validate([
             'dr_id' => 'required|integer|exists:deliveryreceipt,DRID',
+            'ris_number' => 'required|string|max:80|unique:requisition_issue_slips,ris_number',
         ]);
 
         $user = Auth::user();
@@ -1586,7 +1587,8 @@ class PropertyIssuanceController extends Controller
 
             // Create issuances directly from DR
             $issuances = $this->createIssuancesFromDeliveryReceipt($deliveryReceipt, $resolvedEndUser);
-            $ris = $this->createRisFromDeliveryReceiptAcknowledgment($deliveryReceipt, $resolvedEndUser, $issuances);
+            $forcedRisNumber = trim((string) ($request->ris_number ?? '')) ?: null;
+            $ris = $this->createRisFromDeliveryReceiptAcknowledgment($deliveryReceipt, $resolvedEndUser, $issuances, $forcedRisNumber);
 
             DB::commit();
 
@@ -2045,7 +2047,7 @@ class PropertyIssuanceController extends Controller
      * The DR flow does not originate from an Asset Request, so we create a lightweight request
      * and attach the issued rows to it to preserve the existing RIS/RSMI reporting contract.
      */
-    private function createRisFromDeliveryReceiptAcknowledgment(DeliveryReceipt $deliveryReceipt, EndUser $resolvedEndUser, array $issuances): ?RequisitionIssueSlip
+    private function createRisFromDeliveryReceiptAcknowledgment(DeliveryReceipt $deliveryReceipt, EndUser $resolvedEndUser, array $issuances, ?string $forcedRisNumber = null): ?RequisitionIssueSlip
     {
         $deliveryReceipt->loadMissing([
             'requestedByUser.department:DepartmentID,DepartmentName,DepartmentCode',
@@ -2109,20 +2111,25 @@ class PropertyIssuanceController extends Controller
             return $existingRis;
         }
 
-        $lastRisNumber = RequisitionIssueSlip::lockForUpdate()
-            ->orderByDesc('id')
-            ->value('ris_number');
+        // Use provided RIS number if given, otherwise fall back to auto-generation (legacy)
+        if ($forcedRisNumber) {
+            $risNumber = $forcedRisNumber;
+        } else {
+            $lastRisNumber = RequisitionIssueSlip::lockForUpdate()
+                ->orderByDesc('id')
+                ->value('ris_number');
 
-        $nextSerial = 1;
-        if ($lastRisNumber) {
-            $parts = explode('-', (string) $lastRisNumber);
-            if (count($parts) === 3) {
-                $nextSerial = (int) $parts[2] + 1;
+            $nextSerial = 1;
+            if ($lastRisNumber) {
+                $parts = explode('-', (string) $lastRisNumber);
+                if (count($parts) === 3) {
+                    $nextSerial = (int) $parts[2] + 1;
+                }
             }
-        }
 
-        $risDate = now()->setTimezone('Asia/Manila');
-        $risNumber = sprintf('%04d-%02d-%04d', (int) $risDate->year, (int) $risDate->month, $nextSerial);
+            $risDate = now()->setTimezone('Asia/Manila');
+            $risNumber = sprintf('%04d-%02d-%04d', (int) $risDate->year, (int) $risDate->month, $nextSerial);
+        }
 
         $ris = RequisitionIssueSlip::create([
             'asset_request_id' => (int) $syntheticRequest->RequestID,
