@@ -317,6 +317,14 @@ class RsmiReportController extends Controller
                 $join->on('inv.InventoryDetailID', '=', 'pid.InventoryDetailID')
                     ->whereNull('inv.deleted_at');
             })
+            ->leftJoin('deliveryreceiptdetail as drd', function ($join) {
+                $join->on('drd.DRDetailID', '=', 'inv.SourceDRDetailID')
+                    ->whereNull('drd.deleted_at');
+            })
+            ->leftJoin('articles as art', function ($join) {
+                $join->on('art.ArticleID', '=', 'drd.ArticleID')
+                    ->whereNull('art.deleted_at');
+            })
             ->whereNull('pi.deleted_at')
             ->whereNull('pid.deleted_at')
             ->whereDate('pi.DateIssued', $reportDate)
@@ -326,7 +334,7 @@ class RsmiReportController extends Controller
                 COALESCE(ris_link.ris_number, ris_fallback.ris_number, 'N/A') as ris_no,
                 COALESCE(ris_link.responsibility_center_code, ris_fallback.responsibility_center_code, '') as responsibility_center_code,
                 COALESCE(NULLIF(rii_link.stock_no, ''), NULLIF(rii_fallback.stock_no, ''), NULLIF(inv.PropertyNumber, ''), 'N/A') as stock_no,
-                COALESCE(NULLIF(rii_link.description, ''), NULLIF(rii_fallback.description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
+                COALESCE(NULLIF(rii_link.description, ''), NULLIF(rii_fallback.description, ''), NULLIF(art.ArticleName, ''), NULLIF(art.Description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
                 COALESCE(NULLIF(rii_link.unit, ''), NULLIF(rii_fallback.unit, ''), NULLIF(pid.Unit, ''), 'N/A') as unit,
                 pid.QuantityIssued as quantity_issued
             "

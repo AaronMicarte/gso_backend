@@ -94,7 +94,12 @@ class RequisitionIssueSlipController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $assetRequest = AssetRequest::with(['details.inventoryDetail.unitOfMeasure', 'signatures', 'department'])
+        $assetRequest = AssetRequest::with([
+            'details.inventoryDetail.unitOfMeasure',
+            'details.inventoryDetail.drDetail.article',
+            'signatures',
+            'department',
+        ])
             ->findOrFail((int) $validated['asset_request_id']);
 
         // IMPORTANT: Include ALL request details in the RIS.
@@ -140,9 +145,53 @@ class RequisitionIssueSlipController extends Controller
 
                 foreach ($allDetails as $detail) {
                     $inventoryDetail = $detail->inventoryDetail;
+                    $stockNo = trim((string) ($inventoryDetail?->PropertyNumber ?? '')) ?: 'N/A';
+
+                    // Prefer article name/description when available (from delivery receipt origin).
+                    $article = $inventoryDetail?->drDetail?->article ?? null;
+                    if ($article) {
+                        $unitName = trim((string) ($inventoryDetail?->unitOfMeasure?->UnitName ?? $detail->Unit ?? '')) ?: 'N/A';
+                        $description = trim((string) ($article->ArticleName ?? $article->Description ?? '')) ?: 'N/A';
+                        // Use delivery receipt's requested qty when available, else fall back to request detail.
+                        $qtyRequested = (int) ($inventoryDetail->drDetail->QuantityRequested ?? $detail->QuantityRequested);
+                        $brand = trim((string) ($inventoryDetail->drDetail->Brand ?? $inventoryDetail->Brand ?? ''));
+                        $model = trim((string) ($inventoryDetail->drDetail->ModelNumber ?? $inventoryDetail->ModelNumber ?? ''));
+                        $serial = trim((string) ($inventoryDetail->drDetail->SerialNumber ?? $inventoryDetail->SerialNumber ?? ''));
+
+                        // Group by article + brand + model + serial
+                        $groupKey = implode('|', [
+                            (string) ($article->ArticleID ?? '0'),
+                            $brand,
+                            $model,
+                            $serial,
+                        ]);
+
+                        // Accumulate grouped items in a temp array on the existing RIS object to later insert
+                        $existingGrouped = $existing->tempGroupedItems ?? [];
+                        if (!isset($existingGrouped[$groupKey])) {
+                            $existingGrouped[$groupKey] = [
+                                'ris_id' => $existing->id,
+                                'asset_request_detail_id' => (int) $detail->RequestDetailID,
+                                'inventory_detail_id' => $detail->PropertyInventoryDetailID ? (int) $detail->PropertyInventoryDetailID : null,
+                                'stock_no' => $stockNo,
+                                'unit' => $unitName,
+                                'description' => $description,
+                                'quantity_requested' => $qtyRequested,
+                                'stock_available' => (bool) ($detail->IsApprovedForIssuance ?? false),
+                                'quantity_issued' => 0,
+                                'issue_remarks' => trim((string) ($detail->AdminNotes ?? '')),
+                            ];
+                        } else {
+                            $existingGrouped[$groupKey]['quantity_requested'] += (int) $qtyRequested;
+                        }
+
+                        $existing->tempGroupedItems = $existingGrouped;
+                        continue;
+                    }
+
+                    // Fallback: create individual item when no article/drDetail is available
                     $unitName = trim((string) ($inventoryDetail?->unitOfMeasure?->UnitName ?? $detail->Unit ?? '')) ?: 'N/A';
                     $description = trim((string) ($detail->ItemDescription ?? $inventoryDetail?->Description ?? '')) ?: 'N/A';
-                    $stockNo = trim((string) ($inventoryDetail?->PropertyNumber ?? '')) ?: 'N/A';
                     $qtyRequested = (int) $detail->QuantityRequested;
                     $stockAvailable = (bool) ($detail->IsApprovedForIssuance ?? false);
                     $issueRemarks = trim((string) ($detail->AdminNotes ?? ''));
@@ -160,6 +209,15 @@ class RequisitionIssueSlipController extends Controller
                         'issue_remarks' => $issueRemarks,
                     ]);
                 }
+
+                // Persist any grouped items accumulated during snapshotting
+                $existingGrouped = $existing->tempGroupedItems ?? [];
+                foreach ($existingGrouped as $group) {
+                    RequisitionIssueSlipItem::create($group);
+                }
+
+                // Clean temp storage
+                unset($existing->tempGroupedItems);
 
                 return $existing;
             }
@@ -199,16 +257,53 @@ class RequisitionIssueSlipController extends Controller
                 'remarks' => $validated['remarks'] ?? null,
             ]);
 
+            $grouped = [];
             foreach ($allDetails as $detail) {
                 $inventoryDetail = $detail->inventoryDetail;
+                $stockNo = trim((string) ($inventoryDetail?->PropertyNumber ?? '')) ?: 'N/A';
+
+                // Prefer article name/description when available (from delivery receipt origin).
+                $article = $inventoryDetail?->drDetail?->article ?? null;
+                if ($article) {
+                    $unitName = trim((string) ($inventoryDetail?->unitOfMeasure?->UnitName ?? $detail->Unit ?? '')) ?: 'N/A';
+                    $description = trim((string) ($article->ArticleName ?? $article->Description ?? '')) ?: 'N/A';
+                    $qtyRequested = (int) ($inventoryDetail->drDetail->QuantityRequested ?? $detail->QuantityRequested);
+                    $brand = trim((string) ($inventoryDetail->drDetail->Brand ?? $inventoryDetail->Brand ?? ''));
+                    $model = trim((string) ($inventoryDetail->drDetail->ModelNumber ?? $inventoryDetail->ModelNumber ?? ''));
+                    $serial = trim((string) ($inventoryDetail->drDetail->SerialNumber ?? $inventoryDetail->SerialNumber ?? ''));
+
+                    $groupKey = implode('|', [
+                        (string) ($article->ArticleID ?? '0'),
+                        $brand,
+                        $model,
+                        $serial,
+                    ]);
+
+                    if (!isset($grouped[$groupKey])) {
+                        $grouped[$groupKey] = [
+                            'ris_id' => $ris->id,
+                            'asset_request_detail_id' => (int) $detail->RequestDetailID,
+                            'inventory_detail_id' => $detail->PropertyInventoryDetailID ? (int) $detail->PropertyInventoryDetailID : null,
+                            'stock_no' => $stockNo,
+                            'unit' => $unitName,
+                            'description' => $description,
+                            'quantity_requested' => $qtyRequested,
+                            'stock_available' => (bool) ($detail->IsApprovedForIssuance ?? false),
+                            'quantity_issued' => 0,
+                            'issue_remarks' => trim((string) ($detail->AdminNotes ?? '')),
+                        ];
+                    } else {
+                        $grouped[$groupKey]['quantity_requested'] += (int) $qtyRequested;
+                    }
+
+                    continue;
+                }
+
+                // Fallback: create individual item when no article/drDetail is available
                 $unitName = trim((string) ($inventoryDetail?->unitOfMeasure?->UnitName ?? $detail->Unit ?? '')) ?: 'N/A';
                 $description = trim((string) ($detail->ItemDescription ?? $inventoryDetail?->Description ?? '')) ?: 'N/A';
-                $stockNo = trim((string) ($inventoryDetail?->PropertyNumber ?? '')) ?: 'N/A';
                 $qtyRequested = (int) $detail->QuantityRequested;
-                // Availability tickbox is captured from admin review checkbox.
-                // Unchecked items must be included but marked as NOT available.
                 $stockAvailable = (bool) ($detail->IsApprovedForIssuance ?? false);
-                // Issue remarks must reflect the per-item Admin Notes.
                 $issueRemarks = trim((string) ($detail->AdminNotes ?? ''));
 
                 RequisitionIssueSlipItem::create([
@@ -225,12 +320,15 @@ class RequisitionIssueSlipController extends Controller
                 ]);
             }
 
+            // Persist grouped items
+            foreach ($grouped as $g) {
+                RequisitionIssueSlipItem::create($g);
+            }
+
             return $ris;
         });
 
-        // Copy signatures from the request into RIS signatures table (requested/approved).
-        $this->syncSignatureFromRequest((int) $assetRequest->RequestID, (int) $ris->id, 'requester', 'requested_by');
-        $this->syncSignatureFromRequest((int) $assetRequest->RequestID, (int) $ris->id, 'approver', 'approved_by');
+        // Signatures are not used in this deployment; skipping copying request signatures.
 
         $recipientUserIds = $this->getRisNotificationUserIds(
             (int) ($assetRequest->DepartmentID ?? 0),
@@ -287,8 +385,9 @@ class RequisitionIssueSlipController extends Controller
         $roleName = $user->userRole->RoleName ?? '';
 
         $ris = RequisitionIssueSlip::with([
-            'signatures.signedByUser:UserID,FullName',
             'items.requestDetail',
+            'items.inventoryDetail.drDetail.article',
+            'items.inventoryDetail.unitOfMeasure',
             'assetRequest.issuer:UserID,FullName',
             'assetRequest.reviewer:UserID,FullName',
             'assetRequest.requester:UserID,FullName,DepartmentID',
@@ -381,8 +480,7 @@ class RequisitionIssueSlipController extends Controller
 
     private function buildRisPayload(RequisitionIssueSlip $ris): array
     {
-        // Best-effort: keep issuer signature synced (linked from asset_request_signatures)
-        $this->syncSignatureFromRequest((int) $ris->asset_request_id, (int) $ris->id, 'issuer', 'issued_by');
+        // Signatures are not used in this deployment; do not attempt to sync issuer signature.
 
         $assetRequest = $ris->assetRequest;
 
@@ -414,7 +512,8 @@ class RequisitionIssueSlipController extends Controller
             ->orderByDesc('AcknowledgedAt')
             ->first(['IssuedTo', 'AcknowledgedAt', 'AcknowledgmentSignature', 'IssuedToName']);
 
-        $signatures = $ris->signatures->keyBy('role');
+        // Signatures table is not present in this deployment; provide empty signatures collection.
+        $signatures = collect();
 
         return [
             'id' => $ris->id,
@@ -439,27 +538,64 @@ class RequisitionIssueSlipController extends Controller
                 'issuer' => $assetRequest->issuer,
             ] : null,
 
-            'items' => $ris->items->map(function ($item) use ($issuedByDetail, $issuedByRisItem) {
-                $reqId = (int) $item->asset_request_detail_id;
-                $qtyReq = (int) $item->quantity_requested;
-                $qtyIssued = isset($issuedByRisItem[(int) $item->id])
-                    ? (int) $issuedByRisItem[(int) $item->id]
-                    : (int) ($issuedByDetail[$reqId] ?? 0);
-                // stock_available is the availability tickbox captured at RIS preparation time.
-                $stockAvailable = (bool) $item->stock_available;
+            'items' => (function () use ($ris, $issuedByDetail, $issuedByRisItem) {
+                $groups = [];
 
-                return [
-                    'id' => $item->id,
-                    'asset_request_detail_id' => $item->asset_request_detail_id,
-                    'stock_no' => $item->stock_no,
-                    'unit' => $item->unit,
-                    'description' => $item->description,
-                    'quantity_requested' => $qtyReq,
-                    'stock_available' => $stockAvailable,
-                    'quantity_issued' => $qtyIssued,
-                    'issue_remarks' => (string) ($item->issue_remarks ?? ''),
-                ];
-            })->values(),
+                foreach ($ris->items as $item) {
+                    $inv = $item->inventoryDetail ?? null;
+                    $drd = $inv?->drDetail ?? null;
+                    $article = $drd?->article ?? null;
+
+                    if ($article) {
+                        $brand = trim((string) ($drd->Brand ?? $inv->Brand ?? ''));
+                        $model = trim((string) ($drd->ModelNumber ?? $inv->ModelNumber ?? ''));
+                        $serial = trim((string) ($drd->SerialNumber ?? $inv->SerialNumber ?? ''));
+                        $desc = trim((string) ($article->ArticleName ?? $article->Description ?? $item->description ?? '')) ?: 'N/A';
+                        $unit = trim((string) ($inv?->unitOfMeasure?->UnitName ?? $item->unit ?? '')) ?: 'N/A';
+
+                        $key = implode('|', [(string) ($article->ArticleID ?? '0'), $brand, $model, $serial, $unit]);
+                    } else {
+                        $desc = trim((string) ($item->description ?? '')) ?: 'N/A';
+                        $brand = $model = $serial = '';
+                        $unit = trim((string) ($item->unit ?? '')) ?: 'N/A';
+                        $key = implode('|', [$desc, $unit, (string) ($item->stock_no ?? '')]);
+                    }
+
+                    $qtyReq = (int) $item->quantity_requested;
+                    $qtyIssued = isset($issuedByRisItem[(int) $item->id]) ? (int) $issuedByRisItem[(int) $item->id] : (int) ($issuedByDetail[(int) $item->asset_request_detail_id] ?? 0);
+
+                    if (!isset($groups[$key])) {
+                        $groups[$key] = [
+                            'id' => null,
+                            'asset_request_detail_id' => $item->asset_request_detail_id,
+                            'stock_no' => $item->stock_no,
+                            'unit' => $unit,
+                            'description' => $desc,
+                            'brand' => $brand,
+                            'model' => $model,
+                            'serial' => $serial,
+                                'property_numbers' => $item->stock_no ? [trim((string) $item->stock_no)] : [],
+                            'quantity_requested' => $qtyReq,
+                            'stock_available' => (bool) $item->stock_available,
+                            'quantity_issued' => $qtyIssued,
+                            'issue_remarks' => trim((string) ($item->issue_remarks ?? '')),
+                        ];
+                    } else {
+                        $groups[$key]['quantity_requested'] += $qtyReq;
+                        $groups[$key]['quantity_issued'] += $qtyIssued;
+                        // keep stock_available true if any grouped item is available
+                        $groups[$key]['stock_available'] = $groups[$key]['stock_available'] || (bool) $item->stock_available;
+                            // collect unique property numbers
+                            $prop = $item->stock_no ? trim((string) $item->stock_no) : null;
+                            if ($prop && !in_array($prop, $groups[$key]['property_numbers'], true)) {
+                                $groups[$key]['property_numbers'][] = $prop;
+                            }
+                    }
+                }
+
+                // Return grouped items as indexed array
+                return array_values($groups);
+            })(),
 
             'signatures' => [
                 'requested_by' => $signatures->get('requested_by') ? [
