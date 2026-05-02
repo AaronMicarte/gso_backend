@@ -306,6 +306,87 @@ class AuthController extends Controller
     }
 
     /**
+     * Mobile login endpoint for native apps that returns a Sanctum token.
+     * This is separate from the session-based `login` method used by the SPA.
+     */
+    public function mobileLogin(Request $request)
+    {
+        try {
+            $request->validate([
+                'username' => 'required|string',
+                'password' => 'required|string',
+                'device_token' => 'nullable|string|max:255',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        }
+
+        $user = User::where('Username', $request->username)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        if (!$user->IsActive) {
+            return response()->json([
+                'message' => 'Account is disabled. Please contact your GSO Admin.',
+                'account_disabled' => true,
+            ], 403);
+        }
+
+        if (!$user->EmailVerifiedAt) {
+            return response()->json([
+                'message' => 'Account activation required. Please check your email for the activation link.',
+                'activation_required' => true,
+            ], 403);
+        }
+
+        if (!Hash::check($request->password, $user->Password)) {
+            return response()->json(['message' => 'Invalid credentials'], 401);
+        }
+
+        // Create a personal access token for the mobile client
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        // Optionally persist device token for push or trusted device flows
+        if ($request->filled('device_token')) {
+            try {
+                $user->pushTokens()->create([
+                    'Token' => $request->input('device_token'),
+                    'Provider' => 'expo',
+                ]);
+            } catch (\Throwable $_) {
+                // ignore push token persistence errors
+            }
+        }
+
+        // Return token + user payload
+        return response()->json([
+            'message' => 'Login successful',
+            'token' => $token,
+            'mfa_required' => false,
+            'user' => [
+                'UserID' => $user->UserID,
+                'Username' => $user->Username,
+                'Email' => $user->Email,
+                'FullName' => $user->FullName ?? $user->Username,
+                'Role' => $user->userRole->RoleName ?? 'N/A',
+                'UserRoleID' => $user->UserRoleID,
+                'Department' => $user->department->DepartmentName ?? 'N/A',
+                'DepartmentID' => $user->DepartmentID,
+                'MFAEnabled' => (bool) $user->MFAEnabled,
+                'department' => [
+                    'DepartmentID' => $user->department->DepartmentID ?? 0,
+                    'DepartmentName' => $user->department->DepartmentName ?? 'N/A',
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Activate account using emailed token, verify email, and set a new password.
      * Public endpoint.
      */

@@ -146,7 +146,14 @@ class RpcInventoryController extends Controller
     public function previewScan(Request $request, int $id): JsonResponse
     {
         $this->authorizeGso();
-        $cycle = RpcInventoryCycle::findOrFail($id);
+        
+        $cycle = RpcInventoryCycle::find($id);
+        if (!$cycle) {
+            return response()->json([
+                'message' => "Inventory cycle with ID {$id} not found. Please create or select a valid cycle.",
+                'cycle_id' => $id,
+            ], 404);
+        }
 
         $validated = $request->validate([
             'property_id' => 'nullable|integer|min:1',
@@ -161,6 +168,14 @@ class RpcInventoryController extends Controller
             ? trim((string) $validated['property_number'])
             : null;
 
+        \Log::debug('RPC inventory scan preview request', [
+            'cycle_id' => $id,
+            'property_id' => $propertyId,
+            'inventory_detail_id' => $inventoryDetailId,
+            'property_number' => $propertyNumber,
+            'qr_value' => $validated['qr_value'] ?? null,
+        ]);
+
         if (!$propertyId && !empty($validated['qr_value'])) {
             $propertyId = $this->extractPropertyId((string) $validated['qr_value']);
             if (!$propertyId && !$propertyNumber) {
@@ -168,8 +183,11 @@ class RpcInventoryController extends Controller
             }
         }
 
-        if (!$propertyId && !$propertyNumber) {
-            return response()->json(['message' => 'Unable to determine property from scan input'], 422);
+        if (!$propertyId && !$propertyNumber && !$inventoryDetailId) {
+            return response()->json([
+                'message' => 'Unable to determine property from scan input. Provide property ID, inventory detail ID, property number, or QR value.',
+                'received' => $validated,
+            ], 422);
         }
 
         $mapped = null;
@@ -202,7 +220,19 @@ class RpcInventoryController extends Controller
         }
 
         if (!$mapped) {
-            return response()->json(['message' => 'Property not found for the provided input'], 404);
+            $debug = [
+                'input_property_id' => $propertyId,
+                'input_inventory_detail_id' => $inventoryDetailId,
+                'input_property_number' => $propertyNumber,
+                'qr_value' => $validated['qr_value'] ?? null,
+            ];
+            
+            \Log::warning('RPC inventory scan preview: property not found', $debug);
+            
+            return response()->json([
+                'message' => 'Property not found for the provided input. Verify the scanned QR code, property ID, or property number exists.',
+                'input' => $debug,
+            ], 404);
         }
 
         $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
@@ -621,16 +651,43 @@ class RpcInventoryController extends Controller
             return null;
         }
 
+        // Only accept direct numeric IDs, not property numbers with dashes or letters
         if (ctype_digit($value)) {
             $id = (int) $value;
             return $id > 0 ? $id : null;
         }
 
+        // Match /qr/scan/{propertyId} URLs
         if (preg_match('/\/qr\/scan\/(\d+)/', $value, $matches) === 1 && isset($matches[1])) {
             $id = (int) $matches[1];
             return $id > 0 ? $id : null;
         }
 
+        // Handle full URLs with query parameters or inventory paths
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            $parts = parse_url($value);
+            
+            // First priority: ?detail={inventoryDetailId} query parameter
+            if (!empty($parts['query'])) {
+                parse_str($parts['query'], $query);
+                if (!empty($query['detail']) && ctype_digit((string) $query['detail'])) {
+                    $detailId = (int) $query['detail'];
+                    return $detailId > 0 ? $detailId : null;
+                }
+            }
+
+            // Second priority: /inventory/{inventoryDetailId} path pattern
+            if (!empty($parts['path'])) {
+                if (preg_match('/\/inventory\/(\d+)/', $parts['path'], $m2) === 1 && isset($m2[1])) {
+                    $id2 = (int) $m2[1];
+                    return $id2 > 0 ? $id2 : null;
+                }
+            }
+        }
+
+        // For non-URLs, do NOT attempt to extract random numbers - return null
+        // to allow the backend to treat this as a property_number instead.
+        // This prevents "2026-000002" from being incorrectly parsed as "2026".
         return null;
     }
 
@@ -1333,5 +1390,174 @@ class RpcInventoryController extends Controller
         }
 
         return 'RPCSEP';
+    }
+
+    /**
+     * Bulk sync endpoint for mobile offline-first scanning.
+     * Accepts array of scans with client_uuid for idempotent deduplication.
+     */
+    public function bulkStoreScan(Request $request, int $id): JsonResponse
+    {
+        $user = $this->authorizeGso();
+        $cycle = RpcInventoryCycle::findOrFail($id);
+
+        $validated = $request->validate([
+            'scans' => 'required|array|min:1|max:100',
+            'scans.*.client_uuid' => 'nullable|string|max:36',
+            'scans.*.inventory_detail_id' => 'nullable|integer|min:1',
+            'scans.*.property_id' => 'nullable|integer|min:1',
+            'scans.*.condition_id' => 'required|integer|exists:condition,ConditionID',
+            'scans.*.scanned_at' => 'nullable|date_format:Y-m-d\TH:i:s\Z',
+            'scans.*.remarks' => 'nullable|string|max:255',
+            'scans.*.device_id' => 'nullable|string|max:100',
+        ]);
+
+        $results = [];
+        $createdCount = 0;
+        $duplicateCount = 0;
+        $errorCount = 0;
+
+        DB::transaction(function () use (
+            &$results,
+            &$createdCount,
+            &$duplicateCount,
+            &$errorCount,
+            $cycle,
+            $validated,
+            $user
+        ): void {
+            foreach ($validated['scans'] as $scanData) {
+                $clientUuid = isset($scanData['client_uuid']) ? trim((string) $scanData['client_uuid']) : null;
+                $inventoryDetailId = isset($scanData['inventory_detail_id']) ? (int) $scanData['inventory_detail_id'] : null;
+                $propertyId = isset($scanData['property_id']) ? (int) $scanData['property_id'] : null;
+                $conditionId = (int) $scanData['condition_id'];
+                $deviceId = isset($scanData['device_id']) ? trim((string) $scanData['device_id']) : null;
+                $scannedAt = isset($scanData['scanned_at']) ? Carbon::parse($scanData['scanned_at']) : now();
+                $remarks = isset($scanData['remarks']) ? trim((string) $scanData['remarks']) : null;
+
+                try {
+                    // Check for duplicate by client_uuid if provided
+                    if ($clientUuid) {
+                        $existing = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
+                            ->where('client_uuid', $clientUuid)
+                            ->first();
+
+                        if ($existing) {
+                            $results[] = [
+                                'client_uuid' => $clientUuid,
+                                'status' => 'duplicate',
+                                'message' => 'Scan already recorded with this client UUID in this cycle',
+                                'scan_id' => (int) $existing->id,
+                            ];
+                            $duplicateCount++;
+                            continue;
+                        }
+                    }
+
+                    // Resolve inventory detail
+                    if (!$inventoryDetailId && !$propertyId) {
+                        $results[] = [
+                            'client_uuid' => $clientUuid,
+                            'status' => 'error',
+                            'message' => 'Inventory Detail ID or Property ID is required',
+                        ];
+                        $errorCount++;
+                        continue;
+                    }
+
+                    $inventoryDetail = null;
+                    if ($inventoryDetailId) {
+                        $inventoryDetail = $this->resolveInventoryDetailById($inventoryDetailId);
+                    } elseif ($propertyId) {
+                        $assignedProperty = $this->resolveAssignedProperty($propertyId);
+                        if ($assignedProperty) {
+                            $inventoryDetail = $assignedProperty->inventoryDetail;
+                        }
+                    }
+
+                    if (!$inventoryDetail) {
+                        $results[] = [
+                            'client_uuid' => $clientUuid,
+                            'status' => 'error',
+                            'message' => 'Inventory item not found',
+                        ];
+                        $errorCount++;
+                        continue;
+                    }
+
+                    // Map the inventory detail
+                    $mapped = $this->mapInventoryDetail($inventoryDetail);
+
+                    // Check if already scanned in this cycle (regardless of client_uuid)
+                    $alreadyScanned = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
+                        ->where('inventory_detail_id', (int) $inventoryDetail->InventoryDetailID)
+                        ->first();
+
+                    if ($alreadyScanned) {
+                        $results[] = [
+                            'client_uuid' => $clientUuid,
+                            'status' => 'duplicate',
+                            'message' => 'Inventory detail already scanned in this cycle',
+                            'scan_id' => (int) $alreadyScanned->id,
+                        ];
+                        $duplicateCount++;
+                        continue;
+                    }
+
+                    // Create the scan
+                    $scan = RpcInventoryScan::create([
+                        'rpc_inventory_cycle_id' => (int) $cycle->id,
+                        'inventory_detail_id' => (int) $inventoryDetail->InventoryDetailID,
+                        'property_id' => isset($mapped['property_id']) && $mapped['property_id'] !== null ? (int) $mapped['property_id'] : null,
+                        'rpc_type' => (string) $mapped['rpc_type'],
+                        'property_classification_id' => isset($mapped['property_classification_id']) && $mapped['property_classification_id'] !== null
+                            ? (int) $mapped['property_classification_id']
+                            : null,
+                        'condition_id' => $conditionId,
+                        'scanned_at' => $scannedAt,
+                        'scanned_by_user_id' => (int) $user->UserID,
+                        'end_user_id' => isset($mapped['end_user_id']) && $mapped['end_user_id'] !== null ? (int) $mapped['end_user_id'] : null,
+                        'department_id' => isset($mapped['department_id']) && $mapped['department_id'] !== null ? (int) $mapped['department_id'] : null,
+                        'article' => $mapped['article'] ?? null,
+                        'description' => $mapped['description'] ?? null,
+                        'property_number' => $mapped['property_number'] ?? null,
+                        'unit_of_measure' => $mapped['unit_of_measure'] ?? null,
+                        'unit_value' => $mapped['unit_value'] ?? null,
+                        'quantity_per_card' => 1,
+                        'quantity_per_count' => 1,
+                        'remarks' => $remarks,
+                        'accountable_officer' => $mapped['accountable_officer'] ?? null,
+                        'client_uuid' => $clientUuid,
+                        'device_id' => $deviceId,
+                    ]);
+
+                    $results[] = [
+                        'client_uuid' => $clientUuid,
+                        'status' => 'created',
+                        'message' => 'Scan recorded successfully',
+                        'scan_id' => (int) $scan->id,
+                    ];
+                    $createdCount++;
+                } catch (\Exception $e) {
+                    $results[] = [
+                        'client_uuid' => $clientUuid,
+                        'status' => 'error',
+                        'message' => 'Error creating scan: ' . $e->getMessage(),
+                    ];
+                    $errorCount++;
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => "Bulk sync processed: {$createdCount} created, {$duplicateCount} skipped, {$errorCount} errors",
+            'summary' => [
+                'total' => count($validated['scans']),
+                'created' => $createdCount,
+                'duplicates' => $duplicateCount,
+                'errors' => $errorCount,
+            ],
+            'results' => $results,
+        ], 201);
     }
 }

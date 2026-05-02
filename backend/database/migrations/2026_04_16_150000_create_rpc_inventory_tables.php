@@ -52,6 +52,10 @@ return new class extends Migration
             $table->string('remarks', 255)->nullable();
             $table->string('accountable_officer', 255)->nullable();
 
+            // Mobile offline-first support
+            $table->uuid('client_uuid')->unique()->nullable();
+            $table->string('device_id', 100)->nullable();
+
             $table->timestamps();
 
             $table->unique(['rpc_inventory_cycle_id', 'inventory_detail_id'], 'rpc_inventory_cycle_detail_unique');

@@ -28,6 +28,8 @@ class RpcInventoryScan extends Model
         'quantity_per_count',
         'remarks',
         'accountable_officer',
+        'client_uuid',
+        'device_id',
     ];
 
     protected $casts = [

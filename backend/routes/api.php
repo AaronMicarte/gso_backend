@@ -54,6 +54,9 @@ Route::get('/test-connection', function () {
 // Public account activation routes
 Route::post('/auth/activate-account', [AuthController::class, 'activateAccount']);
 
+// Mobile token login (for native/mobile clients)
+Route::post('/auth/mobile-login', [AuthController::class, 'mobileLogin']);
+
 // Public MFA routes (for login flow)
 Route::post('/mfa/verify', [MFAController::class, 'verifyCode']);
 Route::post('/mfa/setup/generate', [AuthController::class, 'generateMFASecretForLogin']);
@@ -328,6 +331,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('cycles/{id}/scans', [RpcInventoryController::class, 'scans']);
         Route::post('cycles/{id}/scan-preview', [RpcInventoryController::class, 'previewScan']);
         Route::post('cycles/{id}/scans', [RpcInventoryController::class, 'storeScan']);
+        Route::post('cycles/{id}/scans/bulk', [RpcInventoryController::class, 'bulkStoreScan']);
         Route::get('cycles/{id}/report', [RpcInventoryController::class, 'report']);
 
         Route::patch('scans/{scanId}', [RpcInventoryController::class, 'updateScan']);
