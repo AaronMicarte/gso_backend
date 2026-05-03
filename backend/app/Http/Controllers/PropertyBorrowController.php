@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Throwable;
 
 class PropertyBorrowController extends Controller
@@ -1138,7 +1139,50 @@ class PropertyBorrowController extends Controller
             });
         }
 
-        $items = $query->orderByDesc('assignedproperty.PropertyID')->paginate($perPage);
+        $rawItems = $query->orderByDesc('assignedproperty.PropertyID')->get();
+
+        $groupedBuckets = [];
+        foreach ($rawItems as $item) {
+            $itemDescription = (string) ($item->ItemDescription
+                ?? $item->InventoryDescription
+                ?? $item->AssignedDescription
+                ?? 'Item');
+
+            $groupKey = implode('||', [
+                strtolower((string) ($item->ArticleName ?? 'no-article')),
+                strtolower((string) ($item->Brand ?? 'no-brand')),
+                strtolower((string) ($item->ModelNumber ?? 'no-model')),
+                strtolower($itemDescription),
+                strtolower((string) ($item->UnitName ?? 'unit')),
+            ]);
+
+            if (!array_key_exists($groupKey, $groupedBuckets)) {
+                $groupedBuckets[$groupKey] = collect();
+            }
+
+            $groupedBuckets[$groupKey]->push($item);
+        }
+
+        $groupCollections = array_values($groupedBuckets);
+        $totalGroups = count($groupCollections);
+        $currentPage = max(1, (int) $request->query('page', 1));
+        $offset = ($currentPage - 1) * $perPage;
+        $pagedGroups = array_slice($groupCollections, $offset, $perPage);
+
+        $pagedItems = collect($pagedGroups)->reduce(function ($carry, $groupItems) {
+            return $carry->concat($groupItems);
+        }, collect())->values();
+
+        $items = new LengthAwarePaginator(
+            $pagedItems,
+            $totalGroups,
+            $perPage,
+            $currentPage,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         return response()->json($items);
     }
