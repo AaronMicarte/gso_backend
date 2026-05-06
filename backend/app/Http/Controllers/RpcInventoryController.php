@@ -119,8 +119,10 @@ class RpcInventoryController extends Controller
             ->where('rpc_inventory_cycle_id', (int) $cycle->id)
             ->leftJoin('propertyinventorydetail as invd', 'invd.InventoryDetailID', '=', 'rpc_inventory_scans.inventory_detail_id')
             ->leftJoin('propertytype as pt', 'pt.PropertyTypeID', '=', 'invd.PropertyTypeID')
+            ->leftJoin('department as dep', 'dep.DepartmentID', '=', 'rpc_inventory_scans.department_id')
             ->select('rpc_inventory_scans.*')
             ->selectRaw('pt.PropertyName as property_type')
+            ->selectRaw('dep.DepartmentName as department_name')
             ->with(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName'])
             ->orderByDesc('scanned_at')
             ->orderByDesc('id');
@@ -140,7 +142,23 @@ class RpcInventoryController extends Controller
             $query->where('rpc_type', $type);
         }
 
-        return response()->json($query->paginate($perPage));
+        $paginator = $query->paginate($perPage);
+        $paginator->getCollection()->transform(function (RpcInventoryScan $scan) {
+            $departmentName = is_string($scan->department_name ?? null) ? trim((string) $scan->department_name) : '';
+            $officerName = is_string($scan->accountable_officer) ? trim($scan->accountable_officer) : '';
+
+            if ($officerName !== '' && $departmentName !== '') {
+                $scan->accountable_officer = $officerName . ' - ' . $departmentName;
+            } elseif ($departmentName !== '' && $officerName === '') {
+                $scan->accountable_officer = $departmentName;
+            }
+
+            $scan->created_month = $scan->scanned_at?->timezone('Asia/Manila')?->format('F Y');
+
+            return $scan;
+        });
+
+        return response()->json($paginator);
     }
 
     public function previewScan(Request $request, int $id): JsonResponse
@@ -796,7 +814,10 @@ class RpcInventoryController extends Controller
             'property_number' => $detail?->PropertyNumber,
             'unit_of_measure' => $detail?->unitOfMeasure?->UnitName,
             'unit_value' => $detail?->UnitCost !== null ? (float) $detail->UnitCost : null,
-            'accountable_officer' => $this->resolveCurrentDepartmentOfficerName($departmentId, $baseName),
+            'accountable_officer' => $this->composeOfficerDisplayName(
+                $this->resolveCurrentDepartmentOfficerName($departmentId, $baseName),
+                $property->department?->DepartmentName ?: ($fallback['department_name'] ?? null)
+            ),
             'end_user_id' => $property->EndUserID ? (int) $property->EndUserID : null,
             'department_id' => $departmentId,
             'department_name' => $property->department?->DepartmentName ?: ($fallback['department_name'] ?? null),
@@ -841,11 +862,30 @@ class RpcInventoryController extends Controller
             'property_number' => $detail->PropertyNumber,
             'unit_of_measure' => $detail->unitOfMeasure?->UnitName,
             'unit_value' => $detail->UnitCost !== null ? (float) $detail->UnitCost : null,
-            'accountable_officer' => $this->resolveCurrentDepartmentOfficerName($departmentId, $baseName),
+            'accountable_officer' => $this->composeOfficerDisplayName(
+                $this->resolveCurrentDepartmentOfficerName($departmentId, $baseName),
+                $latestAssigned?->department?->DepartmentName ?: ($fallback['department_name'] ?? null)
+            ),
             'end_user_id' => $latestAssigned?->EndUserID ? (int) $latestAssigned->EndUserID : null,
             'department_id' => $departmentId,
             'department_name' => $latestAssigned?->department?->DepartmentName ?: ($fallback['department_name'] ?? null),
         ];
+    }
+
+    private function composeOfficerDisplayName(?string $officerName, ?string $departmentName): ?string
+    {
+        $name = trim((string) $officerName);
+        $department = trim((string) $departmentName);
+
+        if ($name === '' && $department === '') {
+            return null;
+        }
+
+        if ($name !== '' && $department !== '') {
+            return $name . ' - ' . $department;
+        }
+
+        return $name !== '' ? $name : $department;
     }
 
     /**
@@ -1119,14 +1159,14 @@ class RpcInventoryController extends Controller
             $finalRow['shortage_overage_value'] = round($shortage * $unitValue, 2);
 
             $remarksList = array_keys($group['remarks']);
-            $finalRow['remarks'] = count($remarksList) <= 1
-                ? ($remarksList[0] ?? '-')
-                : 'mixed';
+            $finalRow['remarks'] = count($remarksList) > 0
+                ? $remarksList[0]
+                : '-';
 
             $conditionList = array_keys($group['conditions']);
-            $finalRow['condition'] = count($conditionList) <= 1
-                ? ($conditionList[0] ?? null)
-                : 'mixed';
+            $finalRow['condition'] = count($conditionList) > 0
+                ? $conditionList[0]
+                : null;
 
             $result[] = $finalRow;
         }
