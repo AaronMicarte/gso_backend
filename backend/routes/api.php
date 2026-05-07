@@ -333,6 +333,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('cycles/{id}/scans', [RpcInventoryController::class, 'storeScan']);
         Route::post('cycles/{id}/scans/bulk', [RpcInventoryController::class, 'bulkStoreScan']);
         Route::get('cycles/{id}/report', [RpcInventoryController::class, 'report']);
+        Route::get('cycles/{id}/audit-logs', [RpcInventoryController::class, 'auditLogs']);
 
         Route::patch('scans/{scanId}', [RpcInventoryController::class, 'updateScan']);
         Route::delete('scans/{scanId}', [RpcInventoryController::class, 'destroyScan']);

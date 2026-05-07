@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class RpcInventoryCycle extends Model
@@ -30,6 +31,11 @@ class RpcInventoryCycle extends Model
     public function scans()
     {
         return $this->hasMany(RpcInventoryScan::class, 'rpc_inventory_cycle_id', 'id');
+    }
+
+    public function auditLogs(): HasMany
+    {
+        return $this->hasMany(RpcInventoryAuditLog::class, 'rpc_inventory_cycle_id', 'id');
     }
 
     public function createdBy()

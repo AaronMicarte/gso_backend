@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 29, 2026 at 04:39 AM
+-- Generation Time: May 07, 2026 at 10:27 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -111,7 +111,8 @@ CREATE TABLE `assetrequest` (
 --
 
 INSERT INTO `assetrequest` (`RequestID`, `RequestNumber`, `RequestedBy`, `DepartmentID`, `Purpose`, `Status`, `ReviewedBy`, `ReviewedAt`, `ReviewNotes`, `IssuedBy`, `IssuedAt`, `RequestDate`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 'REQ-2026-DR-0088', 3, 30, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'issued', 1, '2026-04-29 02:22:06', 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-07 16:00:00', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL);
+(1, 'REQ-2026-DR-0088', 3, 30, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'issued', 1, '2026-04-29 02:22:06', 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-07 16:00:00', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
+(2, 'REQ-2026-DR-0090', 3, 30, 'Second batch of office, ICT, and maintenance items.', 'issued', 1, '2026-04-29 04:47:24', 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-11 16:00:00', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -156,7 +157,31 @@ INSERT INTO `assetrequestdetail` (`RequestDetailID`, `RequestID`, `PropertyInven
 (10, 1, 157, 'Wireless keyboard and mouse set', 'set', 1, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
 (11, 1, 158, 'Wireless keyboard and mouse set', 'set', 1, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
 (12, 1, 159, 'Wireless keyboard and mouse set', 'set', 1, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
-(13, 1, 160, 'Wireless keyboard and mouse set', 'set', 1, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL);
+(13, 1, 160, 'Wireless keyboard and mouse set', 'set', 1, 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
+(14, 2, 161, 'Laptop Computer', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'PAR', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(15, 2, 162, 'Filing Cabinet', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'PAR', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(16, 2, 163, 'Filing Cabinet', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'PAR', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(17, 2, 164, 'Projector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'PAR', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(18, 2, 165, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(19, 2, 166, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(20, 2, 167, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(21, 2, 168, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(22, 2, 169, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(23, 2, 170, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(24, 2, 171, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(25, 2, 172, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(26, 2, 173, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(27, 2, 174, '1.5L electric kettle', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(28, 2, 175, 'Portable wireless speaker', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(29, 2, 176, 'Portable wireless speaker', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(30, 2, 177, 'Portable wireless speaker', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(31, 2, 178, 'Portable wireless speaker', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(32, 2, 179, '6-outlet surge protector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(33, 2, 180, '6-outlet surge protector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(34, 2, 181, '6-outlet surge protector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(35, 2, 182, '6-outlet surge protector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(36, 2, 183, '6-outlet surge protector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(37, 2, 184, '6-outlet surge protector', 'unit', 1, 'Second batch of office, ICT, and maintenance items.', 'Chokoy Covid', 'Auto-generated from delivery receipt acknowledgment', 'ICS', 2, 30, 'Auto-generated from delivery receipt acknowledgment', 1, '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -789,7 +814,31 @@ INSERT INTO `assignedproperty` (`PropertyID`, `InventoryDetailID`, `EndUserID`, 
 (137, 157, 2, 30, 'ICS-2026-0001', 'Wireless keyboard and mouse set', '2026-04-29', 2, 1, 'Auto-created from DR inspection', '2026-04-29 10:22:06', '2026-04-29 10:22:06'),
 (138, 158, 2, 30, 'ICS-2026-0001', 'Wireless keyboard and mouse set', '2026-04-29', 2, 1, 'Auto-created from DR inspection', '2026-04-29 10:22:06', '2026-04-29 10:22:06'),
 (139, 159, 2, 30, 'ICS-2026-0001', 'Wireless keyboard and mouse set', '2026-04-29', 2, 1, 'Auto-created from DR inspection', '2026-04-29 10:22:06', '2026-04-29 10:22:06'),
-(140, 160, 2, 30, 'ICS-2026-0001', 'Wireless keyboard and mouse set', '2026-04-29', 2, 1, 'Auto-created from DR inspection', '2026-04-29 10:22:06', '2026-04-29 10:22:06');
+(140, 160, 2, 30, 'ICS-2026-0001', 'Wireless keyboard and mouse set', '2026-04-29', 2, 1, 'Auto-created from DR inspection', '2026-04-29 10:22:06', '2026-04-29 10:22:06'),
+(141, 161, 2, 30, 'PAR-2026-0017', 'Acer TravelMate P2', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(142, 162, 2, 30, 'PAR-2026-0017', '4-Drawer Steel Filing Cabinet', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(143, 163, 2, 30, 'PAR-2026-0017', '4-Drawer Steel Filing Cabinet', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(144, 164, 2, 30, 'PAR-2026-0017', 'Epson EB-X06', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(145, 165, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(146, 166, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(147, 167, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(148, 168, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(149, 169, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:23', '2026-04-29 12:47:23'),
+(150, 170, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(151, 171, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(152, 172, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(153, 173, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(154, 174, 2, 30, 'ICS-2026-0003', '1.5L electric kettle', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(155, 175, 2, 30, 'ICS-2026-0003', 'Portable wireless speaker', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(156, 176, 2, 30, 'ICS-2026-0003', 'Portable wireless speaker', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(157, 177, 2, 30, 'ICS-2026-0003', 'Portable wireless speaker', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(158, 178, 2, 30, 'ICS-2026-0003', 'Portable wireless speaker', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(159, 179, 2, 30, 'ICS-2026-0003', '6-outlet surge protector', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(160, 180, 2, 30, 'ICS-2026-0003', '6-outlet surge protector', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(161, 181, 2, 30, 'ICS-2026-0003', '6-outlet surge protector', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(162, 182, 2, 30, 'ICS-2026-0003', '6-outlet surge protector', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(163, 183, 2, 30, 'ICS-2026-0003', '6-outlet surge protector', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24'),
+(164, 184, 2, 30, 'ICS-2026-0003', '6-outlet surge protector', '2026-04-29', 2, 1, 'Auto-created from DR acknowledgment', '2026-04-29 12:47:24', '2026-04-29 12:47:24');
 
 -- --------------------------------------------------------
 
@@ -1546,7 +1595,21 @@ INSERT INTO `loginaudit` (`LoginAuditID`, `UserID`, `EventTime`, `Status`, `IPAd
 (186, 1, '2026-04-27 16:37:55', 'Login', '127.0.0.1'),
 (187, 1, '2026-04-27 22:57:28', 'Login', '127.0.0.1'),
 (188, 3, '2026-04-27 23:33:59', 'Login', '127.0.0.1'),
-(189, 1, '2026-04-29 10:21:26', 'Login', '127.0.0.1');
+(189, 1, '2026-04-29 10:21:26', 'Login', '127.0.0.1'),
+(190, 1, '2026-04-29 12:33:12', 'Login', '127.0.0.1'),
+(191, 1, '2026-04-30 14:18:49', 'Login', '127.0.0.1'),
+(192, 1, '2026-05-01 16:49:09', 'Login', '127.0.0.1'),
+(193, 1, '2026-05-01 16:49:17', 'Logout', '127.0.0.1'),
+(194, 1, '2026-05-01 21:32:37', 'Login', '127.0.0.1'),
+(195, 1, '2026-05-02 14:25:50', 'Login', '127.0.0.1'),
+(196, 1, '2026-05-02 22:50:17', 'Login', '127.0.0.1'),
+(197, 1, '2026-05-02 22:52:48', 'Login', '127.0.0.1'),
+(198, 1, '2026-05-02 23:03:39', 'Login', '127.0.0.1'),
+(199, 1, '2026-05-03 13:27:04', 'Login', '127.0.0.1'),
+(200, 1, '2026-05-03 19:03:04', 'Login', '127.0.0.1'),
+(201, 1, '2026-05-05 14:27:34', 'Login', '127.0.0.1'),
+(202, 1, '2026-05-06 15:10:00', 'Login', '127.0.0.1'),
+(203, 1, '2026-05-07 10:02:41', 'Login', '127.0.0.1');
 
 -- --------------------------------------------------------
 
@@ -1736,7 +1799,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (175, '2026_04_23_000002_align_requester_triggers_with_receiving_department', 77),
 (176, '2026_04_23_000003_add_completed_status_to_propertyborrow', 78),
 (177, '2026_04_24_000001_add_approved_quantity_to_transfer_and_borrow_items', 79),
-(178, '2026_04_25_000005_add_ris_item_id_to_propertyissuancedetail', 80);
+(178, '2026_04_25_000005_add_ris_item_id_to_propertyissuancedetail', 80),
+(179, '2026_04_30_000001_add_mobile_sync_to_rpc_inventory_scans', 81),
+(180, '2026_05_07_000001_create_rpc_inventory_audit_logs_table', 82);
 
 -- --------------------------------------------------------
 
@@ -1802,6 +1867,21 @@ CREATE TABLE `personal_access_tokens` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `personal_access_tokens`
+--
+
+INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `name`, `token`, `abilities`, `last_used_at`, `expires_at`, `created_at`, `updated_at`) VALUES
+(1, 'App\\Models\\Auth\\User', 1, 'mobile', '1616309680fd1f7cc12b54817efd2dd290e18b35c7c9f8cd4f8d1ad402ea6641', '[\"*\"]', '2026-05-01 15:28:13', NULL, '2026-05-01 10:14:50', '2026-05-01 15:28:13'),
+(2, 'App\\Models\\Auth\\User', 1, 'mobile', '433e3331d23eab466b1cdd7211c4168ceb0d22ce6015fc8b046b73eeb09407d1', '[\"*\"]', '2026-05-01 15:52:16', NULL, '2026-05-01 15:52:14', '2026-05-01 15:52:16'),
+(3, 'App\\Models\\Auth\\User', 1, 'mobile', 'b663ce3f31471ba78ef3a0bcdfed33439148c099f089773ba3bf0739a229f6e6', '[\"*\"]', '2026-05-01 16:19:54', NULL, '2026-05-01 15:52:49', '2026-05-01 16:19:54'),
+(4, 'App\\Models\\Auth\\User', 1, 'mobile', '4e86c0dbc34049aea13dfa205f630e6e6ed8f13da4cd54f66ccb1d7159b17ed2', '[\"*\"]', '2026-05-02 08:30:29', NULL, '2026-05-02 06:25:30', '2026-05-02 08:30:29'),
+(5, 'App\\Models\\Auth\\User', 1, 'mobile', 'c826540ecaa03e4be67fa70eb8876480b374f65329b3a7236d84481ecef016ad', '[\"*\"]', '2026-05-02 08:42:21', NULL, '2026-05-02 08:30:35', '2026-05-02 08:42:21'),
+(6, 'App\\Models\\Auth\\User', 1, 'mobile', 'bbb0ca9d9acb619cf3c19dc48802d6dc815acfe307343b078a53e9e7615ad9a9', '[\"*\"]', '2026-05-02 14:51:29', NULL, '2026-05-02 08:43:18', '2026-05-02 14:51:29'),
+(7, 'App\\Models\\Auth\\User', 1, 'mobile', 'c0bdac8c7d9e662b5ac7ffce326c1ee53638dfaac22f0245ee12e48105f2fdf8', '[\"*\"]', '2026-05-03 05:29:12', NULL, '2026-05-02 15:08:42', '2026-05-03 05:29:12'),
+(8, 'App\\Models\\Auth\\User', 1, 'mobile', 'f27fc41647add09e16ce2117a0804bec05f58680bf55eee91b4ef273402fcca8', '[\"*\"]', '2026-05-05 14:25:04', NULL, '2026-05-03 11:02:43', '2026-05-05 14:25:04'),
+(9, 'App\\Models\\Auth\\User', 1, 'mobile', 'c6441b5ffe0492a4aabe1246e77eac154b4c10d44d1e5b9e9a6a18561b253a18', '[\"*\"]', '2026-05-07 04:08:23', NULL, '2026-05-05 14:25:28', '2026-05-07 04:08:23');
 
 -- --------------------------------------------------------
 
@@ -2223,30 +2303,30 @@ INSERT INTO `propertyinventorydetail` (`InventoryDetailID`, `InventoryID`, `Prop
 (158, 54, 16, NULL, 'Wireless keyboard and mouse set', '2026-000131', NULL, 1, 0, 2, 3, 1250.00, 1250.00, NULL, 166, 1, 'LogiTech', 'KM-2026', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 10:22:06', NULL),
 (159, 54, 16, NULL, 'Wireless keyboard and mouse set', '2026-000132', NULL, 1, 0, 2, 3, 1250.00, 1250.00, NULL, 166, 1, 'LogiTech', 'KM-2026', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 10:22:06', NULL),
 (160, 54, 16, NULL, 'Wireless keyboard and mouse set', '2026-000133', NULL, 1, 0, 2, 3, 1250.00, 1250.00, NULL, 166, 1, 'LogiTech', 'KM-2026', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 10:22:06', NULL),
-(161, 55, 7, NULL, 'Acer TravelMate P2', '2026-000134', 'ACR-2026-004', 1, 1, 1, 2, 52000.00, 52000.00, NULL, 145, 1, 'Acer', 'TravelMate-P2', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(162, 55, 6, NULL, '4-Drawer Steel Filing Cabinet', '2026-000135', NULL, 1, 1, 1, 2, 11500.00, 11500.00, NULL, 151, 1, 'SteelSafe', 'FC-STL-4D', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(163, 55, 6, NULL, '4-Drawer Steel Filing Cabinet', '2026-000136', NULL, 1, 1, 1, 2, 11500.00, 11500.00, NULL, 151, 1, 'SteelSafe', 'FC-STL-4D', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(164, 55, 7, NULL, 'Epson EB-X06', '2026-000137', 'EPS-2026-005', 1, 1, 1, 2, 28500.00, 28500.00, NULL, 153, 1, 'Epson', 'EB-X06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(165, 55, 18, NULL, '1.5L electric kettle', '2026-000138', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(166, 55, 18, NULL, '1.5L electric kettle', '2026-000139', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(167, 55, 18, NULL, '1.5L electric kettle', '2026-000140', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(168, 55, 18, NULL, '1.5L electric kettle', '2026-000141', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(169, 55, 18, NULL, '1.5L electric kettle', '2026-000142', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(170, 55, 18, NULL, '1.5L electric kettle', '2026-000143', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(171, 55, 18, NULL, '1.5L electric kettle', '2026-000144', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(172, 55, 18, NULL, '1.5L electric kettle', '2026-000145', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(173, 55, 18, NULL, '1.5L electric kettle', '2026-000146', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(174, 55, 18, NULL, '1.5L electric kettle', '2026-000147', NULL, 1, 1, 1, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(175, 55, 20, NULL, 'Portable wireless speaker', '2026-000148', NULL, 1, 1, 1, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(176, 55, 20, NULL, 'Portable wireless speaker', '2026-000149', NULL, 1, 1, 1, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(177, 55, 20, NULL, 'Portable wireless speaker', '2026-000150', NULL, 1, 1, 1, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(178, 55, 20, NULL, 'Portable wireless speaker', '2026-000151', NULL, 1, 1, 1, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(179, 55, 22, NULL, '6-outlet surge protector', '2026-000152', NULL, 1, 1, 1, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(180, 55, 22, NULL, '6-outlet surge protector', '2026-000153', NULL, 1, 1, 1, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(181, 55, 22, NULL, '6-outlet surge protector', '2026-000154', NULL, 1, 1, 1, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(182, 55, 22, NULL, '6-outlet surge protector', '2026-000155', NULL, 1, 1, 1, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(183, 55, 22, NULL, '6-outlet surge protector', '2026-000156', NULL, 1, 1, 1, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
-(184, 55, 22, NULL, '6-outlet surge protector', '2026-000157', NULL, 1, 1, 1, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
+(161, 55, 7, NULL, 'Acer TravelMate P2', '2026-000134', 'ACR-2026-004', 1, 0, 2, 2, 52000.00, 52000.00, NULL, 145, 1, 'Acer', 'TravelMate-P2', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(162, 55, 6, NULL, '4-Drawer Steel Filing Cabinet', '2026-000135', NULL, 1, 0, 2, 2, 11500.00, 11500.00, NULL, 151, 1, 'SteelSafe', 'FC-STL-4D', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(163, 55, 6, NULL, '4-Drawer Steel Filing Cabinet', '2026-000136', NULL, 1, 0, 2, 2, 11500.00, 11500.00, NULL, 151, 1, 'SteelSafe', 'FC-STL-4D', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(164, 55, 7, NULL, 'Epson EB-X06', '2026-000137', 'EPS-2026-005', 1, 0, 2, 2, 28500.00, 28500.00, NULL, 153, 1, 'Epson', 'EB-X06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(165, 55, 18, NULL, '1.5L electric kettle', '2026-000138', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(166, 55, 18, NULL, '1.5L electric kettle', '2026-000139', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(167, 55, 18, NULL, '1.5L electric kettle', '2026-000140', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(168, 55, 18, NULL, '1.5L electric kettle', '2026-000141', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(169, 55, 18, NULL, '1.5L electric kettle', '2026-000142', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(170, 55, 18, NULL, '1.5L electric kettle', '2026-000143', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:23', NULL),
+(171, 55, 18, NULL, '1.5L electric kettle', '2026-000144', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(172, 55, 18, NULL, '1.5L electric kettle', '2026-000145', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(173, 55, 18, NULL, '1.5L electric kettle', '2026-000146', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(174, 55, 18, NULL, '1.5L electric kettle', '2026-000147', NULL, 1, 0, 2, 2, 560.00, 560.00, NULL, 157, 1, 'Hanabishi', 'EK-15', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(175, 55, 20, NULL, 'Portable wireless speaker', '2026-000148', NULL, 1, 0, 2, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(176, 55, 20, NULL, 'Portable wireless speaker', '2026-000149', NULL, 1, 0, 2, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(177, 55, 20, NULL, 'Portable wireless speaker', '2026-000150', NULL, 1, 0, 2, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(178, 55, 20, NULL, 'Portable wireless speaker', '2026-000151', NULL, 1, 0, 2, 2, 4200.00, 4200.00, NULL, 161, 1, 'JBL', 'PS-BOOST', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(179, 55, 22, NULL, '6-outlet surge protector', '2026-000152', NULL, 1, 0, 2, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(180, 55, 22, NULL, '6-outlet surge protector', '2026-000153', NULL, 1, 0, 2, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(181, 55, 22, NULL, '6-outlet surge protector', '2026-000154', NULL, 1, 0, 2, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(182, 55, 22, NULL, '6-outlet surge protector', '2026-000155', NULL, 1, 0, 2, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(183, 55, 22, NULL, '6-outlet surge protector', '2026-000156', NULL, 1, 0, 2, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
+(184, 55, 22, NULL, '6-outlet surge protector', '2026-000157', NULL, 1, 0, 2, 2, 420.00, 420.00, NULL, 163, 1, 'Panther', 'SP-06', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', '2026-04-29 12:47:24', NULL),
 (185, 56, 6, NULL, 'Laminate Office Desk', '2026-000158', NULL, 1, 1, 1, 2, 8500.00, 8500.00, NULL, 147, 1, 'Prime Office', 'OD-PRM-140', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
 (186, 56, 6, NULL, 'Laminate Office Desk', '2026-000159', NULL, 1, 1, 1, 2, 8500.00, 8500.00, NULL, 147, 1, 'Prime Office', 'OD-PRM-140', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
 (187, 56, 6, NULL, 'Laminate Office Desk', '2026-000160', NULL, 1, 1, 1, 2, 8500.00, 8500.00, NULL, 147, 1, 'Prime Office', 'OD-PRM-140', 'Recorded from approved delivery and inspection documentation', '2026-04-27 23:26:20', NULL, NULL),
@@ -2367,7 +2447,11 @@ INSERT INTO `propertyissuance` (`IssuanceID`, `RequestID`, `DRID`, `IssuedBy`, `
 (20, 1, 88, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0015', 'acknowledged', '2026-04-08', 'Auto-created from DR inspection', NULL, '2026-04-29 10:22:06', 1, NULL, NULL, '2026-04-27 23:35:54'),
 (21, 1, 88, 1, NULL, NULL, 2, 'Chokoy Covid', 'ICS', 'ICS-2026-0001', 'acknowledged', '2026-04-08', 'Auto-created from DR inspection', NULL, '2026-04-29 10:22:06', 1, NULL, NULL, '2026-04-27 23:35:54'),
 (22, NULL, 91, 1, NULL, NULL, 4, 'Cyron Micarte', 'PAR', 'PAR-2026-0016', 'acknowledged', '2026-04-20', 'Auto-created from DR inspection', NULL, '2026-04-28 00:39:44', 1, NULL, NULL, '2026-04-27 23:42:36'),
-(23, NULL, 91, 1, NULL, NULL, 4, 'Cyron Micarte', 'ICS', 'ICS-2026-0002', 'acknowledged', '2026-04-20', 'Auto-created from DR inspection', NULL, '2026-04-28 00:39:44', 1, NULL, NULL, '2026-04-27 23:42:36');
+(23, NULL, 91, 1, NULL, NULL, 4, 'Cyron Micarte', 'ICS', 'ICS-2026-0002', 'acknowledged', '2026-04-20', 'Auto-created from DR inspection', NULL, '2026-04-28 00:39:44', 1, NULL, NULL, '2026-04-27 23:42:36'),
+(24, 2, 90, 1, NULL, NULL, 2, 'Chokoy Covid', 'PAR', 'PAR-2026-0017', 'acknowledged', '2026-04-29', 'Auto-created from DR acknowledgment', NULL, '2026-04-29 12:47:23', 1, NULL, NULL, '2026-04-29 12:47:23'),
+(25, 2, 90, 1, NULL, NULL, 2, 'Chokoy Covid', 'ICS', 'ICS-2026-0003', 'acknowledged', '2026-04-29', 'Auto-created from DR acknowledgment', NULL, '2026-04-29 12:47:23', 1, NULL, NULL, '2026-04-29 12:47:23'),
+(26, NULL, 89, 1, NULL, NULL, 4, 'Cyron Micarte', 'PAR', 'PAR-2026-0018', 'pending_acknowledgment', '2026-04-16', 'Auto-created from DR inspection', NULL, NULL, NULL, NULL, NULL, '2026-04-29 14:20:50'),
+(27, NULL, 89, 1, NULL, NULL, 4, 'Cyron Micarte', 'ICS', 'ICS-2026-0004', 'pending_acknowledgment', '2026-04-16', 'Auto-created from DR inspection', NULL, NULL, NULL, NULL, NULL, '2026-04-29 14:20:50');
 
 -- --------------------------------------------------------
 
@@ -2530,7 +2614,53 @@ INSERT INTO `propertyissuancedetail` (`IssuanceDetailID`, `IssuanceID`, `Request
 (138, 23, NULL, NULL, 'RJ45 LAN cable bundle', 'set', 250, 1, 'Auto-created from DR inspection', '2026-04-27 15:42:36', '2026-04-27 15:42:36', NULL),
 (139, 23, NULL, NULL, 'RJ45 LAN cable bundle', 'set', 251, 1, 'Auto-created from DR inspection', '2026-04-27 15:42:36', '2026-04-27 15:42:36', NULL),
 (140, 23, NULL, NULL, 'RJ45 LAN cable bundle', 'set', 252, 1, 'Auto-created from DR inspection', '2026-04-27 15:42:36', '2026-04-27 15:42:36', NULL),
-(141, 23, NULL, NULL, 'RJ45 LAN cable bundle', 'set', 253, 1, 'Auto-created from DR inspection', '2026-04-27 15:42:36', '2026-04-27 15:42:36', NULL);
+(141, 23, NULL, NULL, 'RJ45 LAN cable bundle', 'set', 253, 1, 'Auto-created from DR inspection', '2026-04-27 15:42:36', '2026-04-27 15:42:36', NULL),
+(142, 24, 14, 14, 'Laptop Computer', 'unit', 161, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(143, 24, 15, 15, 'Filing Cabinet', 'unit', 162, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(144, 24, 16, 16, 'Filing Cabinet', 'unit', 163, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(145, 24, 17, 17, 'Projector', 'unit', 164, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(146, 25, 18, 18, '1.5L electric kettle', 'unit', 165, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(147, 25, 19, 19, '1.5L electric kettle', 'unit', 166, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(148, 25, 20, 20, '1.5L electric kettle', 'unit', 167, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(149, 25, 21, 21, '1.5L electric kettle', 'unit', 168, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(150, 25, 22, 22, '1.5L electric kettle', 'unit', 169, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(151, 25, 23, 23, '1.5L electric kettle', 'unit', 170, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:23', '2026-04-29 04:47:24', NULL),
+(152, 25, 24, 24, '1.5L electric kettle', 'unit', 171, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(153, 25, 25, 25, '1.5L electric kettle', 'unit', 172, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(154, 25, 26, 26, '1.5L electric kettle', 'unit', 173, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(155, 25, 27, 27, '1.5L electric kettle', 'unit', 174, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(156, 25, 28, 28, 'Portable wireless speaker', 'unit', 175, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(157, 25, 29, 29, 'Portable wireless speaker', 'unit', 176, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(158, 25, 30, 30, 'Portable wireless speaker', 'unit', 177, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(159, 25, 31, 31, 'Portable wireless speaker', 'unit', 178, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(160, 25, 32, 32, '6-outlet surge protector', 'unit', 179, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(161, 25, 33, 33, '6-outlet surge protector', 'unit', 180, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(162, 25, 34, 34, '6-outlet surge protector', 'unit', 181, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(163, 25, 35, 35, '6-outlet surge protector', 'unit', 182, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(164, 25, 36, 36, '6-outlet surge protector', 'unit', 183, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(165, 25, 37, 37, '6-outlet surge protector', 'unit', 184, 1, 'Auto-created from DR acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(166, 26, NULL, NULL, 'Office Desk', 'unit', 185, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(167, 26, NULL, NULL, 'Office Desk', 'unit', 186, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(168, 26, NULL, NULL, 'Office Desk', 'unit', 187, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(169, 26, NULL, NULL, 'Office Desk', 'unit', 188, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(170, 26, NULL, NULL, 'Telephone Set', 'unit', 189, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(171, 26, NULL, NULL, 'Server Equipment', 'unit', 190, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(172, 27, NULL, NULL, 'Portable action camera', 'unit', 191, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(173, 27, NULL, NULL, 'Portable action camera', 'unit', 192, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(174, 27, NULL, NULL, 'Portable action camera', 'unit', 193, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(175, 27, NULL, NULL, 'Portable action camera', 'unit', 194, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(176, 27, NULL, NULL, 'Portable action camera', 'unit', 195, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(177, 27, NULL, NULL, 'Handheld label maker', 'unit', 196, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(178, 27, NULL, NULL, 'Handheld label maker', 'unit', 197, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(179, 27, NULL, NULL, 'Handheld label maker', 'unit', 198, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(180, 27, NULL, NULL, 'Handheld label maker', 'unit', 199, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(181, 27, NULL, NULL, 'Handheld label maker', 'unit', 200, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(182, 27, NULL, NULL, 'Handheld label maker', 'unit', 201, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(183, 27, NULL, NULL, 'Handheld label maker', 'unit', 202, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(184, 27, NULL, NULL, 'Handheld label maker', 'unit', 203, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(185, 27, NULL, NULL, 'Digital multimeter', 'unit', 204, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(186, 27, NULL, NULL, 'Digital multimeter', 'unit', 205, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL),
+(187, 27, NULL, NULL, 'Digital multimeter', 'unit', 206, 1, 'Auto-created from DR inspection', '2026-04-29 06:20:50', '2026-04-29 06:20:50', NULL);
 
 -- --------------------------------------------------------
 
@@ -2903,7 +3033,8 @@ INSERT INTO `property_card_entries` (`EntryID`, `InventoryDetailID`, `EntryDate`
 (36, 63, '2026-03-18 19:41:22', 'acquisition', 1, 0, 'PAR-2026-0009', 'GSO', 420.00, 420.00, 'Batch 4 additional non-expendable units.', 'opening', 63, 'opening:63', NULL, '2026-04-24 19:57:58'),
 (37, 27, '2026-04-24 19:41:23', 'borrow_return', 1, 0, 'PBR-RET-2026-0006', 'Returned to accountable office', 560.00, 560.00, 'Returned from borrow transaction', 'audit', 321, 'audit:321', 1, '2026-04-24 19:41:23'),
 (38, 147, '2026-04-24 19:57:58', 'transfer', 0, 1, 'PTR-2026-0012', 'Department #30 / EndUser #2', 19000.00, 19000.00, 'Transferred to receiving office', 'audit', 323, 'audit:323', 1, '2026-04-24 19:57:58'),
-(39, 63, '2026-04-24 19:57:58', 'transfer', 0, 1, 'PTR-2026-0012', 'Department #30 / EndUser #2', 420.00, 420.00, 'Shortfall reason: dili daw pwede', 'audit', 325, 'audit:325', 1, '2026-04-24 19:57:58');
+(39, 63, '2026-04-24 19:57:58', 'transfer', 0, 1, 'PTR-2026-0012', 'Department #30 / EndUser #2', 420.00, 420.00, 'Shortfall reason: dili daw pwede', 'audit', 325, 'audit:325', 1, '2026-04-24 19:57:58'),
+(40, 253, '2026-04-27 23:26:20', 'acquisition', 1, 0, 'IAR-2026-04-27-004', 'GSO', 980.00, 980.00, 'Recorded from approved delivery and inspection documentation', 'opening', 253, 'opening:253', NULL, '2026-04-30 20:28:25');
 
 -- --------------------------------------------------------
 
@@ -3119,7 +3250,31 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 (137, 137, 157, 30, 'http://localhost:3000/qr/scan/137?h=51ac2706150e', '2026-04-29 10:22:06'),
 (138, 138, 158, 30, 'http://localhost:3000/qr/scan/138?h=771a88a1a832', '2026-04-29 10:22:06'),
 (139, 139, 159, 30, 'http://localhost:3000/qr/scan/139?h=be7e756402b4', '2026-04-29 10:22:06'),
-(140, 140, 160, 30, 'http://localhost:3000/qr/scan/140?h=5e25974b7429', '2026-04-29 10:22:06');
+(140, 140, 160, 30, 'http://localhost:3000/qr/scan/140?h=5e25974b7429', '2026-04-29 10:22:06'),
+(141, 141, 161, 30, 'http://localhost:3000/qr/scan/141?h=31ef2a29cbe0', '2026-04-29 12:47:23'),
+(142, 142, 162, 30, 'http://localhost:3000/qr/scan/142?h=a40eb360ab73', '2026-04-29 12:47:23'),
+(143, 143, 163, 30, 'http://localhost:3000/qr/scan/143?h=79302f9dc954', '2026-04-29 12:47:23'),
+(144, 144, 164, 30, 'http://localhost:3000/qr/scan/144?h=f67466285cce', '2026-04-29 12:47:23'),
+(145, 145, 165, 30, 'http://localhost:3000/qr/scan/145?h=76e36e0867f9', '2026-04-29 12:47:23'),
+(146, 146, 166, 30, 'http://localhost:3000/qr/scan/146?h=650e8e865601', '2026-04-29 12:47:23'),
+(147, 147, 167, 30, 'http://localhost:3000/qr/scan/147?h=709945b54213', '2026-04-29 12:47:23'),
+(148, 148, 168, 30, 'http://localhost:3000/qr/scan/148?h=4167c4a92767', '2026-04-29 12:47:23'),
+(149, 149, 169, 30, 'http://localhost:3000/qr/scan/149?h=bb68cf85e150', '2026-04-29 12:47:23'),
+(150, 150, 170, 30, 'http://localhost:3000/qr/scan/150?h=b6a101a67686', '2026-04-29 12:47:24'),
+(151, 151, 171, 30, 'http://localhost:3000/qr/scan/151?h=23cdea53f870', '2026-04-29 12:47:24'),
+(152, 152, 172, 30, 'http://localhost:3000/qr/scan/152?h=3c9af264dee5', '2026-04-29 12:47:24'),
+(153, 153, 173, 30, 'http://localhost:3000/qr/scan/153?h=f7e265eb40bb', '2026-04-29 12:47:24'),
+(154, 154, 174, 30, 'http://localhost:3000/qr/scan/154?h=43464ddc4683', '2026-04-29 12:47:24'),
+(155, 155, 175, 30, 'http://localhost:3000/qr/scan/155?h=61afa6199437', '2026-04-29 12:47:24'),
+(156, 156, 176, 30, 'http://localhost:3000/qr/scan/156?h=40e29d0cdbe2', '2026-04-29 12:47:24'),
+(157, 157, 177, 30, 'http://localhost:3000/qr/scan/157?h=20cb12dd3d20', '2026-04-29 12:47:24'),
+(158, 158, 178, 30, 'http://localhost:3000/qr/scan/158?h=9e0d6a537716', '2026-04-29 12:47:24'),
+(159, 159, 179, 30, 'http://localhost:3000/qr/scan/159?h=e20430874602', '2026-04-29 12:47:24'),
+(160, 160, 180, 30, 'http://localhost:3000/qr/scan/160?h=67c086aa66f1', '2026-04-29 12:47:24'),
+(161, 161, 181, 30, 'http://localhost:3000/qr/scan/161?h=70875c4ed4a0', '2026-04-29 12:47:24'),
+(162, 162, 182, 30, 'http://localhost:3000/qr/scan/162?h=71ba65495fe3', '2026-04-29 12:47:24'),
+(163, 163, 183, 30, 'http://localhost:3000/qr/scan/163?h=4a22616564c0', '2026-04-29 12:47:24'),
+(164, 164, 184, 30, 'http://localhost:3000/qr/scan/164?h=4964c24e0a27', '2026-04-29 12:47:24');
 
 -- --------------------------------------------------------
 
@@ -3158,7 +3313,8 @@ CREATE TABLE `requisition_issue_slips` (
 --
 
 INSERT INTO `requisition_issue_slips` (`id`, `asset_request_id`, `ris_number`, `entity_name`, `fund_cluster`, `division`, `responsibility_center_code`, `purpose`, `status`, `requested_by_user_id`, `requested_at`, `approved_by_user_id`, `approved_at`, `prepared_by_user_id`, `prepared_at`, `issued_by_user_id`, `issued_at`, `received_by_user_id`, `received_at`, `remarks`, `created_at`, `updated_at`, `deleted_at`) VALUES
-(1, 1, '2026-04-0001', 'Chokoy Covid', 'AUTO', 'BJMP', 'BJMP', 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'issued', 3, '2026-04-08 00:00:00', 1, '2026-04-29 10:22:06', 1, '2026-04-29 10:22:06', 1, '2026-04-29 10:22:06', NULL, NULL, 'Auto-generated from delivery receipt acknowledgment', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL);
+(1, 1, '2026-04-0001', 'Chokoy Covid', 'AUTO', 'BJMP', 'BJMP', 'Mixed PPE and semi-expendable assets for administrative and ICT use.', 'issued', 3, '2026-04-08 00:00:00', 1, '2026-04-29 10:22:06', 1, '2026-04-29 10:22:06', 1, '2026-04-29 10:22:06', NULL, NULL, 'Auto-generated from delivery receipt acknowledgment', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
+(2, 2, '2026-04-29-2026', 'Chokoy Covid', 'AUTO', 'BJMP', 'BJMP', 'Second batch of office, ICT, and maintenance items.', 'issued', 3, '2026-04-12 00:00:00', 1, '2026-04-29 12:47:24', 1, '2026-04-29 12:47:24', 1, '2026-04-29 12:47:24', NULL, NULL, 'Auto-generated from delivery receipt acknowledgment', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL);
 
 -- --------------------------------------------------------
 
@@ -3200,7 +3356,81 @@ INSERT INTO `requisition_issue_slip_items` (`id`, `ris_id`, `asset_request_detai
 (10, 1, 10, 157, '2026-000130', 'set', 'Wireless keyboard and mouse set', 1, 1, 1, 'Issued in full', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
 (11, 1, 11, 158, '2026-000131', 'set', 'Wireless keyboard and mouse set', 1, 1, 1, 'Issued in full', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
 (12, 1, 12, 159, '2026-000132', 'set', 'Wireless keyboard and mouse set', 1, 1, 1, 'Issued in full', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
-(13, 1, 13, 160, '2026-000133', 'set', 'Wireless keyboard and mouse set', 1, 1, 1, 'Issued in full', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL);
+(13, 1, 13, 160, '2026-000133', 'set', 'Wireless keyboard and mouse set', 1, 1, 1, 'Issued in full', '2026-04-29 02:22:06', '2026-04-29 02:22:06', NULL),
+(14, 2, 14, 161, '2026-000134', 'unit', 'Laptop Computer', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(15, 2, 15, 162, '2026-000135', 'unit', 'Filing Cabinet', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(16, 2, 16, 163, '2026-000136', 'unit', 'Filing Cabinet', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(17, 2, 17, 164, '2026-000137', 'unit', 'Projector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(18, 2, 18, 165, '2026-000138', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(19, 2, 19, 166, '2026-000139', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(20, 2, 20, 167, '2026-000140', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(21, 2, 21, 168, '2026-000141', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(22, 2, 22, 169, '2026-000142', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(23, 2, 23, 170, '2026-000143', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(24, 2, 24, 171, '2026-000144', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(25, 2, 25, 172, '2026-000145', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(26, 2, 26, 173, '2026-000146', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(27, 2, 27, 174, '2026-000147', 'unit', '1.5L electric kettle', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(28, 2, 28, 175, '2026-000148', 'unit', 'Portable wireless speaker', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(29, 2, 29, 176, '2026-000149', 'unit', 'Portable wireless speaker', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(30, 2, 30, 177, '2026-000150', 'unit', 'Portable wireless speaker', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(31, 2, 31, 178, '2026-000151', 'unit', 'Portable wireless speaker', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(32, 2, 32, 179, '2026-000152', 'unit', '6-outlet surge protector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(33, 2, 33, 180, '2026-000153', 'unit', '6-outlet surge protector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(34, 2, 34, 181, '2026-000154', 'unit', '6-outlet surge protector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(35, 2, 35, 182, '2026-000155', 'unit', '6-outlet surge protector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(36, 2, 36, 183, '2026-000156', 'unit', '6-outlet surge protector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL),
+(37, 2, 37, 184, '2026-000157', 'unit', '6-outlet surge protector', 1, 1, 1, 'Issued in full', '2026-04-29 04:47:24', '2026-04-29 04:47:24', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rpc_inventory_audit_logs`
+--
+
+CREATE TABLE `rpc_inventory_audit_logs` (
+  `AuditID` bigint(20) UNSIGNED NOT NULL,
+  `rpc_inventory_cycle_id` bigint(20) UNSIGNED NOT NULL,
+  `rpc_inventory_scan_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `action` varchar(60) NOT NULL,
+  `source` varchar(20) NOT NULL DEFAULT 'web',
+  `performed_by_user_id` int(11) NOT NULL,
+  `performed_by_device_id` varchar(100) DEFAULT NULL,
+  `inventory_detail_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `property_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `property_number` varchar(100) DEFAULT NULL,
+  `condition_id` int(11) DEFAULT NULL,
+  `previous_condition_id` int(11) DEFAULT NULL,
+  `previous_remarks` varchar(255) DEFAULT NULL,
+  `new_remarks` varchar(255) DEFAULT NULL,
+  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`)),
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `rpc_inventory_audit_logs`
+--
+
+INSERT INTO `rpc_inventory_audit_logs` (`AuditID`, `rpc_inventory_cycle_id`, `rpc_inventory_scan_id`, `action`, `source`, `performed_by_user_id`, `performed_by_device_id`, `inventory_detail_id`, `property_id`, `property_number`, `condition_id`, `previous_condition_id`, `previous_remarks`, `new_remarks`, `details`, `created_at`, `updated_at`) VALUES
+(1, 1, NULL, 'scan_updated', 'web', 1, NULL, 31, 8, '2026-000027', 1, 1, 'scanned from mobile', 'scanned from mobile', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"},\"after\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"}}', '2026-05-07 03:39:40', '2026-05-07 03:39:40'),
+(2, 1, NULL, 'scan_deleted', 'web', 1, NULL, 7, 7, '2026-000003', 1, NULL, 'scanned from mobile', NULL, '{\"property_number\":\"2026-000003\",\"property_id\":7,\"inventory_detail_id\":7,\"condition_id\":1,\"remarks\":\"scanned from mobile\",\"rpc_type\":\"RPCPPE\",\"scanned_at\":\"2026-05-07T02:41:54+08:00\"}', '2026-05-07 03:39:41', '2026-05-07 03:39:41'),
+(3, 1, 59, 'scan_created', 'web', 1, NULL, 7, 7, '2026-000003', 1, NULL, NULL, NULL, '{\"rpc_type\":\"RPCPPE\",\"property_number\":\"2026-000003\",\"property_id\":7,\"inventory_detail_id\":7,\"condition_id\":1,\"remarks\":\"scanned from mobile\"}', '2026-05-07 03:40:24', '2026-05-07 03:40:24'),
+(4, 1, NULL, 'scan_created', 'web', 1, NULL, 49, 9, '2026-000045', 1, NULL, NULL, NULL, '{\"rpc_type\":\"RPCPPE\",\"property_number\":\"2026-000045\",\"property_id\":9,\"inventory_detail_id\":49,\"condition_id\":1,\"remarks\":\"scanned from mobile\"}', '2026-05-07 03:40:24', '2026-05-07 03:40:24'),
+(5, 1, NULL, 'scan_deleted', 'mobile', 1, NULL, 31, 8, '2026-000027', 1, NULL, 'scanned from mobile', NULL, '{\"property_number\":\"2026-000027\",\"property_id\":8,\"inventory_detail_id\":31,\"condition_id\":1,\"remarks\":\"scanned from mobile\",\"rpc_type\":\"RPCPPE\",\"scanned_at\":\"2026-05-07T02:41:54+08:00\"}', '2026-05-07 04:06:25', '2026-05-07 04:06:25'),
+(6, 1, 59, 'scan_updated', 'mobile', 1, NULL, 7, 7, '2026-000003', 1, 1, 'scanned from mobile', 'scanned from mobile', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"},\"after\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"}}', '2026-05-07 04:06:25', '2026-05-07 04:06:25'),
+(7, 1, NULL, 'scan_updated', 'mobile', 1, NULL, 49, 9, '2026-000045', 1, 1, 'scanned from mobile', 'scanned from mobile', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"},\"after\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"}}', '2026-05-07 04:06:26', '2026-05-07 04:06:26'),
+(8, 1, NULL, 'scan_deleted', 'mobile', 1, NULL, 49, 9, '2026-000045', 1, NULL, 'scanned from mobile', NULL, '{\"property_number\":\"2026-000045\",\"property_id\":9,\"inventory_detail_id\":49,\"condition_id\":1,\"remarks\":\"scanned from mobile\",\"rpc_type\":\"RPCPPE\",\"scanned_at\":\"2026-05-07T11:40:24+08:00\"}', '2026-05-07 04:07:02', '2026-05-07 04:07:02'),
+(9, 1, 59, 'scan_updated', 'mobile', 1, NULL, 7, 7, '2026-000003', 1, 1, 'scanned from mobile', 'scanned from mobile', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"},\"after\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"}}', '2026-05-07 04:07:03', '2026-05-07 04:07:03'),
+(10, 1, NULL, 'sync_batch_completed', 'mobile', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '{\"source\":\"mobile\",\"total\":2,\"created\":0,\"duplicates\":0,\"errors\":2}', '2026-05-07 04:08:02', '2026-05-07 04:08:02'),
+(11, 1, NULL, 'scan_updated', 'web', 1, NULL, 31, 8, '2026-000027', 1, 1, 'scanned from mobile 2', 'scanned from mobile', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile 2\"},\"after\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"}}', '2026-05-07 08:19:22', '2026-05-07 08:19:22'),
+(12, 1, NULL, 'scan_deleted', 'web', 1, NULL, 49, 9, '2026-000045', 1, NULL, 'scanned from mobile 2', NULL, '{\"property_number\":\"2026-000045\",\"property_id\":9,\"inventory_detail_id\":49,\"condition_id\":1,\"remarks\":\"scanned from mobile 2\",\"rpc_type\":\"RPCPPE\",\"scanned_at\":\"2026-05-07T04:07:50+08:00\"}', '2026-05-07 08:19:23', '2026-05-07 08:19:23'),
+(13, 1, 59, 'scan_updated', 'web', 1, NULL, 7, 7, '2026-000003', 1, 1, 'scanned from mobile', 'hehe', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"},\"after\":{\"condition_id\":1,\"remarks\":\"hehe\"}}', '2026-05-07 08:20:28', '2026-05-07 08:20:28'),
+(14, 1, NULL, 'scan_updated', 'web', 1, NULL, 31, 8, '2026-000027', 1, 1, 'scanned from mobile', 'hehe', '{\"before\":{\"condition_id\":1,\"remarks\":\"scanned from mobile\"},\"after\":{\"condition_id\":1,\"remarks\":\"hehe\"}}', '2026-05-07 08:20:29', '2026-05-07 08:20:29'),
+(15, 1, 63, 'scan_created', 'web', 1, NULL, 49, 9, '2026-000045', 1, NULL, NULL, NULL, '{\"rpc_type\":\"RPCPPE\",\"property_number\":\"2026-000045\",\"property_id\":9,\"inventory_detail_id\":49,\"condition_id\":1,\"remarks\":\"hehe\"}', '2026-05-07 08:21:11', '2026-05-07 08:21:11'),
+(16, 1, NULL, 'scan_deleted', 'web', 1, NULL, 31, 8, '2026-000027', 1, NULL, 'hehe', NULL, '{\"property_number\":\"2026-000027\",\"property_id\":8,\"inventory_detail_id\":31,\"condition_id\":1,\"remarks\":\"hehe\",\"rpc_type\":\"RPCPPE\",\"scanned_at\":\"2026-05-07T04:07:50+08:00\"}', '2026-05-07 08:22:05', '2026-05-07 08:22:05'),
+(17, 1, 63, 'scan_updated', 'web', 1, NULL, 49, 9, '2026-000045', 1, 1, 'hehe', 'hehehehehehehe', '{\"before\":{\"condition_id\":1,\"remarks\":\"hehe\"},\"after\":{\"condition_id\":1,\"remarks\":\"hehehehehehehe\"}}', '2026-05-07 08:22:34', '2026-05-07 08:22:34'),
+(18, 1, 59, 'scan_updated', 'web', 1, NULL, 7, 7, '2026-000003', 1, 1, 'hehe', 'hehehehehehehe', '{\"before\":{\"condition_id\":1,\"remarks\":\"hehe\"},\"after\":{\"condition_id\":1,\"remarks\":\"hehehehehehehe\"}}', '2026-05-07 08:22:34', '2026-05-07 08:22:34');
 
 -- --------------------------------------------------------
 
@@ -3238,6 +3468,8 @@ INSERT INTO `rpc_inventory_cycles` (`id`, `cycle_label`, `start_year`, `end_year
 
 CREATE TABLE `rpc_inventory_scans` (
   `id` bigint(20) UNSIGNED NOT NULL,
+  `client_uuid` char(36) DEFAULT NULL,
+  `device_id` varchar(100) DEFAULT NULL,
   `rpc_inventory_cycle_id` bigint(20) UNSIGNED NOT NULL,
   `inventory_detail_id` bigint(20) UNSIGNED NOT NULL,
   `property_id` bigint(20) UNSIGNED DEFAULT NULL,
@@ -3265,10 +3497,15 @@ CREATE TABLE `rpc_inventory_scans` (
 -- Dumping data for table `rpc_inventory_scans`
 --
 
-INSERT INTO `rpc_inventory_scans` (`id`, `rpc_inventory_cycle_id`, `inventory_detail_id`, `property_id`, `rpc_type`, `property_classification_id`, `condition_id`, `scanned_at`, `scanned_by_user_id`, `end_user_id`, `department_id`, `article`, `description`, `property_number`, `unit_of_measure`, `unit_value`, `quantity_per_card`, `quantity_per_count`, `remarks`, `accountable_officer`, `created_at`, `updated_at`) VALUES
-(3, 1, 14, 0, 'RPCPPE', 2, 1, '2026-04-19 18:02:09', 1, NULL, 23, 'Server Equipment', 'Server Equipment (PowerEdge-R250)', '2026-000010', 'unit', 165000.00, 1, 1, NULL, 'Cyron Micarte', '2026-04-19 10:02:09', '2026-04-19 10:02:09'),
-(5, 1, 15, 0, 'RPCPPE', 2, 1, '2026-04-19 21:08:39', 1, NULL, 23, 'Printer/Scanner', 'Printer/Scanner (MF273dw)', '2026-000011', 'unit', 17200.00, 1, 1, NULL, 'Cyron Micarte', '2026-04-19 13:08:39', '2026-04-19 13:08:39'),
-(6, 1, 12, 29, 'RPCPPE', 2, 1, '2026-04-20 13:28:25', 1, 2, 30, 'Telephone Set', 'Telephone Set (KX-TS880)', '2026-000008', 'unit', 2350.00, 1, 1, NULL, 'Chokoy Covid', '2026-04-20 05:28:25', '2026-04-20 05:28:25');
+INSERT INTO `rpc_inventory_scans` (`id`, `client_uuid`, `device_id`, `rpc_inventory_cycle_id`, `inventory_detail_id`, `property_id`, `rpc_type`, `property_classification_id`, `condition_id`, `scanned_at`, `scanned_by_user_id`, `end_user_id`, `department_id`, `article`, `description`, `property_number`, `unit_of_measure`, `unit_value`, `quantity_per_card`, `quantity_per_count`, `remarks`, `accountable_officer`, `created_at`, `updated_at`) VALUES
+(3, NULL, NULL, 1, 14, 0, 'RPCPPE', 2, 1, '2026-04-19 18:02:09', 1, NULL, 23, 'Server Equipment', 'Server Equipment (PowerEdge-R250)', '2026-000010', 'unit', 165000.00, 1, 1, NULL, 'Cyron Micarte', '2026-04-19 10:02:09', '2026-04-19 10:02:09'),
+(5, NULL, NULL, 1, 15, 0, 'RPCPPE', 2, 1, '2026-04-19 21:08:39', 1, NULL, 23, 'Printer/Scanner', 'Printer/Scanner (MF273dw)', '2026-000011', 'unit', 17200.00, 1, 1, NULL, 'Cyron Micarte', '2026-04-19 13:08:39', '2026-04-19 13:08:39'),
+(6, NULL, NULL, 1, 12, 29, 'RPCPPE', 2, 1, '2026-04-20 13:28:25', 1, 2, 30, 'Telephone Set', 'Telephone Set (KX-TS880)', '2026-000008', 'unit', 2350.00, 1, 1, NULL, 'Chokoy Covid', '2026-04-20 05:28:25', '2026-04-20 05:28:25'),
+(7, NULL, NULL, 1, 253, 127, 'RPCSEP', 1, 1, '2026-04-30 20:28:54', 1, 4, 23, 'LAN Cable Set', 'RJ45 LAN cable bundle', '2026-000226', 'set', 980.00, 1, 1, 'for test look for this item', 'Cyron Micarte', '2026-04-30 12:28:54', '2026-04-30 12:28:54'),
+(8, NULL, NULL, 1, 11, 27, 'RPCPPE', 2, 1, '2026-05-01 23:04:39', 1, 2, 30, 'Printer/Scanner', 'Printer/Scanner (DCP-L5650DN)', '2026-000007', 'unit', 18900.00, 1, 1, NULL, 'Chokoy Covid', '2026-05-01 15:04:39', '2026-05-01 15:04:39'),
+(12, '19de7d157dd-9af8c236-bdc52b41', 'device-mon45vb8-f7siwjlh3b', 1, 6, 6, 'RPCPPE', 2, 1, '2026-05-02 08:32:29', 1, 2, 30, 'Air Conditioner', 'bugnaw', '2026-000002', 'unit', 2333.00, 1, 1, 'scanned mobile', 'Chokoy Covid', '2026-05-02 08:32:36', '2026-05-02 08:32:36'),
+(59, NULL, NULL, 1, 7, 7, 'RPCPPE', 2, 1, '2026-05-07 11:40:24', 1, 2, 30, 'Office Desk', 'Office Desk (OD-PRM-120)', '2026-000003', 'unit', 8500.00, 1, 1, 'hehehehehehehe', 'Chokoy Covid - BJMP', '2026-05-07 03:40:24', '2026-05-07 08:22:34'),
+(63, NULL, NULL, 1, 49, 9, 'RPCPPE', 2, 1, '2026-05-07 16:21:11', 1, 2, 30, 'Office Desk', 'Office Desk (OD-PRM-120)', '2026-000045', 'unit', 8500.00, 1, 1, 'hehehehehehehe', 'Chokoy Covid - BJMP', '2026-05-07 08:21:11', '2026-05-07 08:22:34');
 
 -- --------------------------------------------------------
 
@@ -3301,7 +3538,8 @@ INSERT INTO `rsmi_header` (`id`, `report_date`, `serial_no`, `serial_year`, `ser
 (3, '2026-03-24', '0003-03-2026', 2026, 3, 3, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-14 09:04:26', '2026-04-14 09:04:26', NULL),
 (4, '2026-03-29', '0004-03-2026', 2026, 3, 4, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-14 09:04:26', '2026-04-14 09:04:26', NULL),
 (5, '2026-04-20', '0001-04-2026', 2026, 4, 1, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-20 04:12:27', '2026-04-20 04:12:27', NULL),
-(6, '2026-04-08', '0002-04-2026', 2026, 4, 2, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-27 16:41:28', '2026-04-27 16:41:28', NULL);
+(6, '2026-04-08', '0002-04-2026', 2026, 4, 2, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-27 16:41:28', '2026-04-27 16:41:28', NULL),
+(7, '2026-04-29', '0003-04-2026', 2026, 4, 3, 'CITY GOVERNMENT OF EL SALVADOR', '', 1, '2026-04-29 04:47:38', '2026-04-29 04:47:38', NULL);
 
 -- --------------------------------------------------------
 
@@ -3401,69 +3639,93 @@ INSERT INTO `rsmi_items` (`id`, `rsmi_header_id`, `ris_id`, `ris_no`, `responsib
 (1931, 2, NULL, 'N/A', '', '2026-000109', 'Calculator', 'unit', 1, '2026-04-22 13:36:22', '2026-04-22 13:36:22'),
 (1932, 1, NULL, 'N/A', '', '2026-000001', 'smsmsmsm', 'unit', 1, '2026-04-22 13:36:23', '2026-04-22 13:36:23'),
 (1933, 1, NULL, 'N/A', '', '2026-000002', 'bugnaw', 'unit', 1, '2026-04-22 13:36:23', '2026-04-22 13:36:23'),
-(2519, 5, NULL, 'N/A', '', '2026-000118', 'Air Conditioner', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2520, 5, NULL, 'N/A', '', '2026-000119', 'Calculator', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2521, 5, NULL, 'N/A', '', '2026-000120', 'Air Conditioner', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2522, 5, NULL, 'N/A', '', '2026-000180', 'Office Desk', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2523, 5, NULL, 'N/A', '', '2026-000181', 'Office Desk', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2524, 5, NULL, 'N/A', '', '2026-000182', 'Office Desk', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2525, 5, NULL, 'N/A', '', '2026-000183', 'Office Chair', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2526, 5, NULL, 'N/A', '', '2026-000184', 'Office Chair', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2527, 5, NULL, 'N/A', '', '2026-000185', 'Office Chair', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2528, 5, NULL, 'N/A', '', '2026-000186', 'Office Chair', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2529, 5, NULL, 'N/A', '', '2026-000187', 'Office Chair', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2530, 5, NULL, 'N/A', '', '2026-000188', 'Office Chair', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2531, 5, NULL, 'N/A', '', '2026-000189', 'Air Conditioner', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2532, 5, NULL, 'N/A', '', '2026-000190', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2533, 5, NULL, 'N/A', '', '2026-000191', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2534, 5, NULL, 'N/A', '', '2026-000192', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2535, 5, NULL, 'N/A', '', '2026-000193', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2536, 5, NULL, 'N/A', '', '2026-000194', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2537, 5, NULL, 'N/A', '', '2026-000195', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2538, 5, NULL, 'N/A', '', '2026-000196', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2539, 5, NULL, 'N/A', '', '2026-000197', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2540, 5, NULL, 'N/A', '', '2026-000198', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2541, 5, NULL, 'N/A', '', '2026-000199', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2542, 5, NULL, 'N/A', '', '2026-000200', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2543, 5, NULL, 'N/A', '', '2026-000201', 'Portable fire extinguisher', 'unit', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2544, 5, NULL, 'N/A', '', '2026-000202', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2545, 5, NULL, 'N/A', '', '2026-000203', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2546, 5, NULL, 'N/A', '', '2026-000204', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2547, 5, NULL, 'N/A', '', '2026-000205', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2548, 5, NULL, 'N/A', '', '2026-000206', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2549, 5, NULL, 'N/A', '', '2026-000207', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2550, 5, NULL, 'N/A', '', '2026-000208', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2551, 5, NULL, 'N/A', '', '2026-000209', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2552, 5, NULL, 'N/A', '', '2026-000210', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2553, 5, NULL, 'N/A', '', '2026-000211', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2554, 5, NULL, 'N/A', '', '2026-000212', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2555, 5, NULL, 'N/A', '', '2026-000213', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2556, 5, NULL, 'N/A', '', '2026-000214', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2557, 5, NULL, 'N/A', '', '2026-000215', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2558, 5, NULL, 'N/A', '', '2026-000216', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2559, 5, NULL, 'N/A', '', '2026-000217', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2560, 5, NULL, 'N/A', '', '2026-000218', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2561, 5, NULL, 'N/A', '', '2026-000219', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2562, 5, NULL, 'N/A', '', '2026-000220', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2563, 5, NULL, 'N/A', '', '2026-000221', 'Janitorial cleaning kit', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2564, 5, NULL, 'N/A', '', '2026-000222', 'RJ45 LAN cable bundle', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2565, 5, NULL, 'N/A', '', '2026-000223', 'RJ45 LAN cable bundle', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2566, 5, NULL, 'N/A', '', '2026-000224', 'RJ45 LAN cable bundle', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2567, 5, NULL, 'N/A', '', '2026-000225', 'RJ45 LAN cable bundle', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2568, 5, NULL, 'N/A', '', '2026-000226', 'RJ45 LAN cable bundle', 'set', 1, '2026-04-29 02:22:43', '2026-04-29 02:22:43'),
-(2569, 6, 1, '2026-04-0001', 'BJMP', '2026-000121', 'Desktop Computer', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2570, 6, 1, '2026-04-0001', 'BJMP', '2026-000122', 'Printer/Scanner', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2571, 6, 1, '2026-04-0001', 'BJMP', '2026-000123', 'Office Chair', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2572, 6, 1, '2026-04-0001', 'BJMP', '2026-000124', 'Portable rechargeable emergency lamp', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2573, 6, 1, '2026-04-0001', 'BJMP', '2026-000125', 'Portable rechargeable emergency lamp', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2574, 6, 1, '2026-04-0001', 'BJMP', '2026-000126', 'Portable rechargeable emergency lamp', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2575, 6, 1, '2026-04-0001', 'BJMP', '2026-000127', '32GB USB 3.0 flash drive', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2576, 6, 1, '2026-04-0001', 'BJMP', '2026-000128', '32GB USB 3.0 flash drive', 'unit', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2577, 6, 1, '2026-04-0001', 'BJMP', '2026-000129', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2578, 6, 1, '2026-04-0001', 'BJMP', '2026-000130', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2579, 6, 1, '2026-04-0001', 'BJMP', '2026-000131', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2580, 6, 1, '2026-04-0001', 'BJMP', '2026-000132', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44'),
-(2581, 6, 1, '2026-04-0001', 'BJMP', '2026-000133', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 02:22:44', '2026-04-29 02:22:44');
+(3802, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000134', 'Laptop Computer', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3803, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000135', 'Filing Cabinet', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3804, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000136', 'Filing Cabinet', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3805, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000137', 'Projector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3806, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000138', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3807, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000139', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3808, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000140', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3809, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000141', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3810, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000142', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3811, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000143', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3812, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000144', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3813, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000145', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3814, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000146', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3815, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000147', '1.5L electric kettle', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3816, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000148', 'Portable wireless speaker', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3817, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000149', 'Portable wireless speaker', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3818, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000150', 'Portable wireless speaker', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3819, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000151', 'Portable wireless speaker', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3820, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000152', '6-outlet surge protector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3821, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000153', '6-outlet surge protector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3822, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000154', '6-outlet surge protector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3823, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000155', '6-outlet surge protector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3824, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000156', '6-outlet surge protector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3825, 7, 2, '2026-04-29-2026', 'BJMP', '2026-000157', '6-outlet surge protector', 'unit', 1, '2026-04-29 06:18:45', '2026-04-29 06:18:45'),
+(3826, 5, NULL, 'N/A', '', '2026-000118', 'Air Conditioner', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3827, 5, NULL, 'N/A', '', '2026-000119', 'Calculator', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3828, 5, NULL, 'N/A', '', '2026-000120', 'Air Conditioner', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3829, 5, NULL, 'N/A', '', '2026-000180', 'Office Desk', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3830, 5, NULL, 'N/A', '', '2026-000181', 'Office Desk', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3831, 5, NULL, 'N/A', '', '2026-000182', 'Office Desk', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3832, 5, NULL, 'N/A', '', '2026-000183', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3833, 5, NULL, 'N/A', '', '2026-000184', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3834, 5, NULL, 'N/A', '', '2026-000185', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3835, 5, NULL, 'N/A', '', '2026-000186', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3836, 5, NULL, 'N/A', '', '2026-000187', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3837, 5, NULL, 'N/A', '', '2026-000188', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3838, 5, NULL, 'N/A', '', '2026-000189', 'Air Conditioner', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3839, 5, NULL, 'N/A', '', '2026-000190', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3840, 5, NULL, 'N/A', '', '2026-000191', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3841, 5, NULL, 'N/A', '', '2026-000192', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3842, 5, NULL, 'N/A', '', '2026-000193', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3843, 5, NULL, 'N/A', '', '2026-000194', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3844, 5, NULL, 'N/A', '', '2026-000195', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3845, 5, NULL, 'N/A', '', '2026-000196', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3846, 5, NULL, 'N/A', '', '2026-000197', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3847, 5, NULL, 'N/A', '', '2026-000198', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3848, 5, NULL, 'N/A', '', '2026-000199', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3849, 5, NULL, 'N/A', '', '2026-000200', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3850, 5, NULL, 'N/A', '', '2026-000201', 'Fire Extinguisher', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3851, 5, NULL, 'N/A', '', '2026-000202', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3852, 5, NULL, 'N/A', '', '2026-000203', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3853, 5, NULL, 'N/A', '', '2026-000204', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3854, 5, NULL, 'N/A', '', '2026-000205', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3855, 5, NULL, 'N/A', '', '2026-000206', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3856, 5, NULL, 'N/A', '', '2026-000207', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3857, 5, NULL, 'N/A', '', '2026-000208', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3858, 5, NULL, 'N/A', '', '2026-000209', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3859, 5, NULL, 'N/A', '', '2026-000210', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3860, 5, NULL, 'N/A', '', '2026-000211', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3861, 5, NULL, 'N/A', '', '2026-000212', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3862, 5, NULL, 'N/A', '', '2026-000213', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3863, 5, NULL, 'N/A', '', '2026-000214', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3864, 5, NULL, 'N/A', '', '2026-000215', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3865, 5, NULL, 'N/A', '', '2026-000216', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3866, 5, NULL, 'N/A', '', '2026-000217', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3867, 5, NULL, 'N/A', '', '2026-000218', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3868, 5, NULL, 'N/A', '', '2026-000219', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3869, 5, NULL, 'N/A', '', '2026-000220', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3870, 5, NULL, 'N/A', '', '2026-000221', 'Cleaning Kit', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3871, 5, NULL, 'N/A', '', '2026-000222', 'LAN Cable Set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3872, 5, NULL, 'N/A', '', '2026-000223', 'LAN Cable Set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3873, 5, NULL, 'N/A', '', '2026-000224', 'LAN Cable Set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3874, 5, NULL, 'N/A', '', '2026-000225', 'LAN Cable Set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3875, 5, NULL, 'N/A', '', '2026-000226', 'LAN Cable Set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3876, 6, 1, '2026-04-0001', 'BJMP', '2026-000121', 'Desktop Computer', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3877, 6, 1, '2026-04-0001', 'BJMP', '2026-000122', 'Printer/Scanner', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3878, 6, 1, '2026-04-0001', 'BJMP', '2026-000123', 'Office Chair', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3879, 6, 1, '2026-04-0001', 'BJMP', '2026-000124', 'Portable rechargeable emergency lamp', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3880, 6, 1, '2026-04-0001', 'BJMP', '2026-000125', 'Portable rechargeable emergency lamp', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3881, 6, 1, '2026-04-0001', 'BJMP', '2026-000126', 'Portable rechargeable emergency lamp', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3882, 6, 1, '2026-04-0001', 'BJMP', '2026-000127', '32GB USB 3.0 flash drive', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3883, 6, 1, '2026-04-0001', 'BJMP', '2026-000128', '32GB USB 3.0 flash drive', 'unit', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3884, 6, 1, '2026-04-0001', 'BJMP', '2026-000129', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3885, 6, 1, '2026-04-0001', 'BJMP', '2026-000130', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3886, 6, 1, '2026-04-0001', 'BJMP', '2026-000131', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3887, 6, 1, '2026-04-0001', 'BJMP', '2026-000132', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47'),
+(3888, 6, 1, '2026-04-0001', 'BJMP', '2026-000133', 'Wireless keyboard and mouse set', 'set', 1, '2026-04-29 06:18:47', '2026-04-29 06:18:47');
 
 -- --------------------------------------------------------
 
@@ -3485,7 +3747,7 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('Cwc8XcuFJKXcewfTL9gf37v0kNSwnaPEDJJlKVyk', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiSUhsRzNKaHJ6dWlUOW00VEJ6VkJMQ1YwOEpJWERnSjFscnpRME5xVSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1777430340);
+('K6qZ8H6GkbKXrnQGnKQjOSuvaNapJTZb2sBHcGq3', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiTHBESjlNSUJkODN1UjRQRTVQSkFIVzN1a1Q5TGV2NmxWOGh3ZTI1NCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6NTI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9hcGkvbm90aWZpY2F0aW9ucz9wZXJfcGFnZT0xMDAiO3M6NToicm91dGUiO047fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czoxNzoicGFzc3dvcmRfaGFzaF93ZWIiO3M6NjA6IiQyeSQxMiRmdGdHUmhKT1BvLjVGV215YmVMTHYuWjh3WDgvSC5CaWZaTlpzSzUxdVFJc0pIVUIvay5oNiI7fQ==', 1778142420);
 
 -- --------------------------------------------------------
 
@@ -3552,7 +3814,7 @@ INSERT INTO `trusted_devices` (`DeviceID`, `UserID`, `DeviceName`, `DeviceToken`
 (88, 11, 'Trusted Device', '3f2dd3dd519fead880cf455caaee905b837d58dec6dcb3284c2b211a80cd1ec2', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36', '127.0.0.1', NULL, '2026-04-13 12:50:12', '2026-03-14 12:50:12', NULL),
 (100, 1, 'Trusted Device', '340e489e56f08186ec207bbf385c0f7abdea8556f449f7479e1d971b5dd79b86', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-24 14:12:54', '2026-04-24 22:16:17', '2026-03-22 18:08:24', '2026-04-24 14:12:54'),
 (102, 3, 'Trusted Device', '4ec51ff6aaf34553b731f25b7793edea9310c4ad99355860f569aae99b93bb91', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0', '127.0.0.1', '2026-04-27 23:33:59', '2026-05-05 01:05:54', '2026-04-05 01:05:54', '2026-04-27 23:33:59'),
-(103, 1, 'Trusted Device', 'fce22b5d6579263504c6cec01d2e1b1f0cf39d115a6c0ac927c65aa16ef1cc45', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '127.0.0.1', '2026-04-29 10:21:26', '2026-05-25 19:51:21', '2026-04-25 19:51:21', '2026-04-29 10:21:26');
+(103, 1, 'Trusted Device', 'fce22b5d6579263504c6cec01d2e1b1f0cf39d115a6c0ac927c65aa16ef1cc45', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', '127.0.0.1', '2026-05-07 10:02:41', '2026-05-25 19:51:21', '2026-04-25 19:51:21', '2026-05-07 10:02:41');
 
 -- --------------------------------------------------------
 
@@ -3795,7 +4057,8 @@ INSERT INTO `user_notifications` (`UserNotificationID`, `UserID`, `event_type`, 
 (173, 6, 'property_transfer.completed', 'Property Transfer Completed', 'Transfer PTR-2026-0012 was finalized by GSO/Admin.', '\"{\\\"transfer_id\\\":\\\"12\\\",\\\"transfer_number\\\":\\\"PTR-2026-0012\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/12\\\"}\"', 'sent', NULL, '2026-04-24 11:57:59', NULL, '2026-04-24 11:57:58', '2026-04-24 11:57:59'),
 (174, 3, 'property_transfer.completed', 'Your Transfer Was Completed', 'Transfer PTR-2026-0012 has been completed.', '\"{\\\"transfer_id\\\":\\\"12\\\",\\\"transfer_number\\\":\\\"PTR-2026-0012\\\",\\\"status\\\":\\\"completed\\\",\\\"link\\\":\\\"\\/property-transfer\\/12\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-24 11:57:59', '2026-04-24 11:57:59'),
 (175, 6, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-2026-04-27-004 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"91\\\",\\\"dr_number\\\":\\\"DR-2026-04-27-004\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'sent', NULL, '2026-04-27 16:39:48', NULL, '2026-04-27 16:39:45', '2026-04-27 16:39:48'),
-(176, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-2026-04-27-001 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"88\\\",\\\"dr_number\\\":\\\"DR-2026-04-27-001\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-29 02:22:06', '2026-04-29 02:22:06');
+(176, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-2026-04-27-001 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"88\\\",\\\"dr_number\\\":\\\"DR-2026-04-27-001\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-29 02:22:06', '2026-04-29 02:22:06'),
+(177, 3, 'delivery_receipt.acknowledged', 'Delivery Receipt Acknowledged', 'Delivery receipt DR-2026-04-27-002 has been acknowledged and inventory is ready.', '\"{\\\"dr_id\\\":\\\"90\\\",\\\"dr_number\\\":\\\"DR-2026-04-27-002\\\",\\\"status\\\":\\\"acknowledged\\\",\\\"link\\\":\\\"\\/department_head\\/delivery-receipts\\\"}\"', 'failed', 'No active push token', NULL, NULL, '2026-04-29 04:47:24', '2026-04-29 04:47:24');
 
 -- --------------------------------------------------------
 
@@ -3823,7 +4086,7 @@ INSERT INTO `user_push_tokens` (`id`, `UserID`, `token`, `platform`, `device_nam
 (1, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGwtBzOsEHHDfytvQ8UwKfx41l47jyN7UpIKJOzwvzyjxIUOyLU4S1-OriFDLOpFwZIbpxsfbrZOVginsjoE8LqWPkZxXEf8wQSDa0HF4rMgo_8ofA', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:49'),
 (2, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGivlK62QLG-cnzkqyeE36Bun02PQh80ZTObmoklq1Vfw-vaRJfdj-UVp5aM98YR0RglHn9LglUKoa-XX37-zdBe__2Md_gM9btTHC9P1UYOucoXTo', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:51:52', '2026-03-22 14:51:52', '2026-04-03 17:05:50'),
 (3, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bGxWwIi2G3SqgYYPiu0KagnNx-OUJDH2Y0DC_9qIKJS-O2AWOtW28W_baguyi62YI8uh13XWQs7O6lz-eeYK29s1Hd06IO-Ldjpb0S5lZ68KuzOCtk', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-22 14:52:48', '2026-03-22 14:52:48', '2026-04-03 17:05:51'),
-(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-04-29 02:25:00', '2026-03-22 14:52:48', '2026-04-29 02:25:00'),
+(4, 1, 'eIxXBRQyxYtixroaQxv-ep:APA91bEVfXSCtXEdUqPGRw1IjCl7XH-FMEJAxNJ0uOFJ2k8yJlEqEsy6qPMi0HLY2GhDr_IcdcUvYaPc21KwIcXW02as2_yR2MVSIVomOPogYPxX8yskWY4', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 1, '2026-05-07 02:46:02', '2026-03-22 14:52:48', '2026-05-07 02:46:02'),
 (5, 3, 'fm4yL6R5AUVBckN0vkCdOQ:APA91bHmMQCxL5xmXmgD6YmfOouPQo2JHakGtvIru3dg77GcvGfNihplo0i1QVEFuLLjHNjku-TsK3y4A1Zswqp7twRF6U8rYewdZlShiC-oKF1gYDTouWc', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.', 0, '2026-03-25 16:28:43', '2026-03-22 15:23:01', '2026-03-29 12:56:49'),
 (6, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bEhcBUMbmgznKUz5-2Uh3ArJr9U7K0qfTqrsWBHdIs4zWyU5FGfxRedObq8Euw2fsSwHDO23kZ1CKKzJPE6LO0B4nAbsLpQYbFvj8f30o5cB3GTIpU', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 0, '2026-03-25 13:31:10', '2026-03-25 13:31:10', '2026-04-03 17:05:52'),
 (7, 1, 'e2IUQgH-XpmjgfRktMqytD:APA91bFy1L3AtZ33aBGwe7fOomPNtOIY9KKJWkYoeQo55ewNVrXFIllRt2DchzmYyMTdpZD_WZdn0NARWdvp3LxkZo0i5e321uN3wF1G_Dj9zNiB4PIH61o', 'web', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36', 1, '2026-03-25 14:01:41', '2026-03-25 13:31:10', '2026-03-25 14:01:41'),
@@ -4380,6 +4643,16 @@ ALTER TABLE `requisition_issue_slip_items`
   ADD KEY `requisition_issue_slip_items_asset_request_detail_id_foreign` (`asset_request_detail_id`);
 
 --
+-- Indexes for table `rpc_inventory_audit_logs`
+--
+ALTER TABLE `rpc_inventory_audit_logs`
+  ADD PRIMARY KEY (`AuditID`),
+  ADD KEY `rpc_inventory_audit_cycle_created_idx` (`rpc_inventory_cycle_id`,`created_at`),
+  ADD KEY `rpc_inventory_audit_cycle_action_idx` (`rpc_inventory_cycle_id`,`action`),
+  ADD KEY `rpc_inventory_audit_scan_idx` (`rpc_inventory_scan_id`),
+  ADD KEY `rpc_inventory_audit_user_idx` (`performed_by_user_id`);
+
+--
 -- Indexes for table `rpc_inventory_cycles`
 --
 ALTER TABLE `rpc_inventory_cycles`
@@ -4396,10 +4669,12 @@ ALTER TABLE `rpc_inventory_cycles`
 ALTER TABLE `rpc_inventory_scans`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `rpc_inventory_cycle_detail_unique` (`rpc_inventory_cycle_id`,`inventory_detail_id`),
+  ADD UNIQUE KEY `rpc_scans_cycle_uuid_unique` (`rpc_inventory_cycle_id`,`client_uuid`),
   ADD KEY `rpc_inventory_cycle_type_idx` (`rpc_inventory_cycle_id`,`rpc_type`),
   ADD KEY `rpc_inventory_scans_property_number_index` (`property_number`),
   ADD KEY `rpc_inventory_scans_condition_id_foreign` (`condition_id`),
-  ADD KEY `rpc_inventory_scans_scanned_by_user_id_foreign` (`scanned_by_user_id`);
+  ADD KEY `rpc_inventory_scans_scanned_by_user_id_foreign` (`scanned_by_user_id`),
+  ADD KEY `rpc_scans_device_id_index` (`device_id`);
 
 --
 -- Indexes for table `rsmi_header`
@@ -4509,13 +4784,13 @@ ALTER TABLE `articles`
 -- AUTO_INCREMENT for table `assetrequest`
 --
 ALTER TABLE `assetrequest`
-  MODIFY `RequestID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `RequestID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `assetrequestdetail`
 --
 ALTER TABLE `assetrequestdetail`
-  MODIFY `RequestDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `RequestDetailID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `asset_assignments`
@@ -4551,7 +4826,7 @@ ALTER TABLE `asset_service_records_details`
 -- AUTO_INCREMENT for table `assignedproperty`
 --
 ALTER TABLE `assignedproperty`
-  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=141;
+  MODIFY `PropertyID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=165;
 
 --
 -- AUTO_INCREMENT for table `condition`
@@ -4641,13 +4916,13 @@ ALTER TABLE `inventorycustodianslip`
 -- AUTO_INCREMENT for table `loginaudit`
 --
 ALTER TABLE `loginaudit`
-  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=190;
+  MODIFY `LoginAuditID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=204;
 
 --
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=179;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=181;
 
 --
 -- AUTO_INCREMENT for table `par`
@@ -4665,7 +4940,7 @@ ALTER TABLE `pardetail`
 -- AUTO_INCREMENT for table `personal_access_tokens`
 --
 ALTER TABLE `personal_access_tokens`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `physicalcount`
@@ -4719,13 +4994,13 @@ ALTER TABLE `propertyinventorydetail`
 -- AUTO_INCREMENT for table `propertyissuance`
 --
 ALTER TABLE `propertyissuance`
-  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `IssuanceID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `propertyissuancedetail`
 --
 ALTER TABLE `propertyissuancedetail`
-  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=142;
+  MODIFY `IssuanceDetailID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=188;
 
 --
 -- AUTO_INCREMENT for table `propertyreceived`
@@ -4779,7 +5054,7 @@ ALTER TABLE `propertytype`
 -- AUTO_INCREMENT for table `property_card_entries`
 --
 ALTER TABLE `property_card_entries`
-  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=40;
+  MODIFY `EntryID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
 -- AUTO_INCREMENT for table `property_waste_items`
@@ -4797,19 +5072,25 @@ ALTER TABLE `property_waste_reports`
 -- AUTO_INCREMENT for table `qrcode`
 --
 ALTER TABLE `qrcode`
-  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=141;
+  MODIFY `QRCodeID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=165;
 
 --
 -- AUTO_INCREMENT for table `requisition_issue_slips`
 --
 ALTER TABLE `requisition_issue_slips`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `requisition_issue_slip_items`
 --
 ALTER TABLE `requisition_issue_slip_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
+
+--
+-- AUTO_INCREMENT for table `rpc_inventory_audit_logs`
+--
+ALTER TABLE `rpc_inventory_audit_logs`
+  MODIFY `AuditID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `rpc_inventory_cycles`
@@ -4821,19 +5102,19 @@ ALTER TABLE `rpc_inventory_cycles`
 -- AUTO_INCREMENT for table `rpc_inventory_scans`
 --
 ALTER TABLE `rpc_inventory_scans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=64;
 
 --
 -- AUTO_INCREMENT for table `rsmi_header`
 --
 ALTER TABLE `rsmi_header`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT for table `rsmi_items`
 --
 ALTER TABLE `rsmi_items`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2582;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3889;
 
 --
 -- AUTO_INCREMENT for table `supplier`
@@ -4875,7 +5156,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_notifications`
 --
 ALTER TABLE `user_notifications`
-  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=177;
+  MODIFY `UserNotificationID` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=178;
 
 --
 -- AUTO_INCREMENT for table `user_push_tokens`
@@ -5096,6 +5377,14 @@ ALTER TABLE `property_waste_reports`
   ADD CONSTRAINT `property_waste_reports_departmentid_foreign` FOREIGN KEY (`DepartmentID`) REFERENCES `department` (`DepartmentID`) ON DELETE SET NULL,
   ADD CONSTRAINT `property_waste_reports_sourceservicerecordid_foreign` FOREIGN KEY (`SourceServiceRecordID`) REFERENCES `asset_service_records` (`ServiceRecordID`) ON DELETE SET NULL,
   ADD CONSTRAINT `property_waste_reports_updatedbyuserid_foreign` FOREIGN KEY (`UpdatedByUserID`) REFERENCES `user` (`UserID`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `rpc_inventory_audit_logs`
+--
+ALTER TABLE `rpc_inventory_audit_logs`
+  ADD CONSTRAINT `rpc_inventory_audit_logs_performed_by_user_id_foreign` FOREIGN KEY (`performed_by_user_id`) REFERENCES `user` (`UserID`),
+  ADD CONSTRAINT `rpc_inventory_audit_logs_rpc_inventory_cycle_id_foreign` FOREIGN KEY (`rpc_inventory_cycle_id`) REFERENCES `rpc_inventory_cycles` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `rpc_inventory_audit_logs_rpc_inventory_scan_id_foreign` FOREIGN KEY (`rpc_inventory_scan_id`) REFERENCES `rpc_inventory_scans` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `rpc_inventory_cycles`

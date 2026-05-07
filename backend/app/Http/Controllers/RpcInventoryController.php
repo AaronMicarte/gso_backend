@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AssignedProperty;
+use App\Models\Auth\User;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\MasterData\Condition;
 use App\Models\MasterData\PropertyType;
+use App\Models\RpcInventoryAuditLog;
 use App\Models\RpcInventoryCycle;
 use App\Models\RpcInventoryScan;
 use Carbon\Carbon;
@@ -76,6 +78,22 @@ class RpcInventoryController extends Controller
 
         if ($cycle && $cycle->trashed()) {
             $cycle->restore();
+            RpcInventoryAuditLog::createLog([
+                'rpc_inventory_cycle_id' => (int) $cycle->id,
+                'action' => 'cycle_restored',
+                'source' => 'web',
+                'performed_by_user_id' => (int) $user->UserID,
+                'details' => [
+                    'cycle_label' => $cycle->cycle_label,
+                    'start_year' => (int) $cycle->start_year,
+                    'end_year' => (int) $cycle->end_year,
+                ],
+            ]);
+
+            return response()->json([
+                'message' => 'Inventory cycle ready',
+                'cycle' => $cycle,
+            ], 201);
         }
 
         if (!$cycle) {
@@ -86,6 +104,19 @@ class RpcInventoryController extends Controller
                 'status' => 'active',
                 'started_at' => now(),
                 'created_by_user_id' => (int) $user->UserID,
+            ]);
+
+            RpcInventoryAuditLog::createLog([
+                'rpc_inventory_cycle_id' => (int) $cycle->id,
+                'action' => 'cycle_created',
+                'source' => 'web',
+                'performed_by_user_id' => (int) $user->UserID,
+                'details' => [
+                    'cycle_label' => $cycle->cycle_label,
+                    'start_year' => (int) $cycle->start_year,
+                    'end_year' => (int) $cycle->end_year,
+                    'status' => $cycle->status,
+                ],
             ]);
         }
 
@@ -348,6 +379,7 @@ class RpcInventoryController extends Controller
         }
 
         $createdScans = [];
+        $isBulk = count($requestedDetailIds) > 1;
 
         try {
             DB::transaction(function () use (
@@ -356,12 +388,13 @@ class RpcInventoryController extends Controller
                 $requestedDetailIds,
                 $mappedByDetail,
                 $validated,
-                $user
+                $user,
+                $isBulk
             ): void {
                 foreach ($requestedDetailIds as $detailId) {
                     $row = $mappedByDetail[$detailId];
 
-                    $createdScans[] = RpcInventoryScan::create([
+                    $scan = RpcInventoryScan::create([
                         'rpc_inventory_cycle_id' => (int) $cycle->id,
                         'inventory_detail_id' => (int) $row['inventory_detail_id'],
                         'property_id' => isset($row['property_id']) && $row['property_id'] !== null ? (int) $row['property_id'] : null,
@@ -384,6 +417,26 @@ class RpcInventoryController extends Controller
                         'remarks' => $validated['remarks'] ?? null,
                         'accountable_officer' => $row['accountable_officer'] ?? null,
                     ]);
+
+                    $createdScans[] = $scan;
+
+                    if (! $isBulk) {
+                        $this->createAuditEntry(
+                            (int) $cycle->id,
+                            'scan_created',
+                            $user,
+                            [
+                                'rpc_type' => $row['rpc_type'] ?? null,
+                                'property_number' => $row['property_number'] ?? null,
+                                'property_id' => $row['property_id'] ?? null,
+                                'inventory_detail_id' => $row['inventory_detail_id'] ?? null,
+                                'condition_id' => (int) $validated['condition_id'],
+                                'remarks' => $validated['remarks'] ?? null,
+                            ],
+                            $scan,
+                            (int) $validated['condition_id']
+                        );
+                    }
                 }
             });
         } catch (\Illuminate\Database\QueryException $e) {
@@ -394,6 +447,27 @@ class RpcInventoryController extends Controller
             }
 
             throw $e;
+        }
+
+        // If bulk create, emit a single grouped audit entry to reduce noise
+        if ($isBulk && count($createdScans) > 0) {
+            $propertyNumbers = array_values(array_filter(array_map(fn ($s) => $s->property_number ?? null, $createdScans)));
+            $inventoryDetailIds = array_values(array_filter(array_map(fn ($s) => $s->inventory_detail_id ?? null, $createdScans)));
+            $rpcTypes = array_values(array_filter(array_unique(array_map(fn ($s) => $s->rpc_type ?? null, $createdScans))));
+
+            $this->createAuditEntry(
+                (int) $cycle->id,
+                'scan_created_bulk',
+                $user,
+                [
+                    'total' => count($createdScans),
+                    'created' => count($createdScans),
+                    'property_numbers' => $propertyNumbers,
+                    'inventory_detail_ids' => $inventoryDetailIds,
+                    'rpc_types' => $rpcTypes,
+                    'remarks' => $validated['remarks'] ?? null,
+                ]
+            );
         }
 
         return response()->json([
@@ -408,10 +482,13 @@ class RpcInventoryController extends Controller
 
     public function updateScan(Request $request, int $scanId): JsonResponse
     {
-        $this->authorizeGso();
+        $user = $this->authorizeGso();
 
         $scan = RpcInventoryScan::with(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName'])
             ->findOrFail($scanId);
+        $cycleId = (int) $scan->rpc_inventory_cycle_id;
+        $previousConditionId = (int) $scan->condition_id;
+        $previousRemarks = $scan->remarks;
 
         $validated = $request->validate([
             'condition_id' => 'required|integer|exists:condition,ConditionID',
@@ -419,12 +496,55 @@ class RpcInventoryController extends Controller
             'remarks' => 'nullable|string|max:255',
         ]);
 
-        $scan->condition_id = (int) $validated['condition_id'];
-        $scan->quantity_per_count = 1;
-        if (array_key_exists('remarks', $validated)) {
-            $scan->remarks = $validated['remarks'];
+        $newConditionId = (int) $validated['condition_id'];
+        $newRemarks = array_key_exists('remarks', $validated) ? $validated['remarks'] : $scan->remarks;
+        $hasChanges = $previousConditionId !== $newConditionId
+            || (($previousRemarks ?? null) !== ($newRemarks ?? null))
+            || (int) $scan->quantity_per_count !== 1;
+
+        if (!$hasChanges) {
+            return response()->json([
+                'message' => 'No changes detected.',
+                'scan' => $scan->fresh(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName']),
+            ]);
         }
-        $scan->save();
+
+        DB::transaction(function () use (
+            $scan,
+            $validated,
+            $cycleId,
+            $user,
+            $previousConditionId,
+            $previousRemarks
+        ): void {
+            $scan->condition_id = (int) $validated['condition_id'];
+            $scan->quantity_per_count = 1;
+            if (array_key_exists('remarks', $validated)) {
+                $scan->remarks = $validated['remarks'];
+            }
+            $scan->save();
+
+            $this->createAuditEntry(
+                $cycleId,
+                'scan_updated',
+                $user,
+                [
+                    'before' => [
+                        'condition_id' => $previousConditionId,
+                        'remarks' => $previousRemarks,
+                    ],
+                    'after' => [
+                        'condition_id' => (int) $scan->condition_id,
+                        'remarks' => $scan->remarks,
+                    ],
+                ],
+                $scan,
+                (int) $scan->condition_id,
+                $previousConditionId,
+                $previousRemarks,
+                $scan->remarks
+            );
+        });
 
         return response()->json([
             'message' => 'Scanned asset updated.',
@@ -434,10 +554,35 @@ class RpcInventoryController extends Controller
 
     public function destroyScan(int $scanId): JsonResponse
     {
-        $this->authorizeGso();
+        $user = $this->authorizeGso();
 
         $scan = RpcInventoryScan::findOrFail($scanId);
-        $scan->delete();
+        $cycleId = (int) $scan->rpc_inventory_cycle_id;
+        $snapshot = [
+            'property_number' => $scan->property_number,
+            'property_id' => $scan->property_id,
+            'inventory_detail_id' => $scan->inventory_detail_id,
+            'condition_id' => $scan->condition_id,
+            'remarks' => $scan->remarks,
+            'rpc_type' => $scan->rpc_type,
+            'scanned_at' => optional($scan->scanned_at)->toIso8601String(),
+        ];
+
+        DB::transaction(function () use ($scan, $cycleId, $snapshot, $user): void {
+            $scan->delete();
+
+            $this->createAuditEntry(
+                $cycleId,
+                'scan_deleted',
+                $user,
+                $snapshot,
+                null,
+                (int) ($snapshot['condition_id'] ?? 0) ?: null,
+                null,
+                $snapshot['remarks'] ?? null,
+                null
+            );
+        });
 
         return response()->json(['message' => 'Scanned asset removed.']);
     }
@@ -643,6 +788,77 @@ class RpcInventoryController extends Controller
             ->values();
 
         return response()->json(['data' => $conditions]);
+    }
+
+    public function auditLogs(Request $request, int $id): JsonResponse
+    {
+        $this->authorizeAdmin();
+        RpcInventoryCycle::findOrFail($id);
+
+        $perPage = max(10, min(200, (int) $request->query('per_page', 100)));
+
+        $query = RpcInventoryAuditLog::query()
+            ->where('rpc_inventory_cycle_id', $id)
+            ->with([
+                'performedBy:UserID,FullName',
+                    'scan:id,property_number,inventory_detail_id,condition_id',
+                    'scan.condition:ConditionID,ConditionName',
+            ])
+            ->orderByDesc('created_at')
+            ->orderByDesc('AuditID');
+
+        return response()->json($query->paginate($perPage));
+    }
+
+    private function authorizeAdmin()
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if ($roleName !== self::ROLE_ADMIN) {
+            abort(response()->json(['message' => 'Unauthorized'], 403));
+        }
+
+        return $user;
+    }
+
+    private function resolveAuditSource(): string
+    {
+        $source = strtolower(trim((string) request()->header('X-Client-Source', 'web')));
+
+        return in_array($source, ['web', 'mobile', 'api'], true) ? $source : 'web';
+    }
+
+    /**
+     * @param array<string, mixed> $details
+     */
+    private function createAuditEntry(
+        int $cycleId,
+        string $action,
+        User $user,
+        array $details = [],
+        ?RpcInventoryScan $scan = null,
+        ?int $conditionId = null,
+        ?int $previousConditionId = null,
+        ?string $previousRemarks = null,
+        ?string $newRemarks = null
+    ): RpcInventoryAuditLog {
+        return RpcInventoryAuditLog::createLog([
+            'rpc_inventory_cycle_id' => $cycleId,
+            'rpc_inventory_scan_id' => $scan?->id,
+            'action' => $action,
+            'source' => $this->resolveAuditSource(),
+            'performed_by_user_id' => (int) $user->UserID,
+            'performed_by_device_id' => trim((string) request()->header('X-Device-ID', '')) ?: null,
+            'inventory_detail_id' => $scan?->inventory_detail_id ? (int) $scan->inventory_detail_id : ($details['inventory_detail_id'] ?? null),
+            'property_id' => $scan?->property_id ? (int) $scan->property_id : ($details['property_id'] ?? null),
+            'property_number' => $scan?->property_number ?? ($details['property_number'] ?? null),
+            'condition_id' => $conditionId ?? ($scan?->condition_id ? (int) $scan->condition_id : null),
+            'previous_condition_id' => $previousConditionId,
+            'previous_remarks' => $previousRemarks,
+            'new_remarks' => $newRemarks,
+            'details' => $details,
+        ]);
     }
 
     private function authorizeGso()
@@ -1440,6 +1656,7 @@ class RpcInventoryController extends Controller
     {
         $user = $this->authorizeGso();
         $cycle = RpcInventoryCycle::findOrFail($id);
+        $source = $this->resolveAuditSource();
 
         $validated = $request->validate([
             'scans' => 'required|array|min:1|max:100',
@@ -1456,12 +1673,14 @@ class RpcInventoryController extends Controller
         $createdCount = 0;
         $duplicateCount = 0;
         $errorCount = 0;
+        $syncedPropertyNumbers = [];
 
         DB::transaction(function () use (
             &$results,
             &$createdCount,
             &$duplicateCount,
             &$errorCount,
+            &$syncedPropertyNumbers,
             $cycle,
             $validated,
             $user
@@ -1571,6 +1790,29 @@ class RpcInventoryController extends Controller
                         'device_id' => $deviceId,
                     ]);
 
+                    $this->createAuditEntry(
+                        (int) $cycle->id,
+                        'scan_synced',
+                        $user,
+                        [
+                            'sync_source' => $source,
+                            'client_uuid' => $clientUuid,
+                            'device_id' => $deviceId,
+                            'status' => 'created',
+                            'inventory_detail_id' => (int) $inventoryDetail->InventoryDetailID,
+                            'property_number' => $scan->property_number,
+                            'property_id' => $scan->property_id,
+                            'condition_id' => $conditionId,
+                            'remarks' => $remarks,
+                        ],
+                        $scan,
+                        $conditionId
+                    );
+
+                    if ($scan->property_number) {
+                        $syncedPropertyNumbers[] = (string) $scan->property_number;
+                    }
+
                     $results[] = [
                         'client_uuid' => $clientUuid,
                         'status' => 'created',
@@ -1588,6 +1830,28 @@ class RpcInventoryController extends Controller
                 }
             }
         });
+
+        // Derive a clear action/status for the batch sync so the audit trail reflects result
+        $batchStatus = 'completed';
+        if ($errorCount > 0) {
+            $batchStatus = ($createdCount > 0 || $duplicateCount > 0) ? 'partially_completed' : 'failed';
+        }
+
+        $this->createAuditEntry(
+            (int) $cycle->id,
+            'sync_batch_' . $batchStatus,
+            $user,
+            [
+                'source' => $source,
+                'property_number' => 'Batched',
+                'total' => count($validated['scans']),
+                'created' => $createdCount,
+                'duplicates' => $duplicateCount,
+                'errors' => $errorCount,
+                'property_numbers' => array_values(array_unique(array_filter($syncedPropertyNumbers))),
+                'status' => $batchStatus,
+            ]
+        );
 
         return response()->json([
             'message' => "Bulk sync processed: {$createdCount} created, {$duplicateCount} skipped, {$errorCount} errors",
