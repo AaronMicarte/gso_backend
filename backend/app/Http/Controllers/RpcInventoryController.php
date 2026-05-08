@@ -1683,7 +1683,8 @@ class RpcInventoryController extends Controller
             &$syncedPropertyNumbers,
             $cycle,
             $validated,
-            $user
+            $user,
+            $source
         ): void {
             foreach ($validated['scans'] as $scanData) {
                 $clientUuid = isset($scanData['client_uuid']) ? trim((string) $scanData['client_uuid']) : null;
@@ -1796,6 +1797,7 @@ class RpcInventoryController extends Controller
                         $user,
                         [
                             'sync_source' => $source,
+                            'rpc_type' => (string) ($mapped['rpc_type'] ?? ''),
                             'client_uuid' => $clientUuid,
                             'device_id' => $deviceId,
                             'status' => 'created',
