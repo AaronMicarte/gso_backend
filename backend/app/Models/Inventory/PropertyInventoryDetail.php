@@ -48,7 +48,9 @@ class PropertyInventoryDetail extends Model
 
     public function qrCode()
     {
-        return $this->hasOne(\App\Models\QrCode::class, 'InventoryDetailID', 'InventoryDetailID');
+        return $this->hasOne(\App\Models\QrCode::class, 'InventoryDetailID', 'InventoryDetailID')
+            ->orderByDesc('DateGenerated')
+            ->orderByDesc('QRCodeID');
     }
 
     public function propertyType()

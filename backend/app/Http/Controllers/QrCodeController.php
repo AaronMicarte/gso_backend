@@ -101,9 +101,9 @@ class QrCodeController extends Controller
         $payload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
 
         $qr = QrCode::updateOrCreate(
-            ['InventoryDetailID' => $assignedProperty->InventoryDetailID],
+            ['PropertyID' => (int) $assignedProperty->PropertyID],
             [
-                'PropertyID' => (int) $assignedProperty->PropertyID,
+                'InventoryDetailID' => $assignedProperty->InventoryDetailID,
                 'DepartmentID' => (int) $assignedProperty->DepartmentID,
                 'QRCodeData' => $payload,
                 'DateGenerated' => now(),

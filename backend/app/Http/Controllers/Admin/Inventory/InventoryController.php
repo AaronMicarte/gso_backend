@@ -641,7 +641,12 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Inventory detail not found.'], 404);
         }
 
-        $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+        $assignedProperty = AssignedProperty::query()
+            ->where('InventoryDetailID', $detail->InventoryDetailID)
+            ->orderByDesc('UpdatedDate')
+            ->orderByDesc('CreatedDate')
+            ->orderByDesc('PropertyID')
+            ->first();
         if (!$assignedProperty) {
             return response()->json([
                 'message' => 'Cannot generate QR: item has no assigned property record yet. Issue the item first to create accountability (assignedproperty), then generate QR.',
@@ -664,9 +669,9 @@ class InventoryController extends Controller
         $payload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
 
         $qr = QrCode::updateOrCreate(
-            ['InventoryDetailID' => $detail->InventoryDetailID],
+            ['PropertyID' => (int) $assignedProperty->PropertyID],
             [
-                'PropertyID' => (int) $assignedProperty->PropertyID,
+                'InventoryDetailID' => $detail->InventoryDetailID,
                 'DepartmentID' => (int) $assignedProperty->DepartmentID,
                 'QRCodeData' => $payload,
                 'DateGenerated' => now(),
@@ -1545,14 +1550,15 @@ class InventoryController extends Controller
     public function backfillQrCodes(Request $request)
     {
         try {
-            // Find all issued items (PropertyStatusID = 2) that have AssignedProperty but no QR code
             $issuedItemsWithoutQr = PropertyInventoryDetail::where('PropertyStatusID', 2)
-                ->whereHas('assignedProperties', function($q) {
-                    $q->where('PropertyStatusID', 2); // Issued
+                ->whereHas('assignedProperties', function ($q) {
+                    $q->where('PropertyStatusID', 2);
                 })
-                ->whereDoesntHave('qrCode')
-                ->with(['assignedProperties' => function($q) {
-                    $q->where('PropertyStatusID', 2)->latest();
+                ->with(['assignedProperties' => function ($q) {
+                    $q->where('PropertyStatusID', 2)
+                        ->orderByDesc('UpdatedDate')
+                        ->orderByDesc('CreatedDate')
+                        ->orderByDesc('PropertyID');
                 }])
                 ->get();
 
@@ -1560,30 +1566,35 @@ class InventoryController extends Controller
             $errors = [];
 
             foreach ($issuedItemsWithoutQr as $detail) {
-                try {
-                    $assignedProperty = $detail->assignedProperties->first();
-                    if (!$assignedProperty) continue;
+                foreach ($detail->assignedProperties as $assignedProperty) {
+                    try {
+                        $baseUrl = rtrim((string) config('gso.frontend_url'), '/');
+                        if ($baseUrl === '') {
+                            $baseUrl = 'http://localhost:3000';
+                        }
 
-                    $baseUrl = rtrim((string) config('gso.frontend_url'), '/');
-                    if ($baseUrl === '') {
-                        $baseUrl = 'http://localhost:3000';
+                        $key = (string) config('app.key');
+                        $hash = substr(hash_hmac('sha256', (string) $assignedProperty->PropertyID, $key), 0, 12);
+                        $qrPayload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
+
+                        QrCode::updateOrCreate(
+                            ['PropertyID' => (int) $assignedProperty->PropertyID],
+                            [
+                                'InventoryDetailID' => $detail->InventoryDetailID,
+                                'DepartmentID' => (int) $assignedProperty->DepartmentID,
+                                'QRCodeData' => $qrPayload,
+                                'DateGenerated' => now(),
+                            ]
+                        );
+
+                        $created++;
+                    } catch (\Exception $e) {
+                        $errors[] = [
+                            'InventoryDetailID' => $detail->InventoryDetailID,
+                            'PropertyID' => $assignedProperty->PropertyID ?? null,
+                            'error' => $e->getMessage(),
+                        ];
                     }
-
-                    $key = (string) config('app.key');
-                    $hash = substr(hash_hmac('sha256', (string) $assignedProperty->PropertyID, $key), 0, 12);
-                    $qrPayload = $baseUrl . '/qr/scan/' . $assignedProperty->PropertyID . '?h=' . $hash;
-
-                    QrCode::create([
-                        'InventoryDetailID' => $detail->InventoryDetailID,
-                        'PropertyID' => (int) $assignedProperty->PropertyID,
-                        'DepartmentID' => (int) $assignedProperty->DepartmentID,
-                        'QRCodeData' => $qrPayload,
-                        'DateGenerated' => now(),
-                    ]);
-
-                    $created++;
-                } catch (\Exception $e) {
-                    $errors[] = "Failed to create QR for InventoryDetailID {$detail->InventoryDetailID}: " . $e->getMessage();
                 }
             }
 

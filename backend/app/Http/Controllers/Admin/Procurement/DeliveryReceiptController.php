@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
 use Carbon\Carbon;
 
 class DeliveryReceiptController extends Controller
@@ -312,11 +313,8 @@ class DeliveryReceiptController extends Controller
                 ], 422);
             }
 
-            $iarNumber = $this->generateDrIarNumber();
-
-            $deliveryReceipt = DeliveryReceipt::create([
+            $deliveryPayload = [
                 'DRNumber' => $request->dr_number,
-                'IARNumber' => $iarNumber,
                 'SupplierID' => (int) $supplier->SupplierID,
                 'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
@@ -330,7 +328,39 @@ class DeliveryReceiptController extends Controller
                 'dr_picture' => $drPicturePath,
                 'InspectionStatus' => 'inspected',
                 'InspectionCompletedAt' => now(),
-            ]);
+            ];
+
+            $deliveryReceipt = null;
+            for ($attempt = 0; $attempt < 5; $attempt++) {
+                $iarNumber = $this->generateDrIarNumber();
+
+                try {
+                    $deliveryReceipt = DeliveryReceipt::create(array_merge($deliveryPayload, [
+                        'IARNumber' => $iarNumber,
+                    ]));
+                    break;
+                } catch (QueryException $queryException) {
+                    if ($this->isDuplicateIarNumberException($queryException)) {
+                        continue;
+                    }
+
+                    throw $queryException;
+                }
+            }
+
+            if (! $deliveryReceipt) {
+                if (DB::transactionLevel() > 0) {
+                    DB::rollBack();
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => [
+                        'iar_number' => ['Could not reserve a unique IAR number. Please try again.'],
+                    ],
+                ], 422);
+            }
 
             // Create details
             $details = $request->details ?? [];
@@ -983,9 +1013,9 @@ class DeliveryReceiptController extends Controller
 
                 $qrPayload = $this->buildQrPayloadForProperty((int) $assignedProperty->PropertyID);
                 QrCode::updateOrCreate(
-                    ['InventoryDetailID' => $inventoryDetail->InventoryDetailID],
+                    ['PropertyID' => (int) $assignedProperty->PropertyID],
                     [
-                        'PropertyID' => (int) $assignedProperty->PropertyID,
+                        'InventoryDetailID' => $inventoryDetail->InventoryDetailID,
                         'DepartmentID' => (int) $assignedProperty->DepartmentID,
                         'QRCodeData' => $qrPayload,
                         'DateGenerated' => now(),
@@ -1237,17 +1267,40 @@ class DeliveryReceiptController extends Controller
         $year = date('Y');
         $prefix = 'IAR-' . $year . '-';
 
-        $latest = DB::table('deliveryreceipt')
+        $latestDr = DB::table('deliveryreceipt')
             ->where('IARNumber', 'like', $prefix . '%')
             ->orderByDesc('IARNumber')
             ->value('IARNumber');
 
-        $next = 1;
-        if ($latest && preg_match('/^(?:IAR-)\d{4}-(\d{4,})$/', (string) $latest, $m)) {
-            $next = ((int) $m[1]) + 1;
+        $latestIar = DB::table('inspectionacceptancereport')
+            ->where('IARNumber', 'like', $prefix . '%')
+            ->orderByDesc('IARNumber')
+            ->value('IARNumber');
+
+        $maxSequence = 0;
+        foreach ([$latestDr, $latestIar] as $value) {
+            if ($value && preg_match('/^IAR-\d{4}-(\d{4,})$/', (string) $value, $matches)) {
+                $maxSequence = max($maxSequence, (int) $matches[1]);
+            }
         }
 
-        return $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        do {
+            $maxSequence++;
+            $candidate = $prefix . str_pad((string) $maxSequence, 4, '0', STR_PAD_LEFT);
+
+            $exists = DB::table('deliveryreceipt')->where('IARNumber', $candidate)->exists()
+                || DB::table('inspectionacceptancereport')->where('IARNumber', $candidate)->exists();
+        } while ($exists);
+
+        return $candidate;
+    }
+
+    private function isDuplicateIarNumberException(QueryException $exception): bool
+    {
+        $message = (string) $exception->getMessage();
+
+        return str_contains($message, 'ux_deliveryreceipt_iarnumber')
+            || str_contains($message, "Duplicate entry") && str_contains($message, 'IAR-');
     }
 
     private function generateDocumentNumber(string $type): string
