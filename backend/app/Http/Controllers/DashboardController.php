@@ -68,6 +68,7 @@ class DashboardController extends Controller
                     'loginaudit.EventTime as timestamp',
                     'loginaudit.IPAddress as ip_address'
                 )
+                ->addSelect('user.FullName as fullName')
                 ->orderBy('loginaudit.EventTime', 'desc')
                 ->limit(5)
                 ->get()
@@ -77,7 +78,7 @@ class DashboardController extends Controller
                         'type' => 'login',
                         'action' => $this->formatLoginAction($item->action),
                         'description' => $item->fullName ?? $item->user,
-                        'user' => $item->user,
+                        'performed_by' => $item->fullName ?? $item->user,
                         'timestamp' => $item->timestamp,
                         'ip_address' => $item->ip_address,
                     ];
@@ -92,6 +93,7 @@ class DashboardController extends Controller
                     'deliveryreceipt.DRNumber as drNumber',
                     'supplier.SupplierName as supplier',
                     'user.Username as user',
+                    'user.FullName as fullName',
                     'deliveryreceipt.CreatedDate as timestamp'
                 )
                 ->orderBy('deliveryreceipt.CreatedDate', 'desc')
@@ -103,14 +105,63 @@ class DashboardController extends Controller
                         'type' => 'delivery_receipt',
                         'action' => 'New Delivery Receipt',
                         'description' => $item->drNumber ?? 'DR-' . $item->id,
-                        'user' => $item->supplier ?? $item->user,
+                        'performed_by' => $item->fullName ?? $item->user,
                         'timestamp' => $item->timestamp,
                     ];
                 });
 
+            // Recent asset audit logs (generic activity) - include performer and details JSON
+            $auditLogs = DB::table('asset_audit_logs')
+                ->leftJoin('user', 'asset_audit_logs.PerformedBy', '=', 'user.UserID')
+                ->select(
+                    'asset_audit_logs.AuditID as id',
+                    'asset_audit_logs.EntityType as entity_type',
+                    'asset_audit_logs.EntityID as entity_id',
+                    'asset_audit_logs.Action as action',
+                    'asset_audit_logs.Details as details',
+                    'user.Username as user',
+                    'user.FullName as fullName',
+                    'asset_audit_logs.CreatedAt as timestamp'
+                )
+                ->orderBy('asset_audit_logs.CreatedAt', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($item) {
+                    $meta = null;
+                    try {
+                        $meta = json_decode($item->details, true);
+                    } catch (\Exception $e) {
+                        $meta = null;
+                    }
+
+                    // Humanize action text a bit
+                    $actionText = str_replace('_', ' ', $item->action);
+                    $actionText = ucwords($actionText);
+
+                    // Build a short description from details when possible
+                    $desc = null;
+                    if (is_array($meta)) {
+                        if (!empty($meta['dr_number'])) {
+                            $desc = $meta['dr_number'];
+                        } elseif (!empty($meta['inventory_id'])) {
+                            $desc = 'Inventory #' . $meta['inventory_id'];
+                        }
+                    }
+
+                    return [
+                        'id' => 'audit_' . $item->id,
+                        'type' => 'audit',
+                        'action' => $actionText,
+                        'description' => $desc ?? ($item->entity_type . ' #' . $item->entity_id),
+                        'performed_by' => $item->fullName ?? $item->user,
+                        'meta' => $meta,
+                        'timestamp' => $item->timestamp,
+                    ];
+                });
             // Merge and sort by timestamp
             $activities = collect($loginAudits)
                 ->merge($deliveryReceipts)
+                ->merge($auditLogs)
                 ->sortByDesc('timestamp')
                 ->take(10)
                 ->values()

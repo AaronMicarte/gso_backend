@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AuditLogsController;
 use App\Http\Controllers\Auth\MFAController;
 use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\MasterData\CategoryController as MasterDataCategoryController;
@@ -350,6 +351,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('reports', [InspectionReportController::class, 'store']);
         Route::patch('reports/{id}', [InspectionReportController::class, 'update']);
         Route::post('reports/{id}/complete', [InspectionReportController::class, 'complete']);
+    });
+
+    // Security / Activity Logs routes
+    Route::prefix('security')->group(function () {
+        Route::prefix('activity-logs')->group(function () {
+            Route::get('', [AuditLogsController::class, 'getActivityLogs']);
+            Route::get('entity-types', [AuditLogsController::class, 'getEntityTypes']);
+        });
     });
 });
 
