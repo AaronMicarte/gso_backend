@@ -55,9 +55,7 @@ class DashboardController extends Controller
     public function getRecentActivity()
     {
         try {
-            $activities = [];
-
-            // Recent login events (last 10)
+            // Recent login events (last 5)
             $loginAudits = DB::table('loginaudit')
                 ->join('user', 'loginaudit.UserID', '=', 'user.UserID')
                 ->select(
@@ -68,14 +66,18 @@ class DashboardController extends Controller
                     'loginaudit.EventTime as timestamp',
                     'loginaudit.IPAddress as ip_address'
                 )
-                ->addSelect('user.FullName as fullName')
                 ->orderBy('loginaudit.EventTime', 'desc')
                 ->limit(5)
                 ->get()
                 ->map(function ($item) {
+                    $actionKey = strtolower((string) $item->action);
+
                     return [
                         'id' => 'login_' . $item->id,
                         'type' => 'login',
+                        'entity_type' => 'login',
+                        'entity_label' => 'Login',
+                        'action_key' => $actionKey,
                         'action' => $this->formatLoginAction($item->action),
                         'description' => $item->fullName ?? $item->user,
                         'performed_by' => $item->fullName ?? $item->user,
@@ -103,14 +105,17 @@ class DashboardController extends Controller
                     return [
                         'id' => 'dr_' . $item->id,
                         'type' => 'delivery_receipt',
-                        'action' => 'New Delivery Receipt',
-                        'description' => $item->drNumber ?? 'DR-' . $item->id,
+                        'entity_type' => 'delivery_receipt',
+                        'entity_label' => 'Delivery Receipt',
+                        'action_key' => 'created',
+                        'action' => 'Delivery receipt created',
+                        'description' => $item->drNumber ?? 'Delivery receipt record created',
                         'performed_by' => $item->fullName ?? $item->user,
                         'timestamp' => $item->timestamp,
                     ];
                 });
 
-            // Recent asset audit logs (generic activity) - include performer and details JSON
+            // Recent asset audit logs with action metadata.
             $auditLogs = DB::table('asset_audit_logs')
                 ->leftJoin('user', 'asset_audit_logs.PerformedBy', '=', 'user.UserID')
                 ->select(
@@ -123,6 +128,13 @@ class DashboardController extends Controller
                     'user.FullName as fullName',
                     'asset_audit_logs.CreatedAt as timestamp'
                 )
+                // Keep activity feed at header level to avoid duplicate detail/item noise.
+                ->whereNotIn('asset_audit_logs.EntityType', [
+                    'inventory_detail',
+                    'delivery_receipt_detail',
+                    'property_transfer_item',
+                    'asset_service_record_detail',
+                ])
                 ->orderBy('asset_audit_logs.CreatedAt', 'desc')
                 ->limit(10)
                 ->get()
@@ -134,53 +146,31 @@ class DashboardController extends Controller
                         $meta = null;
                     }
 
-                    // Humanize action text a bit
-                    $actionText = str_replace('_', ' ', $item->action);
-                    $actionText = ucwords($actionText);
-
-                    // Build a short, safe description from details when possible.
-                    // Avoid exposing raw internal numeric IDs (e.g. "property_transfer #11").
-                    $desc = null;
-                    if (is_array($meta)) {
-                        if (!empty($meta['dr_number'])) {
-                            $desc = $meta['dr_number'];
-                        } elseif (!empty($meta['transfer_number'])) {
-                            $desc = $meta['transfer_number'];
-                        } elseif (!empty($meta['borrow_number'])) {
-                            $desc = $meta['borrow_number'];
-                        } elseif (!empty($meta['property_number'])) {
-                            $desc = $meta['property_number'];
-                        } elseif (!empty($meta['property_tag'])) {
-                            $desc = $meta['property_tag'];
-                        } elseif (!empty($meta['inventory_id'])) {
-                            // Prefer a non-sequential label where possible; if only inventory_id exists,
-                            // present a generic label without exposing internal DB id.
-                            $desc = 'Inventory item';
-                        }
-                    }
-
-                    // Fallback: use a humanized entity type (no raw IDs)
-                    $safeEntityLabel = ucwords(str_replace('_', ' ', $item->entity_type));
+                    $actionKey = strtolower((string) $item->action);
+                    $entityType = strtolower((string) $item->entity_type);
+                    $entityLabel = ucwords(str_replace('_', ' ', $entityType));
 
                     return [
                         'id' => 'audit_' . $item->id,
-                        'type' => 'audit',
-                        'action' => $actionText,
-                        'description' => $desc ?? $safeEntityLabel,
+                        'type' => $entityType ?: 'audit',
+                        'entity_type' => $entityType,
+                        'entity_label' => $entityLabel,
+                        'action_key' => $actionKey,
+                        'action' => $this->formatAuditAction($actionKey),
+                        'description' => $this->buildAuditSummary($meta, $entityLabel),
                         'performed_by' => $item->fullName ?? $item->user,
                         'meta' => $meta,
                         'timestamp' => $item->timestamp,
                     ];
                 });
-            // Merge and sort by timestamp
+
             $activities = collect($loginAudits)
                 ->merge($deliveryReceipts)
                 ->merge($auditLogs)
                 ->sortByDesc('timestamp')
-                ->take(10)
+                ->take(15)
                 ->values()
                 ->map(function ($item) {
-                    // Add relative time
                     $item['timeAgo'] = $this->getRelativeTime($item['timestamp']);
                     return $item;
                 });
@@ -224,5 +214,60 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return 'Unknown';
         }
+    }
+
+    /**
+     * Build explicit, human-readable action labels for audit keys.
+     */
+    private function formatAuditAction(string $action): string
+    {
+        return match ($action) {
+            'created' => 'Created record',
+            'created_from_dr' => 'Created from delivery receipt',
+            'transfer_requested' => 'Transfer request submitted',
+            'transfer_releasing_approved', 'releasing_approved' => 'Transfer release approved',
+            'transfer_approved', 'approved' => 'Transfer approved',
+            'transfer_releasing_signed', 'releasing_signed' => 'Transfer releasing office signed',
+            'transfer_receiving_signed', 'receiving_signed' => 'Transfer receiving office signed',
+            'transfer_completed' => 'Transfer completed',
+            'borrow_requested' => 'Borrow request submitted',
+            'borrow_releasing_approved' => 'Borrow release approved',
+            'borrow_approved' => 'Borrow approved',
+            'borrow_borrowed' => 'Borrow item released',
+            'borrow_returned' => 'Borrow item returned',
+            'borrow_partially_returned' => 'Borrow item partially returned',
+            'rejected' => 'Rejected',
+            'completed' => 'Completed',
+            default => ucwords(str_replace('_', ' ', $action)),
+        };
+    }
+
+    /**
+     * Build a concise summary without hash-style fallback identifiers.
+     */
+    private function buildAuditSummary(?array $meta, string $entityLabel): string
+    {
+        if (!is_array($meta)) {
+            return $entityLabel . ' activity recorded';
+        }
+
+        $candidates = [
+            'dr_number',
+            'transfer_number',
+            'borrow_number',
+            'request_number',
+            'property_number',
+            'property_tag',
+            'reference',
+            'supplier',
+        ];
+
+        foreach ($candidates as $key) {
+            if (!empty($meta[$key])) {
+                return (string) $meta[$key];
+            }
+        }
+
+        return $entityLabel . ' activity recorded';
     }
 }

@@ -41,7 +41,14 @@ class AuditLogsController extends Controller
                     'user.Username as user',
                     'user.FullName as performed_by',
                     'asset_audit_logs.CreatedAt as timestamp'
-                );
+                )
+                // Keep audit list at header level to avoid duplicate detail/item rows.
+                ->whereNotIn('asset_audit_logs.EntityType', [
+                    'inventory_detail',
+                    'delivery_receipt_detail',
+                    'property_transfer_item',
+                    'asset_service_record_detail',
+                ]);
 
             // Apply filters
             if (!empty($search)) {
@@ -76,7 +83,7 @@ class AuditLogsController extends Controller
                 ->map(function ($item) {
                     $meta = $this->decodeDetails($item->details);
                     $entityLabel = $this->formatEntityLabel($item->entity_type);
-                    $actionLabel = $this->formatActionLabel($item->action, $item->entity_type);
+                    $actionLabel = $this->formatActionLabel($item->action);
                     $summary = $this->buildSummary($meta, $item->entity_type, (int) $item->entity_id);
                     $highlights = $this->buildDetailHighlights($meta, $item->entity_type);
 
@@ -159,28 +166,27 @@ class AuditLogsController extends Controller
     /**
      * Build a contextual action label for the table.
      */
-    private function formatActionLabel(string $action, string $entityType): string
+    private function formatActionLabel(string $action): string
     {
-        $entityLabel = $this->formatEntityLabel($entityType);
-
-        $actionLabel = match ($action) {
-            'created' => 'Created',
-            'created_from_dr' => 'Created from Delivery Receipt',
-            'transfer_requested' => 'Transfer Requested',
-            'transfer_releasing_approved', 'releasing_approved' => 'Releasing Approved',
-            'transfer_approved', 'approved' => 'Approved',
-            'transfer_releasing_signed', 'releasing_signed' => 'Releasing Signed',
-            'transfer_receiving_signed', 'receiving_signed' => 'Receiving Signed',
-            'transfer_completed', 'completed' => 'Completed',
-            'borrow_requested' => 'Borrow Requested',
-            'borrow_releasing_approved' => 'Borrow Releasing Approved',
-            'borrow_approved' => 'Borrow Approved',
-            'borrow_returned' => 'Borrow Returned',
+        return match ($action) {
+            'created' => 'Created record',
+            'created_from_dr' => 'Created from delivery receipt',
+            'transfer_requested' => 'Transfer request submitted',
+            'transfer_releasing_approved', 'releasing_approved' => 'Transfer release approved',
+            'transfer_approved', 'approved' => 'Transfer approved',
+            'transfer_releasing_signed', 'releasing_signed' => 'Transfer releasing office signed',
+            'transfer_receiving_signed', 'receiving_signed' => 'Transfer receiving office signed',
+            'transfer_completed' => 'Transfer completed',
+            'borrow_requested' => 'Borrow request submitted',
+            'borrow_releasing_approved' => 'Borrow release approved',
+            'borrow_approved' => 'Borrow approved',
+            'borrow_borrowed' => 'Borrow item released',
+            'borrow_returned' => 'Borrow item returned',
+            'borrow_partially_returned' => 'Borrow item partially returned',
             'rejected' => 'Rejected',
+            'completed' => 'Completed',
             default => ucwords(str_replace('_', ' ', $action)),
         };
-
-        return $entityLabel . ' • ' . $actionLabel;
     }
 
     /**
@@ -189,7 +195,7 @@ class AuditLogsController extends Controller
     private function buildSummary(?array $meta, string $entityType, int $entityId): string
     {
         if (!is_array($meta)) {
-            return $this->formatEntityLabel($entityType) . ' #' . $entityId;
+            return $this->formatEntityLabel($entityType) . ' activity recorded';
         }
 
         $candidates = [
@@ -213,10 +219,10 @@ class AuditLogsController extends Controller
         }
 
         if (!empty($meta['inventory_id'])) {
-            return 'Inventory #' . $meta['inventory_id'];
+            return 'Inventory record ' . $meta['inventory_id'];
         }
 
-        return $this->formatEntityLabel($entityType) . ' #' . $entityId;
+        return $this->formatEntityLabel($entityType) . ' activity recorded';
     }
 
     /**
@@ -254,7 +260,7 @@ class AuditLogsController extends Controller
             } elseif ($key === 'to_department_id') {
                 $value = 'To ' . $this->resolveDepartmentName((int) $value);
             } elseif ($key === 'inventory_id') {
-                $value = 'Inventory #' . $value;
+                $value = 'Inventory ' . $value;
             }
 
             $highlights[] = (string) $value;
@@ -284,7 +290,7 @@ class AuditLogsController extends Controller
             ->where('DepartmentID', $departmentId)
             ->value('DepartmentName');
 
-        $resolvedName = $departmentName ?: 'Department #' . $departmentId;
+        $resolvedName = $departmentName ?: 'Department ' . $departmentId;
         $this->departmentNameCache[$departmentId] = $resolvedName;
 
         return $resolvedName;
