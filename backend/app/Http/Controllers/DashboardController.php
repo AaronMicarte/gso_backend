@@ -138,21 +138,35 @@ class DashboardController extends Controller
                     $actionText = str_replace('_', ' ', $item->action);
                     $actionText = ucwords($actionText);
 
-                    // Build a short description from details when possible
+                    // Build a short, safe description from details when possible.
+                    // Avoid exposing raw internal numeric IDs (e.g. "property_transfer #11").
                     $desc = null;
                     if (is_array($meta)) {
                         if (!empty($meta['dr_number'])) {
                             $desc = $meta['dr_number'];
+                        } elseif (!empty($meta['transfer_number'])) {
+                            $desc = $meta['transfer_number'];
+                        } elseif (!empty($meta['borrow_number'])) {
+                            $desc = $meta['borrow_number'];
+                        } elseif (!empty($meta['property_number'])) {
+                            $desc = $meta['property_number'];
+                        } elseif (!empty($meta['property_tag'])) {
+                            $desc = $meta['property_tag'];
                         } elseif (!empty($meta['inventory_id'])) {
-                            $desc = 'Inventory #' . $meta['inventory_id'];
+                            // Prefer a non-sequential label where possible; if only inventory_id exists,
+                            // present a generic label without exposing internal DB id.
+                            $desc = 'Inventory item';
                         }
                     }
+
+                    // Fallback: use a humanized entity type (no raw IDs)
+                    $safeEntityLabel = ucwords(str_replace('_', ' ', $item->entity_type));
 
                     return [
                         'id' => 'audit_' . $item->id,
                         'type' => 'audit',
                         'action' => $actionText,
-                        'description' => $desc ?? ($item->entity_type . ' #' . $item->entity_id),
+                        'description' => $desc ?? $safeEntityLabel,
                         'performed_by' => $item->fullName ?? $item->user,
                         'meta' => $meta,
                         'timestamp' => $item->timestamp,
