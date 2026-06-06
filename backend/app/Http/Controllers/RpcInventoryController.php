@@ -2135,17 +2135,37 @@ class RpcInventoryController extends Controller
                 ], 409);
             }
 
-            // Return closure summary for confirmation
-            return response()->json([
+            // Build a compatible response shape for frontend consumers.
+            // Provide both a flattened top-level shape and `closure_info` for older clients.
+            $closureInfo = [
+                'status' => $cycle->status,
+                'closed_by' => $cycle->closedBy?->FullName,
+                'closed_at' => $cycle->closed_at ? $cycle->closed_at->toIso8601String() : null,
+                'close_reason' => $cycle->close_reason,
+                'reopened_by' => $cycle->reopenedBy?->FullName,
+                'reopened_at' => $cycle->reopened_at ? $cycle->reopened_at->toIso8601String() : null,
+                'reopen_reason' => $cycle->reopen_reason,
+                'reopen_count' => (int) $cycle->reopen_count,
+                'can_reopen' => $cycle->canReopen(),
+                'is_permanently_closed' => $cycle->isPermanentlyClosed(),
+            ];
+
+            $topLevel = [
+                'status' => $closureInfo['status'],
+                'closed_at' => $closureInfo['closed_at'],
+                'close_reason' => $closureInfo['close_reason'],
+                'close_by_user' => $cycle->closedBy ? [
+                    'UserID' => (int) $cycle->closedBy->UserID,
+                    'UserName' => (string) $cycle->closedBy->FullName,
+                ] : null,
+                'reopen_count' => (int) $cycle->reopen_count,
+                'can_reopen' => $closureInfo['can_reopen'],
+            ];
+
+            return response()->json(array_merge([
                 'message' => 'Reopen request info',
-                'closure_info' => [
-                    'closed_by' => $cycle->closedBy?->FullName,
-                    'closed_at' => $cycle->closed_at,
-                    'close_reason' => $cycle->close_reason,
-                    'reopen_count' => $cycle->reopen_count,
-                    'can_reopen' => true,
-                ],
-            ], 200);
+                'closure_info' => $closureInfo,
+            ], $topLevel), 200);
         } catch (\Exception $e) {
             \Log::error('Error in reopen request', ['error' => $e->getMessage()]);
 
