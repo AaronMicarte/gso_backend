@@ -99,16 +99,29 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin routes
     Route::prefix('admin')->group(function () {
-        // User Management (Admin only)
-        Route::get('users', [UserManagementController::class, 'index']);
-        Route::get('users/{id}', [UserManagementController::class, 'show']);
-        Route::post('users', [UserManagementController::class, 'store']);
-        Route::patch('users/{id}', [UserManagementController::class, 'update']);
-        Route::patch('users/{id}/active', [UserManagementController::class, 'toggleActive']);
-        Route::patch('users/{id}/mfa', [UserManagementController::class, 'toggleMfa']);
-        Route::post('users/{id}/resend-activation', [UserManagementController::class, 'resendActivation']);
+        // Admin-only routes
+        Route::middleware(\App\Http\Middleware\EnsureAdmin::class)->group(function () {
+            // User Management (Admin only)
+            Route::get('users', [UserManagementController::class, 'index']);
+            Route::get('users/{id}', [UserManagementController::class, 'show']);
+            Route::post('users', [UserManagementController::class, 'store']);
+            Route::patch('users/{id}', [UserManagementController::class, 'update']);
+            Route::patch('users/{id}/active', [UserManagementController::class, 'toggleActive']);
+            Route::patch('users/{id}/mfa', [UserManagementController::class, 'toggleMfa']);
+            Route::post('users/{id}/resend-activation', [UserManagementController::class, 'resendActivation']);
 
-        // Master Data routes (structured approach)
+            // Note: Procurement routes (PR/PO) have been removed per project requirements
+            // Inventory routes (admin-only actions)
+            Route::prefix('inventory')->group(function () {
+                Route::get('pending-ingestion', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'pendingIngestion']);
+                Route::post('ingest-from-iar', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'ingestFromIar']);
+                Route::post('backfill-qr-codes', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'backfillQrCodes']);
+                Route::post('details/{id}/generate-qr', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'generateQr']);
+                Route::post('issuances', [\App\Http\Controllers\Admin\Inventory\IssuanceController::class, 'store']);
+            });
+        });
+
+        // Master Data routes (shared with authenticated users)
         Route::prefix('master-data')->group(function () {
             // Categories
             Route::apiResource('categories', MasterDataCategoryController::class)->parameters(['categories' => 'id']);
@@ -171,40 +184,41 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::apiResource('user-roles', UserRoleController::class)->parameters(['user-roles' => 'id']);
             Route::post('user-roles/{id}/restore', [UserRoleController::class, 'restore']);
         });
+    });
 
-        // Delivery Receipt routes (simplified workflow - starts here)
-        Route::prefix('procurement')->group(function () {
-            Route::apiResource('delivery-receipts', DeliveryReceiptController::class)->parameters(['delivery-receipts' => 'id']);
-            Route::post('delivery-receipts/{id}/restore', [DeliveryReceiptController::class, 'restore']);
-            Route::get('delivery-receipts-helpers/suppliers', [DeliveryReceiptController::class, 'getSuppliers']);
-            Route::get('delivery-receipts-helpers/property-types', [DeliveryReceiptController::class, 'getPropertyTypes']);
-            Route::get('delivery-receipts-helpers/requesters', [DeliveryReceiptController::class, 'getRequesters']);
+    // Procurement routes (available to authenticated users)
+    Route::prefix('procurement')->group(function () {
+        Route::get('delivery-receipts', [DeliveryReceiptController::class, 'index']);
+        Route::post('delivery-receipts', [DeliveryReceiptController::class, 'store']);
+        Route::get('delivery-receipts/{id}', [DeliveryReceiptController::class, 'show']);
+        Route::put('delivery-receipts/{id}', [DeliveryReceiptController::class, 'update']);
+        Route::delete('delivery-receipts/{id}', [DeliveryReceiptController::class, 'destroy']);
+        Route::post('delivery-receipts/{id}/restore', [DeliveryReceiptController::class, 'restore']);
+        Route::get('delivery-receipts-helpers/suppliers', [DeliveryReceiptController::class, 'getSuppliers']);
+        Route::get('delivery-receipts-helpers/property-types', [DeliveryReceiptController::class, 'getPropertyTypes']);
+        Route::get('delivery-receipts-helpers/requesters', [DeliveryReceiptController::class, 'getRequesters']);
 
-            // IAR routes (Inspection & Acceptance Report)
-            Route::apiResource('inspection-acceptance-reports', InspectionAcceptanceReportController::class)->parameters(['inspection-acceptance-reports' => 'id']);
-            Route::post('inspection-acceptance-reports/{id}/signatures', [IarSignatureController::class, 'store']);
-            // Stream signature file (fallback when storage URL isn't directly accessible)
-            Route::get('inspection-acceptance-reports/{id}/signatures/{role}', [IarSignatureController::class, 'show']);
-            Route::get('inspection-acceptance-reports-helpers/conditions', [InspectionAcceptanceReportController::class, 'getConditions']);
-            Route::get('inspection-acceptance-reports-helpers/users', [InspectionAcceptanceReportController::class, 'getUsers']);
-        });
+        // IAR routes (Inspection & Acceptance Report)
+        Route::get('inspection-acceptance-reports', [InspectionAcceptanceReportController::class, 'index']);
+        Route::post('inspection-acceptance-reports', [InspectionAcceptanceReportController::class, 'store']);
+        Route::get('inspection-acceptance-reports/{id}', [InspectionAcceptanceReportController::class, 'show']);
+        Route::put('inspection-acceptance-reports/{id}', [InspectionAcceptanceReportController::class, 'update']);
+        Route::delete('inspection-acceptance-reports/{id}', [InspectionAcceptanceReportController::class, 'destroy']);
+        Route::post('inspection-acceptance-reports/{id}/signatures', [IarSignatureController::class, 'store']);
+        // Stream signature file (fallback when storage URL isn't directly accessible)
+        Route::get('inspection-acceptance-reports/{id}/signatures/{role}', [IarSignatureController::class, 'show']);
+        Route::get('inspection-acceptance-reports-helpers/conditions', [InspectionAcceptanceReportController::class, 'getConditions']);
+        Route::get('inspection-acceptance-reports-helpers/users', [InspectionAcceptanceReportController::class, 'getUsers']);
+    });
 
-        // Note: Procurement routes (PR/PO) have been removed per project requirements
-            // Inventory routes
-            Route::prefix('inventory')->group(function () {
-                Route::get('pending-ingestion', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'pendingIngestion']);
-                Route::post('ingest-from-iar', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'ingestFromIar']);
-                Route::post('backfill-qr-codes', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'backfillQrCodes']);
-                Route::get('all-items', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'allItems']);
-                Route::get('details/{id}/history', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'detailHistory']);
-                Route::get('details/{id}/property-card', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'propertyCard']);
-                Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
-                Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);
-                Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
-                Route::post('details/{id}/generate-qr', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'generateQr']);
-                Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
-                Route::post('issuances', [\App\Http\Controllers\Admin\Inventory\IssuanceController::class, 'store']);
-            });
+    // Inventory routes accessible to authenticated users
+    Route::prefix('inventory')->group(function () {
+        Route::get('all-items', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'allItems']);
+        Route::get('details/{id}/history', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'detailHistory']);
+        Route::get('details/{id}/property-card', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'propertyCard']);
+        Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
+        Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);
+        Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
     });
 
     // Department Head routes
