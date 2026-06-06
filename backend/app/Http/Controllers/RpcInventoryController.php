@@ -2190,8 +2190,14 @@ class RpcInventoryController extends Controller
             ], 403);
         }
 
+        // Allow clients to send either `reopen_reason` or the legacy `reason` field.
+        if ($request->has('reason') && !$request->has('reopen_reason')) {
+            $request->merge(['reopen_reason' => $request->input('reason')]);
+        }
+
+        // Password length validation removed to accept short legacy passwords.
         $validated = $request->validate([
-            'password' => 'required|string|min:6',
+            'password' => 'required|string',
             'reopen_reason' => 'required|string|min:10|max:1000',
             'otp_code' => 'nullable|string|digits:6',
         ]);
@@ -2270,6 +2276,12 @@ class RpcInventoryController extends Controller
                 'message' => 'Inventory cycle reopened successfully.',
                 'cycle' => $cycle,
             ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Return validation errors with 422 for client visibility
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error reopening RPC cycle', ['error' => $e->getMessage()]);
