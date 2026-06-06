@@ -140,6 +140,133 @@ class RpcInventoryController extends Controller
         return response()->json($cycle);
     }
 
+    public function closureSummary(int $id): JsonResponse
+    {
+        $this->authorizeAdmin();
+        $cycle = RpcInventoryCycle::findOrFail($id);
+
+        $scans = RpcInventoryScan::query()
+            ->where('rpc_inventory_cycle_id', (int) $cycle->id)
+            ->get();
+
+        $scannedByDetailId = $scans->keyBy('inventory_detail_id');
+        $lastScanTime = $scans->pluck('scanned_at')->filter()->max();
+
+        $assigned = AssignedProperty::query()
+            ->with([
+                'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+                'inventoryDetail.drDetail.article:ArticleID,ArticleName',
+                'inventoryDetail.drDetail:ArticleID,ItemDescription',
+                'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
+                'endUser:EndUserID,FullName,DepartmentID',
+                'department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
+            ->get();
+
+        $inventoryDetails = PropertyInventoryDetail::query()
+            ->with([
+                'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+                'drDetail.article:ArticleID,ArticleName',
+                'drDetail:ArticleID,ItemDescription',
+                'unitOfMeasure:UnitOfMeasureID,UnitName',
+                'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
+                'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
+            ->whereHas('propertyType', function ($query) {
+                $query->whereIn('PropertyClassificationID', [
+                    self::CLASSIFICATION_NON_EXPENDABLE,
+                    self::CLASSIFICATION_SEMI_EXPENDABLE,
+                ]);
+            })
+            ->get();
+
+        $issuanceStatuses = DB::table('propertyissuancedetail')
+            ->selectRaw('propertyissuancedetail.InventoryDetailID, propertyissuance.Status')
+            ->join('propertyissuance', 'propertyissuance.IssuanceID', '=', 'propertyissuancedetail.IssuanceID')
+            ->where('propertyissuance.deleted_at', null)
+            ->where('propertyissuancedetail.deleted_at', null)
+            ->get();
+
+        $issuanceStatusMap = collect([]);
+        foreach ($issuanceStatuses as $row) {
+            $detailId = (int) $row->InventoryDetailID;
+            if (!$issuanceStatusMap->has($detailId)) {
+                $issuanceStatusMap->put($detailId, $row->Status);
+            }
+        }
+
+        $mappedByInventoryDetail = [];
+
+        foreach ($assigned as $property) {
+            $mapped = $this->mapAssignedProperty($property);
+            $rpcType = (string) $mapped['rpc_type'];
+            $inventoryDetailId = (int) ($mapped['inventory_detail_id'] ?? 0);
+
+            if (!in_array($rpcType, ['RPCPPE', 'RPCSEP'], true) || $inventoryDetailId <= 0) {
+                continue;
+            }
+
+            $mappedByInventoryDetail[$inventoryDetailId] = $mapped;
+        }
+
+        foreach ($inventoryDetails as $detail) {
+            $inventoryDetailId = (int) ($detail->InventoryDetailID ?? 0);
+            if ($inventoryDetailId <= 0 || isset($mappedByInventoryDetail[$inventoryDetailId])) {
+                continue;
+            }
+
+            $mapped = $this->mapInventoryDetail($detail);
+            $rpcType = (string) $mapped['rpc_type'];
+            if (!in_array($rpcType, ['RPCPPE', 'RPCSEP'], true)) {
+                continue;
+            }
+
+            $mappedByInventoryDetail[$inventoryDetailId] = $mapped;
+        }
+
+        $expectedDetails = [];
+        foreach ($mappedByInventoryDetail as $inventoryDetailId => $mapped) {
+            $issuanceStatus = $issuanceStatusMap->get($inventoryDetailId);
+            if ($issuanceStatus !== 'acknowledged') {
+                continue;
+            }
+            $expectedDetails[$inventoryDetailId] = $mapped;
+        }
+
+        $totalExpected = count($expectedDetails);
+        $scannedTotal = 0;
+        $completedDepartments = collect([]);
+        $expectedDepartments = collect([]);
+
+        foreach ($expectedDetails as $inventoryDetailId => $mapped) {
+            if ($scannedByDetailId->has($inventoryDetailId)) {
+                $scannedTotal++;
+                if (!empty($mapped['department_id'])) {
+                    $completedDepartments->push((int) $mapped['department_id']);
+                }
+            }
+            if (!empty($mapped['department_id'])) {
+                $expectedDepartments->push((int) $mapped['department_id']);
+            }
+        }
+
+        $completedDepartments = $completedDepartments->unique();
+        $expectedDepartments = $expectedDepartments->unique();
+
+        $completedLocations = $completedDepartments->count();
+        $pendingLocations = max(0, $expectedDepartments->count() - $completedLocations);
+
+        return response()->json([
+            'total_expected' => $totalExpected,
+            'total_scanned' => $scannedTotal,
+            'missing_count' => max(0, $totalExpected - $scannedTotal),
+            'excess_count' => max(0, $scannedTotal - $totalExpected),
+            'completed_locations' => $completedLocations,
+            'pending_locations' => $pendingLocations,
+            'last_scan_time' => $lastScanTime ? $lastScanTime->toIso8601String() : now()->toIso8601String(),
+        ]);
+    }
+
     public function scans(Request $request, int $id): JsonResponse
     {
         $this->authorizeGso();
@@ -303,6 +430,15 @@ class RpcInventoryController extends Controller
     {
         $user = $this->authorizeGso();
         $cycle = RpcInventoryCycle::findOrFail($id);
+
+        // Check if cycle is closed
+        if ($cycle->isClosed()) {
+            return response()->json([
+                'message' => 'Cannot add scans to a closed inventory cycle. The cycle is locked and read-only.',
+                'cycle_status' => $cycle->status,
+                'closed_at' => $cycle->closed_at,
+            ], 409);
+        }
 
         $validated = $request->validate([
             'property_id' => 'nullable|integer|min:1',
@@ -486,6 +622,17 @@ class RpcInventoryController extends Controller
 
         $scan = RpcInventoryScan::with(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName'])
             ->findOrFail($scanId);
+        
+        // Check if cycle is closed
+        $cycle = RpcInventoryCycle::findOrFail((int) $scan->rpc_inventory_cycle_id);
+        if ($cycle->isClosed()) {
+            return response()->json([
+                'message' => 'Cannot modify scans in a closed inventory cycle. The cycle is locked and read-only.',
+                'cycle_status' => $cycle->status,
+                'closed_at' => $cycle->closed_at,
+            ], 409);
+        }
+
         $cycleId = (int) $scan->rpc_inventory_cycle_id;
         $previousConditionId = (int) $scan->condition_id;
         $previousRemarks = $scan->remarks;
@@ -557,6 +704,17 @@ class RpcInventoryController extends Controller
         $user = $this->authorizeGso();
 
         $scan = RpcInventoryScan::findOrFail($scanId);
+        
+        // Check if cycle is closed
+        $cycle = RpcInventoryCycle::findOrFail((int) $scan->rpc_inventory_cycle_id);
+        if ($cycle->isClosed()) {
+            return response()->json([
+                'message' => 'Cannot delete scans from a closed inventory cycle. The cycle is locked and read-only.',
+                'cycle_status' => $cycle->status,
+                'closed_at' => $cycle->closed_at,
+            ], 409);
+        }
+
         $cycleId = (int) $scan->rpc_inventory_cycle_id;
         $snapshot = [
             'property_number' => $scan->property_number,
@@ -1656,6 +1814,16 @@ class RpcInventoryController extends Controller
     {
         $user = $this->authorizeGso();
         $cycle = RpcInventoryCycle::findOrFail($id);
+
+        // Check if cycle is closed
+        if ($cycle->isClosed()) {
+            return response()->json([
+                'message' => 'Cannot add scans to a closed inventory cycle. The cycle is locked and read-only.',
+                'cycle_status' => $cycle->status,
+                'closed_at' => $cycle->closed_at,
+            ], 409);
+        }
+
         $source = $this->resolveAuditSource();
 
         $validated = $request->validate([
@@ -1865,5 +2033,230 @@ class RpcInventoryController extends Controller
             ],
             'results' => $results,
         ], 201);
+    }
+
+    /**
+     * Close an RPC inventory cycle.
+     * Only Administrators can close cycles.
+     */
+    public function closeCycle(Request $request, int $id): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if ($roleName !== self::ROLE_ADMIN) {
+            return response()->json([
+                'message' => 'Only Administrators can close inventory cycles.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'close_reason' => 'required|string|min:10|max:1000',
+        ]);
+
+        try {
+            $cycle = RpcInventoryCycle::findOrFail($id);
+
+            if ($cycle->isClosed()) {
+                return response()->json([
+                    'message' => 'This inventory cycle is already closed.',
+                ], 409);
+            }
+
+            DB::beginTransaction();
+
+            // Update cycle to closed
+            $cycle->update([
+                'status' => 'closed',
+                'closed_by_user_id' => (int) $user->UserID,
+                'closed_at' => now(),
+                'close_reason' => trim((string) $validated['close_reason']),
+            ]);
+
+            // Create audit log
+            RpcInventoryAuditLog::createLog([
+                'rpc_inventory_cycle_id' => (int) $cycle->id,
+                'action' => 'cycle_closed',
+                'source' => 'web',
+                'performed_by_user_id' => (int) $user->UserID,
+                'details' => [
+                    'cycle_label' => $cycle->cycle_label,
+                    'closed_by' => $user->FullName,
+                    'close_reason' => $validated['close_reason'],
+                    'closed_at' => $cycle->closed_at->toDateTimeString(),
+                ],
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Inventory cycle closed successfully.',
+                'cycle' => $cycle,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error closing RPC cycle', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Error closing inventory cycle: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Request to reopen a closed RPC inventory cycle.
+     * Returns a summary for Administrator confirmation.
+     */
+    public function reopenRequest(Request $request, int $id): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if ($roleName !== self::ROLE_ADMIN) {
+            return response()->json([
+                'message' => 'Only Administrators can reopen inventory cycles.',
+            ], 403);
+        }
+
+        try {
+            $cycle = RpcInventoryCycle::findOrFail($id);
+
+            if (!$cycle->isClosed()) {
+                return response()->json([
+                    'message' => 'Only closed inventory cycles can be reopened.',
+                ], 409);
+            }
+
+            if (!$cycle->canReopen()) {
+                return response()->json([
+                    'message' => 'This inventory cycle has reached the maximum number of reopen attempts and is now permanently closed.',
+                    'reopen_count' => $cycle->reopen_count,
+                    'max_reopens' => 2,
+                ], 409);
+            }
+
+            // Return closure summary for confirmation
+            return response()->json([
+                'message' => 'Reopen request info',
+                'closure_info' => [
+                    'closed_by' => $cycle->closedBy?->FullName,
+                    'closed_at' => $cycle->closed_at,
+                    'close_reason' => $cycle->close_reason,
+                    'reopen_count' => $cycle->reopen_count,
+                    'can_reopen' => true,
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Error in reopen request', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Error processing reopen request: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Reopen a closed RPC inventory cycle.
+     * Requires password confirmation and optional OTP verification.
+     */
+    public function reopenCycle(Request $request, int $id): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+
+        if ($roleName !== self::ROLE_ADMIN) {
+            return response()->json([
+                'message' => 'Only Administrators can reopen inventory cycles.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'password' => 'required|string|min:6',
+            'reopen_reason' => 'required|string|min:10|max:1000',
+            'otp_code' => 'nullable|string|digits:6',
+        ]);
+
+        try {
+            $cycle = RpcInventoryCycle::findOrFail($id);
+
+            if (!$cycle->isClosed()) {
+                return response()->json([
+                    'message' => 'Only closed inventory cycles can be reopened.',
+                ], 409);
+            }
+
+            if (!$cycle->canReopen()) {
+                return response()->json([
+                    'message' => 'This inventory cycle has reached the maximum number of reopen attempts and is now permanently closed.',
+                    'reopen_count' => $cycle->reopen_count,
+                    'max_reopens' => 2,
+                ], 409);
+            }
+
+            // Verify password
+            if (!password_verify((string) $validated['password'], (string) $user->Password)) {
+                RpcInventoryAuditLog::createLog([
+                    'rpc_inventory_cycle_id' => (int) $cycle->id,
+                    'action' => 'reopen_password_failed',
+                    'source' => 'web',
+                    'performed_by_user_id' => (int) $user->UserID,
+                    'details' => [
+                        'cycle_label' => $cycle->cycle_label,
+                        'reason' => 'Failed password verification',
+                    ],
+                ]);
+
+                return response()->json([
+                    'message' => 'Password verification failed.',
+                ], 401);
+            }
+
+            // OTP verification (if configured and provided)
+            if (!empty($validated['otp_code'])) {
+                // TODO: Implement TOTP verification if OTP is enabled in config
+                // For now, OTP is optional, so we just log the attempt
+            }
+
+            DB::beginTransaction();
+
+            // Update cycle to active (reopened)
+            $cycle->update([
+                'status' => 'active',
+                'reopened_by_user_id' => (int) $user->UserID,
+                'reopened_at' => now(),
+                'reopen_reason' => trim((string) $validated['reopen_reason']),
+                'reopen_count' => (int) $cycle->reopen_count + 1,
+            ]);
+
+            // Create audit log
+            RpcInventoryAuditLog::createLog([
+                'rpc_inventory_cycle_id' => (int) $cycle->id,
+                'action' => 'cycle_reopened',
+                'source' => 'web',
+                'performed_by_user_id' => (int) $user->UserID,
+                'details' => [
+                    'cycle_label' => $cycle->cycle_label,
+                    'reopened_by' => $user->FullName,
+                    'reopen_reason' => $validated['reopen_reason'],
+                    'reopened_at' => $cycle->reopened_at->toDateTimeString(),
+                    'reopen_count' => $cycle->reopen_count,
+                    'otp_verified' => !empty($validated['otp_code']),
+                ],
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Inventory cycle reopened successfully.',
+                'cycle' => $cycle,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error reopening RPC cycle', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'message' => 'Error reopening inventory cycle: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

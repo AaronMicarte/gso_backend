@@ -336,6 +336,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('cycles/{id}/report', [RpcInventoryController::class, 'report']);
         Route::get('cycles/{id}/audit-logs', [RpcInventoryController::class, 'auditLogs']);
 
+        // Close and Reopen endpoints (Admin only)
+        Route::get('cycles/{id}/closure-summary', [RpcInventoryController::class, 'closureSummary']);
+        Route::post('cycles/{id}/close', [RpcInventoryController::class, 'closeCycle']);
+        Route::post('cycles/{id}/reopen-request', [RpcInventoryController::class, 'reopenRequest']);
+        Route::post('cycles/{id}/reopen', [RpcInventoryController::class, 'reopenCycle']);
+
         Route::patch('scans/{scanId}', [RpcInventoryController::class, 'updateScan']);
         Route::delete('scans/{scanId}', [RpcInventoryController::class, 'destroyScan']);
 

@@ -19,6 +19,12 @@ class RpcInventoryCycle extends Model
         'status',
         'started_at',
         'closed_at',
+        'closed_by_user_id',
+        'close_reason',
+        'reopened_by_user_id',
+        'reopened_at',
+        'reopen_reason',
+        'reopen_count',
         'created_by_user_id',
         'updated_by_user_id',
     ];
@@ -26,6 +32,8 @@ class RpcInventoryCycle extends Model
     protected $casts = [
         'started_at' => 'datetime',
         'closed_at' => 'datetime',
+        'reopened_at' => 'datetime',
+        'reopen_count' => 'integer',
     ];
 
     public function scans()
@@ -46,5 +54,58 @@ class RpcInventoryCycle extends Model
     public function updatedBy()
     {
         return $this->belongsTo(\App\Models\Auth\User::class, 'updated_by_user_id', 'UserID');
+    }
+
+    public function closedBy()
+    {
+        return $this->belongsTo(\App\Models\Auth\User::class, 'closed_by_user_id', 'UserID');
+    }
+
+    public function reopenedBy()
+    {
+        return $this->belongsTo(\App\Models\Auth\User::class, 'reopened_by_user_id', 'UserID');
+    }
+
+    /**
+     * Check if cycle is closed (locked).
+     */
+    public function isClosed(): bool
+    {
+        return $this->status === 'closed';
+    }
+
+    /**
+     * Check if cycle is permanently locked (reopened twice and closed again).
+     */
+    public function isPermanentlyClosed(): bool
+    {
+        return $this->isClosed() && $this->reopen_count >= 2;
+    }
+
+    /**
+     * Check if cycle can be reopened.
+     */
+    public function canReopen(): bool
+    {
+        return $this->isClosed() && $this->reopen_count < 2;
+    }
+
+    /**
+     * Get closure summary for display.
+     */
+    public function getClosureSummary(): array
+    {
+        return [
+            'status' => $this->status,
+            'closed_by' => $this->closedBy?->FullName,
+            'closed_at' => $this->closed_at,
+            'close_reason' => $this->close_reason,
+            'reopened_by' => $this->reopenedBy?->FullName,
+            'reopened_at' => $this->reopened_at,
+            'reopen_reason' => $this->reopen_reason,
+            'reopen_count' => $this->reopen_count,
+            'can_reopen' => $this->canReopen(),
+            'is_permanently_closed' => $this->isPermanentlyClosed(),
+        ];
     }
 }
