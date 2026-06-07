@@ -52,10 +52,16 @@ class RpcInventoryController extends Controller
 
         $today = Carbon::now();
         $currentStartYear = (int) $today->year;
-        $currentEndYear = $currentStartYear + 1;
+        $currentEndYear = $currentStartYear; // use calendar year only
+        $cycles = $query->get()->map(function ($c) {
+            $arr = $c->toArray();
+            $arr['rpcppe_label'] = sprintf('RPCPPE %d', (int) $c->start_year);
+            $arr['rpcsep_label'] = sprintf('RPCSEP %d', (int) $c->start_year);
+            return $arr;
+        });
 
         return response()->json([
-            'data' => $query->get(),
+            'data' => $cycles,
             'current_cycle' => [
                 'start_year' => $currentStartYear,
                 'end_year' => $currentEndYear,
@@ -69,11 +75,10 @@ class RpcInventoryController extends Controller
         $user = $this->authorizeGso();
 
         $startYear = (int) now()->year;
-        $endYear = $startYear + 1;
+        $endYear = $startYear; // calendar year only
 
         $cycle = RpcInventoryCycle::withTrashed()
             ->where('start_year', $startYear)
-            ->where('end_year', $endYear)
             ->first();
 
         if ($cycle && $cycle->trashed()) {
@@ -97,6 +102,15 @@ class RpcInventoryController extends Controller
         }
 
         if (!$cycle) {
+            // Ensure there is no active (non-trashed) cycle for this calendar year
+            $existingActive = RpcInventoryCycle::where('start_year', $startYear)->first();
+            if ($existingActive) {
+                return response()->json([
+                    'message' => 'An RPCPPE cycle for this calendar year already exists',
+                    'year' => $startYear,
+                ], 409);
+            }
+
             $cycle = RpcInventoryCycle::create([
                 'cycle_label' => $this->cycleLabel($startYear, $endYear),
                 'start_year' => $startYear,
@@ -137,7 +151,11 @@ class RpcInventoryController extends Controller
             ])
             ->findOrFail($id);
 
-        return response()->json($cycle);
+        $arr = $cycle->toArray();
+        $arr['rpcppe_label'] = sprintf('RPCPPE %d', (int) $cycle->start_year);
+        $arr['rpcsep_label'] = sprintf('RPCSEP %d', (int) $cycle->start_year);
+
+        return response()->json($arr);
     }
 
     public function closureSummary(int $id): JsonResponse
@@ -1033,7 +1051,8 @@ class RpcInventoryController extends Controller
 
     private function cycleLabel(int $startYear, int $endYear): string
     {
-        return sprintf('Inventory Cycle %d-%d', $startYear, $endYear);
+        // Use calendar year only for labels.
+        return sprintf('Inventory Cycle %d', $startYear);
     }
 
     private function extractPropertyId(string $raw): ?int
