@@ -1471,7 +1471,9 @@ class InventoryController extends Controller
             ->where('u.DepartmentID', $departmentId)
             ->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
             ->orderByDesc('u.UserID')
-            ->selectRaw("TRIM(CONCAT(COALESCE(u.FullName, ''), CASE WHEN d.DepartmentName IS NOT NULL AND d.DepartmentName <> '' THEN CONCAT(' - ', d.DepartmentName) ELSE '' END)) as label")
+            ->selectRaw(
+                "TRIM(CONCAT(COALESCE(d.DepartmentName, ''), CASE WHEN COALESCE(u.FullName, '') <> '' THEN CONCAT(' / ', u.FullName) ELSE '' END)) as label"
+            )
             ->value('label');
 
         if (is_string($headLabel) && trim($headLabel) !== '') {

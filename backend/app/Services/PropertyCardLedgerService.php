@@ -255,18 +255,92 @@ class PropertyCardLedgerService
     {
         $toDept = $this->stringOrNull($details['to_department'] ?? null);
         $toUser = $this->stringOrNull($details['to_end_user'] ?? null);
-        if ($toDept || $toUser) {
-            return trim(implode(' / ', array_filter([$toDept, $toUser])));
+
+        // If details already contain human-readable labels, prefer them —
+        // but detect patterns like "Department #23" or "EndUser #4" and
+        // try to resolve them to real names instead of returning raw IDs.
+        $resolvedParts = [];
+        if ($toDept) {
+            if (preg_match('/Department\s*#(\d+)/i', $toDept, $m)) {
+                $parsedId = (int) $m[1];
+                $resolvedParts[] = $this->resolveDeptLabelFromId($parsedId);
+            } else {
+                $resolvedParts[] = $toDept;
+            }
+        }
+
+        if ($toUser) {
+            if (preg_match('/EndUser\s*#(\d+)/i', $toUser, $m)) {
+                $parsedEndUserId = (int) $m[1];
+                // attempt to derive department from enduser
+                $endUserDeptId = DB::table('enduser')->where('EndUserID', $parsedEndUserId)->value('DepartmentID');
+                if ($endUserDeptId) {
+                    $resolvedParts[] = $this->resolveDeptLabelFromId((int) $endUserDeptId);
+                } else {
+                    // fallback to the enduser full name if available
+                    $euName = DB::table('enduser')->where('EndUserID', $parsedEndUserId)->value('FullName');
+                    $resolvedParts[] = is_string($euName) && trim($euName) !== '' ? trim($euName) : $toUser;
+                }
+            } else {
+                $resolvedParts[] = $toUser;
+            }
+        }
+
+        if (!empty($resolvedParts)) {
+            return trim(implode(' / ', array_filter($resolvedParts)));
         }
 
         $toDeptId = $details['to_department_id'] ?? null;
         $toEndUserId = $details['to_end_user_id'] ?? null;
-        $raw = trim(implode(' / ', array_filter([
-            $toDeptId ? ('Department #' . $toDeptId) : null,
-            $toEndUserId ? ('EndUser #' . $toEndUserId) : null,
-        ])));
+        // Prefer human-readable department name and its head's full name when possible.
+        $parts = [];
 
-        return $raw !== '' ? $raw : 'Receiving office';
+        if ($toDeptId) {
+            $departmentName = DB::table('department')->where('DepartmentID', $toDeptId)->value('DepartmentName');
+            $deptLabel = is_string($departmentName) && trim($departmentName) !== '' ? trim($departmentName) : ('Department #' . $toDeptId);
+
+            // Find department head
+            $headName = DB::table('user as u')
+                ->leftJoin('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                ->where('u.DepartmentID', $toDeptId)
+                ->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+                ->orderByDesc('u.UserID')
+                ->value(DB::raw("TRIM(COALESCE(u.FullName, ''))"));
+
+            if (is_string($headName) && trim($headName) !== '') {
+                $parts[] = $deptLabel . ' / ' . trim($headName);
+            } else {
+                $parts[] = $deptLabel;
+            }
+        }
+
+        // If department id not provided but end user id is, attempt to derive department from enduser
+        if (empty($parts) && $toEndUserId) {
+            $endUserDeptId = DB::table('enduser')->where('EndUserID', $toEndUserId)->value('DepartmentID');
+            if ($endUserDeptId) {
+                $departmentName = DB::table('department')->where('DepartmentID', $endUserDeptId)->value('DepartmentName');
+                $deptLabel = is_string($departmentName) && trim($departmentName) !== '' ? trim($departmentName) : ('Department #' . $endUserDeptId);
+
+                $headName = DB::table('user as u')
+                    ->leftJoin('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                    ->where('u.DepartmentID', $endUserDeptId)
+                    ->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+                    ->orderByDesc('u.UserID')
+                    ->value(DB::raw("TRIM(COALESCE(u.FullName, ''))"));
+
+                if (is_string($headName) && trim($headName) !== '') {
+                    $parts[] = $deptLabel . ' / ' . trim($headName);
+                } else {
+                    $parts[] = $deptLabel;
+                }
+            }
+        }
+
+        if (!empty($parts)) {
+            return trim(implode(' / ', $parts));
+        }
+
+        return 'Receiving office';
     }
 
     private function stringOrNull($value): ?string
@@ -277,6 +351,25 @@ class PropertyCardLedgerService
 
         $text = trim((string) $value);
         return $text !== '' ? $text : null;
+    }
+
+    private function resolveDeptLabelFromId(int $departmentId): string
+    {
+        $departmentName = DB::table('department')->where('DepartmentID', $departmentId)->value('DepartmentName');
+        $deptLabel = is_string($departmentName) && trim($departmentName) !== '' ? trim($departmentName) : ('Department #' . $departmentId);
+
+        $headName = DB::table('user as u')
+            ->leftJoin('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+            ->where('u.DepartmentID', $departmentId)
+            ->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+            ->orderByDesc('u.UserID')
+            ->value(DB::raw("TRIM(COALESCE(u.FullName, ''))"));
+
+        if (is_string($headName) && trim($headName) !== '') {
+            return $deptLabel . ' / ' . trim($headName);
+        }
+
+        return $deptLabel;
     }
 
     private function resolveIssuanceRemarks(int $issuanceId, int $inventoryDetailId): string
