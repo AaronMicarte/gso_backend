@@ -744,6 +744,9 @@ class InventoryController extends Controller
 
         $history = [];
         $historyFingerprints = [];
+        // Track logical events (fingerprints that ignore the `type`) so we can avoid
+        // duplicating the same logical event coming later from asset_audit_logs.
+        $logicalFingerprints = [];
 
         $normalizeMeta = function ($value) use (&$normalizeMeta) {
             if (is_array($value)) {
@@ -766,7 +769,7 @@ class InventoryController extends Controller
             ?string $occurredAt,
             ?array $actor,
             ?array $meta = null
-        ) use (&$history, &$historyFingerprints, $normalizeMeta) {
+        ) use (&$history, &$historyFingerprints, &$logicalFingerprints, $normalizeMeta) {
             if (!$occurredAt) {
                 return;
             }
@@ -786,6 +789,18 @@ class InventoryController extends Controller
                 return;
             }
             $historyFingerprints[$fingerprint] = true;
+
+            // Also record a logical fingerprint that ignores the `type` so
+            // subsequent audit log entries for the same logical event can be skipped.
+            $logicalKey = implode('|', [
+                (string) $action,
+                (string) $occurredAt,
+                (string) ($actor['id'] ?? 0),
+                trim((string) $title),
+                trim((string) ($description ?? '')),
+                json_encode($normalizedMeta),
+            ]);
+            $logicalFingerprints[$logicalKey] = true;
 
             $history[] = [
                 'type' => $type,
@@ -1195,6 +1210,29 @@ class InventoryController extends Controller
 
             $actionLabel = ucwords(str_replace('_', ' ', (string) $log->Action));
 
+            // Decode details for logical fingerprint check
+            $logMeta = is_array($log->Details) ? $log->Details : null;
+            if ($logMeta === null && is_string($log->Details) && trim($log->Details) !== '') {
+                $decoded = json_decode($log->Details, true);
+                if (is_array($decoded)) $logMeta = $decoded;
+            }
+
+            // Build logical key (same structure used when pushing other events)
+            $logicalKey = implode('|', [
+                (string) $log->Action,
+                $log->CreatedAt ? $log->CreatedAt->toISOString() : null,
+                (string) ($performer['id'] ?? 0),
+                trim((string) ($actionLabel !== '' ? $actionLabel : 'Audit entry')),
+                '',
+                json_encode($logMeta),
+            ]);
+
+            // If a logical event for the same action/occurred_at/actor/title/meta already
+            // exists (from transfers/borrows/issuances), skip adding this audit entry to avoid duplication.
+            if (isset($logicalFingerprints[$logicalKey])) {
+                continue;
+            }
+
             $pushEvent(
                 'audit',
                 (string) $log->Action,
@@ -1202,7 +1240,7 @@ class InventoryController extends Controller
                 null,
                 $log->CreatedAt ? $log->CreatedAt->toISOString() : null,
                 $performer,
-                is_array($log->Details) ? $log->Details : null
+                $logMeta
             );
         }
 
