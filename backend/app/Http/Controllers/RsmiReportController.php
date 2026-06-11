@@ -334,7 +334,10 @@ class RsmiReportController extends Controller
                 COALESCE(ris_link.ris_number, ris_fallback.ris_number, 'N/A') as ris_no,
                 COALESCE(ris_link.responsibility_center_code, ris_fallback.responsibility_center_code, '') as responsibility_center_code,
                 COALESCE(NULLIF(rii_link.stock_no, ''), NULLIF(rii_fallback.stock_no, ''), NULLIF(inv.PropertyNumber, ''), 'N/A') as stock_no,
-                COALESCE(NULLIF(rii_link.description, ''), NULLIF(rii_fallback.description, ''), NULLIF(art.ArticleName, ''), NULLIF(art.Description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
+                -- Prefer article name when available, then article description, then PID.item description,
+                -- then RII descriptions and inventory description as last resort. This ensures the
+                -- Item column shows the Article name consistently when present.
+                COALESCE(NULLIF(art.ArticleName, ''), NULLIF(art.Description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(rii_link.description, ''), NULLIF(rii_fallback.description, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
                 COALESCE(NULLIF(rii_link.unit, ''), NULLIF(rii_fallback.unit, ''), NULLIF(pid.Unit, ''), 'N/A') as unit,
                 pid.QuantityIssued as quantity_issued
             "

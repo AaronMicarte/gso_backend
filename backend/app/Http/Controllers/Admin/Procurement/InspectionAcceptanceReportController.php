@@ -559,6 +559,16 @@ class InspectionAcceptanceReportController extends Controller
                     $d['propertyType'] = $d['property_type'] ?? null;
                     if (!empty($d['drDetail']) && is_array($d['drDetail'])) {
                         $d['drDetail']['unitOfMeasure'] = $d['drDetail']['unit_of_measure'] ?? null;
+                        // Attach property numbers for this DR detail (if any)
+                        $drDetailId = $d['drDetail']['DRDetailID'] ?? null;
+                        if ($drDetailId) {
+                            $propertyNumbers = \App\Models\Inventory\PropertyInventoryDetail::where('SourceDRDetailID', $drDetailId)
+                                ->pluck('PropertyNumber')
+                                ->filter()
+                                ->values()
+                                ->all();
+                            $d['drDetail']['propertyNumbers'] = $propertyNumbers;
+                        }
                     }
                 }
             }

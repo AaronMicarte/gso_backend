@@ -36,6 +36,23 @@ class PropertyBorrowController extends Controller
         11, // Office Equipment
         12, // Other Machinery and Equipment
         14, // Technical and Scientific Equipment
+        // All Semi-Expendable property types (preserve the previously listed IDs)
+        15, // test - 1 (semi-expendable sample)
+        16, // Computer Peripherals
+        17, // Data Storage Devices
+        18, // Small Office Appliances
+        19, // Presentation Devices
+        20, // Audio Equipment (Portable)
+        21, // Video Equipment (Portable)
+        22, // Power Protection Devices
+        23, // Hand Tools and Instruments
+        24, // Portable Measuring Devices
+        25, // Fire Safety Devices (Portable)
+        26, // Portable Lighting Equipment
+        27, // Record Management Accessories
+        28, // IT Cables and Adapters
+        29, // Maintenance and Janitorial Tools
+        31, // Books
     ];
 
     public function index(Request $request)
