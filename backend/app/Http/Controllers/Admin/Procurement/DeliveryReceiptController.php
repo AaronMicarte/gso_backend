@@ -249,14 +249,20 @@ class DeliveryReceiptController extends Controller
 
                 foreach ($details as $index => $detail) {
                     $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                    $serialParts = [];
+                    if ($serial !== '') {
+                        $serialParts = array_values(array_filter(array_map('trim', explode(',', $serial)), fn($v) => $v !== ''));
+                    }
+                    $serialCount = count($serialParts);
+
                     $quantity = (int) ($detail['quantity_delivered'] ?? 0);
-                    if ($serial !== '' && $quantity > 1) {
-                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must be 1 when a serial number is provided');
+                    if ($serialCount > 0 && $quantity !== $serialCount) {
+                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must equal the number of serial numbers provided');
                     }
 
                     $requested = (int) ($detail['quantity_requested'] ?? 0);
-                    if ($serial !== '' && $requested > 1) {
-                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must be 1 when a serial number is provided');
+                    if ($serialCount > 0 && $requested !== $serialCount) {
+                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must equal the number of serial numbers provided');
                     }
 
                     $changeReason = isset($detail['change_reason']) ? trim((string) $detail['change_reason']) : '';
@@ -380,24 +386,50 @@ class DeliveryReceiptController extends Controller
                     $unitOfMeasureId = $article->DefaultUnitOfMeasureID;
                 }
 
-                $createdDetail = DeliveryReceiptDetail::create([
-                    'DRID' => $deliveryReceipt->DRID,
-                    'ArticleID' => $detail['article_id'],
-                    'ItemDescription' => $detail['item_description'],
-                    'Brand' => $detail['brand'] ?? null,
-                    'ModelNumber' => $detail['model_number'] ?? null,
-                    'SerialNumber' => $detail['serial_number'] ?? null,
-                    'PropertyTypeID' => $article->PropertyTypeID,
-                    'QuantityDelivered' => $detail['quantity_delivered'],
-                    'QuantityRequested' => $detail['quantity_requested'],
-                    'ChangeReason' => $detail['change_reason'] ?? null,
-                    'UnitOfMeasureID' => $unitOfMeasureId,
-                    'UnitCost' => $detail['unit_cost'],
-                    'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
-                    'InspectionStatus' => 'inspected',
-                ]);
+                $serialRaw = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                $serialParts = $serialRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $serialRaw)), fn($v) => $v !== ''));
 
-                $detailIds[] = (int) $createdDetail->DRDetailID;
+                if (count($serialParts) > 1) {
+                    // Create one DR detail per serial number
+                    foreach ($serialParts as $s) {
+                        $createdDetail = DeliveryReceiptDetail::create([
+                            'DRID' => $deliveryReceipt->DRID,
+                            'ArticleID' => $detail['article_id'],
+                            'ItemDescription' => $detail['item_description'],
+                            'Brand' => $detail['brand'] ?? null,
+                            'ModelNumber' => $detail['model_number'] ?? null,
+                            'SerialNumber' => $s,
+                            'PropertyTypeID' => $article->PropertyTypeID,
+                            'QuantityDelivered' => 1,
+                            'QuantityRequested' => 1,
+                            'ChangeReason' => $detail['change_reason'] ?? null,
+                            'UnitOfMeasureID' => $unitOfMeasureId,
+                            'UnitCost' => $detail['unit_cost'],
+                            'TotalCost' => 1 * $detail['unit_cost'],
+                            'InspectionStatus' => 'inspected',
+                        ]);
+                        $detailIds[] = (int) $createdDetail->DRDetailID;
+                    }
+                } else {
+                    // Single serial or no serial provided
+                    $createdDetail = DeliveryReceiptDetail::create([
+                        'DRID' => $deliveryReceipt->DRID,
+                        'ArticleID' => $detail['article_id'],
+                        'ItemDescription' => $detail['item_description'],
+                        'Brand' => $detail['brand'] ?? null,
+                        'ModelNumber' => $detail['model_number'] ?? null,
+                        'SerialNumber' => $serialRaw ?: null,
+                        'PropertyTypeID' => $article->PropertyTypeID,
+                        'QuantityDelivered' => $detail['quantity_delivered'],
+                        'QuantityRequested' => $detail['quantity_requested'],
+                        'ChangeReason' => $detail['change_reason'] ?? null,
+                        'UnitOfMeasureID' => $unitOfMeasureId,
+                        'UnitCost' => $detail['unit_cost'],
+                        'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
+                        'InspectionStatus' => 'inspected',
+                    ]);
+                    $detailIds[] = (int) $createdDetail->DRDetailID;
+                }
             }
 
             $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
@@ -679,14 +711,20 @@ class DeliveryReceiptController extends Controller
 
                 foreach ($details as $index => $detail) {
                     $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                    $serialParts = [];
+                    if ($serial !== '') {
+                        $serialParts = array_values(array_filter(array_map('trim', explode(',', $serial)), fn($v) => $v !== ''));
+                    }
+                    $serialCount = count($serialParts);
+
                     $quantity = (int) ($detail['quantity_delivered'] ?? 0);
-                    if ($serial !== '' && $quantity > 1) {
-                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must be 1 when a serial number is provided');
+                    if ($serialCount > 0 && $quantity !== $serialCount) {
+                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must equal the number of serial numbers provided');
                     }
 
                     $requested = (int) ($detail['quantity_requested'] ?? 0);
-                    if ($serial !== '' && $requested > 1) {
-                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must be 1 when a serial number is provided');
+                    if ($serialCount > 0 && $requested !== $serialCount) {
+                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must equal the number of serial numbers provided');
                     }
 
                     $changeReason = isset($detail['change_reason']) ? trim((string) $detail['change_reason']) : '';
@@ -797,25 +835,62 @@ class DeliveryReceiptController extends Controller
                     'ItemDescription' => $detail['item_description'],
                     'Brand' => $detail['brand'] ?? null,
                     'ModelNumber' => $detail['model_number'] ?? null,
-                    'SerialNumber' => $detail['serial_number'] ?? null,
                     'PropertyTypeID' => $article->PropertyTypeID,
-                    'QuantityDelivered' => $detail['quantity_delivered'],
-                    'QuantityRequested' => $detail['quantity_requested'],
                     'ChangeReason' => $detail['change_reason'] ?? null,
                     'UnitOfMeasureID' => $unitOfMeasureId,
                     'UnitCost' => $detail['unit_cost'],
-                    'TotalCost' => $detail['quantity_delivered'] * $detail['unit_cost'],
                     'InspectionStatus' => 'inspected',
                 ];
 
+                $serialRaw = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                $serialParts = $serialRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $serialRaw)), fn($v) => $v !== ''));
+
                 if (isset($detail['dr_detail_id']) && $detail['dr_detail_id']) {
-                    // Update existing detail
-                    DeliveryReceiptDetail::where('DRDetailID', $detail['dr_detail_id'])
-                        ->where('DRID', $deliveryReceipt->DRID) // Security check
-                        ->update($detailData);
+                    $existingId = (int) $detail['dr_detail_id'];
+                    if (count($serialParts) > 1) {
+                        // remove the existing DR detail and replace with one-per-serial
+                        DeliveryReceiptDetail::where('DRDetailID', $existingId)
+                            ->where('DRID', $deliveryReceipt->DRID)
+                            ->delete();
+
+                        foreach ($serialParts as $s) {
+                            DeliveryReceiptDetail::create(array_merge($detailData, [
+                                'SerialNumber' => $s,
+                                'QuantityDelivered' => 1,
+                                'QuantityRequested' => 1,
+                                'TotalCost' => 1 * ($detail['unit_cost'] ?? 0),
+                            ]));
+                        }
+                    } else {
+                        // update single/none serial case
+                        $detailToUpdate = $detailData;
+                        $detailToUpdate['SerialNumber'] = $serialParts[0] ?? ($serialRaw ?: null);
+                        $detailToUpdate['QuantityDelivered'] = $detail['quantity_delivered'];
+                        $detailToUpdate['QuantityRequested'] = $detail['quantity_requested'];
+                        $detailToUpdate['TotalCost'] = ($detail['quantity_delivered'] ?? 0) * ($detail['unit_cost'] ?? 0);
+
+                        DeliveryReceiptDetail::where('DRDetailID', $existingId)
+                            ->where('DRID', $deliveryReceipt->DRID) // Security check
+                            ->update($detailToUpdate);
+                    }
                 } else {
-                    // Insert new detail
-                    DeliveryReceiptDetail::create($detailData);
+                    if (count($serialParts) > 1) {
+                        foreach ($serialParts as $s) {
+                            DeliveryReceiptDetail::create(array_merge($detailData, [
+                                'SerialNumber' => $s,
+                                'QuantityDelivered' => 1,
+                                'QuantityRequested' => 1,
+                                'TotalCost' => 1 * ($detail['unit_cost'] ?? 0),
+                            ]));
+                        }
+                    } else {
+                        DeliveryReceiptDetail::create(array_merge($detailData, [
+                            'SerialNumber' => $serialRaw ?: null,
+                            'QuantityDelivered' => $detail['quantity_delivered'],
+                            'QuantityRequested' => $detail['quantity_requested'],
+                            'TotalCost' => ($detail['quantity_delivered'] ?? 0) * ($detail['unit_cost'] ?? 0),
+                        ]));
+                    }
                 }
             }
 
