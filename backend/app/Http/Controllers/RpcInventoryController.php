@@ -1460,7 +1460,12 @@ class RpcInventoryController extends Controller
             }
             $propNum = trim((string) ($row['property_number'] ?? ''));
             if ($propNum !== '') {
-                $groups[$key]['remarks_by_property'][$propNum] = $remarks !== '' ? $remarks : null;
+                // Store remark and scanned timestamp so aggregation can pick the
+                // most recent remark based on actual scan time.
+                $groups[$key]['remarks_by_property'][$propNum] = [
+                    'remark' => $remarks !== '' ? $remarks : null,
+                    'scanned_at' => $row['scanned_at'] ?? null,
+                ];
             }
 
             $condition = trim((string) ($row['condition'] ?? ''));
@@ -1487,21 +1492,47 @@ class RpcInventoryController extends Controller
             // If any sibling property has a non-empty remark, surface the latest
             // non-empty remark only. Otherwise show a single "Not Found" value.
             $perPropertyRemarks = $group['remarks_by_property'] ?? [];
-            $nonEmptyRemarks = [];
-            foreach ($perPropertyRemarks as $pn => $rm) {
+
+            // Find the non-empty remark with the latest scanned_at timestamp.
+            $latestRemark = null;
+            $latestTs = 0;
+            foreach ($perPropertyRemarks as $pn => $info) {
+                $rm = is_array($info) && array_key_exists('remark', $info) ? $info['remark'] : null;
+                // Prefer server-created timestamp when available for authoritative ordering.
+                $tsRaw = null;
+                if (is_array($info)) {
+                    if (array_key_exists('scan_updated_at', $info) && !empty($info['scan_updated_at'])) {
+                        $tsRaw = $info['scan_updated_at'];
+                    } elseif (array_key_exists('scan_created_at', $info) && !empty($info['scan_created_at'])) {
+                        $tsRaw = $info['scan_created_at'];
+                    } elseif (array_key_exists('scanned_at', $info) && !empty($info['scanned_at'])) {
+                        $tsRaw = $info['scanned_at'];
+                    }
+                }
                 $clean = is_string($rm) ? trim($rm) : null;
-                if ($clean !== null && $clean !== '') {
-                    $nonEmptyRemarks[$pn] = $clean;
+                if ($clean === null || $clean === '') {
+                    continue;
+                }
+
+                $ts = 0;
+                if (is_string($tsRaw) && $tsRaw !== '') {
+                    try {
+                        $ts = \Carbon\Carbon::parse($tsRaw)->getTimestamp();
+                    } catch (\Exception $e) {
+                        $ts = 0;
+                    }
+                }
+
+                // Prefer greater or equal so later iterations with equal timestamps
+                // will override (last-wins) which aligns with user expectation.
+                if ($ts >= $latestTs) {
+                    $latestTs = $ts;
+                    $latestRemark = $clean;
                 }
             }
 
-            if (count($nonEmptyRemarks) > 0) {
-                // Use the last recorded remark among siblings as the group's remark.
-                $values = array_values($nonEmptyRemarks);
-                $finalRow['remarks'] = $values[count($values) - 1];
-                // Do not expose per-property remark list in the report output to
-                // avoid printing many "pn: -" entries. Consumers should use the
-                // group-level `remarks` instead.
+            if ($latestRemark !== null) {
+                $finalRow['remarks'] = $latestRemark;
                 $finalRow['property_remarks'] = [];
             } else {
                 $finalRow['remarks'] = 'Not Found';
@@ -1813,6 +1844,7 @@ class RpcInventoryController extends Controller
         $duplicateCount = 0;
         $errorCount = 0;
         $syncedPropertyNumbers = [];
+        $createdScanIds = [];
 
         DB::transaction(function () use (
             &$results,
@@ -1950,6 +1982,44 @@ class RpcInventoryController extends Controller
                         $conditionId
                     );
 
+                        // Propagate remarks to any existing sibling scans in this group.
+                        if ($remarks !== null) {
+                            $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
+                            $existingScansByDetail = $groupContext['existing_scans_by_detail'] ?? [];
+                            if (!empty($existingScansByDetail)) {
+                                foreach ($existingScansByDetail as $existingDetailId => $existingScan) {
+                                    // Skip the scan we just created
+                                    if ($existingScan->id === $scan->id) {
+                                        continue;
+                                    }
+
+                                    $previousRemarks = $existingScan->remarks ?? null;
+                                    if ($previousRemarks === $remarks) {
+                                        continue;
+                                    }
+
+                                    $existingScan->remarks = $remarks;
+                                    $existingScan->save();
+
+                                    // Record an audit entry for the update
+                                    $this->createAuditEntry(
+                                        (int) $cycle->id,
+                                        'scan_updated',
+                                        $user,
+                                        [
+                                            'inventory_detail_id' => $existingScan->inventory_detail_id,
+                                            'property_number' => $existingScan->property_number,
+                                        ],
+                                        $existingScan,
+                                        (int) $existingScan->condition_id,
+                                        null,
+                                        $previousRemarks,
+                                        $remarks
+                                    );
+                                }
+                            }
+                        }
+
                     if ($scan->property_number) {
                         $syncedPropertyNumbers[] = (string) $scan->property_number;
                     }
@@ -1960,6 +2030,7 @@ class RpcInventoryController extends Controller
                         'message' => 'Scan recorded successfully',
                         'scan_id' => (int) $scan->id,
                     ];
+                    $createdScanIds[] = (int) $scan->id;
                     $createdCount++;
                 } catch (\Exception $e) {
                     $results[] = [
@@ -1994,6 +2065,19 @@ class RpcInventoryController extends Controller
             ]
         );
 
+        // Debug telemetry: log created/duplicate scan ids to help trace sync issues
+        try {
+            \Log::debug('Bulk sync result', [
+                'cycle_id' => (int) $cycle->id,
+                'created_count' => $createdCount,
+                'duplicate_count' => $duplicateCount,
+                'error_count' => $errorCount,
+                'created_scan_ids' => $createdScanIds,
+            ]);
+        } catch (\Exception $_e) {
+            // swallow logging errors to avoid affecting response
+        }
+
         return response()->json([
             'message' => "Bulk sync processed: {$createdCount} created, {$duplicateCount} skipped, {$errorCount} errors",
             'summary' => [
@@ -2001,6 +2085,7 @@ class RpcInventoryController extends Controller
                 'created' => $createdCount,
                 'duplicates' => $duplicateCount,
                 'errors' => $errorCount,
+                'created_scan_ids' => $createdScanIds,
             ],
             'results' => $results,
         ], 201);
