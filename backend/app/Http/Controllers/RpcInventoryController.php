@@ -1460,11 +1460,13 @@ class RpcInventoryController extends Controller
             }
             $propNum = trim((string) ($row['property_number'] ?? ''));
             if ($propNum !== '') {
-                // Store remark and scanned timestamp so aggregation can pick the
-                // most recent remark based on actual scan time.
+                // Store remark, scanned flag and scanned timestamp so aggregation
+                // can compute per-property remarks and determine which
+                // properties were actually scanned.
                 $groups[$key]['remarks_by_property'][$propNum] = [
                     'remark' => $remarks !== '' ? $remarks : null,
                     'scanned_at' => $row['scanned_at'] ?? null,
+                    'is_scanned' => !empty($row['is_scanned']),
                 ];
             }
 
@@ -1531,13 +1533,50 @@ class RpcInventoryController extends Controller
                 }
             }
 
-            if ($latestRemark !== null) {
-                $finalRow['remarks'] = $latestRemark;
-                $finalRow['property_remarks'] = [];
-            } else {
-                $finalRow['remarks'] = 'Not Found';
-                $finalRow['property_remarks'] = [];
+            // Build a simple map of per-property remarks for the frontend to
+            // render per-number notes when needed.
+            $perPropertyRemarksMap = [];
+            foreach ($group['remarks_by_property'] as $pn => $info) {
+                $perPropertyRemarksMap[$pn] = is_array($info) && array_key_exists('remark', $info) ? $info['remark'] : null;
             }
+
+            // Determine Not Found counts: only consider valid property numbers.
+            $uniqueNums = array_values(array_filter(array_unique(array_map(static function (string $v) {
+                return trim($v);
+            }, $group['property_numbers'])), static function (string $value) {
+                return $value !== '' && $value !== '-';
+            }));
+
+            $totalProps = count($uniqueNums);
+            $scannedCount = 0;
+            if ($totalProps > 0) {
+                foreach ($uniqueNums as $pn) {
+                    if (isset($group['remarks_by_property'][$pn]) && is_array($group['remarks_by_property'][$pn]) && !empty($group['remarks_by_property'][$pn]['is_scanned'])) {
+                        $scannedCount++;
+                    }
+                }
+            }
+
+            if ($totalProps === 0) {
+                // No property numbers to base counts on — fallback to previous behavior.
+                if ($latestRemark !== null) {
+                    $finalRow['remarks'] = $latestRemark;
+                } else {
+                    $finalRow['remarks'] = 'Not Found';
+                }
+            } elseif ($scannedCount === 0) {
+                // All properties unscanned
+                $finalRow['remarks'] = 'Not Found';
+            } elseif ($scannedCount < $totalProps) {
+                // Some scanned — show remaining not found count
+                $notFound = $totalProps - $scannedCount;
+                $finalRow['remarks'] = sprintf('%d Not Found', $notFound);
+            } else {
+                // All scanned — prefer the latest non-empty remark when available.
+                $finalRow['remarks'] = $latestRemark !== null ? $latestRemark : null;
+            }
+
+            $finalRow['property_remarks'] = $perPropertyRemarksMap;
 
             $conditionList = array_keys($group['conditions']);
             $finalRow['condition'] = count($conditionList) > 0
