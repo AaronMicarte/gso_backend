@@ -429,18 +429,32 @@ class RpcInventoryController extends Controller
             ], 404);
         }
 
-        $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
+        // For one-asset-per-scan requirement, only return the matched asset
+        $detailId = (int) ($mapped['inventory_detail_id'] ?? 0);
+        $existingScan = null;
+        if ($detailId > 0) {
+            $existingScan = RpcInventoryScan::query()
+                ->where('rpc_inventory_cycle_id', (int) $cycle->id)
+                ->where('inventory_detail_id', $detailId)
+                ->first();
+        }
 
-        $duplicate = $groupContext['existing_scans_by_detail'][(int) $mapped['inventory_detail_id']] ?? null;
+        $candidate = [
+            'inventory_detail_id' => $detailId,
+            'property_id' => isset($mapped['property_id']) && $mapped['property_id'] !== null ? (int) $mapped['property_id'] : null,
+            'property_number' => $mapped['property_number'] ?? null,
+            'is_scanned' => (bool) $existingScan,
+            'existing_scan_id' => $existingScan ? (int) $existingScan->id : null,
+        ];
 
         return response()->json([
             'asset' => $mapped,
-            'already_scanned' => (bool) $duplicate,
-            'existing_scan_id' => $duplicate ? (int) $duplicate->id : null,
-            'group_total_count' => (int) $groupContext['group_total_count'],
-            'group_scanned_count' => (int) $groupContext['group_scanned_count'],
-            'group_remaining_count' => (int) $groupContext['group_remaining_count'],
-            'candidates' => array_values($groupContext['candidates']),
+            'already_scanned' => (bool) $existingScan,
+            'existing_scan_id' => $existingScan ? (int) $existingScan->id : null,
+            'group_total_count' => 1,
+            'group_scanned_count' => $existingScan ? 1 : 0,
+            'group_remaining_count' => $existingScan ? 0 : 1,
+            'candidates' => [$candidate],
         ]);
     }
 
@@ -461,8 +475,6 @@ class RpcInventoryController extends Controller
         $validated = $request->validate([
             'property_id' => 'nullable|integer|min:1',
             'inventory_detail_id' => 'nullable|integer|min:1',
-            'selected_inventory_detail_ids' => 'nullable|array|min:1',
-            'selected_inventory_detail_ids.*' => 'integer|min:1',
             'condition_id' => 'required|integer|exists:condition,ConditionID',
             'quantity_per_count' => 'nullable|integer|in:1',
             'remarks' => 'nullable|string|max:255',
@@ -492,48 +504,13 @@ class RpcInventoryController extends Controller
         }
 
         $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
+        $mappedByDetail = $groupContext['mapped_by_detail'] ?? [];
+        $existingScansByDetail = $groupContext['existing_scans_by_detail'] ?? [];
 
-        $requestedDetailIds = array_values(array_unique(array_map(
-            static fn ($value) => (int) $value,
-            (array) ($validated['selected_inventory_detail_ids'] ?? [])
-        )));
-
-        if (count($requestedDetailIds) === 0) {
-            $requestedDetailIds = [(int) $mapped['inventory_detail_id']];
-        }
-
-        $mappedByDetail = $groupContext['mapped_by_detail'];
-        $invalidDetailIds = array_values(array_filter($requestedDetailIds, static function (int $detailId) use ($mappedByDetail): bool {
-            return $detailId <= 0 || !array_key_exists($detailId, $mappedByDetail);
-        }));
-
-        if (count($invalidDetailIds) > 0) {
-            return response()->json([
-                'message' => 'One or more selected property numbers do not belong to this asset group.',
-                'invalid_inventory_detail_ids' => $invalidDetailIds,
-            ], 422);
-        }
-
-        $existingScansByDetail = $groupContext['existing_scans_by_detail'];
-        $alreadyScannedDetailIds = array_values(array_filter($requestedDetailIds, static function (int $detailId) use ($existingScansByDetail): bool {
-            return array_key_exists($detailId, $existingScansByDetail);
-        }));
-
-        if (count($alreadyScannedDetailIds) > 0) {
-            $alreadyScannedPropertyNumbers = array_values(array_filter(array_map(function (int $detailId) use ($mappedByDetail): ?string {
-                $value = $mappedByDetail[$detailId]['property_number'] ?? null;
-                return is_string($value) ? $value : null;
-            }, $alreadyScannedDetailIds)));
-
-            return response()->json([
-                'message' => 'Some selected property numbers are already scanned in this cycle.',
-                'already_scanned_inventory_detail_ids' => $alreadyScannedDetailIds,
-                'already_scanned_property_numbers' => $alreadyScannedPropertyNumbers,
-            ], 409);
-        }
-
+        // Enforce one-asset-per-scan: ignore any multi-select and only use the mapped inventory detail
+        $requestedDetailIds = [(int) $mapped['inventory_detail_id']];
         $createdScans = [];
-        $isBulk = count($requestedDetailIds) > 1;
+        $isBulk = false;
 
         try {
             DB::transaction(function () use (
@@ -541,6 +518,7 @@ class RpcInventoryController extends Controller
                 $cycle,
                 $requestedDetailIds,
                 $mappedByDetail,
+                $existingScansByDetail,
                 $validated,
                 $user,
                 $isBulk
@@ -592,6 +570,41 @@ class RpcInventoryController extends Controller
                         );
                     }
                 }
+
+                // Propagate remarks to any existing sibling scans in this group.
+                if (!empty($existingScansByDetail) && array_key_exists('remarks', $validated) && $validated['remarks'] !== null) {
+                    foreach ($existingScansByDetail as $existingDetailId => $existingScan) {
+                        // Skip scans we just created for the requested detail(s)
+                        if (in_array((int) $existingDetailId, $requestedDetailIds, true)) {
+                            continue;
+                        }
+
+                        $previousRemarks = $existingScan->remarks ?? null;
+                        $newRemarks = $validated['remarks'];
+                        if ($previousRemarks === $newRemarks) {
+                            continue;
+                        }
+
+                        $existingScan->remarks = $newRemarks;
+                        $existingScan->save();
+
+                        // Record an audit entry for the update
+                        $this->createAuditEntry(
+                            (int) $cycle->id,
+                            'scan_updated',
+                            $user,
+                            [
+                                'inventory_detail_id' => $existingScan->inventory_detail_id,
+                                'property_number' => $existingScan->property_number,
+                            ],
+                            $existingScan,
+                            (int) $existingScan->condition_id,
+                            null,
+                            $previousRemarks,
+                            $newRemarks
+                        );
+                    }
+                }
             });
         } catch (\Illuminate\Database\QueryException $e) {
             if ((string) $e->getCode() === '23000') {
@@ -603,26 +616,7 @@ class RpcInventoryController extends Controller
             throw $e;
         }
 
-        // If bulk create, emit a single grouped audit entry to reduce noise
-        if ($isBulk && count($createdScans) > 0) {
-            $propertyNumbers = array_values(array_filter(array_map(fn ($s) => $s->property_number ?? null, $createdScans)));
-            $inventoryDetailIds = array_values(array_filter(array_map(fn ($s) => $s->inventory_detail_id ?? null, $createdScans)));
-            $rpcTypes = array_values(array_filter(array_unique(array_map(fn ($s) => $s->rpc_type ?? null, $createdScans))));
-
-            $this->createAuditEntry(
-                (int) $cycle->id,
-                'scan_created_bulk',
-                $user,
-                [
-                    'total' => count($createdScans),
-                    'created' => count($createdScans),
-                    'property_numbers' => $propertyNumbers,
-                    'inventory_detail_ids' => $inventoryDetailIds,
-                    'rpc_types' => $rpcTypes,
-                    'remarks' => $validated['remarks'] ?? null,
-                ]
-            );
-        }
+        // No bulk audit entries — each scan has its own audit entry (one-scan → one-asset)
 
         return response()->json([
             'message' => count($createdScans) > 1
@@ -887,7 +881,10 @@ class RpcInventoryController extends Controller
                 'quantity_per_count' => $quantityCount,
                 'shortage_overage_qty' => $shortageOverageQty,
                 'shortage_overage_value' => round($shortageOverageQty * (float) ($mapped['unit_value'] ?? 0), 2),
-                'remarks' => $scan?->remarks ?? ($scan ? null : 'not found'),
+                // Do not inject "not found" placeholders here. Leave remarks null when
+                // no scan exists so grouped property-number ranges remain a display-only
+                // value and do not expand into per-number "not found" entries.
+                'remarks' => $scan?->remarks ?? null,
                 'accountable_officer' => $mapped['accountable_officer'] ?? '-',
                 'department' => $mapped['department_name'] ?? '-',
                 'condition' => $scan?->condition?->ConditionName,
@@ -1294,148 +1291,78 @@ class RpcInventoryController extends Controller
      */
     private function resolveScanGroupContext(array $seedMapped, int $cycleId): array
     {
+        // Build group context: include seed mapped item and any sibling inventory details
+        // that originate from the same Source DR/IAR detail. This allows remarks
+        // to be propagated across siblings while still enforcing one-asset-per-scan
+        // when creating new scans.
         $seedDetailId = (int) ($seedMapped['inventory_detail_id'] ?? 0);
-        $seedRpcType = (string) ($seedMapped['rpc_type'] ?? '');
-        $seedKey = $this->buildScanGroupingKey($seedMapped);
-        $seedRelaxedKey = $this->buildScanRelaxedGroupingKey($seedMapped);
-        $seedSourceDrDetailId = (int) ($seedMapped['source_dr_detail_id'] ?? 0);
-        $seedSourceIarDetailId = (int) ($seedMapped['source_iar_detail_id'] ?? 0);
-
-        $allMappedByDetail = [];
-
-        $assignedRows = AssignedProperty::query()
-            ->with([
-                'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
-                'inventoryDetail.drDetail.article:ArticleID,ArticleName',
-                'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
-                'endUser:EndUserID,FullName,DepartmentID',
-                'department:DepartmentID,DepartmentName,DepartmentCode',
-            ])
-            ->get();
-
-        foreach ($assignedRows as $assigned) {
-            $mapped = $this->mapAssignedProperty($assigned);
-            $inventoryDetailId = (int) ($mapped['inventory_detail_id'] ?? 0);
-
-            if ($inventoryDetailId <= 0) {
-                continue;
-            }
-
-            if ((string) ($mapped['rpc_type'] ?? '') !== $seedRpcType) {
-                continue;
-            }
-
-            $allMappedByDetail[$inventoryDetailId] = $mapped;
-        }
-
-        $inventoryDetails = PropertyInventoryDetail::query()
-            ->with([
-                'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
-                'drDetail.article:ArticleID,ArticleName',
-                'unitOfMeasure:UnitOfMeasureID,UnitName',
-                'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
-                'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
-            ])
-            ->whereHas('propertyType', function ($query) {
-                $query->whereIn('PropertyClassificationID', [
-                    self::CLASSIFICATION_NON_EXPENDABLE,
-                    self::CLASSIFICATION_SEMI_EXPENDABLE,
-                ]);
-            })
-            ->get();
-
-        foreach ($inventoryDetails as $detail) {
-            $mapped = $this->mapInventoryDetail($detail);
-            $inventoryDetailId = (int) ($mapped['inventory_detail_id'] ?? 0);
-
-            if ($inventoryDetailId <= 0 || isset($allMappedByDetail[$inventoryDetailId])) {
-                continue;
-            }
-
-            if ((string) ($mapped['rpc_type'] ?? '') !== $seedRpcType) {
-                continue;
-            }
-
-            $allMappedByDetail[$inventoryDetailId] = $mapped;
-        }
-
-        if ($seedDetailId > 0 && !array_key_exists($seedDetailId, $allMappedByDetail)) {
-            $allMappedByDetail[$seedDetailId] = $seedMapped;
-        }
-
-        if (count($allMappedByDetail) === 0 && $seedDetailId > 0) {
-            $allMappedByDetail[$seedDetailId] = $seedMapped;
-        }
-
         $mappedByDetail = [];
-
-        if ($seedSourceDrDetailId > 0 || $seedSourceIarDetailId > 0) {
-            foreach ($allMappedByDetail as $inventoryDetailId => $mapped) {
-                $candidateSourceDr = (int) ($mapped['source_dr_detail_id'] ?? 0);
-                $candidateSourceIar = (int) ($mapped['source_iar_detail_id'] ?? 0);
-
-                $sameSourceDr = $seedSourceDrDetailId > 0 && $candidateSourceDr === $seedSourceDrDetailId;
-                $sameSourceIar = $seedSourceIarDetailId > 0 && $candidateSourceIar === $seedSourceIarDetailId;
-
-                if ($sameSourceDr || $sameSourceIar) {
-                    $mappedByDetail[$inventoryDetailId] = $mapped;
-                }
-            }
-        }
-
-        if (count($mappedByDetail) <= 1) {
-            $mappedByDetail = [];
-            foreach ($allMappedByDetail as $inventoryDetailId => $mapped) {
-                if ($this->buildScanGroupingKey($mapped) === $seedKey) {
-                    $mappedByDetail[$inventoryDetailId] = $mapped;
-                }
-            }
-        }
-
-        if (count($mappedByDetail) <= 1) {
-            $mappedByDetail = [];
-            foreach ($allMappedByDetail as $inventoryDetailId => $mapped) {
-                if ($this->buildScanRelaxedGroupingKey($mapped) === $seedRelaxedKey) {
-                    $mappedByDetail[$inventoryDetailId] = $mapped;
-                }
-            }
-        }
-
-        if (count($mappedByDetail) === 0 && $seedDetailId > 0) {
+        if ($seedDetailId > 0) {
             $mappedByDetail[$seedDetailId] = $seedMapped;
         }
 
-        $detailIds = array_map(static fn ($value) => (int) $value, array_keys($mappedByDetail));
+        $seedSourceDr = $seedMapped['source_dr_detail_id'] ?? null;
+        $seedSourceIar = $seedMapped['source_iar_detail_id'] ?? null;
 
+        // If the seed references a source DR/IAR, include other inventory details
+        // that share the same source identifiers as siblings.
+        if ($seedDetailId > 0 && ($seedSourceDr || $seedSourceIar)) {
+            $query = PropertyInventoryDetail::query()
+                ->with([
+                    'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+                    'drDetail.article:ArticleID,ArticleName',
+                    'unitOfMeasure:UnitOfMeasureID,UnitName',
+                    'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
+                    'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
+                ]);
+
+            $query->where(function ($q) use ($seedSourceDr, $seedSourceIar) {
+                if ($seedSourceDr) {
+                    $q->orWhere('SourceDRDetailID', $seedSourceDr);
+                }
+                if ($seedSourceIar) {
+                    $q->orWhere('SourceIARDetailID', $seedSourceIar);
+                }
+            });
+
+            $siblings = $query->get();
+            foreach ($siblings as $detail) {
+                $detailId = (int) ($detail->InventoryDetailID ?? 0);
+                if ($detailId <= 0) {
+                    continue;
+                }
+
+                // Map the inventory detail into the same mapped shape as the seed
+                $mapped = $this->mapInventoryDetail($detail);
+                $mappedByDetail[$detailId] = $mapped;
+            }
+        }
+
+        // Fallback: ensure at least the seed exists in mapped_by_detail
+        if (empty($mappedByDetail) && $seedDetailId > 0) {
+            $mappedByDetail[$seedDetailId] = $seedMapped;
+        }
+
+        // Load any existing scans for the mapped inventory details in this cycle
         $existingScansByDetail = [];
-        if (count($detailIds) > 0) {
-            $existingScansByDetail = RpcInventoryScan::query()
+        if (!empty($mappedByDetail)) {
+            $existing = RpcInventoryScan::query()
                 ->where('rpc_inventory_cycle_id', $cycleId)
-                ->whereIn('inventory_detail_id', $detailIds)
+                ->whereIn('inventory_detail_id', array_keys($mappedByDetail))
                 ->get()
                 ->keyBy('inventory_detail_id')
                 ->all();
+
+            $existingScansByDetail = $existing;
         }
 
-        $orderedDetailIds = $detailIds;
-        usort($orderedDetailIds, function (int $a, int $b) use ($mappedByDetail): int {
-            $left = (string) ($mappedByDetail[$a]['property_number'] ?? '');
-            $right = (string) ($mappedByDetail[$b]['property_number'] ?? '');
-
-            return strnatcasecmp($left, $right);
-        });
-
         $candidates = [];
-        foreach ($orderedDetailIds as $detailId) {
-            $mapped = $mappedByDetail[$detailId];
-            $existingScan = $existingScansByDetail[$detailId] ?? null;
-
+        foreach ($mappedByDetail as $did => $m) {
+            $existingScan = $existingScansByDetail[$did] ?? null;
             $candidates[] = [
-                'inventory_detail_id' => $detailId,
-                'property_id' => isset($mapped['property_id']) && $mapped['property_id'] !== null
-                    ? (int) $mapped['property_id']
-                    : null,
-                'property_number' => $mapped['property_number'] ?? null,
+                'inventory_detail_id' => $did,
+                'property_id' => isset($m['property_id']) && $m['property_id'] !== null ? (int) $m['property_id'] : null,
+                'property_number' => $m['property_number'] ?? null,
                 'is_scanned' => (bool) $existingScan,
                 'existing_scan_id' => $existingScan ? (int) $existingScan->id : null,
             ];
@@ -1517,6 +1444,7 @@ class RpcInventoryController extends Controller
                     'row' => $seedRow,
                     'property_numbers' => [],
                     'remarks' => [],
+                    'remarks_by_property' => [],
                     'conditions' => [],
                 ];
             }
@@ -1529,6 +1457,10 @@ class RpcInventoryController extends Controller
             $remarks = trim((string) ($row['remarks'] ?? ''));
             if ($remarks !== '') {
                 $groups[$key]['remarks'][$remarks] = true;
+            }
+            $propNum = trim((string) ($row['property_number'] ?? ''));
+            if ($propNum !== '') {
+                $groups[$key]['remarks_by_property'][$propNum] = $remarks !== '' ? $remarks : null;
             }
 
             $condition = trim((string) ($row['condition'] ?? ''));
@@ -1551,10 +1483,30 @@ class RpcInventoryController extends Controller
             $finalRow['shortage_overage_qty'] = $shortage;
             $finalRow['shortage_overage_value'] = round($shortage * $unitValue, 2);
 
-            $remarksList = array_keys($group['remarks']);
-            $finalRow['remarks'] = count($remarksList) > 0
-                ? $remarksList[0]
-                : '-';
+            // Derive a single remarks value for the grouped row.
+            // If any sibling property has a non-empty remark, surface the latest
+            // non-empty remark only. Otherwise show a single "Not Found" value.
+            $perPropertyRemarks = $group['remarks_by_property'] ?? [];
+            $nonEmptyRemarks = [];
+            foreach ($perPropertyRemarks as $pn => $rm) {
+                $clean = is_string($rm) ? trim($rm) : null;
+                if ($clean !== null && $clean !== '') {
+                    $nonEmptyRemarks[$pn] = $clean;
+                }
+            }
+
+            if (count($nonEmptyRemarks) > 0) {
+                // Use the last recorded remark among siblings as the group's remark.
+                $values = array_values($nonEmptyRemarks);
+                $finalRow['remarks'] = $values[count($values) - 1];
+                // Do not expose per-property remark list in the report output to
+                // avoid printing many "pn: -" entries. Consumers should use the
+                // group-level `remarks` instead.
+                $finalRow['property_remarks'] = [];
+            } else {
+                $finalRow['remarks'] = 'Not Found';
+                $finalRow['property_remarks'] = [];
+            }
 
             $conditionList = array_keys($group['conditions']);
             $finalRow['condition'] = count($conditionList) > 0
