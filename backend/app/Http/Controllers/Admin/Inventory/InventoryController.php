@@ -327,6 +327,17 @@ class InventoryController extends Controller
 
         $query->orderBy($sortColumn, $sortDirection);
 
+        // Ensure server-side sort by creation timestamp (newest first).
+        $dateSortColumn = 'created_at';
+        foreach (['DateAcquired', 'DateReceived', 'CreatedDate', 'created_at'] as $candidate) {
+            if (Schema::hasColumn('propertyinventorydetail', $candidate)) {
+                $dateSortColumn = $candidate;
+                break;
+            }
+        }
+
+        $query->orderByDesc($dateSortColumn);
+
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
         $departmentIds = $paginator->getCollection()
@@ -1894,6 +1905,17 @@ class InventoryController extends Controller
         if ($propertyTypeId !== null && $propertyTypeId > 0) {
             $query->where('propertyinventorydetail.PropertyTypeID', $propertyTypeId);
         }
+
+        // Determine correct created timestamp column on propertyinventorydetail and sort newest-first.
+        $dateSortColumn = 'created_at';
+        foreach (['DateAcquired', 'DateReceived', 'CreatedDate', 'created_at'] as $candidate) {
+            if (Schema::hasColumn('propertyinventorydetail', $candidate)) {
+                $dateSortColumn = $candidate;
+                break;
+            }
+        }
+
+        $query->orderByDesc($dateSortColumn);
 
         $paginator = $query->paginate($perPage, ['*'], 'page', $page);
 
