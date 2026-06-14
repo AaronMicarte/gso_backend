@@ -988,7 +988,8 @@ class RpcInventoryController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if ($roleName !== self::ROLE_ADMIN) {
+        // Allow both Admin and GSO Staff to perform administrative actions
+        if (!in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF], true)) {
             abort(response()->json(['message' => 'Unauthorized'], 403));
         }
 
