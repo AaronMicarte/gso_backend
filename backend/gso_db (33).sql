@@ -3666,7 +3666,7 @@ INSERT INTO `qrcode` (`QRCodeID`, `PropertyID`, `InventoryDetailID`, `Department
 CREATE TABLE `requisition_issue_slips` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `asset_request_id` bigint(20) UNSIGNED NOT NULL,
-  `ris_number` varchar(20) NOT NULL,
+  `ris_number` varchar(20) DEFAULT NULL,
   `entity_name` varchar(255) NOT NULL,
   `fund_cluster` varchar(50) NOT NULL,
   `division` varchar(255) NOT NULL,
