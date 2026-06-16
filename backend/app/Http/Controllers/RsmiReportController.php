@@ -431,10 +431,15 @@ class RsmiReportController extends Controller
             ->values()
             ->all();
 
+        $reportDateLabel = optional($report->report_date)
+            ? Carbon::parse($report->report_date)->format('F j, Y')
+            : Carbon::now()->format('F j, Y');
+
         return [
             'id' => (int) $report->id,
             'serial_no' => (string) $report->serial_no,
             'report_date' => optional($report->report_date)->toDateString(),
+            'report_date_label' => strtoupper($reportDateLabel),
             'entity_name' => (string) ($report->entity_name ?? ''),
             'fund_cluster' => (string) ($report->fund_cluster ?? ''),
             'items' => $items->map(function (RsmiReportItem $item) {
