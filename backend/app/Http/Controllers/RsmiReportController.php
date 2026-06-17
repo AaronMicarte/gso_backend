@@ -317,6 +317,7 @@ class RsmiReportController extends Controller
                 $join->on('inv.InventoryDetailID', '=', 'pid.InventoryDetailID')
                     ->whereNull('inv.deleted_at');
             })
+            // inv contains Brand and ModelNumber columns which we can include
             ->leftJoin('deliveryreceiptdetail as drd', function ($join) {
                 $join->on('drd.DRDetailID', '=', 'inv.SourceDRDetailID')
                     ->whereNull('drd.deleted_at');
@@ -338,6 +339,8 @@ class RsmiReportController extends Controller
                 -- then RII descriptions and inventory description as last resort. This ensures the
                 -- Item column shows the Article name consistently when present.
                 COALESCE(NULLIF(art.ArticleName, ''), NULLIF(art.Description, ''), NULLIF(pid.ItemDescription, ''), NULLIF(rii_link.description, ''), NULLIF(rii_fallback.description, ''), NULLIF(inv.Description, ''), 'N/A') as item_description,
+                inv.Brand as item_brand,
+                inv.ModelNumber as item_model,
                 COALESCE(NULLIF(rii_link.unit, ''), NULLIF(rii_fallback.unit, ''), NULLIF(pid.Unit, ''), 'N/A') as unit,
                 pid.QuantityIssued as quantity_issued
             "
@@ -352,17 +355,31 @@ class RsmiReportController extends Controller
                     (string) ($row->responsibility_center_code ?? ''),
                     (string) ($row->stock_no ?? 'N/A'),
                     (string) ($row->item_description ?? 'N/A'),
+                    (string) ($row->item_brand ?? ''),
+                    (string) ($row->item_model ?? ''),
                     (string) ($row->unit ?? 'N/A'),
                 ]);
             })
             ->map(function ($group) {
                 $first = $group->first();
+                // Combine base description with brand and model when present
+                $brand = isset($first->item_brand) && $first->item_brand !== null && trim((string)$first->item_brand) !== '' ? trim((string)$first->item_brand) : null;
+                $model = isset($first->item_model) && $first->item_model !== null && trim((string)$first->item_model) !== '' ? trim((string)$first->item_model) : null;
+                $baseDesc = (string) ($first->item_description ?? 'N/A');
+                $combinedDesc = $baseDesc;
+                if ($brand !== null) {
+                    $combinedDesc .= ', ' . $brand;
+                }
+                if ($model !== null) {
+                    $combinedDesc .= ', ' . $model;
+                }
+
                 return [
                     'ris_id' => $first->ris_id ? (int) $first->ris_id : null,
                     'ris_no' => (string) ($first->ris_no ?? 'N/A'),
                     'responsibility_center_code' => (string) ($first->responsibility_center_code ?? ''),
                     'stock_no' => (string) ($first->stock_no ?? 'N/A'),
-                    'item_description' => (string) ($first->item_description ?? 'N/A'),
+                    'item_description' => (string) ($combinedDesc ?? 'N/A'),
                     'unit' => (string) ($first->unit ?? 'N/A'),
                     'quantity_issued' => (int) $group->sum(function ($row) {
                         return (int) ($row->quantity_issued ?? 0);
