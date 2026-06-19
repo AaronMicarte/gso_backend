@@ -175,6 +175,7 @@ class RpcInventoryController extends Controller
                 'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
                 'inventoryDetail.drDetail.article:ArticleID,ArticleName',
                 'inventoryDetail.drDetail:ArticleID,ItemDescription',
+                'inventoryDetail.drDetail.deliveryReceipt:DRID,DateReceived',
                 'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
                 'endUser:EndUserID,FullName,DepartmentID',
                 'department:DepartmentID,DepartmentName,DepartmentCode',
@@ -781,6 +782,7 @@ class RpcInventoryController extends Controller
             ->with([
                 'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
                 'drDetail.article:ArticleID,ArticleName',
+                'drDetail.deliveryReceipt:DRID,DateReceived',
                 'unitOfMeasure:UnitOfMeasureID,UnitName',
                 'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
                 'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
@@ -886,7 +888,7 @@ class RpcInventoryController extends Controller
                 // value and do not expand into per-number "not found" entries.
                 'remarks' => $scan?->remarks ?? null,
                 'accountable_officer' => $mapped['accountable_officer'] ?? '-',
-                'department' => $mapped['department_name'] ?? '-',
+                'date_purchased' => $mapped['date_purchased'] ? (string) $mapped['date_purchased'] : '-',
                 'condition' => $scan?->condition?->ConditionName,
                 'is_scanned' => (bool) $scan,
             ];
@@ -1212,6 +1214,7 @@ class RpcInventoryController extends Controller
             'end_user_id' => $property->EndUserID ? (int) $property->EndUserID : null,
             'department_id' => $departmentId,
             'department_name' => $property->department?->DepartmentName ?: ($fallback['department_name'] ?? null),
+            'date_purchased' => $detail?->drDetail?->deliveryReceipt?->DateReceived ? (string) $detail->drDetail->deliveryReceipt->DateReceived : null,
         ];
     }
 
@@ -1260,6 +1263,7 @@ class RpcInventoryController extends Controller
             'end_user_id' => $latestAssigned?->EndUserID ? (int) $latestAssigned->EndUserID : null,
             'department_id' => $departmentId,
             'department_name' => $latestAssigned?->department?->DepartmentName ?: ($fallback['department_name'] ?? null),
+            'date_purchased' => $detail?->drDetail?->deliveryReceipt?->DateReceived ? (string) $detail->drDetail->deliveryReceipt->DateReceived : null,
         ];
     }
 
@@ -1395,7 +1399,7 @@ class RpcInventoryController extends Controller
             strtolower(trim((string) ($mapped['unit_of_measure'] ?? ''))),
             number_format((float) ($mapped['unit_value'] ?? 0), 4, '.', ''),
             strtolower(trim((string) ($mapped['accountable_officer'] ?? ''))),
-            strtolower(trim((string) ($mapped['department_name'] ?? ''))),
+            strtolower(trim((string) ($mapped['date_purchased'] ?? ''))),
         ]);
     }
 
@@ -1410,7 +1414,7 @@ class RpcInventoryController extends Controller
             strtolower(trim((string) ($mapped['description'] ?? ''))),
             strtolower(trim((string) ($mapped['unit_of_measure'] ?? ''))),
             number_format((float) ($mapped['unit_value'] ?? 0), 4, '.', ''),
-            (string) ((int) ($mapped['department_id'] ?? 0)),
+            strtolower(trim((string) ($mapped['date_purchased'] ?? ''))),
         ]);
     }
 
@@ -1430,7 +1434,7 @@ class RpcInventoryController extends Controller
                 strtolower(trim((string) ($row['unit_of_measure'] ?? ''))),
                 number_format((float) ($row['unit_value'] ?? 0), 4, '.', ''),
                 strtolower(trim((string) ($row['accountable_officer'] ?? ''))),
-                strtolower(trim((string) ($row['department'] ?? ''))),
+                strtolower(trim((string) ($row['date_purchased'] ?? ''))),
             ]);
 
             if (!isset($groups[$key])) {
