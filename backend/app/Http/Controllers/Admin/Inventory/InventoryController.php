@@ -700,10 +700,13 @@ class InventoryController extends Controller
             return response()->json(['message' => 'Inventory detail not found'], 404);
         }
 
-        $beforeDescription = $detail->Description;
+        $editableFields = ['Description', 'Brand', 'ModelNumber', 'SerialNumber'];
 
         $validator = Validator::make($request->all(), [
             'Description' => 'nullable|string|max:255',
+            'Brand' => 'nullable|string|max:100',
+            'ModelNumber' => 'nullable|string|max:100',
+            'SerialNumber' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -713,28 +716,81 @@ class InventoryController extends Controller
             ], 422);
         }
 
-        $detail->update($request->only(['Description']));
-        $detail->UpdatedDate = now();
-        $detail->save();
+        $normalize = static function ($value): ?string {
+            if ($value === null) {
+                return null;
+            }
 
-        $afterDescription = $detail->Description;
-        if ($beforeDescription !== $afterDescription) {
-            $userId = (int) (Auth::id() ?? 0);
-            if ($userId > 0) {
-                AssetAuditLog::createLog(
-                    'inventory_detail',
-                    (int) $detail->InventoryDetailID,
-                    'description_updated',
-                    $userId,
-                    [
-                        'before' => $beforeDescription,
-                        'after' => $afterDescription,
-                    ]
-                );
+            $trimmed = trim((string) $value);
+
+            return $trimmed === '' ? null : $trimmed;
+        };
+
+        $beforeSnapshot = [];
+        foreach ($editableFields as $field) {
+            $beforeSnapshot[$field] = $normalize($detail->{$field});
+        }
+
+        $updates = [];
+        $changes = [];
+
+        foreach ($editableFields as $field) {
+            if (!$request->exists($field)) {
+                continue;
+            }
+
+            $newValue = $normalize($request->input($field));
+            $oldValue = $beforeSnapshot[$field];
+
+            if ($oldValue !== $newValue) {
+                $changes[$field] = [
+                    'before' => $oldValue,
+                    'after' => $newValue,
+                ];
+                $updates[$field] = $newValue;
             }
         }
 
-        return response()->json(['message' => 'Inventory detail updated successfully', 'detail' => $detail]);
+        if (empty($updates)) {
+            return response()->json([
+                'message' => 'No changes detected',
+                'detail' => $detail,
+            ]);
+        }
+
+        $detail->fill($updates);
+        $detail->UpdatedDate = now();
+        $detail->save();
+
+        if (array_key_exists('Description', $updates)) {
+            AssignedProperty::where('InventoryDetailID', (int) $detail->InventoryDetailID)
+                ->update([
+                    'Description' => $updates['Description'],
+                    'UpdatedDate' => now(),
+                ]);
+        }
+
+        $userId = (int) (Auth::id() ?? 0);
+        if ($userId > 0) {
+            $afterSnapshot = array_merge($beforeSnapshot, $updates);
+
+            AssetAuditLog::createLog(
+                'inventory_detail',
+                (int) $detail->InventoryDetailID,
+                'item_details_updated',
+                $userId,
+                [
+                    'before' => $beforeSnapshot,
+                    'after' => $afterSnapshot,
+                    'changes' => $changes,
+                ]
+            );
+        }
+
+        return response()->json([
+            'message' => 'Inventory detail updated successfully',
+            'detail' => $detail->fresh(),
+        ]);
     }
 
     // GET /api/admin/inventory/details/{id}/history
@@ -1219,13 +1275,70 @@ class InventoryController extends Controller
                 ? ['id' => (int) $log->performer->UserID, 'name' => (string) $log->performer->FullName]
                 : null;
 
-            $actionLabel = ucwords(str_replace('_', ' ', (string) $log->Action));
-
-            // Decode details for logical fingerprint check
             $logMeta = is_array($log->Details) ? $log->Details : null;
             if ($logMeta === null && is_string($log->Details) && trim($log->Details) !== '') {
                 $decoded = json_decode($log->Details, true);
-                if (is_array($decoded)) $logMeta = $decoded;
+                if (is_array($decoded)) {
+                    $logMeta = $decoded;
+                }
+            }
+
+            $inventoryDetailAuditActions = ['description_updated', 'item_details_updated'];
+            $isInventoryDetailUpdate = in_array((string) $log->Action, $inventoryDetailAuditActions, true);
+
+            $fieldLabels = [
+                'Description' => 'Description',
+                'Brand' => 'Brand',
+                'ModelNumber' => 'Model',
+                'SerialNumber' => 'Serial Number',
+            ];
+
+            $eventType = $isInventoryDetailUpdate ? 'inventory' : 'audit';
+            $title = $isInventoryDetailUpdate
+                ? 'Item details updated'
+                : ucwords(str_replace('_', ' ', (string) $log->Action));
+            $eventDescription = null;
+
+            if ($isInventoryDetailUpdate && is_array($logMeta)) {
+                $changeLines = [];
+                $changeSource = is_array($logMeta['changes'] ?? null)
+                    ? $logMeta['changes']
+                    : (isset($logMeta['before'], $logMeta['after']) && is_array($logMeta['before']) && is_array($logMeta['after'])
+                        ? collect($logMeta['after'])
+                            ->mapWithKeys(function ($afterValue, $field) use ($logMeta) {
+                                $beforeValue = $logMeta['before'][$field] ?? null;
+                                if (($beforeValue ?? null) === ($afterValue ?? null)) {
+                                    return [];
+                                }
+
+                                return [$field => ['before' => $beforeValue, 'after' => $afterValue]];
+                            })
+                            ->all()
+                        : []);
+
+                if ($log->Action === 'description_updated' && empty($changeSource)) {
+                    $changeSource = [
+                        'Description' => [
+                            'before' => $logMeta['before'] ?? null,
+                            'after' => $logMeta['after'] ?? null,
+                        ],
+                    ];
+                }
+
+                foreach ($changeSource as $field => $change) {
+                    if (!is_array($change)) {
+                        continue;
+                    }
+
+                    $label = $fieldLabels[$field] ?? $field;
+                    $beforeValue = array_key_exists('before', $change) ? ($change['before'] ?? '—') : '—';
+                    $afterValue = array_key_exists('after', $change) ? ($change['after'] ?? '—') : '—';
+                    $changeLines[] = $label . ': ' . $beforeValue . ' -> ' . $afterValue;
+                }
+
+                if (!empty($changeLines)) {
+                    $eventDescription = implode(' | ', $changeLines);
+                }
             }
 
             // Build logical key (same structure used when pushing other events)
@@ -1233,8 +1346,8 @@ class InventoryController extends Controller
                 (string) $log->Action,
                 $log->CreatedAt ? $log->CreatedAt->toISOString() : null,
                 (string) ($performer['id'] ?? 0),
-                trim((string) ($actionLabel !== '' ? $actionLabel : 'Audit entry')),
-                '',
+                trim((string) ($title !== '' ? $title : 'Audit entry')),
+                trim((string) ($eventDescription ?? '')),
                 json_encode($logMeta),
             ]);
 
@@ -1245,10 +1358,10 @@ class InventoryController extends Controller
             }
 
             $pushEvent(
-                'audit',
+                $eventType,
                 (string) $log->Action,
-                $actionLabel !== '' ? $actionLabel : 'Audit entry',
-                null,
+                $title !== '' ? $title : 'Audit entry',
+                $eventDescription,
                 $log->CreatedAt ? $log->CreatedAt->toISOString() : null,
                 $performer,
                 $logMeta

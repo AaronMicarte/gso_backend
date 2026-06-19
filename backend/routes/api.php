@@ -256,6 +256,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('requests-for-issuance', [\App\Http\Controllers\PropertyIssuanceController::class, 'getRequestsForIssuance']);
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
+        // Assignments for splitting quantities to receivers
+        Route::get('{id}/assignments', [\App\Http\Controllers\PropertyIssuanceAssignmentController::class, 'index']);
+        Route::post('{id}/assignments', [\App\Http\Controllers\PropertyIssuanceAssignmentController::class, 'store']);
         Route::post('{id}/acknowledge', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledge']);
     });
 

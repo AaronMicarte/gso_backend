@@ -2017,7 +2017,8 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (180, '2026_05_07_000001_create_rpc_inventory_audit_logs_table', 82),
 (182, '2026_05_10_000002_normalize_qrcode_payloads', 83),
 (184, '2026_06_02_add_rpc_cycle_closure_fields', 84),
-(185, '2026_06_07_000000_update_rpc_inventory_cycles_unique_year', 85);
+(185, '2026_06_07_000000_update_rpc_inventory_cycles_unique_year', 85),
+(186, '2026_06_19_000000_document_inventory_detail_editable_fields', 86);
 
 -- --------------------------------------------------------
 
@@ -2388,9 +2389,9 @@ CREATE TABLE `propertyinventorydetail` (
   `InventoryID` int(11) NOT NULL,
   `PropertyTypeID` int(11) DEFAULT NULL,
   `ReceivedID` int(11) DEFAULT NULL,
-  `Description` varchar(255) DEFAULT NULL COMMENT 'Item Description',
+  `Description` varchar(255) DEFAULT NULL COMMENT 'Item description (editable)',
   `PropertyNumber` varchar(50) DEFAULT NULL,
-  `SerialNumber` varchar(100) DEFAULT NULL,
+  `SerialNumber` varchar(100) DEFAULT NULL COMMENT 'Serial number (editable)',
   `Quantity` int(11) DEFAULT 1,
   `QuantityAvailable` int(11) DEFAULT 1,
   `PropertyStatusID` int(11) NOT NULL,
@@ -2400,8 +2401,8 @@ CREATE TABLE `propertyinventorydetail` (
   `SourceIARDetailID` int(11) DEFAULT NULL,
   `SourceDRDetailID` int(11) DEFAULT NULL,
   `ConditionID` int(11) NOT NULL,
-  `Brand` varchar(100) DEFAULT NULL,
-  `ModelNumber` varchar(100) DEFAULT NULL,
+  `Brand` varchar(100) DEFAULT NULL COMMENT 'Brand (editable)',
+  `ModelNumber` varchar(100) DEFAULT NULL COMMENT 'Model number (editable)',
   `Remarks` text DEFAULT NULL,
   `CreatedDate` datetime DEFAULT current_timestamp(),
   `UpdatedDate` datetime DEFAULT NULL ON UPDATE current_timestamp(),
