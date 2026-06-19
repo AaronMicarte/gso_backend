@@ -1506,6 +1506,40 @@ class InventoryController extends Controller
             ? implode(' | ', $descriptionParts)
             : null;
 
+        // Resolve PO number, supplier, date received, and received-by (department head of requester) if available
+        $poNumber = $detail->drDetail?->deliveryReceipt?->PONumber ?? null;
+        $supplierName = null;
+        if (!empty($detail->drDetail?->deliveryReceipt?->SupplierID)) {
+            $supplierName = DB::table('supplier')->where('SupplierID', $detail->drDetail->deliveryReceipt->SupplierID)->value('SupplierName');
+            if (!is_string($supplierName) || trim($supplierName) === '') {
+                $supplierName = null;
+            }
+        }
+
+        // Prefer inventory DateReceived, else delivery receipt DateReceived
+        $dateReceived = $detail->inventory?->DateReceived ?? $detail->drDetail?->deliveryReceipt?->DateReceived ?? null;
+
+        // Derive received_by as the department head of the requesting user when possible
+        $receivedByLabel = null;
+        $requestedByUserId = $detail->drDetail?->deliveryReceipt?->RequestedBy ?? null;
+        if (!empty($requestedByUserId)) {
+            $deptId = DB::table('user')->where('UserID', (int) $requestedByUserId)->value('DepartmentID');
+            if (!empty($deptId)) {
+                $headLabel = DB::table('user as u')
+                    ->leftJoin('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                    ->leftJoin('department as d', 'd.DepartmentID', '=', 'u.DepartmentID')
+                    ->where('u.DepartmentID', $deptId)
+                    ->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+                    ->orderByDesc('u.UserID')
+                    ->selectRaw("TRIM(CONCAT(COALESCE(d.DepartmentName, ''), CASE WHEN COALESCE(u.FullName, '') <> '' THEN CONCAT(' / ', u.FullName) ELSE '' END)) as label")
+                    ->value('label');
+
+                if (is_string($headLabel) && trim($headLabel) !== '') {
+                    $receivedByLabel = trim($headLabel);
+                }
+            }
+        }
+
         return response()->json([
             'inventory_detail_id' => (int) $detail->InventoryDetailID,
             'header' => [
@@ -1515,6 +1549,10 @@ class InventoryController extends Controller
                 'property_number' => $detail->PropertyNumber,
                 'description' => $composedDescription,
                 'unit_cost' => $detail->UnitCost !== null ? (float) $detail->UnitCost : null,
+                'po_number' => $poNumber,
+                'supplier' => $supplierName,
+                'date_received' => $dateReceived,
+                'received_by' => $receivedByLabel,
             ],
             'rows' => $rows,
         ]);
@@ -1786,6 +1824,7 @@ class InventoryController extends Controller
         $search = $search !== '' ? $search : null;
         $statusId = $request->filled('property_status_id') ? (int) $request->query('property_status_id') : null;
         $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
+        $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
 
         $query = PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
             ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
@@ -2017,6 +2056,10 @@ class InventoryController extends Controller
 
         if ($propertyTypeId !== null && $propertyTypeId > 0) {
             $query->where('propertyinventorydetail.PropertyTypeID', $propertyTypeId);
+        }
+
+        if ($documentType && in_array($documentType, ['PAR', 'ICS'])) {
+            $query->where('propertyclassification.DocumentType', $documentType);
         }
 
         // Determine correct created timestamp column on propertyinventorydetail and sort newest-first.
