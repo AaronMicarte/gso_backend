@@ -285,8 +285,59 @@ class PropertyWasteController extends Controller
                 if ($deptId > 0) {
                     $q->where('pi.DepartmentID', $deptId);
                 }
-            })
-            ->orderByDesc(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'));
+            });
+
+        $startDate = trim((string) $request->query('start_date', ''));
+        $endDate = trim((string) $request->query('end_date', ''));
+
+        if ($startDate !== '' || $endDate !== '') {
+            if ($startDate === '' || $endDate === '') {
+                return response()->json([
+                    'message' => 'Both start_date and end_date are required for date range filtering.',
+                ], 422);
+            }
+
+            try {
+                $start = \Carbon\Carbon::createFromFormat('Y-m-d', $startDate)->startOfDay();
+                $end = \Carbon\Carbon::createFromFormat('Y-m-d', $endDate)->endOfDay();
+            } catch (\Throwable $e) {
+                return response()->json([
+                    'message' => 'Invalid date format. Use YYYY-MM-DD for start_date and end_date.',
+                ], 422);
+            }
+
+            if ($start->gt($end)) {
+                return response()->json([
+                    'message' => 'start_date must be less than or equal to end_date.',
+                ], 422);
+            }
+
+            $query->whereBetween(DB::raw('DATE(COALESCE(pi.DateReceived, pi.CreatedDate))'), [$start->toDateString(), $end->toDateString()]);
+        } else {
+            $month = $request->query('month');
+            $year = $request->query('year');
+
+            if ($month === null && $year === null) {
+                $month = now()->month;
+                $year = now()->year;
+            }
+
+            if ($month !== null) {
+                $month = (int) $month;
+                if ($month >= 1 && $month <= 12) {
+                    $query->whereMonth(DB::raw('COALESCE(pi.DateReceived, pi.CreatedDate)'), $month);
+                }
+            }
+
+            if ($year !== null) {
+                $year = (int) $year;
+                if ($year >= 2000 && $year <= 9999) {
+                    $query->whereYear(DB::raw('COALESCE(pi.DateReceived, pi.CreatedDate)'), $year);
+                }
+            }
+        }
+
+        $query->orderByDesc(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'));
 
         $rows = $query->paginate($perPage);
 
