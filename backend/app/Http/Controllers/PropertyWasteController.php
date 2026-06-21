@@ -41,8 +41,10 @@ class PropertyWasteController extends Controller
         $query = PropertyWasteReport::query()
             ->with([
                 'items.disposalMethod:DisposalMethodID,MethodName,Description,IconKey',
-                'items.inventoryDetail:InventoryDetailID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID,SourceDRDetailID',
-                'items.inventoryDetail.drDetail:DRDetailID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
+                // Include inventory detail cost/quantity and inventory acquisition date so frontend can build the IIRUP table
+                'items.inventoryDetail:InventoryDetailID,InventoryID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID,SourceDRDetailID,Quantity,UnitCost,TotalCost',
+                'items.inventoryDetail.inventory:InventoryID,InventoryNumber,DateAcquired,DateReceived,CreatedDate',
+                'items.inventoryDetail.drDetail:DRDetailID,DRID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
                 'items.inventoryDetail.drDetail.article:ArticleID,ArticleName',
                 'items.condition:ConditionID,ConditionName',
                 'department:DepartmentID,DepartmentName,DepartmentCode',
