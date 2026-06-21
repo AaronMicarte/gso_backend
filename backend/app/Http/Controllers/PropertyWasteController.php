@@ -9,7 +9,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 
 class PropertyWasteController extends Controller
 {
@@ -42,7 +41,6 @@ class PropertyWasteController extends Controller
         $query = PropertyWasteReport::query()
             ->with([
                 'items.disposalMethod:DisposalMethodID,MethodName,Description,IconKey',
-                // Include inventory detail cost/quantity and inventory acquisition date so frontend can build the IIRUP table
                 'items.inventoryDetail:InventoryDetailID,InventoryID,PropertyNumber,Description,Brand,ModelNumber,SerialNumber,ConditionID,SourceDRDetailID,Quantity,UnitCost,TotalCost',
                 'items.inventoryDetail.inventory:InventoryID,InventoryNumber,DateAcquired,DateReceived,CreatedDate',
                 'items.inventoryDetail.drDetail:DRDetailID,DRID,ArticleID,ItemDescription,Brand,ModelNumber,SerialNumber',
@@ -244,11 +242,11 @@ class PropertyWasteController extends Controller
     }
 
     /**
-     * GET /api/admin/property-unserviceable
+     * GET /api/property-unserviceable
      * Returns flattened list of unserviceable inventory items.
-     * Admin-only endpoint (route registered under /api/admin).
+     * Scoped to department if requester is a Department Head.
      */
-    public function adminUnserviceable(Request $request): JsonResponse
+   public function adminUnserviceable(Request $request): JsonResponse
     {
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
@@ -265,37 +263,35 @@ class PropertyWasteController extends Controller
                 'pid.InventoryDetailID',
                 'pi.InventoryID',
                 'pi.InventoryNumber',
-                'pi.DateAcquired',
+                'pi.DateReceived',  // <-- Added delivery receipt fallback tracking
+                'pi.CreatedDate as ParentCreatedDate',
                 DB::raw('COALESCE(a.ArticleName, pid.Description) as Particulars'),
                 'pid.PropertyNumber',
                 'pid.Quantity',
                 'pid.UnitCost',
                 'pid.TotalCost',
                 'pwi.PropertyWasteItemID',
-                'pwi.created_at as marked_at',
+                DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate) as marked_at'),
                 'actionUser.UserID as marked_by_user_id',
                 'actionUser.FullName as marked_by_fullname',
                 'c.ConditionName'
             )
-            ->where(function ($q) use ($roleName, $user) {
+            ->where(function ($q) {
                 $q->whereRaw("LOWER(c.ConditionName) = ?", ['unserviceable'])
                     ->orWhereNotNull('pwi.PropertyWasteItemID');
             })
-            // If requester is Department Head, scope to their department
             ->when($roleName === self::ROLE_DEPARTMENT_HEAD, function ($q) use ($user) {
                 $deptId = (int) ($user?->DepartmentID ?? 0);
                 if ($deptId > 0) {
                     $q->where('pi.DepartmentID', $deptId);
                 }
             })
-            ->orderByDesc('pwi.created_at')
-            ->orderByDesc('pid.CreatedDate');
+            ->orderByDesc(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'));
 
         $rows = $query->paginate($perPage);
 
         return response()->json($rows);
     }
-
     private function canView(string $roleName): bool
     {
         return in_array($roleName, [self::ROLE_ADMIN, self::ROLE_GSO_STAFF, self::ROLE_DEPARTMENT_HEAD], true);

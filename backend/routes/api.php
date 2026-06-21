@@ -226,6 +226,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
     });
 
+    // Expose unserviceable listing to authenticated users (Department Heads will be scoped to their department)
+    Route::get('property-unserviceable', [PropertyWasteController::class, 'adminUnserviceable']);
+
     // Department Head routes
     Route::middleware('auth:sanctum')->prefix('department-head')->group(function () {
         Route::get('dashboard/stats', [DepartmentHeadDashboardController::class, 'getStats']);
