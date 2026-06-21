@@ -118,7 +118,12 @@ Route::middleware('auth:sanctum')->group(function () {
                 Route::post('backfill-qr-codes', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'backfillQrCodes']);
                 Route::post('details/{id}/generate-qr', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'generateQr']);
                 Route::post('issuances', [\App\Http\Controllers\Admin\Inventory\IssuanceController::class, 'store']);
+                    // Admin helper: flattened unserviceable items for IIRUP
+                    Route::get('property-unserviceable', [\App\Http\Controllers\PropertyWasteController::class, 'adminUnserviceable']);
             });
+
+                // Expose unserviceable listing to authenticated users; Department Heads will be scoped to their department
+                Route::get('property-unserviceable', [\App\Http\Controllers\PropertyWasteController::class, 'adminUnserviceable']);
         });
 
         // Master Data routes (shared with authenticated users)

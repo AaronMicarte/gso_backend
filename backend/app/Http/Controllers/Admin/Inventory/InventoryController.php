@@ -22,6 +22,9 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use App\Models\AssignedProperty;
 use App\Models\QrCode;
+use App\Models\PropertyWasteReport;
+use App\Models\PropertyWasteItem;
+use App\Models\MasterData\Condition as ConditionModel;
 
 class InventoryController extends Controller
 {
@@ -707,6 +710,7 @@ class InventoryController extends Controller
             'Brand' => 'nullable|string|max:100',
             'ModelNumber' => 'nullable|string|max:100',
             'SerialNumber' => 'nullable|string|max:100',
+            'Condition' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -748,6 +752,80 @@ class InventoryController extends Controller
                     'after' => $newValue,
                 ];
                 $updates[$field] = $newValue;
+            }
+        }
+
+        // Process Condition change separately so condition-only updates are accepted
+        if ($request->exists('Condition')) {
+            $newConditionName = $normalize($request->input('Condition'));
+
+            $oldConditionName = null;
+            if (!empty($detail->ConditionID)) {
+                $oldCond = ConditionModel::find($detail->ConditionID);
+                $oldConditionName = $oldCond?->ConditionName ?? null;
+            }
+
+            if ($oldConditionName !== $newConditionName) {
+                if ($newConditionName !== null) {
+                    $cond = ConditionModel::firstOrCreate(
+                        ['ConditionName' => $newConditionName],
+                        ['Description' => "{$newConditionName} Assets"]
+                    );
+
+                    $detail->ConditionID = (int) $cond->ConditionID;
+                    $detail->save();
+
+                    AssignedProperty::where('InventoryDetailID', (int) $detail->InventoryDetailID)
+                        ->update(['ConditionID' => (int) $cond->ConditionID]);
+
+                    // If marked unserviceable, create a waste report/item and mark for disposal
+                    if (strtolower($newConditionName) === 'unserviceable') {
+                        $userId = (int) (Auth::id() ?? 0);
+
+                        $report = PropertyWasteReport::firstOrCreate(
+                            ['SourceServiceRecordID' => null, 'DepartmentID' => $detail->inventory?->DepartmentID ?? null],
+                            [
+                                'WasteNumber' => PropertyWasteReport::generateWasteNumber(),
+                                'DepartmentID' => (int) ($detail->inventory?->DepartmentID ?? 0),
+                                'Status' => 'draft',
+                                'Notes' => 'Marked unserviceable from inventory editor',
+                                'CreatedByUserID' => $userId,
+                                'UpdatedByUserID' => $userId,
+                            ]
+                        );
+
+                        PropertyWasteItem::firstOrCreate(
+                            ['InventoryDetailID' => (int) $detail->InventoryDetailID],
+                            [
+                                'PropertyWasteReportID' => (int) $report->PropertyWasteReportID,
+                                'InventoryDetailID' => (int) $detail->InventoryDetailID,
+                                'PropertyNumber' => $detail->PropertyNumber,
+                                'ItemDescription' => $detail->Description,
+                                'ConditionID' => (int) $detail->ConditionID,
+                                'Status' => 'pending_method',
+                                'ActionedByUserID' => $userId,
+                            ]
+                        );
+
+                        $forDisposalStatusId = PropertyStatus::query()
+                            ->whereRaw('LOWER(StatusName) = ?', ['for disposal'])
+                            ->value('PropertyStatusID');
+
+                        if (!empty($forDisposalStatusId)) {
+                            $detail->PropertyStatusID = (int) $forDisposalStatusId;
+                            $detail->save();
+
+                            AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)
+                                ->update(['PropertyStatusID' => (int) $forDisposalStatusId]);
+                        }
+                    }
+                } else {
+                    // Clear condition
+                    $detail->ConditionID = null;
+                    $detail->save();
+                    AssignedProperty::where('InventoryDetailID', (int) $detail->InventoryDetailID)
+                        ->update(['ConditionID' => null]);
+                }
             }
         }
 

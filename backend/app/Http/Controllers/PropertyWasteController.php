@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class PropertyWasteController extends Controller
 {
@@ -240,6 +241,59 @@ class PropertyWasteController extends Controller
             });
 
         return response()->json(['data' => $rows]);
+    }
+
+    /**
+     * GET /api/admin/property-unserviceable
+     * Returns flattened list of unserviceable inventory items.
+     * Admin-only endpoint (route registered under /api/admin).
+     */
+    public function adminUnserviceable(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        $perPage = max(10, min(100, (int) $request->query('per_page', 15)));
+
+        $query = DB::table('propertyinventorydetail as pid')
+            ->leftJoin('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
+            ->leftJoin('condition as c', 'c.ConditionID', '=', 'pid.ConditionID')
+            ->leftJoin('deliveryreceiptdetail as drd', 'pid.SourceDRDetailID', '=', 'drd.DRDetailID')
+            ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
+            ->leftJoin('property_waste_items as pwi', 'pwi.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->leftJoin('user as actionUser', 'actionUser.UserID', '=', 'pwi.ActionedByUserID')
+            ->select(
+                'pid.InventoryDetailID',
+                'pi.InventoryID',
+                'pi.InventoryNumber',
+                'pi.DateAcquired',
+                DB::raw('COALESCE(a.ArticleName, pid.Description) as Particulars'),
+                'pid.PropertyNumber',
+                'pid.Quantity',
+                'pid.UnitCost',
+                'pid.TotalCost',
+                'pwi.PropertyWasteItemID',
+                'pwi.created_at as marked_at',
+                'actionUser.UserID as marked_by_user_id',
+                'actionUser.FullName as marked_by_fullname',
+                'c.ConditionName'
+            )
+            ->where(function ($q) use ($roleName, $user) {
+                $q->whereRaw("LOWER(c.ConditionName) = ?", ['unserviceable'])
+                    ->orWhereNotNull('pwi.PropertyWasteItemID');
+            })
+            // If requester is Department Head, scope to their department
+            ->when($roleName === self::ROLE_DEPARTMENT_HEAD, function ($q) use ($user) {
+                $deptId = (int) ($user?->DepartmentID ?? 0);
+                if ($deptId > 0) {
+                    $q->where('pi.DepartmentID', $deptId);
+                }
+            })
+            ->orderByDesc('pwi.created_at')
+            ->orderByDesc('pid.CreatedDate');
+
+        $rows = $query->paginate($perPage);
+
+        return response()->json($rows);
     }
 
     private function canView(string $roleName): bool
