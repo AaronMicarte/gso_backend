@@ -551,6 +551,13 @@ class RpcInventoryController extends Controller
                         'accountable_officer' => $row['accountable_officer'] ?? null,
                     ]);
 
+                    // Auto-update ConditionID in PropertyInventoryDetail if Unserviceable
+                    $condition = Condition::find((int) $validated['condition_id']);
+                    if ($condition && strtolower(trim($condition->ConditionName)) === 'unserviceable') {
+                        PropertyInventoryDetail::where('InventoryDetailID', (int) $row['inventory_detail_id'])
+                            ->update(['ConditionID' => (int) $validated['condition_id']]);
+                    }
+
                     $createdScans[] = $scan;
 
                     if (! $isBulk) {
@@ -683,6 +690,13 @@ class RpcInventoryController extends Controller
                 $scan->remarks = $validated['remarks'];
             }
             $scan->save();
+
+            // Auto-update ConditionID in PropertyInventoryDetail if Unserviceable
+            $condition = Condition::find((int) $validated['condition_id']);
+            if ($condition && strtolower(trim($condition->ConditionName)) === 'unserviceable') {
+                PropertyInventoryDetail::where('InventoryDetailID', (int) $scan->inventory_detail_id)
+                    ->update(['ConditionID' => (int) $validated['condition_id']]);
+            }
 
             $this->createAuditEntry(
                 $cycleId,
