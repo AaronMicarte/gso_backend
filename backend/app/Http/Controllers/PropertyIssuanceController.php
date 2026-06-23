@@ -43,6 +43,7 @@ class PropertyIssuanceController extends Controller
             'request.ris.items',
             'deliveryReceipt.requestedByUser:UserID,FullName,DepartmentID',
             'deliveryReceipt.requestedByUser.department:DepartmentID,DepartmentName',
+            'deliveryReceipt.supplier', // ADD THIS
             'issuedBy',
             'issuedTo',
             'details.inventoryDetail:InventoryDetailID,Description,Brand,ModelNumber,PropertyNumber,SerialNumber,UnitCost',
@@ -220,6 +221,7 @@ class PropertyIssuanceController extends Controller
             'request.ris.items',
             'deliveryReceipt.requestedByUser:UserID,FullName,DepartmentID',
             'deliveryReceipt.requestedByUser.department:DepartmentID,DepartmentName',
+            'deliveryReceipt.supplier', // ADD THIS
             'issuedBy',
             'issuedBy.department:DepartmentID,DepartmentName',
             'issuedTo',
@@ -284,13 +286,15 @@ class PropertyIssuanceController extends Controller
 
         // Add relationships
         $transformedIssuance['request'] = $issuance->request;
-        $transformedIssuance['deliveryReceipt'] = $issuance->deliveryReceipt ? [
+      $transformedIssuance['deliveryReceipt'] = $issuance->deliveryReceipt ? [
             'DRID' => $issuance->deliveryReceipt->DRID,
             'DRNumber' => $issuance->deliveryReceipt->DRNumber,
             'RequestedBy' => $issuance->deliveryReceipt->requestedByUser->FullName ?? null,
             'DepartmentID' => $issuance->deliveryReceipt->requestedByUser->DepartmentID ?? null,
             'DepartmentName' => $issuance->deliveryReceipt->requestedByUser->department->DepartmentName ?? null,
             'DateReceived' => $issuance->deliveryReceipt->DateReceived,
+            'SupplierName' => $issuance->deliveryReceipt->supplier->SupplierName ?? null, // ADD
+            'PONumber' => $issuance->deliveryReceipt->PONumber ?? null,                   // ADD
         ] : null;
         $transformedIssuance['issuer'] = $issuance->issuedBy;
 
