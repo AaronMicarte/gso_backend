@@ -36,6 +36,7 @@ class RequisitionIssueSlipController extends Controller
 
         $query = RequisitionIssueSlip::with([
             'assetRequest.department:DepartmentID,DepartmentName,DepartmentCode',
+            'items.inventoryDetail.drDetail.deliveryReceipt.supplier:SupplierID,SupplierName',
             'requestedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
             'preparedBy:UserID,FullName',
@@ -387,6 +388,7 @@ class RequisitionIssueSlipController extends Controller
         $ris = RequisitionIssueSlip::with([
             'items.requestDetail',
             'items.inventoryDetail.drDetail.article',
+            'items.inventoryDetail.drDetail.deliveryReceipt.supplier:SupplierID,SupplierName',
             'items.inventoryDetail.unitOfMeasure',
             'assetRequest.issuer:UserID,FullName',
             'assetRequest.reviewer:UserID,FullName',
@@ -536,6 +538,9 @@ class RequisitionIssueSlipController extends Controller
                 'requester' => $assetRequest->requester,
                 'reviewer' => $assetRequest->reviewer,
                 'issuer' => $assetRequest->issuer,
+               'supplier_name' => $ris->items->map(fn($item) =>
+                $item->inventoryDetail?->drDetail?->deliveryReceipt?->supplier?->SupplierName
+            )->filter()->first(),
             ] : null,
 
             'items' => (function () use ($ris, $issuedByDetail, $issuedByRisItem) {
