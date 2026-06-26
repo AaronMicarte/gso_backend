@@ -34,12 +34,18 @@ class RequisitionIssueSlipController extends Controller
         $perPage = (int) $request->get('per_page', 15);
         $perPage = max(1, min($perPage, 100));
 
+        // NOTE: eager-load the SAME relations buildRisPayload() needs, so list rows
+        // carry request.requester / signatures.received_by / supplier info just like show().
+        // Without this, the frontend's requester/supplier fallbacks always render '-' on the list page.
         $query = RequisitionIssueSlip::with([
-            'assetRequest.department:DepartmentID,DepartmentName,DepartmentCode',
+            'items.requestDetail',
+            'items.inventoryDetail.drDetail.article',
             'items.inventoryDetail.drDetail.deliveryReceipt.supplier:SupplierID,SupplierName',
-            'requestedBy:UserID,FullName',
-            'approvedBy:UserID,FullName',
-            'preparedBy:UserID,FullName',
+            'items.inventoryDetail.unitOfMeasure',
+            'assetRequest.issuer:UserID,FullName',
+            'assetRequest.reviewer:UserID,FullName',
+            'assetRequest.requester:UserID,FullName,DepartmentID',
+            'assetRequest.department:DepartmentID,DepartmentName,DepartmentCode',
         ])->orderByDesc('id');
 
         // Non-admins can only see RIS records for their department
@@ -64,7 +70,15 @@ class RequisitionIssueSlipController extends Controller
             });
         }
 
-        return response()->json($query->paginate($perPage));
+        $paginated = $query->paginate($perPage);
+
+        // Re-shape each row through buildRisPayload() so list and detail responses
+        // share the same JSON shape (request.requester, signatures.received_by, etc.)
+        $paginated->setCollection(
+            $paginated->getCollection()->map(fn (RequisitionIssueSlip $ris) => $this->buildRisPayload($ris))
+        );
+
+        return response()->json($paginated);
     }
 
     /**
@@ -557,12 +571,14 @@ class RequisitionIssueSlipController extends Controller
                         $serial = trim((string) ($drd->SerialNumber ?? $inv->SerialNumber ?? ''));
                         $desc = trim((string) ($article->ArticleName ?? $article->Description ?? $item->description ?? '')) ?: 'N/A';
                         $unit = trim((string) ($inv?->unitOfMeasure?->UnitName ?? $item->unit ?? '')) ?: 'N/A';
+                        $unitCost = (float) ($drd->UnitCost ?? 0);
 
                         $key = implode('|', [(string) ($article->ArticleID ?? '0'), $brand, $model, $serial, $unit]);
                     } else {
                         $desc = trim((string) ($item->description ?? '')) ?: 'N/A';
                         $brand = $model = $serial = '';
                         $unit = trim((string) ($item->unit ?? '')) ?: 'N/A';
+                        $unitCost = (float) ($drd->UnitCost ?? 0);
                         $key = implode('|', [$desc, $unit, (string) ($item->stock_no ?? '')]);
                     }
 
@@ -581,6 +597,7 @@ class RequisitionIssueSlipController extends Controller
                             'serial' => $serial,
                                 'property_numbers' => $item->stock_no ? [trim((string) $item->stock_no)] : [],
                             'quantity_requested' => $qtyReq,
+                            'unit_cost' => $unitCost,
                             'stock_available' => (bool) $item->stock_available,
                             'quantity_issued' => $qtyIssued,
                             'issue_remarks' => trim((string) ($item->issue_remarks ?? '')),
