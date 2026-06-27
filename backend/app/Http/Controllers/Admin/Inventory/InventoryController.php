@@ -2151,7 +2151,52 @@ class InventoryController extends Controller
 
         $query->orderByDesc($dateSortColumn);
 
-        $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+        // Stats cards should always be calculated from all matching entries
+        $statsQuery = clone $query;
+        $statsQuery->reorder();  
+        $statsResult = $statsQuery->select(DB::raw('
+            COUNT(*) as total,
+            SUM(CASE WHEN propertyinventorydetail.PropertyStatusID = 1 THEN 1 ELSE 0 END) as available,
+            SUM(CASE WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 1 ELSE 0 END) as issued,
+            SUM(CASE WHEN propertyinventorydetail.PropertyStatusID > 2 THEN 1 ELSE 0 END) as other
+        '))->first();
+
+        $displayMode = $request->query('display_mode', 'individual');
+        if ($displayMode === 'combined') {
+            $items = $query->get();
+
+           $grouped = [];
+            foreach ($items as $item) {
+                $key = trim($item->dr_article_name ?: ($item->PropertyName ?: ($item->ModelNumber ?: ($item->PropertyNumber ?: ($item->SerialNumber ?: 'UNKNOWN')))));
+                if (!isset($grouped[$key])) {
+                    $clone = clone $item;
+                    $clone->CombinedQuantity = 1;
+                    $clone->CombinedTotalCost = (float) ($item->UnitCost ?? 0);
+                    $clone->combinedItems = [$item];
+                    $grouped[$key] = $clone;
+                } else {
+                    $existing = $grouped[$key];
+                    $existing->CombinedQuantity = $existing->CombinedQuantity + 1;
+                    $existing->CombinedTotalCost = $existing->CombinedTotalCost + (float) ($item->UnitCost ?? 0);
+                    $items_so_far = $existing->combinedItems;
+                    $items_so_far[] = $item;
+                    $existing->combinedItems = $items_so_far;
+                }
+            }
+            $currentPage = $page;
+            $col = collect(array_values($grouped));
+            $currentPageItems = $col->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                $currentPageItems,
+                $col->count(),
+                $perPage,
+                $currentPage,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+        }
 
         $departmentIds = collect($paginator->items())
             ->pluck('locationDepartmentId')
@@ -2194,6 +2239,14 @@ class InventoryController extends Controller
             return $item;
         });
 
-        return $paginator;
+        $responseData = $paginator->toArray();
+        $responseData['stats'] = [
+            'total' => (int) ($statsResult->total ?? 0),
+            'available' => (int) ($statsResult->available ?? 0),
+            'issued' => (int) ($statsResult->issued ?? 0),
+            'other' => (int) ($statsResult->other ?? 0),
+        ];
+
+        return response()->json($responseData);
     }
 }
