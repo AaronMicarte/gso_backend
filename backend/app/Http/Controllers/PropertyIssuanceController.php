@@ -2613,15 +2613,11 @@ class PropertyIssuanceController extends Controller
         }
     }
 
-    private function resolveIssuanceItemName(string $documentType, ?DeliveryReceiptDetail $drDetail, ?string $fallback): string
+   private function resolveIssuanceItemName(string $documentType, ?DeliveryReceiptDetail $drDetail, ?string $fallback): string
     {
-        $normalizedType = strtoupper(trim($documentType));
-
-        if ($normalizedType === 'PAR') {
-            $articleName = trim((string) ($drDetail?->article?->ArticleName ?? ''));
-            if ($articleName !== '') {
-                return $articleName;
-            }
+        $articleName = trim((string) ($drDetail?->article?->ArticleName ?? ''));
+        if ($articleName !== '') {
+            return $articleName;
         }
 
         $drItemName = trim((string) ($drDetail?->ItemDescription ?? ''));
