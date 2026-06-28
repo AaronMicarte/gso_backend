@@ -26,6 +26,7 @@ class PropertyIssuanceAssignmentController extends Controller
             'assignments' => 'required|array|min:1',
             'assignments.*.issuance_detail_id' => 'required|integer',
             'assignments.*.receiver_name' => 'required|string',
+            'assignments.*.position_office' => 'nullable|string',
             'assignments.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -45,6 +46,7 @@ class PropertyIssuanceAssignmentController extends Controller
                     'issuance_id' => $id,
                     'issuance_detail_id' => $a['issuance_detail_id'],
                     'receiver_name' => $a['receiver_name'],
+                    'position_office' => $a['position_office'] ?? null,
                     'quantity' => $a['quantity'],
                     'created_at' => $now,
                     'updated_at' => $now,
