@@ -31,6 +31,12 @@ class RpcInventoryApiTest extends TestCase
         $this->gsoStaff->save();
     }
 
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
+
     /**
      * Test that inventory cycles can be listed.
      */
@@ -72,6 +78,9 @@ class RpcInventoryApiTest extends TestCase
      */
     public function test_can_create_current_rpc_cycle(): void
     {
+        Carbon::setTestNow(Carbon::create(now()->year, 9, 5, 12, 0, 0));
+        $currentYear = now()->year;
+
         $response = $this->actingAs($this->gsoStaff)
             ->postJson('/api/rpc-inventory/cycles/current');
 
@@ -87,10 +96,23 @@ class RpcInventoryApiTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('rpc_inventory_cycles', [
-            'start_year' => (int) now()->year,
-            'end_year' => (int) now()->year + 1,
+            'start_year' => $currentYear,
+            'end_year' => $currentYear,
             'status' => 'active',
         ]);
+    }
+
+    public function test_cannot_create_current_cycle_before_september_first(): void
+    {
+        Carbon::setTestNow(Carbon::create(now()->year, 8, 31, 23, 59, 59));
+
+        $response = $this->actingAs($this->gsoStaff)
+            ->postJson('/api/rpc-inventory/cycles/current');
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'RPC inventory cycles may only be opened on or after September 1.',
+            ]);
     }
 
     /**

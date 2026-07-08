@@ -76,6 +76,15 @@ class RpcInventoryController extends Controller
 
         $startYear = (int) now()->year;
         $endYear = $startYear; // calendar year only
+        $windowStart = Carbon::create($startYear, 9, 1, 0, 0, 0);
+
+        if (now()->lt($windowStart)) {
+            return response()->json([
+                'message' => 'RPC inventory cycles may only be opened on or after September 1.',
+                'available_at' => $windowStart->toIso8601String(),
+                'year' => $startYear,
+            ], 403);
+        }
 
         $cycle = RpcInventoryCycle::withTrashed()
             ->where('start_year', $startYear)
