@@ -124,6 +124,19 @@ Route::middleware('auth:sanctum')->group(function () {
 
                 // Expose unserviceable listing to authenticated users; Department Heads will be scoped to their department
                 Route::get('property-unserviceable', [\App\Http\Controllers\PropertyWasteController::class, 'adminUnserviceable']);
+
+            // Database backups (Admin only): list, create, download, restore, delete, status, settings
+            Route::prefix('backups')->group(function () {
+                Route::get('', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'index']);
+                Route::get('status', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'status']);
+                Route::get('settings', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'settings']);
+                Route::post('settings', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'updateSettings']);
+                Route::post('trigger', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'triggerScheduledBackup']);
+                Route::post('', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'store']);
+                Route::get('{name}', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'download']);
+                Route::post('{name}/restore', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'restore']);
+                Route::delete('{name}', [\App\Http\Controllers\Admin\DatabaseBackupController::class, 'destroy']);
+            });
         });
 
         // Master Data routes (shared with authenticated users)

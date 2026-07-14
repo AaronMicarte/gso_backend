@@ -40,4 +40,18 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
+    })
+    ->withSchedule(function ($schedule) : void {
+        $cfg = config('backup.schedule');
+        $backupTime = config('backup.time', '00:00');
+
+        if ($cfg === 'daily') {
+            $schedule->command('backup:run')->dailyAt($backupTime);
+        } elseif ($cfg === 'weekly') {
+            // run weekly on Sunday at the configured time
+            $schedule->command('backup:run')->weeklyOn(0, $backupTime);
+        } elseif ($cfg === 'monthly') {
+            // run on the first day of every month at the configured time
+            $schedule->command('backup:run')->monthlyOn(1, $backupTime);
+        }
     })->create();
