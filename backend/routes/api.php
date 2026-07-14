@@ -297,6 +297,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}/approve', [\App\Http\Controllers\PropertyTransferController::class, 'approve']);
         Route::post('{id}/reject', [\App\Http\Controllers\PropertyTransferController::class, 'reject']);
         Route::post('{id}/complete', [\App\Http\Controllers\PropertyTransferController::class, 'complete']);
+        Route::get('{id}/receiver-assignments', [\App\Http\Controllers\PropertyTransferController::class, 'receiverAssignments']);
+        Route::post('{id}/receiver-assignments', [\App\Http\Controllers\PropertyTransferController::class, 'saveReceiverAssignments']);
     });
 
     // Property Borrowing (PBR)

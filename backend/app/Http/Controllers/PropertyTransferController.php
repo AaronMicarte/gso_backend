@@ -1199,6 +1199,86 @@ class PropertyTransferController extends Controller
         });
     }
 
+    public function receiverAssignments(int $id)
+    {
+        $transfer = PropertyTransfer::with(['items'])->findOrFail($id);
+        $inventoryDetailIds = $transfer->items->pluck('InventoryDetailID')->filter()->unique()->values();
+
+        $issuanceDetails = DB::table('propertyissuancedetail')
+            ->whereIn('InventoryDetailID', $inventoryDetailIds)
+            ->whereNull('deleted_at')
+            ->get(['IssuanceDetailID', 'InventoryDetailID', 'IssuanceID']);
+
+        $detailIdToInventoryId = $issuanceDetails->keyBy('IssuanceDetailID');
+
+        $assignments = DB::table('property_issuance_assignments')
+            ->whereIn('issuance_detail_id', $issuanceDetails->pluck('IssuanceDetailID'))
+            ->orderBy('id')
+            ->get();
+
+        // Return with inventory_detail_id so the frontend can match against transfer items
+        $result = $assignments->map(function ($row) use ($detailIdToInventoryId) {
+            $detail = $detailIdToInventoryId->get($row->issuance_detail_id);
+            return [
+                'id'                  => $row->id,
+                'inventory_detail_id' => $detail ? $detail->InventoryDetailID : null,
+                'issuance_detail_id'  => $row->issuance_detail_id,
+                'receiver_name'       => $row->receiver_name,
+                'position_office'     => $row->position_office,
+                'quantity'            => $row->quantity,
+            ];
+        })->filter(fn($r) => $r['inventory_detail_id'] !== null)->values();
+
+        return response()->json(['data' => $result]);
+    }
+
+    public function saveReceiverAssignments(Request $request, int $id)
+    {
+        $validated = $request->validate([
+            'assignments'                          => 'required|array|min:1',
+            'assignments.*.inventory_detail_id'    => 'required|integer',
+            'assignments.*.receiver_name'          => 'required|string',
+            'assignments.*.position_office'        => 'nullable|string',
+            'assignments.*.quantity'               => 'required|integer|min:1',
+        ]);
+
+        $transfer = PropertyTransfer::with(['items'])->findOrFail($id);
+        $inventoryDetailIds = $transfer->items->pluck('InventoryDetailID')->filter()->unique();
+
+        $issuanceDetailMap = DB::table('propertyissuancedetail')
+            ->whereIn('InventoryDetailID', $inventoryDetailIds)
+            ->whereNull('deleted_at')
+            ->get(['IssuanceDetailID', 'InventoryDetailID', 'IssuanceID'])
+            ->keyBy('InventoryDetailID');
+
+        DB::transaction(function () use ($validated, $issuanceDetailMap) {
+            $now = now();
+            foreach ($validated['assignments'] as $a) {
+                $invDetailId    = (int) $a['inventory_detail_id'];
+                $issuanceDetail = $issuanceDetailMap->get($invDetailId);
+                if (!$issuanceDetail) {
+                    continue;
+                }
+
+                DB::table('property_issuance_assignments')
+                    ->where('issuance_detail_id', $issuanceDetail->IssuanceDetailID)
+                    ->delete();
+
+                DB::table('property_issuance_assignments')->insert([
+                    'issuance_id'       => $issuanceDetail->IssuanceID,
+                    'issuance_detail_id'=> $issuanceDetail->IssuanceDetailID,
+                    'receiver_name'     => trim((string) $a['receiver_name']),
+                    'position_office'   => isset($a['position_office']) ? trim((string) $a['position_office']) : null,
+                    'quantity'          => (int) $a['quantity'],
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ]);
+            }
+        });
+
+        return response()->json(['message' => 'PTR receiver assignments saved']);
+    }
+
     public function availableItems(Request $request)
     {
         $user = Auth::user();
