@@ -139,6 +139,17 @@ class PropertyTransferController extends Controller
             'items.inventoryDetail.unitOfMeasure',
             'items.inventoryDetail.propertyType',
             'items.inventoryDetail.inventory',
+            'items.inventoryDetail.inventory.deliveryReceipt' => function ($query) {
+                $query->withTrashed();
+            },
+            'items.inventoryDetail.inventory.deliveryReceipt.supplier:SupplierID,SupplierName',
+            'items.inventoryDetail.drDetail' => function ($query) {
+                $query->withTrashed();
+            },
+            'items.inventoryDetail.drDetail.deliveryReceipt' => function ($query) {
+                $query->withTrashed();
+            },
+            'items.inventoryDetail.drDetail.deliveryReceipt.supplier:SupplierID,SupplierName',
             'items.inventoryDetail.drDetail.article',
         ])->findOrFail($id);
 
@@ -167,6 +178,27 @@ class PropertyTransferController extends Controller
                 $transfer->setRelation('completedBy', null);
             }
         }
+
+        $supplierName = null;
+        $poNumber = null;
+        foreach ($transfer->items as $item) {
+            $receipt = $item->inventoryDetail?->drDetail?->deliveryReceipt
+                ?? $item->inventoryDetail?->inventory?->deliveryReceipt;
+            if ($receipt) {
+                if (!$supplierName) {
+                    $supplierName = $receipt->supplier?->SupplierName ?? null;
+                }
+                if (!$poNumber) {
+                    $poNumber = $receipt->PONumber ?? null;
+                }
+                if ($supplierName && $poNumber) {
+                    break;
+                }
+            }
+        }
+
+        $transfer->setAttribute('SupplierName', $supplierName);
+        $transfer->setAttribute('PONumber', $poNumber);
 
         return response()->json($transfer);
     }
