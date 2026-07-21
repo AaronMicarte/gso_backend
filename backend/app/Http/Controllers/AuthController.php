@@ -260,6 +260,7 @@ class AuthController extends Controller
                 'user' => [
                     'UserID' => $user->UserID,
                     'Username' => $user->Username,
+                    'Email' => $user->Email,
                     'FullName' => $user->FullName ?? $user->Username,
                     'MFAEnabled' => $user->MFAEnabled,
                 ]
