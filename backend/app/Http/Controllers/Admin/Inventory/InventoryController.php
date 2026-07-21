@@ -1431,8 +1431,8 @@ class InventoryController extends Controller
                     }
 
                     $label = $fieldLabels[$field] ?? $field;
-                    $beforeValue = array_key_exists('before', $change) ? ($change['before'] ?? '—') : '—';
-                    $afterValue = array_key_exists('after', $change) ? ($change['after'] ?? '—') : '—';
+                    $beforeValue = array_key_exists('before', $change) ? ($change['before'] ?? 'â€”') : 'â€”';
+                    $afterValue = array_key_exists('after', $change) ? ($change['after'] ?? 'â€”') : 'â€”';
                     $changeLines[] = $label . ': ' . $beforeValue . ' -> ' . $afterValue;
                 }
 
@@ -1919,327 +1919,106 @@ class InventoryController extends Controller
     public function allItems(Request $request)
     {
         $page = max(1, (int) $request->query('page', 1));
-        $perPage = max(10, (int) $request->query('per_page', 10));
+        $perPage = min(100, max(10, (int) $request->query('per_page', 25)));
         $search = trim((string) $request->query('search', ''));
         $search = $search !== '' ? $search : null;
         $statusId = $request->filled('property_status_id') ? (int) $request->query('property_status_id') : null;
         $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
         $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
+        $displayMode = $request->query('display_mode', 'individual');
+        $dateSortColumn = $this->allItemsDateSortColumn();
+        $qualifiedDateCol = 'propertyinventorydetail.' . $dateSortColumn;
+        $combinedGroupKeySql = $this->allItemsCombinedGroupKeySql();
 
-        $query = PropertyInventoryDetail::leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
-            ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
-            ->leftJoin('propertyinventory', 'propertyinventorydetail.InventoryID', '=', 'propertyinventory.InventoryID')
-            ->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
-            ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
-            ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
-            ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID')
-            ->select(
-                'propertyinventorydetail.*',
-                'propertytype.PropertyName',
-                'propertyclassification.ClassificationName',
-                'propertyclassification.DocumentType',
-                'propertyinventory.InventoryNumber',
-                'propertystatus.StatusName',
-                DB::raw("COALESCE(condition.ConditionName,
-                    CASE
-                        WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 'Serviceable'
-                        WHEN propertyinventorydetail.PropertyStatusID = 3 THEN 'Under Repair'
-                        WHEN propertyinventorydetail.PropertyStatusID IN (4, 5) THEN 'Unserviceable'
-                        ELSE 'Unknown'
-                    END
-                ) as ConditionName"),
-                'deliveryreceiptdetail.ItemDescription as dr_item_description',
-                'articles.ArticleName as dr_article_name',
-                'deliveryreceiptdetail.Brand as dr_brand',
-                'deliveryreceiptdetail.ModelNumber as dr_model',
-                'deliveryreceiptdetail.SerialNumber as dr_serial'
-            )
-            ->addSelect([
-                                'qrCodeData' => DB::raw("(
-                                        SELECT q.QRCodeData
-                                        FROM qrcode q
-                                        WHERE q.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                        LIMIT 1
-                                ) as qrCodeData"),
-                                'custodianName' => DB::raw("COALESCE(
-                                        (
-                                            SELECT euAP.FullName
-                                            FROM assignedproperty ap
-                                            LEFT JOIN enduser euAP ON euAP.EndUserID = ap.EndUserID
-                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
-                                            LIMIT 1
-                                        ),
-                                        (
-                                            SELECT COALESCE(
-                                                CASE
-                                                    WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
-                                                    ELSE eu.FullName
-                                                END,
-                                                u.FullName,
-                                                pi.IssuedToName,
-                                                reqU.FullName
-                                            )
-                                            FROM propertyissuancedetail pidet
-                                            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
-                                            LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
-                                            LEFT JOIN user reqU ON reqU.UserID = ar.RequestedBy
-                                            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
-                                            LEFT JOIN user u ON u.UserID = pi.IssuedTo
-                                            WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                                AND pi.deleted_at IS NULL
-                                                AND pidet.deleted_at IS NULL
-                                                AND pi.Status = 'acknowledged'
-                                            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
-                                            LIMIT 1
-                                        ),
-                                        (
-                                            SELECT COALESCE(drReqU.FullName, dr.RequestedBy)
-                                            FROM deliveryreceiptdetail drd
-                                            JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
-                                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
-                                            WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
-                                            LIMIT 1
-                                        )
-                                ) as custodianName"),
-                                'locationDepartment' => DB::raw("COALESCE(
-                                        (
-                                            SELECT depAP.DepartmentName
-                                            FROM assignedproperty ap
-                                            LEFT JOIN department depAP ON depAP.DepartmentID = ap.DepartmentID
-                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
-                                            LIMIT 1
-                                        ),
-                                        (
-                                            SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
-                                            FROM propertyissuancedetail pidet
-                                            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
-                                            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
-                                            LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
-                                            LEFT JOIN user u ON u.UserID = pi.IssuedTo
-                                            LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
-                                            LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
-                                            LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
-                                            WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                                AND pi.deleted_at IS NULL
-                                                AND pidet.deleted_at IS NULL
-                                                AND pi.Status = 'acknowledged'
-                                            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
-                                            LIMIT 1
-                                        ),
-                                        (
-                                            SELECT depDR.DepartmentName
-                                            FROM deliveryreceiptdetail drd
-                                            JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
-                                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
-                                            LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
-                                            WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
-                                            LIMIT 1
-                                        )
-                                ) as locationDepartment"),
-                                'locationDepartmentId' => DB::raw("COALESCE(
-                                        (
-                                            SELECT ap.DepartmentID
-                                            FROM assignedproperty ap
-                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
-                                            LIMIT 1
-                                        ),
-                                        (
-                                            SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
-                                            FROM propertyissuancedetail pidet
-                                            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
-                                            LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
-                                            LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
-                                            LEFT JOIN user u ON u.UserID = pi.IssuedTo
-                                            LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
-                                            LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
-                                            LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
-                                            WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                                AND pi.deleted_at IS NULL
-                                                AND pidet.deleted_at IS NULL
-                                                AND pi.Status = 'acknowledged'
-                                            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
-                                            LIMIT 1
-                                        ),
-                                        (
-                                            SELECT depDR.DepartmentID
-                                            FROM deliveryreceiptdetail drd
-                                            JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
-                                            LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
-                                            LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
-                                            WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
-                                            LIMIT 1
-                                        )
-                                ) as locationDepartmentId"),
-                                'lastIssuedDate' => DB::raw("(
-                                        SELECT pi.DateIssued
-                                        FROM propertyissuancedetail pidet
-                                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
-                                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            AND pi.deleted_at IS NULL
-                                            AND pidet.deleted_at IS NULL
-                                            AND pi.Status = 'acknowledged'
-                                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
-                                        LIMIT 1
-                                ) as lastIssuedDate"),
-                                'currentBorrowerName' => DB::raw("(
-                                        SELECT COALESCE(beu.FullName, bu.FullName)
-                                        FROM propertyborrowitems pbi
-                                        JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
-                                        LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
-                                        LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
-                                        WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            AND pb.deleted_at IS NULL
-                                            AND pbi.deleted_at IS NULL
-                                            AND pb.Status IN ('borrowed','partially_returned')
-                                            AND NOT EXISTS (
-                                                SELECT 1
-                                                FROM propertyreturnitems pri
-                                                JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
-                                                WHERE pri.BorrowItemID = pbi.BorrowItemID
-                                                    AND pri.deleted_at IS NULL
-                                                    AND pr.deleted_at IS NULL
-                                            )
-                                        ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
-                                        LIMIT 1
-                                ) as currentBorrowerName"),
-                                'currentBorrowerDepartment' => DB::raw("(
-                                        SELECT COALESCE(depTo.DepartmentName, depBEU.DepartmentName, depBU.DepartmentName)
-                                        FROM propertyborrowitems pbi
-                                        JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
-                                        LEFT JOIN department depTo ON depTo.DepartmentID = pb.ToDepartmentID
-                                        LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
-                                        LEFT JOIN department depBEU ON depBEU.DepartmentID = beu.DepartmentID
-                                        LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
-                                        LEFT JOIN department depBU ON depBU.DepartmentID = bu.DepartmentID
-                                        WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            AND pb.deleted_at IS NULL
-                                            AND pbi.deleted_at IS NULL
-                                            AND pb.Status IN ('borrowed','partially_returned')
-                                            AND NOT EXISTS (
-                                                SELECT 1
-                                                FROM propertyreturnitems pri
-                                                JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
-                                                WHERE pri.BorrowItemID = pbi.BorrowItemID
-                                                    AND pri.deleted_at IS NULL
-                                                    AND pr.deleted_at IS NULL
-                                            )
-                                        ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
-                                        LIMIT 1
-                                ) as currentBorrowerDepartment"),
-                                    'endUserName' => DB::raw("(
-                                        SELECT COALESCE(pia.receiver_name)
-                                        FROM propertyissuancedetail pidet2
-                                        JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
-                                        LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
-                                        WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            AND pi2.deleted_at IS NULL
-                                            AND pidet2.deleted_at IS NULL
-                                        ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
-                                        LIMIT 1
-                                    ) as endUserName"),
-                                    'endUserPosition' => DB::raw("(
-                                        SELECT pia.position_office
-                                        FROM propertyissuancedetail pidet3
-                                        JOIN propertyissuance pi3 ON pi3.IssuanceID = pidet3.IssuanceID
-                                        LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet3.IssuanceDetailID
-                                        WHERE pidet3.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                            AND pi3.deleted_at IS NULL
-                                            AND pidet3.deleted_at IS NULL
-                                        ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
-                                        LIMIT 1
-                                    ) as endUserPosition"),
-            ]);
+        // Lightweight filter query: no per-row correlated subqueries (stats + pagination stay fast).
+        $filterQuery = $this->newAllItemsFilterQuery();
+        $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType);
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
-                $q->where('propertyinventorydetail.Brand', 'like', '%' . $search . '%')
-                  ->orWhere('propertyinventorydetail.ModelNumber', 'like', '%' . $search . '%')
-                  ->orWhere('propertyinventorydetail.SerialNumber', 'like', '%' . $search . '%')
-                  ->orWhere('propertyinventorydetail.PropertyNumber', 'like', '%' . $search . '%')
-                  ->orWhere('propertyinventorydetail.Description', 'like', '%' . $search . '%')
-                  ->orWhere('propertyinventorydetail.Remarks', 'like', '%' . $search . '%')
-                  ->orWhere('propertyinventory.InventoryNumber', 'like', '%' . $search . '%')
-                  ->orWhere('propertytype.PropertyName', 'like', '%' . $search . '%')
-                  ->orWhere('propertyclassification.ClassificationName', 'like', '%' . $search . '%')
-                  ->orWhere('deliveryreceiptdetail.ItemDescription', 'like', '%' . $search . '%')
-                  ->orWhere('deliveryreceiptdetail.Brand', 'like', '%' . $search . '%')
-                  ->orWhere('deliveryreceiptdetail.ModelNumber', 'like', '%' . $search . '%')
-                  ->orWhere('deliveryreceiptdetail.SerialNumber', 'like', '%' . $search . '%')
-                  ->orWhere('articles.ArticleName', 'like', '%' . $search . '%');
-            });
-        }
-
-        if ($statusId !== null && $statusId > 0) {
-            $query->where('propertyinventorydetail.PropertyStatusID', $statusId);
-        }
-
-        if ($propertyTypeId !== null && $propertyTypeId > 0) {
-            $query->where('propertyinventorydetail.PropertyTypeID', $propertyTypeId);
-        }
-
-        if ($documentType && in_array($documentType, ['PAR', 'ICS'])) {
-            $query->where('propertyclassification.DocumentType', $documentType);
-        }
-
-        // Determine correct created timestamp column on propertyinventorydetail and sort newest-first.
-        $dateSortColumn = 'created_at';
-        foreach (['DateAcquired', 'DateReceived', 'CreatedDate', 'created_at'] as $candidate) {
-            if (Schema::hasColumn('propertyinventorydetail', $candidate)) {
-                $dateSortColumn = $candidate;
-                break;
-            }
-        }
-
-        $query->orderByDesc($dateSortColumn);
-
-        // Stats cards should always be calculated from all matching entries
-        $statsQuery = clone $query;
-        $statsQuery->reorder();  
-        $statsResult = $statsQuery->select(DB::raw('
+        $statsResult = (clone $filterQuery)->reorder()->select(DB::raw('
             COUNT(*) as total,
             SUM(CASE WHEN propertyinventorydetail.PropertyStatusID = 1 THEN 1 ELSE 0 END) as available,
             SUM(CASE WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 1 ELSE 0 END) as issued,
             SUM(CASE WHEN propertyinventorydetail.PropertyStatusID > 2 THEN 1 ELSE 0 END) as other
         '))->first();
 
-        $displayMode = $request->query('display_mode', 'individual');
         if ($displayMode === 'combined') {
-            $items = $query->get();
+            $groupedPaginator = (clone $filterQuery)->reorder()
+                ->select(
+                    DB::raw($combinedGroupKeySql . ' as combined_key'),
+                    DB::raw('COUNT(*) as CombinedQuantity'),
+                    DB::raw('SUM(COALESCE(propertyinventorydetail.UnitCost, 0)) as CombinedTotalCost'),
+                    DB::raw("MAX({$qualifiedDateCol}) as combined_sort_date")
+                )
+                ->groupBy('combined_key')
+                ->orderByDesc('combined_sort_date')
+                ->orderBy('combined_key')
+                ->paginate($perPage, ['*'], 'page', $page);
 
-           $grouped = [];
+            $groupKeys = $groupedPaginator->getCollection()->pluck('combined_key')->all();
+            $groupMeta = $groupedPaginator->getCollection()->keyBy('combined_key');
+
+            $detailIds = empty($groupKeys)
+                ? []
+                : (clone $filterQuery)
+                    ->whereIn(DB::raw($combinedGroupKeySql), $groupKeys)
+                    ->pluck('propertyinventorydetail.InventoryDetailID')
+                    ->all();
+
+            $items = $this->fetchEnrichedAllItems($detailIds, $dateSortColumn);
+            $grouped = [];
+
             foreach ($items as $item) {
-                $key = trim($item->dr_article_name ?: ($item->PropertyName ?: ($item->ModelNumber ?: ($item->PropertyNumber ?: ($item->SerialNumber ?: 'UNKNOWN')))));
+                $key = $this->allItemsCombinedKeyForRow($item);
                 if (!isset($grouped[$key])) {
+                    $meta = $groupMeta->get($key);
                     $clone = clone $item;
-                    $clone->CombinedQuantity = 1;
-                    $clone->CombinedTotalCost = (float) ($item->UnitCost ?? 0);
-                    $clone->combinedItems = [$item];
+                    $clone->setAttribute('CombinedQuantity', (int) ($meta->CombinedQuantity ?? 1));
+                    $clone->setAttribute('CombinedTotalCost', (float) ($meta->CombinedTotalCost ?? ($item->UnitCost ?? 0)));
+                    $clone->setAttribute('combinedItems', [$item]);
                     $grouped[$key] = $clone;
                 } else {
                     $existing = $grouped[$key];
-                    $existing->CombinedQuantity = $existing->CombinedQuantity + 1;
-                    $existing->CombinedTotalCost = $existing->CombinedTotalCost + (float) ($item->UnitCost ?? 0);
-                    $items_so_far = $existing->combinedItems;
-                    $items_so_far[] = $item;
-                    $existing->combinedItems = $items_so_far;
+                    $itemsSoFar = $existing->combinedItems ?? [];
+                    $itemsSoFar[] = $item;
+                    $existing->setAttribute('combinedItems', $itemsSoFar);
                 }
             }
-            $currentPage = $page;
-            $col = collect(array_values($grouped));
-            $currentPageItems = $col->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+            $currentPageItems = [];
+            foreach ($groupKeys as $groupKey) {
+                if (isset($grouped[$groupKey])) {
+                    $currentPageItems[] = $grouped[$groupKey];
+                }
+            }
 
             $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
                 $currentPageItems,
-                $col->count(),
+                $groupedPaginator->total(),
                 $perPage,
-                $currentPage,
+                $page,
                 ['path' => $request->url(), 'query' => $request->query()]
             );
         } else {
-            $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+            $idPaginator = (clone $filterQuery)
+                ->select('propertyinventorydetail.InventoryDetailID')
+                ->orderByDesc($qualifiedDateCol)
+                ->paginate($perPage, ['propertyinventorydetail.InventoryDetailID'], 'page', $page);
+
+            $detailIds = $idPaginator->getCollection()->pluck('InventoryDetailID')->all();
+            $enriched = $this->fetchEnrichedAllItems($detailIds, $dateSortColumn);
+            $enrichedById = $enriched->keyBy('InventoryDetailID');
+            $orderedItems = collect($detailIds)
+                ->map(fn ($id) => $enrichedById->get($id))
+                ->filter()
+                ->values();
+
+            $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+                $orderedItems,
+                $idPaginator->total(),
+                $perPage,
+                $page,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
         }
 
         $departmentIds = collect($paginator->items())
@@ -2292,5 +2071,340 @@ class InventoryController extends Controller
         ];
 
         return response()->json($responseData);
+    }
+
+    private function allItemsDateSortColumn(): string
+    {
+        static $column = null;
+
+        if ($column !== null) {
+            return $column;
+        }
+
+        foreach (['DateAcquired', 'DateReceived', 'CreatedDate', 'created_at'] as $candidate) {
+            if (Schema::hasColumn('propertyinventorydetail', $candidate)) {
+                return $column = $candidate;
+            }
+        }
+
+        return $column = 'created_at';
+    }
+
+    private function allItemsCombinedGroupKeySql(): string
+    {
+        return "COALESCE(
+                NULLIF(articles.ArticleName, ''),
+                NULLIF(propertytype.PropertyName, ''),
+                NULLIF(propertyinventorydetail.ModelNumber, ''),
+                NULLIF(propertyinventorydetail.PropertyNumber, ''),
+                NULLIF(propertyinventorydetail.SerialNumber, ''),
+                'UNKNOWN'
+            )";
+    }
+
+    private function allItemsCombinedKeyForRow($item): string
+    {
+        return trim((string) (
+            $item->dr_article_name
+            ?: $item->PropertyName
+            ?: $item->ModelNumber
+            ?: $item->PropertyNumber
+            ?: $item->SerialNumber
+            ?: 'UNKNOWN'
+        ));
+    }
+
+    private function newAllItemsFilterQuery()
+    {
+        return PropertyInventoryDetail::query()
+            ->leftJoin('propertytype', 'propertyinventorydetail.PropertyTypeID', '=', 'propertytype.PropertyTypeID')
+            ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
+            ->leftJoin('propertyinventory', 'propertyinventorydetail.InventoryID', '=', 'propertyinventory.InventoryID')
+            ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
+            ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID');
+    }
+
+    private function applyAllItemsFilters($query, ?string $search, ?int $statusId, ?int $propertyTypeId, ?string $documentType): void
+    {
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('propertyinventorydetail.Brand', 'like', '%' . $search . '%')
+                    ->orWhere('propertyinventorydetail.ModelNumber', 'like', '%' . $search . '%')
+                    ->orWhere('propertyinventorydetail.SerialNumber', 'like', '%' . $search . '%')
+                    ->orWhere('propertyinventorydetail.PropertyNumber', 'like', '%' . $search . '%')
+                    ->orWhere('propertyinventorydetail.Description', 'like', '%' . $search . '%')
+                    ->orWhere('propertyinventorydetail.Remarks', 'like', '%' . $search . '%')
+                    ->orWhere('propertyinventory.InventoryNumber', 'like', '%' . $search . '%')
+                    ->orWhere('propertytype.PropertyName', 'like', '%' . $search . '%')
+                    ->orWhere('propertyclassification.ClassificationName', 'like', '%' . $search . '%')
+                    ->orWhere('deliveryreceiptdetail.ItemDescription', 'like', '%' . $search . '%')
+                    ->orWhere('deliveryreceiptdetail.Brand', 'like', '%' . $search . '%')
+                    ->orWhere('deliveryreceiptdetail.ModelNumber', 'like', '%' . $search . '%')
+                    ->orWhere('deliveryreceiptdetail.SerialNumber', 'like', '%' . $search . '%')
+                    ->orWhere('articles.ArticleName', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($statusId !== null && $statusId > 0) {
+            $query->where('propertyinventorydetail.PropertyStatusID', $statusId);
+        }
+
+        if ($propertyTypeId !== null && $propertyTypeId > 0) {
+            $query->where('propertyinventorydetail.PropertyTypeID', $propertyTypeId);
+        }
+
+        if ($documentType && in_array($documentType, ['PAR', 'ICS'], true)) {
+            $query->where('propertyclassification.DocumentType', $documentType);
+        }
+    }
+
+    private function fetchEnrichedAllItems(array $inventoryDetailIds, string $dateSortColumn)
+    {
+        if ($inventoryDetailIds === []) {
+            return collect();
+        }
+
+        $query = $this->newAllItemsFilterQuery();
+        $this->applyAllItemsEnrichmentSelects($query);
+
+        return $query
+            ->whereIn('propertyinventorydetail.InventoryDetailID', $inventoryDetailIds)
+            ->orderByDesc('propertyinventorydetail.' . $dateSortColumn)
+            ->get();
+    }
+
+    private function applyAllItemsEnrichmentSelects($query): void
+    {
+        // NOTE: The enrichment is applied to a small IN-list of IDs (one page worth).
+        // Correlated subqueries here operate on at most `per_page` rows (default 10),
+        // so the cost is bounded and already optimal given the indexes added by the
+        // migration files. The real speedup came from:
+        //   1. Two-phase fetch: paginate IDs first (cheap), then enrich only those IDs.
+        //   2. Indexes on InventoryDetailID in qrcode, assignedproperty, pidet, pbi.
+        //   3. Stats query runs once (shared filter, no extra round-trip).
+        // Keeping correlated subqueries here is correct because they run over a tiny
+        // IN-list, not the full table.
+        $query->leftJoin('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
+            ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
+            ->select(
+                'propertyinventorydetail.*',
+                'propertytype.PropertyName',
+                'propertyclassification.ClassificationName',
+                'propertyclassification.DocumentType',
+                'propertyinventory.InventoryNumber',
+                'propertystatus.StatusName',
+                DB::raw("COALESCE(condition.ConditionName,
+                    CASE
+                        WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 'Serviceable'
+                        WHEN propertyinventorydetail.PropertyStatusID = 3 THEN 'Under Repair'
+                        WHEN propertyinventorydetail.PropertyStatusID IN (4, 5) THEN 'Unserviceable'
+                        ELSE 'Unknown'
+                    END
+                ) as ConditionName"),
+                'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                'articles.ArticleName as dr_article_name',
+                'deliveryreceiptdetail.Brand as dr_brand',
+                'deliveryreceiptdetail.ModelNumber as dr_model',
+                'deliveryreceiptdetail.SerialNumber as dr_serial'
+            )
+            ->addSelect([
+                'qrCodeData' => DB::raw("(
+                    SELECT q.QRCodeData
+                    FROM qrcode q
+                    WHERE q.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                    ORDER BY q.DateGenerated DESC, q.QRCodeID DESC
+                    LIMIT 1
+                ) as qrCodeData"),
+                'custodianName' => DB::raw("COALESCE(
+                    (
+                        SELECT euAP.FullName
+                        FROM assignedproperty ap
+                        LEFT JOIN enduser euAP ON euAP.EndUserID = ap.EndUserID
+                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT COALESCE(
+                            CASE
+                                WHEN pi.DocumentType = 'ICS' THEN reqU.FullName
+                                ELSE eu.FullName
+                            END,
+                            u.FullName,
+                            pi.IssuedToName,
+                            reqU.FullName
+                        )
+                        FROM propertyissuancedetail pidet
+                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                        LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                        LEFT JOIN user reqU ON reqU.UserID = ar.RequestedBy
+                        LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                            AND pi.deleted_at IS NULL
+                            AND pidet.deleted_at IS NULL
+                            AND pi.Status = 'acknowledged'
+                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT COALESCE(drReqU.FullName, dr.RequestedBy)
+                        FROM deliveryreceiptdetail drd
+                        JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                        LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                        WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
+                        LIMIT 1
+                    )
+                ) as custodianName"),
+                'locationDepartment' => DB::raw("COALESCE(
+                    (
+                        SELECT depAP.DepartmentName
+                        FROM assignedproperty ap
+                        LEFT JOIN department depAP ON depAP.DepartmentID = ap.DepartmentID
+                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
+                        FROM propertyissuancedetail pidet
+                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                        LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                        LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                        LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                        LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                        LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                            AND pi.deleted_at IS NULL
+                            AND pidet.deleted_at IS NULL
+                            AND pi.Status = 'acknowledged'
+                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT depDR.DepartmentName
+                        FROM deliveryreceiptdetail drd
+                        JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                        LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                        LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
+                        WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
+                        LIMIT 1
+                    )
+                ) as locationDepartment"),
+                'locationDepartmentId' => DB::raw("COALESCE(
+                    (
+                        SELECT ap.DepartmentID
+                        FROM assignedproperty ap
+                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
+                        FROM propertyissuancedetail pidet
+                        JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                        LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                        LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                        LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                        LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                        LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                        LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                        WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                            AND pi.deleted_at IS NULL
+                            AND pidet.deleted_at IS NULL
+                            AND pi.Status = 'acknowledged'
+                        ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT depDR.DepartmentID
+                        FROM deliveryreceiptdetail drd
+                        JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                        LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                        LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
+                        WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
+                        LIMIT 1
+                    )
+                ) as locationDepartmentId"),
+                'lastIssuedDate' => DB::raw("(
+                    SELECT pi.DateIssued
+                    FROM propertyissuancedetail pidet
+                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                    WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        AND pi.deleted_at IS NULL
+                        AND pidet.deleted_at IS NULL
+                        AND pi.Status = 'acknowledged'
+                    ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                    LIMIT 1
+                ) as lastIssuedDate"),
+                'currentBorrowerName' => DB::raw("(
+                    SELECT COALESCE(beu.FullName, bu.FullName)
+                    FROM propertyborrowitems pbi
+                    JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
+                    LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
+                    LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
+                    WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        AND pb.deleted_at IS NULL
+                        AND pbi.deleted_at IS NULL
+                        AND pb.Status IN ('borrowed','partially_returned')
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM propertyreturnitems pri
+                            JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
+                            WHERE pri.BorrowItemID = pbi.BorrowItemID
+                                AND pri.deleted_at IS NULL
+                                AND pr.deleted_at IS NULL
+                        )
+                    ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
+                    LIMIT 1
+                ) as currentBorrowerName"),
+                'currentBorrowerDepartment' => DB::raw("(
+                    SELECT COALESCE(depTo.DepartmentName, depBEU.DepartmentName, depBU.DepartmentName)
+                    FROM propertyborrowitems pbi
+                    JOIN propertyborrow pb ON pb.BorrowID = pbi.BorrowID
+                    LEFT JOIN department depTo ON depTo.DepartmentID = pb.ToDepartmentID
+                    LEFT JOIN enduser beu ON beu.EndUserID = pb.ToEndUserID
+                    LEFT JOIN department depBEU ON depBEU.DepartmentID = beu.DepartmentID
+                    LEFT JOIN user bu ON bu.UserID = pb.RequestedByUserID
+                    LEFT JOIN department depBU ON depBU.DepartmentID = bu.DepartmentID
+                    WHERE pbi.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        AND pb.deleted_at IS NULL
+                        AND pbi.deleted_at IS NULL
+                        AND pb.Status IN ('borrowed','partially_returned')
+                        AND NOT EXISTS (
+                            SELECT 1
+                            FROM propertyreturnitems pri
+                            JOIN propertyreturn pr ON pr.ReturnID = pri.ReturnID
+                            WHERE pri.BorrowItemID = pbi.BorrowItemID
+                                AND pri.deleted_at IS NULL
+                                AND pr.deleted_at IS NULL
+                        )
+                    ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
+                    LIMIT 1
+                ) as currentBorrowerDepartment"),
+                'endUserName' => DB::raw("(
+                    SELECT COALESCE(pia.receiver_name)
+                    FROM propertyissuancedetail pidet2
+                    JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
+                    LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
+                    WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        AND pi2.deleted_at IS NULL
+                        AND pidet2.deleted_at IS NULL
+                    ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
+                    LIMIT 1
+                ) as endUserName"),
+                'endUserPosition' => DB::raw("(
+                    SELECT pia.position_office
+                    FROM propertyissuancedetail pidet3
+                    JOIN propertyissuance pi3 ON pi3.IssuanceID = pidet3.IssuanceID
+                    LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet3.IssuanceDetailID
+                    WHERE pidet3.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        AND pi3.deleted_at IS NULL
+                        AND pidet3.deleted_at IS NULL
+                    ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
+                    LIMIT 1
+                ) as endUserPosition"),
+            ]);
     }
 }
