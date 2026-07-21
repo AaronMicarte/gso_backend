@@ -2092,14 +2092,14 @@ class InventoryController extends Controller
 
     private function allItemsCombinedGroupKeySql(): string
     {
-        return "COALESCE(
+        return "CONVERT(COALESCE(
                 NULLIF(articles.ArticleName, ''),
                 NULLIF(propertytype.PropertyName, ''),
                 NULLIF(propertyinventorydetail.ModelNumber, ''),
                 NULLIF(propertyinventorydetail.PropertyNumber, ''),
                 NULLIF(propertyinventorydetail.SerialNumber, ''),
                 'UNKNOWN'
-            )";
+            ) USING utf8mb4) COLLATE utf8mb4_unicode_ci";
     }
 
     private function allItemsCombinedKeyForRow($item): string
