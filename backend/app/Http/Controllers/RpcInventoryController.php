@@ -1585,13 +1585,11 @@ class RpcInventoryController extends Controller
                 }
             }
 
-            if ($totalProps === 0) {
+            if ($latestRemark !== null) {
+                $finalRow['remarks'] = $latestRemark;
+            } elseif ($totalProps === 0) {
                 // No property numbers to base counts on — fallback to previous behavior.
-                if ($latestRemark !== null) {
-                    $finalRow['remarks'] = $latestRemark;
-                } else {
-                    $finalRow['remarks'] = 'Not Found';
-                }
+                $finalRow['remarks'] = 'Not Found';
             } elseif ($scannedCount === 0) {
                 // All properties unscanned
                 $finalRow['remarks'] = 'Not Found';
@@ -1600,8 +1598,8 @@ class RpcInventoryController extends Controller
                 $notFound = $totalProps - $scannedCount;
                 $finalRow['remarks'] = sprintf('%d Not Found', $notFound);
             } else {
-                // All scanned — prefer the latest non-empty remark when available.
-                $finalRow['remarks'] = $latestRemark !== null ? $latestRemark : null;
+                // All scanned and no custom remark
+                $finalRow['remarks'] = null;
             }
 
             $finalRow['property_remarks'] = $perPropertyRemarksMap;

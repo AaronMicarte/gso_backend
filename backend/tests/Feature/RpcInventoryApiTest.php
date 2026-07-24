@@ -158,4 +158,54 @@ class RpcInventoryApiTest extends TestCase
                 'message',
             ]);
     }
+
+    public function test_aggregate_rpc_rows_prefers_custom_remarks_over_default_not_found(): void
+    {
+        $controller = new \App\Http\Controllers\RpcInventoryController();
+        $reflection = new \ReflectionClass($controller);
+        $method = $reflection->getMethod('aggregateRpcRows');
+        $method->setAccessible(true);
+
+        $rows = [
+            [
+                'property_type' => 'Office Equipment',
+                'article' => 'Printer',
+                'description' => 'Laser printer',
+                'property_number' => 'PN-001',
+                'unit_of_measure' => 'pcs',
+                'unit_value' => 120.0,
+                'quantity_per_card' => 1,
+                'quantity_per_count' => 1,
+                'shortage_overage_qty' => 0,
+                'shortage_overage_value' => 0.0,
+                'remarks' => 'Gwapo si Aaron',
+                'accountable_officer' => 'John Doe',
+                'date_purchased' => '2026-01-01',
+                'condition' => 'Good',
+                'is_scanned' => true,
+            ],
+            [
+                'property_type' => 'Office Equipment',
+                'article' => 'Printer',
+                'description' => 'Laser printer',
+                'property_number' => 'PN-002',
+                'unit_of_measure' => 'pcs',
+                'unit_value' => 120.0,
+                'quantity_per_card' => 1,
+                'quantity_per_count' => 0,
+                'shortage_overage_qty' => -1,
+                'shortage_overage_value' => -120.0,
+                'remarks' => null,
+                'accountable_officer' => 'John Doe',
+                'date_purchased' => '2026-01-01',
+                'condition' => null,
+                'is_scanned' => false,
+            ],
+        ];
+
+        $result = $method->invoke($controller, $rows);
+
+        $this->assertCount(1, $result);
+        $this->assertSame('Gwapo si Aaron', $result[0]['remarks']);
+    }
 }
