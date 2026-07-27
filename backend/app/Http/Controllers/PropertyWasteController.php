@@ -254,6 +254,7 @@ class PropertyWasteController extends Controller
 
         $query = DB::table('propertyinventorydetail as pid')
             ->leftJoin('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
+            ->leftJoin('propertytype as pt', 'pt.PropertyTypeID', '=', 'pid.PropertyTypeID')
             ->leftJoin('condition as c', 'c.ConditionID', '=', 'pid.ConditionID')
             ->leftJoin('deliveryreceiptdetail as drd', 'pid.SourceDRDetailID', '=', 'drd.DRDetailID')
             ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
@@ -263,7 +264,7 @@ class PropertyWasteController extends Controller
                 'pid.InventoryDetailID',
                 'pi.InventoryID',
                 'pi.InventoryNumber',
-                'pi.DateReceived',  // <-- Added delivery receipt fallback tracking
+                'pi.DateReceived',
                 'pi.CreatedDate as ParentCreatedDate',
                 DB::raw('COALESCE(a.ArticleName, pid.Description) as Particulars'),
                 'pid.PropertyNumber',
@@ -274,7 +275,8 @@ class PropertyWasteController extends Controller
                 DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate) as marked_at'),
                 'actionUser.UserID as marked_by_user_id',
                 'actionUser.FullName as marked_by_fullname',
-                'c.ConditionName'
+                'c.ConditionName',
+                'pt.PropertyClassificationID'
             )
             ->where(function ($q) {
                 $q->whereRaw("LOWER(c.ConditionName) = ?", ['unserviceable'])
@@ -286,6 +288,27 @@ class PropertyWasteController extends Controller
                     $q->where('pi.DepartmentID', $deptId);
                 }
             });
+
+        if ($request->filled('asset_type') || $request->filled('type')) {
+            $assetType = strtolower(trim((string) ($request->query('asset_type') ?? $request->query('type'))));
+            if (in_array($assetType, ['non_expendable', 'non-expendable', 'iirup', 'ppe'], true)) {
+                $query->where(function ($q) {
+                    $q->where('pt.PropertyClassificationID', 2)
+                        ->orWhere(function ($sq) {
+                            $sq->whereNull('pt.PropertyClassificationID')
+                                ->where('pid.UnitCost', '>=', 50000);
+                        });
+                });
+            } elseif (in_array($assetType, ['semi_expendable', 'semi-expendable', 'iirusp', 'sep', 'ics'], true)) {
+                $query->where(function ($q) {
+                    $q->where('pt.PropertyClassificationID', 1)
+                        ->orWhere(function ($sq) {
+                            $sq->whereNull('pt.PropertyClassificationID')
+                                ->where('pid.UnitCost', '<', 50000);
+                        });
+                });
+            }
+        }
 
         $startDate = trim((string) $request->query('start_date', ''));
         $endDate = trim((string) $request->query('end_date', ''));
@@ -312,7 +335,7 @@ class PropertyWasteController extends Controller
                 ], 422);
             }
 
-            $query->whereBetween(DB::raw('DATE(COALESCE(pi.DateReceived, pi.CreatedDate))'), [$start->toDateString(), $end->toDateString()]);
+            $query->whereBetween(DB::raw('DATE(COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate))'), [$start->toDateString(), $end->toDateString()]);
         } else {
             $month = $request->query('month');
             $year = $request->query('year');
@@ -325,14 +348,14 @@ class PropertyWasteController extends Controller
             if ($month !== null) {
                 $month = (int) $month;
                 if ($month >= 1 && $month <= 12) {
-                    $query->whereMonth(DB::raw('COALESCE(pi.DateReceived, pi.CreatedDate)'), $month);
+                    $query->whereMonth(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'), $month);
                 }
             }
 
             if ($year !== null) {
                 $year = (int) $year;
                 if ($year >= 2000 && $year <= 9999) {
-                    $query->whereYear(DB::raw('COALESCE(pi.DateReceived, pi.CreatedDate)'), $year);
+                    $query->whereYear(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'), $year);
                 }
             }
         }
