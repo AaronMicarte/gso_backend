@@ -431,14 +431,7 @@ class InventoryController extends Controller
                               'propertytype.PropertyName', 'propertytype.Description as property_type_description',
                               'propertyclassification.ClassificationName', 'propertyclassification.DocumentType',
                               'propertystatus.StatusName',
-                              DB::raw("COALESCE(condition.ConditionName,
-                                  CASE
-                                      WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 'Serviceable'
-                                      WHEN propertyinventorydetail.PropertyStatusID = 3 THEN 'Under Repair'
-                                      WHEN propertyinventorydetail.PropertyStatusID IN (4,5) THEN 'Unserviceable'
-                                      ELSE 'Unknown'
-                                  END
-                              ) as ConditionName")
+                               DB::raw("COALESCE(condition.ConditionName, 'Serviceable') as ConditionName")
                       )
                                             ->addSelect(DB::raw("COALESCE(
                                                 (
@@ -1922,7 +1915,7 @@ class InventoryController extends Controller
         $perPage = min(100, max(10, (int) $request->query('per_page', 25)));
         $search = trim((string) $request->query('search', ''));
         $search = $search !== '' ? $search : null;
-        $statusId = $request->filled('property_status_id') ? (int) $request->query('property_status_id') : null;
+        $statusId = $request->filled('condition_id') ? (int) $request->query('condition_id') : ($request->filled('property_status_id') ? (int) $request->query('property_status_id') : null);
         $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
         $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
         $displayMode = $request->query('display_mode', 'individual');
@@ -1934,12 +1927,20 @@ class InventoryController extends Controller
         $filterQuery = $this->newAllItemsFilterQuery();
         $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType);
 
-        $statsResult = (clone $filterQuery)->reorder()->select(DB::raw('
+        $statsResult = (clone $filterQuery)->reorder()->select(DB::raw("
             COUNT(*) as total,
-            SUM(CASE WHEN propertyinventorydetail.PropertyStatusID = 1 THEN 1 ELSE 0 END) as available,
+            SUM(CASE
+                WHEN EXISTS (SELECT 1 FROM `condition` AS cu WHERE cu.ConditionID = propertyinventorydetail.ConditionID AND LOWER(cu.ConditionName) = 'unserviceable') THEN 0
+                ELSE 1
+            END) as serviceable,
+            SUM(CASE
+                WHEN EXISTS (SELECT 1 FROM `condition` AS cu WHERE cu.ConditionID = propertyinventorydetail.ConditionID AND LOWER(cu.ConditionName) = 'unserviceable') THEN 1
+                ELSE 0
+            END) as unserviceable,
+            SUM(CASE WHEN propertyinventorydetail.PropertyStatusID IN (1, 2) THEN 1 ELSE 0 END) as available,
             SUM(CASE WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 1 ELSE 0 END) as issued,
             SUM(CASE WHEN propertyinventorydetail.PropertyStatusID > 2 THEN 1 ELSE 0 END) as other
-        '))->first();
+        "))->first();
 
         if ($displayMode === 'combined') {
             $groupedPaginator = (clone $filterQuery)->reorder()
@@ -2065,6 +2066,8 @@ class InventoryController extends Controller
         $responseData = $paginator->toArray();
         $responseData['stats'] = [
             'total' => (int) ($statsResult->total ?? 0),
+            'serviceable' => (int) ($statsResult->serviceable ?? 0),
+            'unserviceable' => (int) ($statsResult->unserviceable ?? 0),
             'available' => (int) ($statsResult->available ?? 0),
             'issued' => (int) ($statsResult->issued ?? 0),
             'other' => (int) ($statsResult->other ?? 0),
@@ -2146,7 +2149,29 @@ class InventoryController extends Controller
         }
 
         if ($statusId !== null && $statusId > 0) {
-            $query->where('propertyinventorydetail.PropertyStatusID', $statusId);
+            if ($statusId === 1) {
+                // Serviceable: Condition is NOT unserviceable
+                $query->where(function ($q) {
+                    $q->whereNotExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from(DB::raw('`condition` as cond_filter'))
+                            ->whereColumn('cond_filter.ConditionID', 'propertyinventorydetail.ConditionID')
+                            ->whereRaw('LOWER(cond_filter.ConditionName) = ?', ['unserviceable']);
+                    });
+                });
+            } elseif ($statusId === 2) {
+                // Unserviceable: Condition is unserviceable
+                $query->where(function ($q) {
+                    $q->whereExists(function ($sub) {
+                        $sub->select(DB::raw(1))
+                            ->from(DB::raw('`condition` as cond_filter'))
+                            ->whereColumn('cond_filter.ConditionID', 'propertyinventorydetail.ConditionID')
+                            ->whereRaw('LOWER(cond_filter.ConditionName) = ?', ['unserviceable']);
+                    });
+                });
+            } else {
+                $query->where('propertyinventorydetail.ConditionID', $statusId);
+            }
         }
 
         if ($propertyTypeId !== null && $propertyTypeId > 0) {
@@ -2193,14 +2218,7 @@ class InventoryController extends Controller
                 'propertyclassification.DocumentType',
                 'propertyinventory.InventoryNumber',
                 'propertystatus.StatusName',
-                DB::raw("COALESCE(condition.ConditionName,
-                    CASE
-                        WHEN propertyinventorydetail.PropertyStatusID = 2 THEN 'Serviceable'
-                        WHEN propertyinventorydetail.PropertyStatusID = 3 THEN 'Under Repair'
-                        WHEN propertyinventorydetail.PropertyStatusID IN (4, 5) THEN 'Unserviceable'
-                        ELSE 'Unknown'
-                    END
-                ) as ConditionName"),
+                DB::raw("COALESCE(condition.ConditionName, 'Serviceable') as ConditionName"),
                 'deliveryreceiptdetail.ItemDescription as dr_item_description',
                 'articles.ArticleName as dr_article_name',
                 'deliveryreceiptdetail.Brand as dr_brand',
