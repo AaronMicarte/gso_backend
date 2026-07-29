@@ -343,6 +343,18 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('{id}', [PropertyWasteController::class, 'update']);
     });
 
+    // RLSDDP (Report of Lost, Stolen, Damaged or Destroyed Property)
+    Route::prefix('property-rlsddp')->group(function () {
+        Route::get('', [\App\Http\Controllers\PropertyRlsddpController::class, 'index']);
+        Route::post('', [\App\Http\Controllers\PropertyRlsddpController::class, 'store']);
+        Route::get('documents', [\App\Http\Controllers\PropertyRlsddpController::class, 'documents']);
+        Route::get('accountable-officer/{departmentId}', [\App\Http\Controllers\PropertyRlsddpController::class, 'accountableOfficer']);
+        Route::get('department-assets/{departmentId}', [\App\Http\Controllers\PropertyRlsddpController::class, 'departmentAssets']);
+        Route::get('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'show']);
+        Route::put('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'update']);
+        Route::post('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'update']);
+    });
+
     // Requisition and Issue Slip (RIS)
     Route::prefix('requisition-issue-slips')->group(function () {
         Route::get('', [RequisitionIssueSlipController::class, 'index']);
