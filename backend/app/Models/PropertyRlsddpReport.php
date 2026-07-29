@@ -60,20 +60,23 @@ class PropertyRlsddpReport extends Model
 
     public static function generateRlsddpNumber(): string
     {
-        $year = now()->format('Y');
-        $prefix = 'RLSDDP-' . $year . '-';
+        $year  = now()->format('Y');
+        $month = now()->format('m');
+        $yearPrefix = $year . '-';
 
-        $latest = self::where('RlsddpNumber', 'like', $prefix . '%')
+        // Serial resets every year: find the highest serial for ANY month in this year
+        $latest = self::where('RlsddpNumber', 'like', $yearPrefix . '%')
             ->orderByDesc('RlsddpID')
             ->value('RlsddpNumber');
 
         $next = 1;
         if ($latest) {
-            $parts = explode('-', $latest);
+            // Format: YYYY-MM-####  => last segment is the serial
+            $parts    = explode('-', $latest);
             $sequence = (int) end($parts);
-            $next = $sequence + 1;
+            $next     = $sequence + 1;
         }
 
-        return $prefix . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return $year . '-' . $month . '-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 }

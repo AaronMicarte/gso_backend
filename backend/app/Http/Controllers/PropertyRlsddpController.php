@@ -73,7 +73,52 @@ class PropertyRlsddpController extends Controller
             }
         }
 
-        return response()->json($report);
+        // Resolve PAR / ICS document number and date from the first item
+        $parNumber = null;
+        $parDate   = null;
+
+        $firstItem = $report->items->first();
+        if ($firstItem) {
+            $invDetailId = $firstItem->InventoryDetailID;
+
+            // Try PAR first
+            $parRow = DB::table('propertyinventorydetail as pid')
+                ->leftJoin('assignedproperty as ap', 'ap.InventoryDetailID', '=', 'pid.InventoryDetailID')
+                ->leftJoin('pardetail as pard', 'pard.PropertyID', '=', 'ap.PropertyID')
+                ->leftJoin('par as p', 'p.PARID', '=', 'pard.PARID')
+                ->where('pid.InventoryDetailID', $invDetailId)
+                ->whereNotNull('p.PARNumber')
+                ->select(['p.PARNumber', 'p.DateIssued as PARDate'])
+                ->first();
+
+            if ($parRow && !empty($parRow->PARNumber)) {
+                $parNumber = $parRow->PARNumber;
+                $parDate   = $parRow->PARDate;
+            } else {
+                // Try ICS / property issuance
+                $issRow = DB::table('propertyinventorydetail as pid')
+                    ->leftJoin('propertyissuancedetail as pissd', 'pissd.InventoryDetailID', '=', 'pid.InventoryDetailID')
+                    ->leftJoin('propertyissuance as piss', 'piss.IssuanceID', '=', 'pissd.IssuanceID')
+                    ->where('pid.InventoryDetailID', $invDetailId)
+                    ->whereNotNull('piss.DocumentNumber')
+                    ->select(['piss.DocumentNumber', 'piss.DocumentType', 'piss.DateIssued as ICSDate'])
+                    ->first();
+
+                if ($issRow && !empty($issRow->DocumentNumber)) {
+                    $docType   = !empty($issRow->DocumentType) ? strtoupper($issRow->DocumentType) : 'ICS';
+                    $parNumber = str_starts_with($issRow->DocumentNumber, $docType)
+                        ? $issRow->DocumentNumber
+                        : "{$docType}-{$issRow->DocumentNumber}";
+                    $parDate = $issRow->ICSDate;
+                }
+            }
+        }
+
+        $data                = $report->toArray();
+        $data['PARNumber']   = $parNumber;
+        $data['PARDate']     = $parDate;
+
+        return response()->json($data);
     }
 
     /**
@@ -227,7 +272,7 @@ class PropertyRlsddpController extends Controller
                 'PoliceStation'      => $validated['PoliceNotified'] ? trim((string) ($validated['PoliceStation'] ?? '')) : null,
                 'DateReported'       => $validated['PoliceNotified'] ? $validated['DateReported'] : null,
                 'Remarks'            => isset($validated['Remarks']) ? trim((string) $validated['Remarks']) : null,
-                'CreatedByUserID'    => $user ? $user->UserID : 1,
+                'CreatedByUserID'    => (int) Auth::id(),
             ]);
 
             $selectedInventoryDetailIds = [];
