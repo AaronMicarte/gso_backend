@@ -120,8 +120,8 @@ class InventoryController extends Controller
                         reqU.FullName
                     )
                     FROM propertyissuancedetail pidet
-                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                     JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                     LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
                     LEFT JOIN user reqU ON reqU.UserID = ar.RequestedBy
                     LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
@@ -158,8 +158,8 @@ class InventoryController extends Controller
                 (
                     SELECT COALESCE(dep.DepartmentName, depU.DepartmentName, depReq.DepartmentName)
                     FROM propertyissuancedetail pidet
-                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                     JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                     LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
                     LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
                     LEFT JOIN user u ON u.UserID = pi.IssuedTo
@@ -198,8 +198,8 @@ class InventoryController extends Controller
             (
                 SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
                 FROM propertyissuancedetail pidet
-                JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                 JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
+                JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                 LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
                 LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
                 LEFT JOIN user u ON u.UserID = pi.IssuedTo
@@ -598,7 +598,10 @@ class InventoryController extends Controller
                                 AND pi.Status = 'acknowledged'
                             ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
                             LIMIT 1
-                      ) as lastIssuedDate"));
+                      ) as lastIssuedDate"))
+                      ->addSelect(DB::raw($this->rlsddpStatusSelectSql() . ' as rlsddpStatus'))
+                      ->addSelect(DB::raw($this->rlsddpNumberSelectSql() . ' as rlsddpNumber'))
+                      ->addSelect(DB::raw($this->rlsddpIdSelectSql() . ' as rlsddpId'));
             },
             'details.qrCode',
             'details.drDetail' => function($query) {
@@ -1956,6 +1959,7 @@ class InventoryController extends Controller
         $statusId = $request->filled('condition_id') ? (int) $request->query('condition_id') : ($request->filled('property_status_id') ? (int) $request->query('property_status_id') : null);
         $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
         $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
+        $rlsddpStatus = $request->filled('rlsddp_status') ? trim((string) $request->query('rlsddp_status')) : null;
         $displayMode = $request->query('display_mode', 'individual');
         $dateSortColumn = $this->allItemsDateSortColumn();
         $qualifiedDateCol = 'propertyinventorydetail.' . $dateSortColumn;
@@ -1963,7 +1967,7 @@ class InventoryController extends Controller
 
         // Lightweight filter query: no per-row correlated subqueries (stats + pagination stay fast).
         $filterQuery = $this->newAllItemsFilterQuery();
-        $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType);
+        $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType, $rlsddpStatus);
 
         $statsResult = (clone $filterQuery)->reorder()->select(DB::raw("
             COUNT(*) as total,
@@ -2165,7 +2169,7 @@ class InventoryController extends Controller
             ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID');
     }
 
-    private function applyAllItemsFilters($query, ?string $search, ?int $statusId, ?int $propertyTypeId, ?string $documentType): void
+    private function applyAllItemsFilters($query, ?string $search, ?int $statusId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null): void
     {
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -2219,6 +2223,63 @@ class InventoryController extends Controller
         if ($documentType && in_array($documentType, ['PAR', 'ICS'], true)) {
             $query->where('propertyclassification.DocumentType', $documentType);
         }
+
+        $this->applyRlsddpStatusFilter($query, $rlsddpStatus);
+    }
+
+    private function applyRlsddpStatusFilter($query, ?string $rlsddpStatus): void
+    {
+        if (!$rlsddpStatus || !in_array($rlsddpStatus, ['Lost', 'Stolen', 'Damaged', 'Destroyed'], true)) {
+            return;
+        }
+
+        $query->whereExists(function ($sub) use ($rlsddpStatus) {
+            $sub->select(DB::raw(1))
+                ->from('property_rlsddp_items as rlsddp_item')
+                ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
+                ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+                ->whereNull('rlsddp.deleted_at')
+                ->where('rlsddp.Status', $rlsddpStatus);
+        });
+    }
+
+    private function rlsddpStatusSelectSql(): string
+    {
+        return "(
+            SELECT rlsddp.Status
+            FROM property_rlsddp_items AS rlsddp_item
+            JOIN property_rlsddp_reports AS rlsddp ON rlsddp.RlsddpID = rlsddp_item.RlsddpID
+            WHERE rlsddp_item.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                AND rlsddp.deleted_at IS NULL
+            ORDER BY rlsddp.RlsddpID DESC
+            LIMIT 1
+        )";
+    }
+
+    private function rlsddpNumberSelectSql(): string
+    {
+        return "(
+            SELECT rlsddp.RlsddpNumber
+            FROM property_rlsddp_items AS rlsddp_item
+            JOIN property_rlsddp_reports AS rlsddp ON rlsddp.RlsddpID = rlsddp_item.RlsddpID
+            WHERE rlsddp_item.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                AND rlsddp.deleted_at IS NULL
+            ORDER BY rlsddp.RlsddpID DESC
+            LIMIT 1
+        )";
+    }
+
+    private function rlsddpIdSelectSql(): string
+    {
+        return "(
+            SELECT rlsddp.RlsddpID
+            FROM property_rlsddp_items AS rlsddp_item
+            JOIN property_rlsddp_reports AS rlsddp ON rlsddp.RlsddpID = rlsddp_item.RlsddpID
+            WHERE rlsddp_item.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                AND rlsddp.deleted_at IS NULL
+            ORDER BY rlsddp.RlsddpID DESC
+            LIMIT 1
+        )";
     }
 
     private function fetchEnrichedAllItems(array $inventoryDetailIds, string $dateSortColumn)
@@ -2386,6 +2447,7 @@ class InventoryController extends Controller
                 'lastIssuedDate' => DB::raw("(
                     SELECT pi.DateIssued
                     FROM propertyissuancedetail pidet
+                    JOIN propertyinventorydetail invd ON invd.InventoryDetailID = pidet.InventoryDetailID
                     JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
                     WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
                         AND pi.deleted_at IS NULL
@@ -2461,6 +2523,9 @@ class InventoryController extends Controller
                     ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
                     LIMIT 1
                 ) as endUserPosition"),
+                'rlsddpStatus' => DB::raw($this->rlsddpStatusSelectSql() . ' as rlsddpStatus'),
+                'rlsddpNumber' => DB::raw($this->rlsddpNumberSelectSql() . ' as rlsddpNumber'),
+                'rlsddpId' => DB::raw($this->rlsddpIdSelectSql() . ' as rlsddpId'),
             ]);
     }
 }
