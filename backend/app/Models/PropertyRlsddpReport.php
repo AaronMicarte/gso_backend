@@ -62,21 +62,20 @@ class PropertyRlsddpReport extends Model
     {
         $year  = now()->format('Y');
         $month = now()->format('m');
-        $yearPrefix = $year . '-';
 
-        // Serial resets every year: find the highest serial for ANY month in this year
-        $latest = self::where('RlsddpNumber', 'like', $yearPrefix . '%')
+        // Serial resets every year and the stored number is formatted as SERIAL-MONTH-YEAR.
+        $latest = self::whereYear('created_at', (int) $year)
             ->orderByDesc('RlsddpID')
             ->value('RlsddpNumber');
 
         $next = 1;
         if ($latest) {
-            // Format: YYYY-MM-####  => last segment is the serial
+            // Format: ####-MM-YYYY => first segment is the serial.
             $parts    = explode('-', $latest);
-            $sequence = (int) end($parts);
+            $sequence = (int) ($parts[0] ?? 0);
             $next     = $sequence + 1;
         }
 
-        return $year . '-' . $month . '-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
+        return str_pad((string) $next, 4, '0', STR_PAD_LEFT) . '-' . $month . '-' . $year;
     }
 }

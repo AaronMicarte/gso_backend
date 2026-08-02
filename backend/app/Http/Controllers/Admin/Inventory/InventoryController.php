@@ -1633,12 +1633,48 @@ class InventoryController extends Controller
             }
         }
 
+        // Resolve PAR/ICS document number and type
+        $parNumber = null;
+        $docType = null;
+
+        // Try PAR first
+        $parRow = DB::table('propertyinventorydetail as pid')
+            ->leftJoin('assignedproperty as ap', 'ap.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->leftJoin('pardetail as pard', 'pard.PropertyID', '=', 'ap.PropertyID')
+            ->leftJoin('par as p', 'p.PARID', '=', 'pard.PARID')
+            ->where('pid.InventoryDetailID', (int) $detail->InventoryDetailID)
+            ->whereNotNull('p.PARNumber')
+            ->select(['p.PARNumber'])
+            ->first();
+
+        if ($parRow && !empty($parRow->PARNumber)) {
+            $parNumber = $parRow->PARNumber;
+            $docType = 'PAR';
+        } else {
+            // Try ICS / property issuance
+            $issRow = DB::table('propertyinventorydetail as pid')
+                ->leftJoin('propertyissuancedetail as pissd', 'pissd.InventoryDetailID', '=', 'pid.InventoryDetailID')
+                ->leftJoin('propertyissuance as piss', 'piss.IssuanceID', '=', 'pissd.IssuanceID')
+                ->where('pid.InventoryDetailID', (int) $detail->InventoryDetailID)
+                ->whereNotNull('piss.DocumentNumber')
+                ->where('piss.deleted_at', null)
+                ->select(['piss.DocumentNumber', 'piss.DocumentType'])
+                ->orderBy('piss.DateIssued', 'desc')
+                ->first();
+
+            if ($issRow && !empty($issRow->DocumentNumber)) {
+                $parNumber = $issRow->DocumentNumber;
+                $docType = strtoupper((string) ($issRow->DocumentType ?? 'ICS'));
+            }
+        }
+
         return response()->json([
             'inventory_detail_id' => (int) $detail->InventoryDetailID,
             'header' => [
                 'entity_name' => $entityName,
                 'fund_cluster' => $fundCluster,
                 'property_plant_equipment' => $articleName,
+                'inventory_number' => $detail->inventory?->InventoryNumber ?? null,
                 'property_number' => $detail->PropertyNumber,
                 'description' => $composedDescription,
                 'unit_cost' => $detail->UnitCost !== null ? (float) $detail->UnitCost : null,
@@ -1646,6 +1682,8 @@ class InventoryController extends Controller
                 'supplier' => $supplierName,
                 'date_received' => $dateReceived,
                 'received_by' => $receivedByLabel,
+                'par_ics_number' => $parNumber,
+                'document_type' => $docType,
             ],
             'rows' => $rows,
         ]);

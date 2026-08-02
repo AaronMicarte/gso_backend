@@ -262,6 +262,7 @@ class PropertyRlsddpController extends Controller
 
         return DB::transaction(function () use ($validated, $user) {
             $rlsddpNumber = PropertyRlsddpReport::generateRlsddpNumber();
+            $creatorUserId = $user?->UserID ?? Auth::id();
 
             $report = PropertyRlsddpReport::create([
                 'RlsddpNumber'       => $rlsddpNumber,
@@ -272,7 +273,7 @@ class PropertyRlsddpController extends Controller
                 'PoliceStation'      => $validated['PoliceNotified'] ? trim((string) ($validated['PoliceStation'] ?? '')) : null,
                 'DateReported'       => $validated['PoliceNotified'] ? $validated['DateReported'] : null,
                 'Remarks'            => isset($validated['Remarks']) ? trim((string) $validated['Remarks']) : null,
-                'CreatedByUserID'    => (int) Auth::id(),
+                'CreatedByUserID'    => (int) $creatorUserId,
             ]);
 
             $selectedInventoryDetailIds = [];
@@ -300,7 +301,7 @@ class PropertyRlsddpController extends Controller
 
             return response()->json([
                 'message' => 'RLSDDP report created successfully',
-                'report'  => $report->load(['department', 'items']),
+                'report'  => $report->load(['department', 'items', 'createdBy', 'updatedBy']),
             ], 201);
         });
     }
@@ -394,7 +395,7 @@ class PropertyRlsddpController extends Controller
 
             return response()->json([
                 'message' => 'RLSDDP report updated successfully',
-                'report'  => $report->load(['department', 'items']),
+                'report'  => $report->load(['department', 'items', 'createdBy', 'updatedBy']),
             ]);
         });
     }
