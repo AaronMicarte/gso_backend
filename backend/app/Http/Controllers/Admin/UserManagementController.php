@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Mail\AccountActivationMail;
 use App\Models\Auth\User;
 use App\Models\MasterData\EndUser;
+use App\Rules\AllowedUserRole;
+use App\Rules\GmailOnly;
 use App\Services\MFAService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -103,9 +105,9 @@ class UserManagementController extends Controller
 
         $validated = $request->validate([
             'Username' => 'required|string|min:3|max:50',
-            'Email' => 'required|email|max:100',
+            'Email' => ['required', new GmailOnly(), 'max:100'],
             'FullName' => 'nullable|string|max:100',
-            'UserRoleID' => 'required|integer',
+            'UserRoleID' => ['required', 'integer', new AllowedUserRole()],
             'DepartmentID' => 'required|integer',
         ]);
 
@@ -226,9 +228,9 @@ class UserManagementController extends Controller
 
         $validated = $request->validate([
             'Username' => 'required|string|min:3|max:50',
-            'Email' => 'required|email|max:100',
+            'Email' => ['required', new GmailOnly(), 'max:100'],
             'FullName' => 'nullable|string|max:100',
-            'UserRoleID' => 'required|integer',
+            'UserRoleID' => ['required', 'integer', new AllowedUserRole()],
             'DepartmentID' => 'required|integer',
             'IsActive' => 'required|boolean',
             'ResetPasswordToDefault' => 'sometimes|boolean',

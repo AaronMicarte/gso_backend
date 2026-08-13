@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\MasterData;
 
+use App\Rules\GmailOnly;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateEndUserRequest extends FormRequest
@@ -26,7 +27,7 @@ class UpdateEndUserRequest extends FormRequest
             'DepartmentID' => 'sometimes|required|integer|exists:department,DepartmentID',
             'PositionID' => 'sometimes|required|integer|exists:position,PositionID',
             'ContactNumber' => 'nullable|string|max:20',
-            'Email' => 'nullable|email|max:100',
+            'Email' => ['nullable', new GmailOnly(), 'max:100'],
             'IsActive' => 'sometimes|boolean',
         ];
     }

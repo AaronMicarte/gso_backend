@@ -28,10 +28,10 @@
                     </a>
                 </p>
 
-                <p style="margin:0 0 18px; font-size:12px; color:#475569; line-height:1.5;">
+                <!-- <p style="margin:0 0 18px; font-size:12px; color:#475569; line-height:1.5;">
                     If the button doesn't work, copy and paste this link into your browser:<br>
                     <span style="word-break:break-all; color:#0f172a;">{{ $activationLink }}</span>
-                </p>
+                </p> -->
 
                 <p style="margin:0 0 8px; font-size:12px; color:#475569;">
                     This activation link expires at {{ optional($expiresAt)->format('Y-m-d H:i') }}.
