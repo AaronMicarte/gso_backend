@@ -520,7 +520,9 @@ class AuthController extends Controller
         $this->mfaService->revokeAllDevices($user);
 
         return response()->json([
-            'message' => 'Password updated successfully. Please login with your new password.',
+            'message' => 'Password updated successfully.',
+            'user_id' => $user->UserID,
+            'username' => $user->Username,
         ]);
     }
 
@@ -782,14 +784,6 @@ class AuthController extends Controller
             return response()->json(['message' => 'User not found'], 404);
         }
 
-        // Verify this user's role actually requires MFA
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
-        $userRole = $user->userRole->RoleName ?? '';
-
-        if (!in_array($userRole, $mfaRequiredRoles)) {
-            return response()->json(['message' => 'MFA setup not required for this role'], 403);
-        }
-
         // Check if already enabled
         if ($user->MFAEnabled) {
             return response()->json(['message' => 'MFA is already enabled'], 400);
@@ -828,14 +822,6 @@ class AuthController extends Controller
 
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
-        }
-
-        // Verify role requires MFA
-        $mfaRequiredRoles = ['Admin', 'GSO Staff', 'Department Head', 'Inspection Officer'];
-        $userRole = $user->userRole->RoleName ?? '';
-
-        if (!in_array($userRole, $mfaRequiredRoles)) {
-            return response()->json(['message' => 'MFA setup not required for this role'], 403);
         }
 
         // Enable MFA

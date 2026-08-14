@@ -216,6 +216,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('delivery-receipts-helpers/suppliers', [DeliveryReceiptController::class, 'getSuppliers']);
         Route::get('delivery-receipts-helpers/property-types', [DeliveryReceiptController::class, 'getPropertyTypes']);
         Route::get('delivery-receipts-helpers/requesters', [DeliveryReceiptController::class, 'getRequesters']);
+        Route::get('delivery-receipts-helpers/used-serials', [DeliveryReceiptController::class, 'getUsedSerialNumbers']);
 
         // IAR routes (Inspection & Acceptance Report)
         Route::get('inspection-acceptance-reports', [InspectionAcceptanceReportController::class, 'index']);

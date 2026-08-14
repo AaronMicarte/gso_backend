@@ -55,6 +55,7 @@ class UserManagementController extends Controller
                 'Email' => $u->Email,
                 'FullName' => $u->FullName,
                 'IsActive' => (bool) $u->IsActive,
+                'MustChangePassword' => (bool) $u->MustChangePassword,
                 'EmailVerifiedAt' => $u->EmailVerifiedAt,
                 'MFAEnabled' => (bool) $u->MFAEnabled,
                 'UserRoleID' => $u->UserRoleID,
@@ -87,6 +88,7 @@ class UserManagementController extends Controller
                 'Email' => $user->Email,
                 'FullName' => $user->FullName,
                 'IsActive' => (bool) $user->IsActive,
+                'MustChangePassword' => (bool) $user->MustChangePassword,
                 'EmailVerifiedAt' => $user->EmailVerifiedAt,
                 'MFAEnabled' => (bool) $user->MFAEnabled,
                 'UserRoleID' => $user->UserRoleID,
@@ -105,52 +107,51 @@ class UserManagementController extends Controller
 
         $validated = $request->validate([
             'Username' => 'required|string|min:3|max:50',
-            'Email' => ['required', new GmailOnly(), 'max:100'],
+            'Email' => ['nullable', 'string', 'max:100'],
             'FullName' => 'nullable|string|max:100',
             'UserRoleID' => ['required', 'integer', new AllowedUserRole()],
             'DepartmentID' => 'required|integer',
         ]);
 
-        // Basic uniqueness checks (table has no unique indexes today)
-        if (User::where('Username', $validated['Username'])->exists()) {
+        $username = trim($validated['Username']);
+
+        // Basic uniqueness checks
+        if (User::where('Username', $username)->exists()) {
             return response()->json(['message' => 'Username already exists'], 422);
         }
-        if (User::where('Email', $validated['Email'])->exists()) {
+
+        $email = !empty($validated['Email']) ? strtolower(trim($validated['Email'])) : strtolower($username) . '@gso.gov.ph';
+
+        if (User::where('Email', $email)->exists()) {
             return response()->json(['message' => 'Email already exists'], 422);
         }
-
-        $plainToken = Str::random(64);
-        $tokenHash = hash('sha256', $plainToken);
-        $expiresAt = Carbon::now()->addHours(48);
 
         $user = new User();
         $user->UserRoleID = $validated['UserRoleID'];
         $user->DepartmentID = $validated['DepartmentID'];
-        $user->Username = $validated['Username'];
-        $user->Email = $validated['Email'];
+        $user->Username = $username;
+        $user->Email = $email;
         $user->FullName = $validated['FullName'] ?? null;
 
-        // Per requirement: default temp password is "123" (will be forced to change during activation)
+        // Default password to 123
         $user->Password = Hash::make('123');
 
         $user->IsActive = 1;
         $user->MFAEnabled = 0;
 
-        $user->EmailVerifiedAt = null;
-        $user->ActivationTokenHash = $tokenHash;
-        $user->ActivationSentAt = Carbon::now();
-        $user->ActivationExpiresAt = $expiresAt;
+        // Auto-verify email (no activation link or email verification required)
+        $user->EmailVerifiedAt = Carbon::now();
+        $user->ActivationTokenHash = null;
+        $user->ActivationSentAt = null;
+        $user->ActivationExpiresAt = null;
         $user->MustChangePassword = 1;
 
         $user->CreatedDate = Carbon::now();
         $user->save();
 
-        $mailResult = $this->sendActivationEmail($user, $plainToken);
-
         return response()->json([
-            'message' => $mailResult['email_sent'] ? 'User created and activation email sent' : 'User created (activation email not sent)',
-            'email_sent' => $mailResult['email_sent'],
-            'activation_link' => $mailResult['activation_link'],
+            'message' => 'User created successfully with default password "123"',
+            'email_sent' => false,
             'user' => [
                 'UserID' => $user->UserID,
                 'Username' => $user->Username,

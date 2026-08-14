@@ -52,11 +52,14 @@ class DashboardController extends Controller
      * Get recent activity for the dashboard
      * Combines login audits, purchase requests, and property transfers
      */
-    public function getRecentActivity()
+    public function getRecentActivity(Request $request)
     {
         try {
+            $currentUser = $request->user();
+            $isAdmin = $currentUser && (($currentUser->userRole?->RoleName ?? '') === 'Admin' || (int) $currentUser->UserRoleID === 1);
+
             // Recent login events (last 5)
-            $loginAudits = DB::table('loginaudit')
+            $loginAuditsQuery = DB::table('loginaudit')
                 ->join('user', 'loginaudit.UserID', '=', 'user.UserID')
                 ->select(
                     'loginaudit.LoginAuditID as id',
@@ -65,7 +68,13 @@ class DashboardController extends Controller
                     'user.FullName as fullName',
                     'loginaudit.EventTime as timestamp',
                     'loginaudit.IPAddress as ip_address'
-                )
+                );
+
+            if (!$isAdmin && $currentUser) {
+                $loginAuditsQuery->where('loginaudit.UserID', '=', $currentUser->UserID);
+            }
+
+            $loginAudits = $loginAuditsQuery
                 ->orderBy('loginaudit.EventTime', 'desc')
                 ->limit(5)
                 ->get()
@@ -87,7 +96,7 @@ class DashboardController extends Controller
                 });
 
             // Recent delivery receipts (last 5)
-            $deliveryReceipts = DB::table('deliveryreceipt')
+            $deliveryReceiptsQuery = DB::table('deliveryreceipt')
                 ->join('user', 'deliveryreceipt.ReceivedBy', '=', 'user.UserID')
                 ->leftJoin('supplier', 'deliveryreceipt.SupplierID', '=', 'supplier.SupplierID')
                 ->select(
@@ -97,7 +106,13 @@ class DashboardController extends Controller
                     'user.Username as user',
                     'user.FullName as fullName',
                     'deliveryreceipt.CreatedDate as timestamp'
-                )
+                );
+
+            if (!$isAdmin && $currentUser) {
+                $deliveryReceiptsQuery->where('deliveryreceipt.ReceivedBy', '=', $currentUser->UserID);
+            }
+
+            $deliveryReceipts = $deliveryReceiptsQuery
                 ->orderBy('deliveryreceipt.CreatedDate', 'desc')
                 ->limit(5)
                 ->get()
@@ -116,7 +131,7 @@ class DashboardController extends Controller
                 });
 
             // Recent asset audit logs with action metadata.
-            $auditLogs = DB::table('asset_audit_logs')
+            $auditLogsQuery = DB::table('asset_audit_logs')
                 ->leftJoin('user', 'asset_audit_logs.PerformedBy', '=', 'user.UserID')
                 ->select(
                     'asset_audit_logs.AuditID as id',
@@ -134,7 +149,13 @@ class DashboardController extends Controller
                     'delivery_receipt_detail',
                     'property_transfer_item',
                     'asset_service_record_detail',
-                ])
+                ]);
+
+            if (!$isAdmin && $currentUser) {
+                $auditLogsQuery->where('asset_audit_logs.PerformedBy', '=', $currentUser->UserID);
+            }
+
+            $auditLogs = $auditLogsQuery
                 ->orderBy('asset_audit_logs.CreatedAt', 'desc')
                 ->limit(10)
                 ->get()

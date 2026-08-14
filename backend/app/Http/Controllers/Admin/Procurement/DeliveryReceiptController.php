@@ -247,6 +247,29 @@ class DeliveryReceiptController extends Controller
                     ->get(['ArticleID', 'PropertyTypeID'])
                     ->keyBy('ArticleID');
 
+                // Load all existing serial numbers from DB
+                $rawDrSerials = DB::table('deliveryreceiptdetail')
+                    ->whereNotNull('SerialNumber')
+                    ->where('SerialNumber', '!=', '')
+                    ->pluck('SerialNumber');
+
+                $rawInvSerials = DB::table('propertyinventorydetail')
+                    ->whereNotNull('SerialNumber')
+                    ->where('SerialNumber', '!=', '')
+                    ->pluck('SerialNumber');
+
+                $existingUsedSerials = [];
+                foreach ($rawDrSerials->concat($rawInvSerials) as $raw) {
+                    foreach (explode(',', (string) $raw) as $s) {
+                        $trimmed = strtolower(trim($s));
+                        if ($trimmed !== '') {
+                            $existingUsedSerials[$trimmed] = true;
+                        }
+                    }
+                }
+
+                $seenInPayload = [];
+
                 foreach ($details as $index => $detail) {
                     $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
                     $serialParts = [];
@@ -254,6 +277,19 @@ class DeliveryReceiptController extends Controller
                         $serialParts = array_values(array_filter(array_map('trim', explode(',', $serial)), fn($v) => $v !== ''));
                     }
                     $serialCount = count($serialParts);
+
+                    foreach ($serialParts as $sPart) {
+                        $lowerPart = strtolower($sPart);
+                        if (isset($seenInPayload[$lowerPart])) {
+                            $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is duplicated within this delivery receipt.");
+                        } else {
+                            $seenInPayload[$lowerPart] = true;
+                        }
+
+                        if (isset($existingUsedSerials[$lowerPart])) {
+                            $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is already used in another Delivery Receipt.");
+                        }
+                    }
 
                     $quantity = (int) ($detail['quantity_delivered'] ?? 0);
                     if ($serialCount > 0 && $quantity !== $serialCount) {
@@ -682,12 +718,38 @@ class DeliveryReceiptController extends Controller
                 'dr_picture.max' => 'DR picture must not exceed 2MB',
             ]);
 
-            $validator->after(function ($validator) use ($request) {
+            $validator->after(function ($validator) use ($request, $id) {
                 $details = $request->input('details', []);
                 $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
                 $articleMap = Article::whereIn('ArticleID', $articleIds)
                     ->get(['ArticleID', 'PropertyTypeID'])
                     ->keyBy('ArticleID');
+
+                // Load existing serial numbers from DB excluding current DRID
+                $rawDrSerials = DB::table('deliveryreceiptdetail')
+                    ->whereNotNull('SerialNumber')
+                    ->where('SerialNumber', '!=', '')
+                    ->where('DRID', '!=', (int) $id)
+                    ->pluck('SerialNumber');
+
+                $rawInvSerials = DB::table('propertyinventorydetail as pid')
+                    ->join('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
+                    ->whereNotNull('pid.SerialNumber')
+                    ->where('pid.SerialNumber', '!=', '')
+                    ->where('pi.DRID', '!=', (int) $id)
+                    ->pluck('pid.SerialNumber');
+
+                $existingUsedSerials = [];
+                foreach ($rawDrSerials->concat($rawInvSerials) as $raw) {
+                    foreach (explode(',', (string) $raw) as $s) {
+                        $trimmed = strtolower(trim($s));
+                        if ($trimmed !== '') {
+                            $existingUsedSerials[$trimmed] = true;
+                        }
+                    }
+                }
+
+                $seenInPayload = [];
 
                 foreach ($details as $index => $detail) {
                     $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
@@ -696,6 +758,19 @@ class DeliveryReceiptController extends Controller
                         $serialParts = array_values(array_filter(array_map('trim', explode(',', $serial)), fn($v) => $v !== ''));
                     }
                     $serialCount = count($serialParts);
+
+                    foreach ($serialParts as $sPart) {
+                        $lowerPart = strtolower($sPart);
+                        if (isset($seenInPayload[$lowerPart])) {
+                            $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is duplicated within this delivery receipt.");
+                        } else {
+                            $seenInPayload[$lowerPart] = true;
+                        }
+
+                        if (isset($existingUsedSerials[$lowerPart])) {
+                            $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is already used in another Delivery Receipt.");
+                        }
+                    }
 
                     $quantity = (int) ($detail['quantity_delivered'] ?? 0);
                     if ($serialCount > 0 && $quantity !== $serialCount) {
@@ -1444,4 +1519,54 @@ class DeliveryReceiptController extends Controller
             ], 500);
         }
     }
+
+    public function getUsedSerialNumbers(Request $request): JsonResponse
+    {
+        try {
+            $excludeDrId = $request->query('exclude_dr_id');
+
+            $drSerialsQuery = DB::table('deliveryreceiptdetail')
+                ->whereNotNull('SerialNumber')
+                ->where('SerialNumber', '!=', '');
+
+            if ($excludeDrId) {
+                $drSerialsQuery->where('DRID', '!=', (int) $excludeDrId);
+            }
+
+            $rawDr = $drSerialsQuery->pluck('SerialNumber');
+
+            $invSerialsQuery = DB::table('propertyinventorydetail as pid')
+                ->join('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
+                ->whereNotNull('pid.SerialNumber')
+                ->where('pid.SerialNumber', '!=', '');
+
+            if ($excludeDrId) {
+                $invSerialsQuery->where('pi.DRID', '!=', (int) $excludeDrId);
+            }
+
+            $rawInv = $invSerialsQuery->pluck('pid.SerialNumber');
+
+            $serials = [];
+            foreach ($rawDr->concat($rawInv) as $raw) {
+                foreach (explode(',', (string) $raw) as $s) {
+                    $trimmed = trim($s);
+                    if ($trimmed !== '') {
+                        $serials[] = $trimmed;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => array_values(array_unique($serials)),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch used serial numbers',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
+
