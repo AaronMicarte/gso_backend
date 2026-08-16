@@ -283,6 +283,7 @@ class InventoryController extends Controller
                           ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID')
                           ->select(
                               'propertyinventorydetail.*',
+                              'deliveryreceiptdetail.DRID as dr_drid',
                               'deliveryreceiptdetail.ItemDescription as dr_item_description',
                               'articles.ArticleName as dr_article_name'
                           );
@@ -426,6 +427,7 @@ class InventoryController extends Controller
                       ->leftJoin('condition', 'propertyinventorydetail.ConditionID', '=', 'condition.ConditionID')
                       ->select(
                               'propertyinventorydetail.*',
+                              'deliveryreceiptdetail.DRID as dr_drid',
                               'deliveryreceiptdetail.ItemDescription as dr_item_description',
                           'articles.ArticleName as dr_article_name',
                               'propertytype.PropertyName', 'propertytype.Description as property_type_description',
@@ -2137,26 +2139,24 @@ class InventoryController extends Controller
 
     private function allItemsCombinedGroupKeySql(): string
     {
-        return "CONVERT(COALESCE(
-                NULLIF(articles.ArticleName, ''),
-                NULLIF(propertytype.PropertyName, ''),
-                NULLIF(propertyinventorydetail.ModelNumber, ''),
-                NULLIF(propertyinventorydetail.PropertyNumber, ''),
-                NULLIF(propertyinventorydetail.SerialNumber, ''),
-                'UNKNOWN'
-            ) USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+        return "CONVERT(CONCAT(
+            COALESCE(CAST(deliveryreceiptdetail.DRID AS CHAR), CONCAT('inv-', CAST(propertyinventorydetail.InventoryID AS CHAR))),
+            '||',
+            UPPER(TRIM(COALESCE(NULLIF(articles.ArticleName, ''), NULLIF(propertytype.PropertyName, ''), ''))),
+            '||',
+            UPPER(TRIM(COALESCE(propertyinventorydetail.Brand, ''))),
+            '||',
+            UPPER(TRIM(COALESCE(propertyinventorydetail.ModelNumber, '')))
+        ) USING utf8mb4) COLLATE utf8mb4_unicode_ci";
     }
 
     private function allItemsCombinedKeyForRow($item): string
     {
-        return trim((string) (
-            $item->dr_article_name
-            ?: $item->PropertyName
-            ?: $item->ModelNumber
-            ?: $item->PropertyNumber
-            ?: $item->SerialNumber
-            ?: 'UNKNOWN'
-        ));
+        $drId = $item->dr_drid !== null ? (string)$item->dr_drid : 'inv-' . $item->InventoryID;
+        $article = strtoupper(trim((string)($item->dr_article_name ?: $item->PropertyName ?: '')));
+        $brand = strtoupper(trim((string)($item->Brand ?: '')));
+        $model = strtoupper(trim((string)($item->ModelNumber ?: '')));
+        return "{$drId}||{$article}||{$brand}||{$model}";
     }
 
     private function newAllItemsFilterQuery()
@@ -2319,6 +2319,7 @@ class InventoryController extends Controller
                 'propertystatus.StatusName',
                 DB::raw("COALESCE(condition.ConditionName, 'Serviceable') as ConditionName"),
                 'deliveryreceiptdetail.ItemDescription as dr_item_description',
+                'deliveryreceiptdetail.DRID as dr_drid',
                 'articles.ArticleName as dr_article_name',
                 'deliveryreceiptdetail.Brand as dr_brand',
                 'deliveryreceiptdetail.ModelNumber as dr_model',
