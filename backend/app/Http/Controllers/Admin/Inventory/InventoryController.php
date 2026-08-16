@@ -1962,6 +1962,7 @@ class InventoryController extends Controller
         $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
         $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
         $rlsddpStatus = $request->filled('rlsddp_status') ? trim((string) $request->query('rlsddp_status')) : null;
+        $departmentId = $request->filled('department_id') ? (int) $request->query('department_id') : null;
         $displayMode = $request->query('display_mode', 'individual');
         $dateSortColumn = $this->allItemsDateSortColumn();
         $qualifiedDateCol = 'propertyinventorydetail.' . $dateSortColumn;
@@ -1969,7 +1970,7 @@ class InventoryController extends Controller
 
         // Lightweight filter query: no per-row correlated subqueries (stats + pagination stay fast).
         $filterQuery = $this->newAllItemsFilterQuery();
-        $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType, $rlsddpStatus);
+        $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType, $rlsddpStatus, $departmentId);
 
         $statsResult = (clone $filterQuery)->reorder()->select(DB::raw("
             COUNT(*) as total,
@@ -2169,7 +2170,7 @@ class InventoryController extends Controller
             ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID');
     }
 
-    private function applyAllItemsFilters($query, ?string $search, ?int $statusId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null): void
+    private function applyAllItemsFilters($query, ?string $search, ?int $statusId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null): void
     {
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -2225,6 +2226,45 @@ class InventoryController extends Controller
         }
 
         $this->applyRlsddpStatusFilter($query, $rlsddpStatus);
+
+        if ($departmentId !== null && $departmentId > 0) {
+            $locationDepartmentIdSql = "COALESCE(
+                (
+                    SELECT ap.DepartmentID
+                    FROM assignedproperty ap
+                    WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                    ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT COALESCE(depReq.DepartmentID, dep.DepartmentID, depU.DepartmentID)
+                    FROM propertyissuancedetail pidet
+                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+                    LEFT JOIN enduser eu ON eu.EndUserID = pi.IssuedTo
+                    LEFT JOIN department dep ON dep.DepartmentID = eu.DepartmentID
+                    LEFT JOIN user u ON u.UserID = pi.IssuedTo
+                    LEFT JOIN department depU ON depU.DepartmentID = u.DepartmentID
+                    LEFT JOIN assetrequest ar ON ar.RequestID = pi.RequestID
+                    LEFT JOIN department depReq ON depReq.DepartmentID = ar.DepartmentID
+                    WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        AND pi.deleted_at IS NULL
+                        AND pidet.deleted_at IS NULL
+                        AND pi.Status = 'acknowledged'
+                    ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+                    LIMIT 1
+                ),
+                (
+                    SELECT depDR.DepartmentID
+                    FROM deliveryreceiptdetail drd
+                    JOIN deliveryreceipt dr ON dr.DRID = drd.DRID
+                    LEFT JOIN user drReqU ON drReqU.UserID = dr.RequestedBy
+                    LEFT JOIN department depDR ON depDR.DepartmentID = drReqU.DepartmentID
+                    WHERE drd.DRDetailID = propertyinventorydetail.SourceDRDetailID
+                    LIMIT 1
+                )
+            )";
+            $query->whereRaw("($locationDepartmentIdSql) = ?", [$departmentId]);
+        }
     }
 
     private function applyRlsddpStatusFilter($query, ?string $rlsddpStatus): void
