@@ -2273,13 +2273,12 @@ class InventoryController extends Controller
             return;
         }
 
-        $query->whereExists(function ($sub) use ($rlsddpStatus) {
+       $query->whereExists(function ($sub) use ($rlsddpStatus) {
             $sub->select(DB::raw(1))
                 ->from('property_rlsddp_items as rlsddp_item')
                 ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
                 ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
                 ->whereNull('rlsddp.deleted_at')
-                ->whereNull('rlsddp_item.deleted_at')
                 ->where('rlsddp.Status', $rlsddpStatus);
         });
     }
