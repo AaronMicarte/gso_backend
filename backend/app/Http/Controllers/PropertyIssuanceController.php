@@ -182,6 +182,11 @@ class PropertyIssuanceController extends Controller
                 // Map field names
                 $issuance->IssuanceDate = $issuance->DateIssued;
                 $issuance->QuantityIssued = $issuance->details->sum('QuantityIssued');
+                $issuance->IssuanceDate = $issuance->DateIssued;
+                $issuance->QuantityIssued = $issuance->details->sum('QuantityIssued');
+                $issuance->deliveryReceipt = $issuance->deliveryReceipt?->DRNumber
+                    ? ['DRNumber' => $issuance->deliveryReceipt->DRNumber]
+                    : null;
                 unset($issuance->issuedTo, $issuance->issuedBy, $issuance->DateIssued);
                 return $issuance;
             });
