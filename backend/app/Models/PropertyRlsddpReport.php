@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class PropertyRlsddpReport extends Model
 {
@@ -40,7 +41,24 @@ class PropertyRlsddpReport extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(PropertyRlsddpItem::class, 'RlsddpID', 'RlsddpID');
+        return $this->hasMany(PropertyRlsddpItem::class, 'RlsddpID', 'RlsddpID')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('propertyinventorydetail')
+                    ->whereColumn('propertyinventorydetail.InventoryDetailID', 'property_rlsddp_items.InventoryDetailID')
+                    ->whereNull('propertyinventorydetail.deleted_at');
+            });
+    }
+
+    public function removedItems(): HasMany
+    {
+        return $this->hasMany(PropertyRlsddpItem::class, 'RlsddpID', 'RlsddpID')
+            ->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('propertyinventorydetail')
+                    ->whereColumn('propertyinventorydetail.InventoryDetailID', 'property_rlsddp_items.InventoryDetailID')
+                    ->whereNotNull('propertyinventorydetail.deleted_at');
+            });
     }
 
     public function department(): BelongsTo

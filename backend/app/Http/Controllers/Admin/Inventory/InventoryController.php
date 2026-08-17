@@ -2279,6 +2279,7 @@ class InventoryController extends Controller
                 ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
                 ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
                 ->whereNull('rlsddp.deleted_at')
+                ->whereNull('rlsddp_item.deleted_at')
                 ->where('rlsddp.Status', $rlsddpStatus);
         });
     }

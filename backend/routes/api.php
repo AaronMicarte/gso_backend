@@ -349,11 +349,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('', [\App\Http\Controllers\PropertyRlsddpController::class, 'index']);
         Route::post('', [\App\Http\Controllers\PropertyRlsddpController::class, 'store']);
         Route::get('documents', [\App\Http\Controllers\PropertyRlsddpController::class, 'documents']);
+        Route::get('removed-items', [\App\Http\Controllers\PropertyRlsddpController::class, 'removedItems']);
         Route::get('accountable-officer/{departmentId}', [\App\Http\Controllers\PropertyRlsddpController::class, 'accountableOfficer']);
         Route::get('department-assets/{departmentId}', [\App\Http\Controllers\PropertyRlsddpController::class, 'departmentAssets']);
         Route::get('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'show']);
         Route::put('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'update']);
         Route::post('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'update']);
+        Route::post('items/{itemId}/remove', [\App\Http\Controllers\PropertyRlsddpController::class, 'removeItem']);
+        Route::post('items/{itemId}/restore', [\App\Http\Controllers\PropertyRlsddpController::class, 'restoreItem']);
     });
 
     // Requisition and Issue Slip (RIS)

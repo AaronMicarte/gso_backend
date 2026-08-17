@@ -63,11 +63,18 @@ class PropertyRlsddpController extends Controller
         $report = PropertyRlsddpReport::with([
             'department:DepartmentID,DepartmentName,DepartmentCode',
             'items.inventoryDetail.drDetail.article',
+            'removedItems.inventoryDetail.drDetail.article',
             'createdBy:UserID,FullName',
             'updatedBy:UserID,FullName',
         ])->findOrFail($id);
 
         foreach ($report->items as $item) {
+            if (empty($item->Description)) {
+                $item->Description = $this->generateItemDescription($item->InventoryDetailID);
+            }
+        }
+
+        foreach ($report->removedItems as $item) {
             if (empty($item->Description)) {
                 $item->Description = $this->generateItemDescription($item->InventoryDetailID);
             }
@@ -150,11 +157,12 @@ class PropertyRlsddpController extends Controller
             'pid.TotalCost',
             'pid.SourceDRDetailID',
             'pid.InventoryID',
+            'pid.SerialNumber as pid_SerialNumber',
             'a.ArticleName',
             'drd.ItemDescription',
             'drd.Brand',
             'drd.ModelNumber',
-            'drd.SerialNumber',
+            'drd.SerialNumber as drd_SerialNumber',
             'p.PARNumber',
             'piss.DocumentType',
             'piss.DocumentNumber',
@@ -190,7 +198,7 @@ class PropertyRlsddpController extends Controller
             $itemDescription = trim((string) ($item->ItemDescription ?? ''));
             $brand           = trim((string) ($item->Brand ?? ''));
             $model           = trim((string) ($item->ModelNumber ?? ''));
-            $sn              = trim((string) ($item->SerialNumber ?? ''));
+            $sn              = trim((string) ($item->pid_SerialNumber ?? $item->drd_SerialNumber ?? ''));
 
             $descParts = array_filter([
                 $articleName,
@@ -548,11 +556,12 @@ class PropertyRlsddpController extends Controller
             'pid.TotalCost',
             'pid.SourceDRDetailID',
             'pid.InventoryID',
+            'pid.SerialNumber as pid_SerialNumber',
             'a.ArticleName',
             'drd.ItemDescription',
             'drd.Brand',
             'drd.ModelNumber',
-            'drd.SerialNumber',
+            'drd.SerialNumber as drd_SerialNumber',
             'p.PARNumber',
             'piss.DocumentType',
             'piss.DocumentNumber',
@@ -565,7 +574,7 @@ class PropertyRlsddpController extends Controller
             $itemDescription = trim((string) ($item->ItemDescription ?? ''));
             $brand           = trim((string) ($item->Brand ?? ''));
             $model           = trim((string) ($item->ModelNumber ?? ''));
-            $sn              = trim((string) ($item->SerialNumber ?? ''));
+            $sn              = trim((string) ($item->pid_SerialNumber ?? $item->drd_SerialNumber ?? ''));
 
             $docType = !empty($item->DocumentType) ? strtoupper($item->DocumentType) : ($item->UnitCost >= 50000 ? 'PAR' : 'ICS');
             $rawPar = !empty($item->PARNumber) ? $item->PARNumber : (!empty($item->DocumentNumber) ? $item->DocumentNumber : 'N/A');
@@ -616,7 +625,8 @@ class PropertyRlsddpController extends Controller
                 'drd.ItemDescription',
                 'drd.Brand',
                 'drd.ModelNumber',
-                'drd.SerialNumber',
+                'pid.SerialNumber as pid_SerialNumber',
+                'drd.SerialNumber as drd_SerialNumber',
             ])
             ->first();
 
@@ -629,7 +639,7 @@ class PropertyRlsddpController extends Controller
             trim((string) ($item->ItemDescription ?? '')),
             $item->Brand ? "Brand: {$item->Brand}" : null,
             $item->ModelNumber ? "Model: {$item->ModelNumber}" : null,
-            $item->SerialNumber ? "SN: {$item->SerialNumber}" : null,
+            $item->pid_SerialNumber ?? $item->drd_SerialNumber ? "SN: " . ($item->pid_SerialNumber ?? $item->drd_SerialNumber) : null,
         ]);
 
         return implode(', ', $descParts) ?: 'N/A';
@@ -658,5 +668,120 @@ class PropertyRlsddpController extends Controller
                 'ConditionID' => $unserviceableId,
                 'updated_at'  => now(),
             ]);
+    }
+
+    /**
+     * Remove an RLSDDP item (soft deletes the related PropertyInventoryDetail / PropertyInventory).
+     */
+    public function removeItem(int $itemId): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
+            return response()->json(['message' => 'Unauthorized. Only Admin and Staff can perform this action.'], 403);
+        }
+
+        $rlsddpItem = PropertyRlsddpItem::findOrFail($itemId);
+        $detailId = $rlsddpItem->InventoryDetailID;
+
+        DB::transaction(function () use ($detailId) {
+            $detail = \App\Models\Inventory\PropertyInventoryDetail::find($detailId);
+            if ($detail) {
+                $inventoryId = $detail->InventoryID;
+                $detail->delete();
+
+                // Check if any other non-deleted details exist for this inventory
+                $activeCount = \App\Models\Inventory\PropertyInventoryDetail::where('InventoryID', $inventoryId)->count();
+                if ($activeCount === 0) {
+                    $inventory = \App\Models\Inventory\PropertyInventory::find($inventoryId);
+                    if ($inventory) {
+                        $inventory->delete();
+                    }
+                }
+            }
+        });
+
+        return response()->json(['message' => 'Item removed from active inventory successfully.']);
+    }
+
+    /**
+     * Restore an RLSDDP item (restores the related PropertyInventoryDetail / PropertyInventory).
+     */
+    public function restoreItem(int $itemId): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
+            return response()->json(['message' => 'Unauthorized. Only Admin and Staff can perform this action.'], 403);
+        }
+
+        $rlsddpItem = PropertyRlsddpItem::findOrFail($itemId);
+        $detailId = $rlsddpItem->InventoryDetailID;
+
+        DB::transaction(function () use ($detailId) {
+            $detail = \App\Models\Inventory\PropertyInventoryDetail::withTrashed()->find($detailId);
+            if ($detail) {
+                $detail->restore();
+
+                $inventoryId = $detail->InventoryID;
+                $inventory = \App\Models\Inventory\PropertyInventory::withTrashed()->find($inventoryId);
+                if ($inventory && $inventory->trashed()) {
+                    $inventory->restore();
+                }
+            }
+        });
+
+        return response()->json(['message' => 'Item restored to active inventory successfully.']);
+    }
+
+    /**
+     * List all inventory items that have been removed via RLSDDP across all reports.
+     * Returns the soft-deleted PropertyInventoryDetail rows that are linked to an RLSDDP item.
+     */
+    public function removedItems(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $query = \App\Models\PropertyRlsddpItem::query()
+            ->join('propertyinventorydetail as pid', function ($join) {
+                $join->on('pid.InventoryDetailID', '=', 'property_rlsddp_items.InventoryDetailID')
+                    ->whereNotNull('pid.deleted_at');
+            })
+            ->join('property_rlsddp_reports as rpt', 'rpt.RlsddpID', '=', 'property_rlsddp_items.RlsddpID')
+            ->leftJoin('department as dep', 'dep.DepartmentID', '=', 'rpt.DepartmentID')
+            ->whereNull('rpt.deleted_at')
+            ->select([
+                'property_rlsddp_items.RlsddpItemID',
+                'property_rlsddp_items.RlsddpID',
+                'property_rlsddp_items.InventoryDetailID',
+                'property_rlsddp_items.PropertyNumber',
+                'property_rlsddp_items.AcquisitionCost',
+                'property_rlsddp_items.Description',
+                'rpt.RlsddpNumber',
+                'rpt.Status as RlsddpStatus',
+                'rpt.AccountableOfficer',
+                'dep.DepartmentName',
+                'pid.deleted_at as removed_at',
+            ])
+            ->orderByDesc('pid.deleted_at');
+
+        if ($request->filled('search')) {
+            $search = trim((string) $request->query('search'));
+            $query->where(function ($q) use ($search) {
+                $q->where('property_rlsddp_items.PropertyNumber', 'like', "%{$search}%")
+                  ->orWhere('rpt.RlsddpNumber', 'like', "%{$search}%")
+                  ->orWhere('dep.DepartmentName', 'like', "%{$search}%")
+                  ->orWhere('rpt.AccountableOfficer', 'like', "%{$search}%");
+            });
+        }
+
+        $perPage = (int) $request->query('per_page', 25);
+        $results = $query->paginate($perPage);
+
+        return response()->json($results);
     }
 }
