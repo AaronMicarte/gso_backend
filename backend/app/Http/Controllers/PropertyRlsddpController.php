@@ -614,36 +614,37 @@ class PropertyRlsddpController extends Controller
     /**
      * Helper to generate full item description separated by comma.
      */
-    private function generateItemDescription(int $inventoryDetailId): string
-    {
-        $item = DB::table('propertyinventorydetail as pid')
-            ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
-            ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
-            ->where('pid.InventoryDetailID', $inventoryDetailId)
-            ->select([
-                'a.ArticleName',
-                'drd.ItemDescription',
-                'drd.Brand',
-                'drd.ModelNumber',
-                'pid.SerialNumber as pid_SerialNumber',
-                'drd.SerialNumber as drd_SerialNumber',
-            ])
-            ->first();
+   private function generateItemDescription(int $inventoryDetailId): string
+{
+    $item = DB::table('propertyinventorydetail as pid')
+        ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
+        ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
+        ->where('pid.InventoryDetailID', $inventoryDetailId)
+        ->select([
+            'a.ArticleName',
+            'drd.ItemDescription',
+            'drd.Brand',
+            'drd.ModelNumber',
+            'pid.SerialNumber as pid_SerialNumber',
+        ])
+        ->first();
 
-        if (!$item) {
-            return 'N/A';
-        }
-
-        $descParts = array_filter([
-            trim((string) ($item->ArticleName ?? '')),
-            trim((string) ($item->ItemDescription ?? '')),
-            $item->Brand ? "Brand: {$item->Brand}" : null,
-            $item->ModelNumber ? "Model: {$item->ModelNumber}" : null,
-            $item->pid_SerialNumber ?? $item->drd_SerialNumber ? "SN: " . ($item->pid_SerialNumber ?? $item->drd_SerialNumber) : null,
-        ]);
-
-        return implode(', ', $descParts) ?: 'N/A';
+    if (!$item) {
+        return 'N/A';
     }
+
+    $sn = trim((string) ($item->pid_SerialNumber ?? ''));
+
+    $descParts = array_filter([
+        trim((string) ($item->ArticleName ?? '')),
+        trim((string) ($item->ItemDescription ?? '')),
+        $item->Brand ? "Brand: {$item->Brand}" : null,
+        $item->ModelNumber ? "Model: {$item->ModelNumber}" : null,
+        $sn !== '' ? "SN: {$sn}" : null,
+    ]);
+
+    return implode(', ', $descParts) ?: 'N/A';
+}
 
     /**
      * Update asset condition to Unserviceable in inventory.

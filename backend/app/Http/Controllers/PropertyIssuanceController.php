@@ -1427,6 +1427,7 @@ class PropertyIssuanceController extends Controller
                     'deliveryreceipt.DateReceived',
                     'deliveryreceipt.CreatedDate',
                     'deliveryreceipt.InspectionStatus',
+                    'deliveryreceipt.IsPartial',
                     'department.DepartmentName',
                     // Determine acceptance status based on propertyissuance records, not IAR
                     DB::raw('CASE WHEN MAX(propertyissuance.Status) = "acknowledged" THEN 1 ELSE 0 END as IsAccepted'),
@@ -1441,6 +1442,7 @@ class PropertyIssuanceController extends Controller
                     'deliveryreceipt.DateReceived',
                     'deliveryreceipt.CreatedDate',
                     'deliveryreceipt.InspectionStatus',
+                    'deliveryreceipt.IsPartial',
                     'department.DepartmentName'
                 )
                 ->orderBy('deliveryreceipt.CreatedDate', 'desc');
@@ -1459,47 +1461,8 @@ class PropertyIssuanceController extends Controller
             $results = $query->paginate($perPage);
 
             $results->getCollection()->transform(function ($row) {
-                // Fetch items directly from deliveryreceiptdetail instead of IAR tables
-                $itemsByType = [
-                    'PAR' => [],
-                    'ICS' => [],
-                ];
-
-                $items = DB::table('deliveryreceiptdetail as drd')
-                    ->leftJoin('propertytype as pt', 'drd.PropertyTypeID', '=', 'pt.PropertyTypeID')
-                    ->leftJoin('propertyclassification as pc', 'pt.PropertyClassificationID', '=', 'pc.PropertyClassificationID')
-                    ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
-                    ->where('drd.DRID', $row->DRID)
-                    ->select(
-                        'drd.DRDetailID',
-                        'drd.QuantityDelivered as QuantityAccepted',
-                        // Prefer official ArticleName when available, fallback to ItemDescription
-                        DB::raw('COALESCE(a.ArticleName, drd.ItemDescription) as ItemDescription'),
-                        'drd.Brand',
-                        'drd.ModelNumber', 
-                        'drd.SerialNumber',
-                        'pc.DocumentType'
-                    )
-                    ->get();
-
-                foreach ($items as $item) {
-                    $docType = $item->DocumentType ?: 'ICS';
-                    if (!isset($itemsByType[$docType])) {
-                        $itemsByType[$docType] = [];
-                    }
-
-                    $itemsByType[$docType][] = [
-                        'DRDetailID' => $item->DRDetailID,
-                        'ItemDescription' => $item->ItemDescription,
-                        'Brand' => $item->Brand,
-                        'ModelNumber' => $item->ModelNumber,
-                        'SerialNumber' => $item->SerialNumber,
-                        'QuantityAccepted' => $item->QuantityAccepted,
-                        'DocumentType' => $docType,
-                    ];
-                }
-
-                $row->items_by_document_type = $itemsByType;
+                $row->items_by_document_type = $this->buildItemsByDocumentTypeForDr((int) $row->DRID);
+                $row->is_partial = (bool) ($row->IsPartial ?? false);
 
                 $issuancesByType = [
                     'PAR' => null,
@@ -1688,8 +1651,56 @@ class PropertyIssuanceController extends Controller
             'data' => [
                 'DRID' => (int) $deliveryReceipt->DRID,
                 'issuances_by_document_type' => $issuancesByType,
+                'items_by_document_type' => $this->buildItemsByDocumentTypeForDr((int) $deliveryReceipt->DRID),
             ],
         ]);
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function buildItemsByDocumentTypeForDr(int $drId): array
+    {
+        $itemsByType = [
+            'PAR' => [],
+            'ICS' => [],
+        ];
+
+        $items = DB::table('deliveryreceiptdetail as drd')
+            ->leftJoin('propertytype as pt', 'drd.PropertyTypeID', '=', 'pt.PropertyTypeID')
+            ->leftJoin('propertyclassification as pc', 'pt.PropertyClassificationID', '=', 'pc.PropertyClassificationID')
+            ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
+            ->where('drd.DRID', $drId)
+            ->whereNull('drd.deleted_at')
+            ->select(
+                'drd.DRDetailID',
+                'drd.QuantityDelivered as QuantityAccepted',
+                DB::raw('COALESCE(a.ArticleName, drd.ItemDescription) as ItemDescription'),
+                'drd.Brand',
+                'drd.ModelNumber',
+                'drd.SerialNumber',
+                'pc.DocumentType'
+            )
+            ->get();
+
+        foreach ($items as $item) {
+            $docType = $item->DocumentType ?: 'ICS';
+            if (! isset($itemsByType[$docType])) {
+                $itemsByType[$docType] = [];
+            }
+
+            $itemsByType[$docType][] = [
+                'DRDetailID' => $item->DRDetailID,
+                'ItemDescription' => $item->ItemDescription,
+                'Brand' => $item->Brand,
+                'ModelNumber' => $item->ModelNumber,
+                'SerialNumber' => $item->SerialNumber,
+                'QuantityAccepted' => $item->QuantityAccepted,
+                'DocumentType' => $docType,
+            ];
+        }
+
+        return $itemsByType;
     }
 
     /**

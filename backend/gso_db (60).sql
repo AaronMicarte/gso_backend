@@ -1116,6 +1116,8 @@ CREATE TABLE `deliveryreceipt` (
   `Remarks` text DEFAULT NULL,
   `InspectionStatus` enum('pending','inspected') NOT NULL DEFAULT 'pending',
   `InspectionCompletedAt` timestamp NULL DEFAULT NULL,
+  `IsPartial` tinyint(1) NOT NULL DEFAULT 0,
+  `FinalizedAt` timestamp NULL DEFAULT NULL,
   `dr_picture` varchar(255) NOT NULL COMMENT 'Path to the uploaded DR picture file',
   `CreatedDate` datetime DEFAULT current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL
@@ -2120,6 +2122,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (154, '2026_03_25_170000_drop_redundant_columns_from_asset_service_record_details', 58),
 (155, '2026_03_25_200000_refactor_asset_service_report_source_to_department', 59),
 (156, '2026_03_28_000000_adjust_asset_service_statuses', 60),
+(157, '2026_08_17_000001_add_partial_delivery_fields_to_deliveryreceipt', 61);
 (157, '2026_03_28_000001_add_verification_note_to_service_record_details', 61),
 (158, '2026_03_28_000002_rename_verification_to_fixed_in_asset_service_statuses', 62),
 (159, '2026_03_28_000003_add_final_notes_to_service_record_details', 63),

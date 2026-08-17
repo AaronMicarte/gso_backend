@@ -35,7 +35,9 @@ class DeliveryReceipt extends Model
         'CreatedDate',
         'dr_picture',
         'InspectionStatus',
-        'InspectionCompletedAt'
+        'InspectionCompletedAt',
+        'IsPartial',
+        'FinalizedAt',
     ];
 
     protected $casts = [
@@ -43,6 +45,8 @@ class DeliveryReceipt extends Model
         'DateInspected' => 'date',
         'CreatedDate' => 'datetime',
         'InspectionCompletedAt' => 'datetime',
+        'FinalizedAt' => 'datetime',
+        'IsPartial' => 'boolean',
         'SupplierID' => 'integer',
     ];
 
