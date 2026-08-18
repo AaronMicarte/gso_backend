@@ -898,25 +898,31 @@ class PropertyBorrowController extends Controller
                 'Notes' => $validated['notes'] ?? null,
             ]);
 
-            foreach ($payloadRows as $returnItemData) {
-                PropertyReturnItem::create([
-                    'ReturnID' => (int) $returnRecord->ReturnID,
-                    'BorrowItemID' => (int) $returnItemData['BorrowItemID'],
-                    'InventoryDetailID' => (int) $returnItemData['InventoryDetailID'],
-                    'QuantityReturned' => (int) $returnItemData['QuantityReturned'],
-                    'ConditionID' => $returnItemData['ConditionID'],
-                    'Remarks' => null,
+           foreach ($payloadRows as $returnItemData) {
+            PropertyReturnItem::create([
+                'ReturnID'          => (int) $returnRecord->ReturnID,
+                'BorrowItemID'      => (int) $returnItemData['BorrowItemID'],
+                'InventoryDetailID' => (int) $returnItemData['InventoryDetailID'],
+                'QuantityReturned'  => (int) $returnItemData['QuantityReturned'],
+                'ConditionID'       => $returnItemData['ConditionID'],
+                'Remarks'           => null,
+            ]);
+
+            if (!empty($returnItemData['ConditionID'])) {
+                \App\Models\Inventory\PropertyInventoryDetail::where(
+                    'InventoryDetailID', (int) $returnItemData['InventoryDetailID']
+                )->update([
+                    'ConditionID' => (int) $returnItemData['ConditionID'],
                 ]);
             }
+        }
 
-            $totalBorrowed = (int) $borrow->items->sum(fn ($item) => (int) ($item->ApprovedQuantity ?? $item->Quantity ?? 0));
-            $previousReturned = array_sum($alreadyReturnedByItem);
-            $totalReturned = $previousReturned + $totalNewReturned;
+           $totalBorrowed = $borrow->items->sum(fn($item) => (int)($item->Quantity ?? 0));
+            $totalAlreadyReturned = array_sum($alreadyReturnedByItem);
+            $totalReturned = $totalAlreadyReturned + $totalNewReturned;
             $newStatus = $totalReturned >= $totalBorrowed ? 'returned' : 'partially_returned';
 
-            $borrow->update([
-                'Status' => $newStatus,
-            ]);
+            $borrow->update(['Status' => $newStatus]);
 
             AssetAuditLog::createLog(
                 'property_return',

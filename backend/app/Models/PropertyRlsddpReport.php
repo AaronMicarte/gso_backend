@@ -23,6 +23,9 @@ class PropertyRlsddpReport extends Model
         'DepartmentID',
         'AccountableOfficer',
         'Status',
+        'ApprovalStatus',
+        'RejectionNotes',
+        'RejectedAt',
         'PoliceNotified',
         'PoliceStation',
         'DateReported',
@@ -34,6 +37,7 @@ class PropertyRlsddpReport extends Model
     protected $casts = [
         'PoliceNotified' => 'boolean',
         'DateReported' => 'date',
+        'RejectedAt' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

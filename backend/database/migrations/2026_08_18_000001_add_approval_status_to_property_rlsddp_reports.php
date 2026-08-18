@@ -11,8 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('property_rlsddp_items', function (Blueprint $table) {
-            $table->softDeletes();
+        Schema::table('property_rlsddp_reports', function (Blueprint $table) {
+            $table->enum('ApprovalStatus', ['Pending', 'Approved'])
+                ->default('Pending')
+                ->after('Status');
         });
     }
 
@@ -21,8 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('property_rlsddp_items', function (Blueprint $table) {
-            $table->dropSoftDeletes();
+        Schema::table('property_rlsddp_reports', function (Blueprint $table) {
+            $table->dropColumn('ApprovalStatus');
         });
     }
 };

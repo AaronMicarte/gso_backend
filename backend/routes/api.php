@@ -236,9 +236,15 @@ Route::middleware('auth:sanctum')->group(function () {
     // Inventory routes accessible to authenticated users
     Route::prefix('inventory')->group(function () {
         Route::get('all-items', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'allItems']);
+        // Removed items listing (generic)
+        Route::get('removed-items', [\App\Http\Controllers\InventoryRemovalController::class, 'removedItems']);
         Route::get('details/{id}/history', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'detailHistory']);
         Route::get('details/{id}/property-card', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'propertyCard']);
+        // Generic removal / restore for inventory details
+        Route::post('details/{id}/remove', [\App\Http\Controllers\InventoryRemovalController::class, 'remove']);
+        Route::post('details/{id}/restore', [\App\Http\Controllers\InventoryRemovalController::class, 'restore']);
         Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
+        // Keep wildcard last to avoid swallowing static routes
         Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);
         Route::put('details/{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'updateDetail']);
     });
@@ -343,7 +349,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('statuses', [PropertyWasteController::class, 'statuses']);
         Route::get('helpers/disposal-methods', [PropertyWasteController::class, 'helperDisposalMethods']);
         Route::get('{id}', [PropertyWasteController::class, 'show']);
-        Route::post('{id}', [PropertyWasteController::class, 'update']);
+     Route::patch('{id}', [PropertyWasteController::class, 'update']);
     });
 
     // RLSDDP (Report of Lost, Stolen, Damaged or Destroyed Property)
@@ -356,10 +362,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('department-assets/{departmentId}', [\App\Http\Controllers\PropertyRlsddpController::class, 'departmentAssets']);
         Route::get('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'show']);
         Route::put('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'update']);
-        Route::post('{id}', [\App\Http\Controllers\PropertyRlsddpController::class, 'update']);
+        Route::post('{id}/approve', [\App\Http\Controllers\PropertyRlsddpController::class, 'approveReport']);
+        Route::post('{id}/reject', [\App\Http\Controllers\PropertyRlsddpController::class, 'rejectReport']);
         Route::post('items/{itemId}/remove', [\App\Http\Controllers\PropertyRlsddpController::class, 'removeItem']);
         Route::post('items/{itemId}/restore', [\App\Http\Controllers\PropertyRlsddpController::class, 'restoreItem']);
     });
+
+    
 
     // Requisition and Issue Slip (RIS)
     Route::prefix('requisition-issue-slips')->group(function () {

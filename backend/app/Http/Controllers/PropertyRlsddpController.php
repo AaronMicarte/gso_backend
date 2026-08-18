@@ -177,13 +177,13 @@ class PropertyRlsddpController extends Controller
 
         foreach ($rawItems as $item) {
             $docType = !empty($item->DocumentType) ? strtoupper($item->DocumentType) : ($item->UnitCost >= 50000 ? 'PAR' : 'ICS');
-            $rawPar = !empty($item->PARNumber) ? $item->PARNumber : (!empty($item->DocumentNumber) ? $item->DocumentNumber : null);
+            $rawPar = !empty($item->PARNumber) ? $item->PARNumber : (!empty($item->DocumentNumber) ? $item->DocumentNumber : 'N/A');
 
             if (empty($rawPar)) {
                 continue;
             }
 
-            $formattedParNo = str_starts_with($rawPar, $docType) ? $rawPar : "{$docType}-{$rawPar}";
+            $formattedParNo = ($rawPar !== 'N/A') ? (str_starts_with($rawPar, $docType) ? $rawPar : "{$docType}-{$rawPar}") : "{$docType} N/A";
 
             $officer = !empty($item->receiver_name)
                 ? trim($item->receiver_name)
@@ -277,6 +277,7 @@ class PropertyRlsddpController extends Controller
                 'DepartmentID'       => $validated['DepartmentID'],
                 'AccountableOfficer' => trim($validated['AccountableOfficer']),
                 'Status'             => $validated['Status'],
+                'ApprovalStatus'     => 'Pending',
                 'PoliceNotified'     => (bool) $validated['PoliceNotified'],
                 'PoliceStation'      => $validated['PoliceNotified'] ? trim((string) ($validated['PoliceStation'] ?? '')) : null,
                 'DateReported'       => $validated['PoliceNotified'] ? $validated['DateReported'] : null,
@@ -303,14 +304,140 @@ class PropertyRlsddpController extends Controller
                 ]);
             }
 
-            if ($validated['Status'] === 'Destroyed' && !empty($selectedInventoryDetailIds)) {
-                $this->markAssetsUnserviceable($selectedInventoryDetailIds);
-            }
-
             return response()->json([
                 'message' => 'RLSDDP report created successfully',
                 'report'  => $report->load(['department', 'items', 'createdBy', 'updatedBy']),
             ], 201);
+        });
+    }
+
+    /**
+     * Approve a report and transfer its active items to the removed inventory list.
+     */
+    public function approveReport(int $id): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
+            return response()->json(['message' => 'Unauthorized. Only Admin and Staff can approve RLSDDP reports.'], 403);
+        }
+
+        $report = PropertyRlsddpReport::with('items')->findOrFail($id);
+
+        if ($report->ApprovalStatus === 'Approved') {
+            return response()->json([
+                'message' => 'This RLSDDP report is already approved.',
+                'report' => $report,
+            ]);
+        }
+
+        if (!in_array($report->Status, ['Lost', 'Stolen', 'Destroyed'], true)) {
+            return response()->json(['message' => 'Only Lost, Stolen, and Destroyed reports can be approved for transfer.'], 422);
+        }
+
+        return DB::transaction(function () use ($report) {
+            $itemIds = $report->items()->pluck('RlsddpItemID')->toArray();
+
+            foreach ($itemIds as $itemId) {
+                $item = PropertyRlsddpItem::find($itemId);
+                if (!$item) {
+                    continue;
+                }
+
+                $detailId = $item->InventoryDetailID;
+                $detail = \App\Models\Inventory\PropertyInventoryDetail::find($detailId);
+                if ($detail) {
+                    $inventoryId = $detail->InventoryID;
+                    $detail->delete();
+
+                    $activeCount = \App\Models\Inventory\PropertyInventoryDetail::where('InventoryID', $inventoryId)->count();
+                    if ($activeCount === 0) {
+                        $inventory = \App\Models\Inventory\PropertyInventory::find($inventoryId);
+                        if ($inventory) {
+                            $inventory->delete();
+                        }
+                    }
+                }
+            }
+
+            if ($report->Status === 'Destroyed') {
+                $inventoryDetailIds = $report->items()->pluck('InventoryDetailID')->toArray();
+                if (!empty($inventoryDetailIds)) {
+                    $this->markAssetsUnserviceable($inventoryDetailIds);
+                }
+            }
+
+            $report->update([
+                'ApprovalStatus' => 'Approved',
+                'UpdatedByUserID' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'message' => 'RLSDDP report approved and all active items were transferred to removed inventory.',
+                'report' => $report->fresh(['department', 'items', 'createdBy', 'updatedBy']),
+            ]);
+        });
+    }
+
+    /**
+     * Reject a report with rejection notes and restore its items for reselection.
+     */
+    public function rejectReport(Request $request, int $id): JsonResponse
+    {
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
+            return response()->json(['message' => 'Unauthorized. Only Admin and Staff can reject RLSDDP reports.'], 403);
+        }
+
+        $validated = $request->validate([
+            'RejectionNotes' => 'required|string|min:5|max:1000',
+        ]);
+
+        $report = PropertyRlsddpReport::with('items')->findOrFail($id);
+
+        if ($report->ApprovalStatus === 'Approved') {
+            return response()->json([
+                'message' => 'Cannot reject an already approved RLSDDP report.',
+                'report' => $report,
+            ], 422);
+        }
+
+        return DB::transaction(function () use ($report, $validated) {
+            // If there were any previously soft-deleted items (from a prior approval), restore them
+            $itemIds = $report->items()->pluck('RlsddpItemID')->toArray();
+
+            foreach ($itemIds as $itemId) {
+                $item = PropertyRlsddpItem::find($itemId);
+                if (!$item) {
+                    continue;
+                }
+
+                $detailId = $item->InventoryDetailID;
+                $detail = \App\Models\Inventory\PropertyInventoryDetail::withTrashed()->find($detailId);
+                if ($detail && $detail->trashed()) {
+                    $detail->restore();
+
+                    $inventoryId = $detail->InventoryID;
+                    $inventory = \App\Models\Inventory\PropertyInventory::withTrashed()->find($inventoryId);
+                    if ($inventory && $inventory->trashed()) {
+                        $inventory->restore();
+                    }
+                }
+            }
+
+            // Update the report with rejection status and notes
+            $report->update([
+                'ApprovalStatus' => 'Rejected',
+                'RejectionNotes' => trim($validated['RejectionNotes']),
+                'RejectedAt' => now(),
+                'UpdatedByUserID' => Auth::id(),
+            ]);
+
+            return response()->json([
+                'message' => 'RLSDDP report rejected. All items have been restored and are available for reselection.',
+                'report' => $report->fresh(['department', 'items', 'createdBy', 'updatedBy']),
+            ]);
         });
     }
 
@@ -389,15 +516,6 @@ class PropertyRlsddpController extends Controller
                         'AcquisitionCost'   => $itemData['AcquisitionCost'] ?? 0.00,
                         'Description'       => $description,
                     ]);
-                }
-
-                if ($report->Status === 'Destroyed' && !empty($selectedInventoryDetailIds)) {
-                    $this->markAssetsUnserviceable($selectedInventoryDetailIds);
-                }
-            } elseif ($report->Status === 'Destroyed') {
-                $existingIds = PropertyRlsddpItem::where('RlsddpID', $report->RlsddpID)->pluck('InventoryDetailID')->toArray();
-                if (!empty($existingIds)) {
-                    $this->markAssetsUnserviceable($existingIds);
                 }
             }
 
@@ -505,6 +623,7 @@ class PropertyRlsddpController extends Controller
 
     /**
      * Retrieve currently issued/assigned assets belonging to the selected department & officer.
+     * Excludes assets that are part of approved RLSDDP reports.
      */
     public function departmentAssets(int $departmentId, Request $request): JsonResponse
     {
@@ -523,7 +642,15 @@ class PropertyRlsddpController extends Controller
             ->leftJoin('propertyissuance as piss', 'piss.IssuanceID', '=', 'pissd.IssuanceID')
             ->leftJoin('property_issuance_assignments as pia', 'pia.issuance_detail_id', '=', 'pissd.IssuanceDetailID')
             ->leftJoin('user as u', 'u.UserID', '=', 'piss.IssuedTo')
+            // Exclude assets that are part of approved RLSDDP reports
+            ->leftJoin('property_rlsddp_items as pri', 'pri.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->leftJoin('property_rlsddp_reports as prr', function ($join) {
+                $join->on('prr.RlsddpID', '=', 'pri.RlsddpID')
+                     ->where('prr.ApprovalStatus', '=', 'Approved')
+                     ->whereNull('prr.deleted_at');
+            })
             ->whereNull('pid.deleted_at')
+            ->whereNull('prr.RlsddpID') // Filter out approved RLSDDP assets
             ->where(function ($q) use ($departmentId) {
                 $q->where('ap.DepartmentID', $departmentId)
                   ->orWhere('u.DepartmentID', $departmentId);

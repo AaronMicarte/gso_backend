@@ -2268,20 +2268,21 @@ class InventoryController extends Controller
     }
 
     private function applyRlsddpStatusFilter($query, ?string $rlsddpStatus): void
-    {
-        if (!$rlsddpStatus || !in_array($rlsddpStatus, ['Lost', 'Stolen', 'Damaged', 'Destroyed'], true)) {
-            return;
-        }
-
-       $query->whereExists(function ($sub) use ($rlsddpStatus) {
-            $sub->select(DB::raw(1))
-                ->from('property_rlsddp_items as rlsddp_item')
-                ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
-                ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                ->whereNull('rlsddp.deleted_at')
-                ->where('rlsddp.Status', $rlsddpStatus);
-        });
+{
+    if (!$rlsddpStatus || !in_array($rlsddpStatus, ['Lost', 'Stolen', 'Damaged', 'Destroyed'], true)) {
+        return;
     }
+
+    $query->whereExists(function ($sub) use ($rlsddpStatus) {
+        $sub->select(DB::raw(1))
+            ->from('property_rlsddp_items as rlsddp_item')
+            ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
+            ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+            ->whereNull('rlsddp.deleted_at')
+            ->where('rlsddp.Status', $rlsddpStatus)
+            ->where('rlsddp.ApprovalStatus', '!=', 'Rejected');
+    });
+}
 
     private function rlsddpStatusSelectSql(): string
     {
@@ -2289,8 +2290,9 @@ class InventoryController extends Controller
             SELECT rlsddp.Status
             FROM property_rlsddp_items AS rlsddp_item
             JOIN property_rlsddp_reports AS rlsddp ON rlsddp.RlsddpID = rlsddp_item.RlsddpID
-            WHERE rlsddp_item.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                AND rlsddp.deleted_at IS NULL
+          WHERE rlsddp_item.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+            AND rlsddp.deleted_at IS NULL
+            AND rlsddp.ApprovalStatus != 'Rejected'
             ORDER BY rlsddp.RlsddpID DESC
             LIMIT 1
         )";

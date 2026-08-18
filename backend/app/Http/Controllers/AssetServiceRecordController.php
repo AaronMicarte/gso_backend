@@ -974,7 +974,7 @@ class AssetServiceRecordController extends Controller
         }
 
         if ($isFinal && !$warrantyCovered && ($actualCost === null || $actualCost === '')) {
-            throw new HttpResponseException(response()->json(['message' => 'Actual cost is required for non-warranty services in fixed stage.'], 422));
+            $actualCost = 0;
         }
 
         if ($normalizedHandlingDecision === 'no_warranty') {
