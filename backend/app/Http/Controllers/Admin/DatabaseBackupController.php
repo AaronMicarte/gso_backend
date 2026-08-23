@@ -16,6 +16,14 @@ class DatabaseBackupController extends Controller
 
     public function index(Request $request)
     {
+        $request->validate([
+            'page' => 'sometimes|integer|min:1',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+        ]);
+        
+        $page = $request->input('page', 1);
+        $perPage = $request->input('per_page', 10);
+        
         $disk = config('backup.disk', 'local');
         $dir = config('backup.directory', $this->backupDir);
 
@@ -54,7 +62,19 @@ class DatabaseBackupController extends Controller
             ]);
         })->sortByDesc('modified')->values();
 
-        return response()->json(['data' => $list]);
+        // Paginate the results
+        $total = $list->count();
+        $paginated = $list->slice(($page - 1) * $perPage, $perPage)->values();
+
+        return response()->json([
+            'data' => $paginated,
+            'meta' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total' => $total,
+                'last_page' => ceil($total / $perPage),
+            ]
+        ]);
     }
 
     public function store(Request $request)
@@ -73,8 +93,9 @@ class DatabaseBackupController extends Controller
         $host = $db['host'] ?? env('DB_HOST', '127.0.0.1');
         $port = $db['port'] ?? env('DB_PORT', '3306');
 
-        $timestamp = date('Ymd_His');
-        $filename = "backup_{$timestamp}_{$dbName}.sql";
+       $date = date('Y-m-d');
+        $time = date('g.iA');
+        $filename = "gso_backup_{$date}_{$time}.sql";
         $tmpPathLocal = storage_path('app/' . $dir . DIRECTORY_SEPARATOR . $filename);
 
         // Try mysqldump command first

@@ -1955,7 +1955,7 @@ class InventoryController extends Controller
     public function allItems(Request $request)
     {
         $page = max(1, (int) $request->query('page', 1));
-        $perPage = min(100, max(10, (int) $request->query('per_page', 25)));
+        $perPage = max(1, min(50000, (int) $request->query('per_page', 25)));
         $search = trim((string) $request->query('search', ''));
         $search = $search !== '' ? $search : null;
         // Read condition_id and property_status_id separately. Previously the code
@@ -2172,7 +2172,8 @@ class InventoryController extends Controller
             ->leftJoin('propertyclassification', 'propertytype.PropertyClassificationID', '=', 'propertyclassification.PropertyClassificationID')
             ->leftJoin('propertyinventory', 'propertyinventorydetail.InventoryID', '=', 'propertyinventory.InventoryID')
             ->leftJoin('deliveryreceiptdetail', 'propertyinventorydetail.SourceDRDetailID', '=', 'deliveryreceiptdetail.DRDetailID')
-            ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID');
+            ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID')
+            ->whereNull('propertyinventorydetail.deleted_at');
     }
 
     private function applyAllItemsFilters($query, ?string $search, ?int $conditionId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null, ?int $propertyStatusId = null): void
@@ -2279,21 +2280,34 @@ class InventoryController extends Controller
     }
 
     private function applyRlsddpStatusFilter($query, ?string $rlsddpStatus): void
-{
-    if (!$rlsddpStatus || !in_array($rlsddpStatus, ['Lost', 'Stolen', 'Damaged', 'Destroyed'], true)) {
-        return;
-    }
+    {
+        if (!$rlsddpStatus) {
+            return;
+        }
 
-    $query->whereExists(function ($sub) use ($rlsddpStatus) {
-        $sub->select(DB::raw(1))
-            ->from('property_rlsddp_items as rlsddp_item')
-            ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
-            ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-            ->whereNull('rlsddp.deleted_at')
-            ->where('rlsddp.Status', $rlsddpStatus)
-            ->where('rlsddp.ApprovalStatus', '!=', 'Rejected');
-    });
-}
+        if ($rlsddpStatus === 'active') {
+            // Show only items WITHOUT any RLSDDP status (not Lost/Stolen/Damaged/Destroyed)
+            $query->whereNotExists(function ($sub) {
+                $sub->select(DB::raw(1))
+                    ->from('property_rlsddp_items as rlsddp_item')
+                    ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
+                    ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+                    ->whereNull('rlsddp.deleted_at')
+                    ->where('rlsddp.ApprovalStatus', '!=', 'Rejected');
+            });
+        } elseif (in_array($rlsddpStatus, ['Lost', 'Stolen', 'Damaged', 'Destroyed'], true)) {
+            // Show items WITH specific RLSDDP status
+            $query->whereExists(function ($sub) use ($rlsddpStatus) {
+                $sub->select(DB::raw(1))
+                    ->from('property_rlsddp_items as rlsddp_item')
+                    ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'rlsddp_item.RlsddpID')
+                    ->whereColumn('rlsddp_item.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+                    ->whereNull('rlsddp.deleted_at')
+                    ->where('rlsddp.Status', $rlsddpStatus)
+                    ->where('rlsddp.ApprovalStatus', '!=', 'Rejected');
+            });
+        }
+    }
 
     private function rlsddpStatusSelectSql(): string
     {

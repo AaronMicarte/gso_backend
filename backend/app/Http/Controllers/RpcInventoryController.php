@@ -835,6 +835,12 @@ class RpcInventoryController extends Controller
             }
         }
 
+        // Get all removed items (marked as Lost/Stolen/Damaged/Destroyed in RLSDDP)
+        $removedInventoryDetailIds = \DB::table('property_rlsddp_items')
+            ->pluck('InventoryDetailID')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
         $scannedByDetailId = $scans->keyBy('inventory_detail_id');
 
         $rowsByType = [
@@ -882,6 +888,11 @@ class RpcInventoryController extends Controller
             // Filter by issuance status: only include items that got acknowledged
             $issuanceStatus = $issuanceStatusMap->get($inventoryDetailId);
             if ($issuanceStatus !== 'acknowledged') {
+                continue;
+            }
+
+            // Exclude items marked as removed (Lost/Stolen/Damaged/Destroyed in RLSDDP)
+            if (in_array($inventoryDetailId, $removedInventoryDetailIds, true)) {
                 continue;
             }
 
