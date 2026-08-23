@@ -1958,7 +1958,12 @@ class InventoryController extends Controller
         $perPage = min(100, max(10, (int) $request->query('per_page', 25)));
         $search = trim((string) $request->query('search', ''));
         $search = $search !== '' ? $search : null;
-        $statusId = $request->filled('condition_id') ? (int) $request->query('condition_id') : ($request->filled('property_status_id') ? (int) $request->query('property_status_id') : null);
+        // Read condition_id and property_status_id separately. Previously the code
+        // collapsed them into a single $statusId which caused property_status_id
+        // to be treated as a Condition filter. Keep them separate so callers can
+        // filter by property status (For Issuance / Issued) independently.
+        $conditionId = $request->filled('condition_id') ? (int) $request->query('condition_id') : null;
+        $propertyStatusId = $request->filled('property_status_id') ? (int) $request->query('property_status_id') : null;
         $propertyTypeId = $request->filled('property_type_id') ? (int) $request->query('property_type_id') : null;
         $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
         $rlsddpStatus = $request->filled('rlsddp_status') ? trim((string) $request->query('rlsddp_status')) : null;
@@ -1970,7 +1975,7 @@ class InventoryController extends Controller
 
         // Lightweight filter query: no per-row correlated subqueries (stats + pagination stay fast).
         $filterQuery = $this->newAllItemsFilterQuery();
-        $this->applyAllItemsFilters($filterQuery, $search, $statusId, $propertyTypeId, $documentType, $rlsddpStatus, $departmentId);
+        $this->applyAllItemsFilters($filterQuery, $search, $conditionId, $propertyTypeId, $documentType, $rlsddpStatus, $departmentId, $propertyStatusId);
 
         $statsResult = (clone $filterQuery)->reorder()->select(DB::raw("
             COUNT(*) as total,
@@ -2170,7 +2175,7 @@ class InventoryController extends Controller
             ->leftJoin('articles', 'deliveryreceiptdetail.ArticleID', '=', 'articles.ArticleID');
     }
 
-    private function applyAllItemsFilters($query, ?string $search, ?int $statusId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null): void
+    private function applyAllItemsFilters($query, ?string $search, ?int $conditionId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null, ?int $propertyStatusId = null): void
     {
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -2191,8 +2196,9 @@ class InventoryController extends Controller
             });
         }
 
-        if ($statusId !== null && $statusId > 0) {
-            if ($statusId === 1) {
+        // Apply condition filter if provided (serviceable / unserviceable / specific ConditionID)
+        if ($conditionId !== null && $conditionId > 0) {
+            if ($conditionId === 1) {
                 // Serviceable: Condition is NOT unserviceable
                 $query->where(function ($q) {
                     $q->whereNotExists(function ($sub) {
@@ -2202,7 +2208,7 @@ class InventoryController extends Controller
                             ->whereRaw('LOWER(cond_filter.ConditionName) = ?', ['unserviceable']);
                     });
                 });
-            } elseif ($statusId === 2) {
+            } elseif ($conditionId === 2) {
                 // Unserviceable: Condition is unserviceable
                 $query->where(function ($q) {
                     $q->whereExists(function ($sub) {
@@ -2213,8 +2219,13 @@ class InventoryController extends Controller
                     });
                 });
             } else {
-                $query->where('propertyinventorydetail.ConditionID', $statusId);
+                $query->where('propertyinventorydetail.ConditionID', $conditionId);
             }
+        }
+
+        // Apply property status filter if provided (For Issuance / Issued / etc.)
+        if ($propertyStatusId !== null && $propertyStatusId > 0) {
+            $query->where('propertyinventorydetail.PropertyStatusID', $propertyStatusId);
         }
 
         if ($propertyTypeId !== null && $propertyTypeId > 0) {

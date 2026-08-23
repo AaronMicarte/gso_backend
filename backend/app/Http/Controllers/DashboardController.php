@@ -22,11 +22,14 @@ class DashboardController extends Controller
                 return DB::table('propertyinventorydetail')
                     ->join('propertystatus', 'propertyinventorydetail.PropertyStatusID', '=', 'propertystatus.PropertyStatusID')
                     ->whereIn('propertystatus.StatusName', $names)
+                    ->whereNull('propertyinventorydetail.deleted_at')
                     ->count();
             };
 
             $stats = [
-                'totalInventory' => DB::table('propertyinventorydetail')->count(),
+                // Only count active (not soft-deleted) inventory details to match the
+                // All Items listing which uses the Eloquent model (SoftDeletes).
+                'totalInventory' => DB::table('propertyinventorydetail')->whereNull('deleted_at')->count(),
                 'forIssuanceInventory' => $statusCounts(['For issuance', 'For Issuance', 'To be issued', 'Available']),
                 'issuedInventory' => $statusCounts(['Issued', 'Assigned']),
                 'totalDeliveryReceipts' => DB::table('deliveryreceipt')->whereNull('deleted_at')->count(),
