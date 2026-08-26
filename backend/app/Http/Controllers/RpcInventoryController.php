@@ -1889,283 +1889,344 @@ class RpcInventoryController extends Controller
      * Accepts array of scans with client_uuid for idempotent deduplication.
      */
     public function bulkStoreScan(Request $request, int $id): JsonResponse
-    {
-        $user = $this->authorizeGso();
-        $cycle = RpcInventoryCycle::findOrFail($id);
-
-        // Check if cycle is closed
-        if ($cycle->isClosed()) {
-            return response()->json([
-                'message' => 'Cannot add scans to a closed inventory cycle. The cycle is locked and read-only.',
-                'cycle_status' => $cycle->status,
-                'closed_at' => $cycle->closed_at,
-            ], 409);
+{
+    $user = $this->authorizeGso();
+    $cycle = RpcInventoryCycle::findOrFail($id);
+ 
+    if ($cycle->isClosed()) {
+        return response()->json([
+            'message' => 'Cannot add scans to a closed inventory cycle. The cycle is locked and read-only.',
+            'cycle_status' => $cycle->status,
+            'closed_at' => $cycle->closed_at,
+        ], 409);
+    }
+ 
+    $source = $this->resolveAuditSource();
+ 
+    $validated = $request->validate([
+        'scans' => 'required|array|min:1|max:100',
+        'scans.*.client_uuid' => 'nullable|string|max:36',
+        'scans.*.inventory_detail_id' => 'nullable|integer|min:1',
+        'scans.*.property_id' => 'nullable|integer|min:1',
+        'scans.*.condition_id' => 'required|integer|exists:condition,ConditionID',
+        'scans.*.scanned_at' => 'nullable|date_format:Y-m-d\TH:i:s\Z',
+        'scans.*.remarks' => 'nullable|string|max:255',
+        'scans.*.device_id' => 'nullable|string|max:100',
+    ]);
+ 
+    // -------------------------------------------------------
+    // FIX #4: Batch-load all needed inventory details upfront.
+    // Collect every inventory_detail_id and property_id first,
+    // then load them in two queries instead of N queries.
+    // -------------------------------------------------------
+    $allInventoryDetailIds = [];
+    $allPropertyIds = [];
+ 
+    foreach ($validated['scans'] as $scanData) {
+        if (!empty($scanData['inventory_detail_id'])) {
+            $allInventoryDetailIds[] = (int) $scanData['inventory_detail_id'];
         }
-
-        $source = $this->resolveAuditSource();
-
-        $validated = $request->validate([
-            'scans' => 'required|array|min:1|max:100',
-            'scans.*.client_uuid' => 'nullable|string|max:36',
-            'scans.*.inventory_detail_id' => 'nullable|integer|min:1',
-            'scans.*.property_id' => 'nullable|integer|min:1',
-            'scans.*.condition_id' => 'required|integer|exists:condition,ConditionID',
-            'scans.*.scanned_at' => 'nullable|date_format:Y-m-d\TH:i:s\Z',
-            'scans.*.remarks' => 'nullable|string|max:255',
-            'scans.*.device_id' => 'nullable|string|max:100',
-        ]);
-
-        $results = [];
-        $createdCount = 0;
-        $duplicateCount = 0;
-        $errorCount = 0;
-        $syncedPropertyNumbers = [];
-        $createdScanIds = [];
-
-        DB::transaction(function () use (
-            &$results,
-            &$createdCount,
-            &$duplicateCount,
-            &$errorCount,
-            &$syncedPropertyNumbers,
-            $cycle,
-            $validated,
-            $user,
-            $source
-        ): void {
-            foreach ($validated['scans'] as $scanData) {
-                $clientUuid = isset($scanData['client_uuid']) ? trim((string) $scanData['client_uuid']) : null;
-                $inventoryDetailId = isset($scanData['inventory_detail_id']) ? (int) $scanData['inventory_detail_id'] : null;
-                $propertyId = isset($scanData['property_id']) ? (int) $scanData['property_id'] : null;
-                $conditionId = (int) $scanData['condition_id'];
-                $deviceId = isset($scanData['device_id']) ? trim((string) $scanData['device_id']) : null;
-                $scannedAt = isset($scanData['scanned_at']) ? Carbon::parse($scanData['scanned_at']) : now();
-                $remarks = isset($scanData['remarks']) ? trim((string) $scanData['remarks']) : null;
-
-                try {
-                    // Check for duplicate by client_uuid if provided
-                    if ($clientUuid) {
-                        $existing = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
-                            ->where('client_uuid', $clientUuid)
-                            ->first();
-
-                        if ($existing) {
-                            $results[] = [
-                                'client_uuid' => $clientUuid,
-                                'status' => 'duplicate',
-                                'message' => 'Scan already recorded with this client UUID in this cycle',
-                                'scan_id' => (int) $existing->id,
-                            ];
-                            $duplicateCount++;
-                            continue;
-                        }
-                    }
-
-                    // Resolve inventory detail
-                    if (!$inventoryDetailId && !$propertyId) {
-                        $results[] = [
-                            'client_uuid' => $clientUuid,
-                            'status' => 'error',
-                            'message' => 'Inventory Detail ID or Property ID is required',
-                        ];
-                        $errorCount++;
-                        continue;
-                    }
-
-                    $inventoryDetail = null;
-                    if ($inventoryDetailId) {
-                        $inventoryDetail = $this->resolveInventoryDetailById($inventoryDetailId);
-                    } elseif ($propertyId) {
-                        $assignedProperty = $this->resolveAssignedProperty($propertyId);
-                        if ($assignedProperty) {
-                            $inventoryDetail = $assignedProperty->inventoryDetail;
-                        }
-                    }
-
-                    if (!$inventoryDetail) {
-                        $results[] = [
-                            'client_uuid' => $clientUuid,
-                            'status' => 'error',
-                            'message' => 'Inventory item not found',
-                        ];
-                        $errorCount++;
-                        continue;
-                    }
-
-                    // Map the inventory detail
-                    $mapped = $this->mapInventoryDetail($inventoryDetail);
-
-                    // Check if already scanned in this cycle (regardless of client_uuid)
-                    $alreadyScanned = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
-                        ->where('inventory_detail_id', (int) $inventoryDetail->InventoryDetailID)
-                        ->first();
-
-                    if ($alreadyScanned) {
-                        $results[] = [
-                            'client_uuid' => $clientUuid,
-                            'status' => 'duplicate',
-                            'message' => 'Inventory detail already scanned in this cycle',
-                            'scan_id' => (int) $alreadyScanned->id,
-                        ];
-                        $duplicateCount++;
-                        continue;
-                    }
-
-                    // Create the scan
-                    $scan = RpcInventoryScan::create([
-                        'rpc_inventory_cycle_id' => (int) $cycle->id,
-                        'inventory_detail_id' => (int) $inventoryDetail->InventoryDetailID,
-                        'property_id' => isset($mapped['property_id']) && $mapped['property_id'] !== null ? (int) $mapped['property_id'] : null,
-                        'rpc_type' => (string) $mapped['rpc_type'],
-                        'property_classification_id' => isset($mapped['property_classification_id']) && $mapped['property_classification_id'] !== null
-                            ? (int) $mapped['property_classification_id']
-                            : null,
-                        'condition_id' => $conditionId,
-                        'scanned_at' => $scannedAt,
-                        'scanned_by_user_id' => (int) $user->UserID,
-                        'end_user_id' => isset($mapped['end_user_id']) && $mapped['end_user_id'] !== null ? (int) $mapped['end_user_id'] : null,
-                        'department_id' => isset($mapped['department_id']) && $mapped['department_id'] !== null ? (int) $mapped['department_id'] : null,
-                        'article' => $mapped['article'] ?? null,
-                        'description' => $mapped['description'] ?? null,
-                        'property_number' => $mapped['property_number'] ?? null,
-                        'unit_of_measure' => $mapped['unit_of_measure'] ?? null,
-                        'unit_value' => $mapped['unit_value'] ?? null,
-                        'quantity_per_card' => 1,
-                        'quantity_per_count' => 1,
-                        'remarks' => $remarks,
-                        'accountable_officer' => $mapped['accountable_officer'] ?? null,
-                        'client_uuid' => $clientUuid,
-                        'device_id' => $deviceId,
-                    ]);
-
-                    $this->createAuditEntry(
-                        (int) $cycle->id,
-                        'scan_synced',
-                        $user,
-                        [
-                            'sync_source' => $source,
-                            'rpc_type' => (string) ($mapped['rpc_type'] ?? ''),
-                            'client_uuid' => $clientUuid,
-                            'device_id' => $deviceId,
-                            'status' => 'created',
-                            'inventory_detail_id' => (int) $inventoryDetail->InventoryDetailID,
-                            'property_number' => $scan->property_number,
-                            'property_id' => $scan->property_id,
-                            'condition_id' => $conditionId,
-                            'remarks' => $remarks,
-                        ],
-                        $scan,
-                        $conditionId
-                    );
-
-                        // Propagate remarks to any existing sibling scans in this group.
-                        if ($remarks !== null) {
-                            $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
-                            $existingScansByDetail = $groupContext['existing_scans_by_detail'] ?? [];
-                            if (!empty($existingScansByDetail)) {
-                                foreach ($existingScansByDetail as $existingDetailId => $existingScan) {
-                                    // Skip the scan we just created
-                                    if ($existingScan->id === $scan->id) {
-                                        continue;
-                                    }
-
-                                    $previousRemarks = $existingScan->remarks ?? null;
-                                    if ($previousRemarks === $remarks) {
-                                        continue;
-                                    }
-
-                                    $existingScan->remarks = $remarks;
-                                    $existingScan->save();
-
-                                    // Record an audit entry for the update
-                                    $this->createAuditEntry(
-                                        (int) $cycle->id,
-                                        'scan_updated',
-                                        $user,
-                                        [
-                                            'inventory_detail_id' => $existingScan->inventory_detail_id,
-                                            'property_number' => $existingScan->property_number,
-                                        ],
-                                        $existingScan,
-                                        (int) $existingScan->condition_id,
-                                        null,
-                                        $previousRemarks,
-                                        $remarks
-                                    );
-                                }
-                            }
-                        }
-
-                    if ($scan->property_number) {
-                        $syncedPropertyNumbers[] = (string) $scan->property_number;
-                    }
-
+        if (!empty($scanData['property_id'])) {
+            $allPropertyIds[] = (int) $scanData['property_id'];
+        }
+    }
+ 
+    // One query for all inventory details needed
+    $inventoryDetailMap = PropertyInventoryDetail::query()
+        ->with([
+            'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+            'drDetail.article:ArticleID,ArticleName',
+            'unitOfMeasure:UnitOfMeasureID,UnitName',
+            'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
+            'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
+        ])
+        ->whereIn('InventoryDetailID', array_unique($allInventoryDetailIds))
+        ->get()
+        ->keyBy('InventoryDetailID');
+ 
+    // One query for all assigned properties needed (for property_id lookups)
+    $assignedPropertyMap = collect([]);
+    if (!empty($allPropertyIds)) {
+        $assignedPropertyMap = AssignedProperty::query()
+            ->with([
+                'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
+                'inventoryDetail.drDetail.article:ArticleID,ArticleName',
+                'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
+                'endUser:EndUserID,FullName,DepartmentID',
+                'department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
+            ->whereIn('PropertyID', array_unique($allPropertyIds))
+            ->get()
+            ->keyBy('PropertyID');
+    }
+ 
+    // Also batch-load existing scans for duplicate detection (one query)
+    $existingClientUuids = collect($validated['scans'])
+        ->pluck('client_uuid')
+        ->filter()
+        ->map(fn($u) => trim((string) $u))
+        ->filter()
+        ->values()
+        ->all();
+ 
+    $existingByClientUuid = collect([]);
+    if (!empty($existingClientUuids)) {
+        $existingByClientUuid = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
+            ->whereIn('client_uuid', $existingClientUuids)
+            ->get()
+            ->keyBy('client_uuid');
+    }
+ 
+    // Batch-load already-scanned inventory detail IDs for this cycle (one query)
+    $alreadyScannedDetailIds = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
+        ->whereIn('inventory_detail_id', array_unique($allInventoryDetailIds))
+        ->pluck('id', 'inventory_detail_id'); // detail_id => scan_id
+ 
+    // -------------------------------------------------------
+ 
+    $results = [];
+    $createdCount = 0;
+    $duplicateCount = 0;
+    $errorCount = 0;
+    $syncedPropertyNumbers = [];
+    $createdScanIds = [];
+ 
+    DB::transaction(function () use (
+        &$results,
+        &$createdCount,
+        &$duplicateCount,
+        &$errorCount,
+        &$syncedPropertyNumbers,
+        &$createdScanIds,
+        $cycle,
+        $validated,
+        $user,
+        $source,
+        $inventoryDetailMap,
+        $assignedPropertyMap,
+        $existingByClientUuid,
+        $alreadyScannedDetailIds
+    ): void {
+        foreach ($validated['scans'] as $scanData) {
+            $clientUuid = isset($scanData['client_uuid']) ? trim((string) $scanData['client_uuid']) : null;
+            $inventoryDetailId = isset($scanData['inventory_detail_id']) ? (int) $scanData['inventory_detail_id'] : null;
+            $propertyId = isset($scanData['property_id']) ? (int) $scanData['property_id'] : null;
+            $conditionId = (int) $scanData['condition_id'];
+            $deviceId = isset($scanData['device_id']) ? trim((string) $scanData['device_id']) : null;
+            $scannedAt = isset($scanData['scanned_at']) ? Carbon::parse($scanData['scanned_at']) : now();
+            $remarks = isset($scanData['remarks']) ? trim((string) $scanData['remarks']) : null;
+ 
+            try {
+                // FIX #4: Use pre-loaded map instead of individual DB query
+                if ($clientUuid && $existingByClientUuid->has($clientUuid)) {
+                    $existing = $existingByClientUuid->get($clientUuid);
                     $results[] = [
                         'client_uuid' => $clientUuid,
-                        'status' => 'created',
-                        'message' => 'Scan recorded successfully',
-                        'scan_id' => (int) $scan->id,
+                        'status' => 'duplicate',
+                        'message' => 'Scan already recorded with this client UUID in this cycle',
+                        'scan_id' => (int) $existing->id,
                     ];
-                    $createdScanIds[] = (int) $scan->id;
-                    $createdCount++;
-                } catch (\Exception $e) {
+                    $duplicateCount++;
+                    continue;
+                }
+ 
+                if (!$inventoryDetailId && !$propertyId) {
                     $results[] = [
                         'client_uuid' => $clientUuid,
                         'status' => 'error',
-                        'message' => 'Error creating scan: ' . $e->getMessage(),
+                        'message' => 'Inventory Detail ID or Property ID is required',
                     ];
                     $errorCount++;
+                    continue;
                 }
+ 
+                // FIX #4: Use pre-loaded map instead of individual DB query
+                $inventoryDetail = null;
+                if ($inventoryDetailId && $inventoryDetailMap->has($inventoryDetailId)) {
+                    $inventoryDetail = $inventoryDetailMap->get($inventoryDetailId);
+                } elseif ($propertyId && $assignedPropertyMap->has($propertyId)) {
+                    $assignedProperty = $assignedPropertyMap->get($propertyId);
+                    $inventoryDetail = $assignedProperty?->inventoryDetail;
+                }
+ 
+                if (!$inventoryDetail) {
+                    $results[] = [
+                        'client_uuid' => $clientUuid,
+                        'status' => 'error',
+                        'message' => 'Inventory item not found',
+                    ];
+                    $errorCount++;
+                    continue;
+                }
+ 
+                $mapped = $this->mapInventoryDetail($inventoryDetail);
+                $resolvedDetailId = (int) $inventoryDetail->InventoryDetailID;
+ 
+                // FIX #4: Use pre-loaded duplicate check instead of individual DB query
+                if ($alreadyScannedDetailIds->has($resolvedDetailId)) {
+                    $results[] = [
+                        'client_uuid' => $clientUuid,
+                        'status' => 'duplicate',
+                        'message' => 'Inventory detail already scanned in this cycle',
+                        'scan_id' => (int) $alreadyScannedDetailIds->get($resolvedDetailId),
+                    ];
+                    $duplicateCount++;
+                    continue;
+                }
+ 
+                $scan = RpcInventoryScan::create([
+                    'rpc_inventory_cycle_id' => (int) $cycle->id,
+                    'inventory_detail_id' => $resolvedDetailId,
+                    'property_id' => isset($mapped['property_id']) && $mapped['property_id'] !== null ? (int) $mapped['property_id'] : null,
+                    'rpc_type' => (string) $mapped['rpc_type'],
+                    'property_classification_id' => isset($mapped['property_classification_id']) && $mapped['property_classification_id'] !== null
+                        ? (int) $mapped['property_classification_id']
+                        : null,
+                    'condition_id' => $conditionId,
+                    'scanned_at' => $scannedAt,
+                    'scanned_by_user_id' => (int) $user->UserID,
+                    'end_user_id' => isset($mapped['end_user_id']) && $mapped['end_user_id'] !== null ? (int) $mapped['end_user_id'] : null,
+                    'department_id' => isset($mapped['department_id']) && $mapped['department_id'] !== null ? (int) $mapped['department_id'] : null,
+                    'article' => $mapped['article'] ?? null,
+                    'description' => $mapped['description'] ?? null,
+                    'property_number' => $mapped['property_number'] ?? null,
+                    'unit_of_measure' => $mapped['unit_of_measure'] ?? null,
+                    'unit_value' => $mapped['unit_value'] ?? null,
+                    'quantity_per_card' => 1,
+                    'quantity_per_count' => 1,
+                    'remarks' => $remarks,
+                    'accountable_officer' => $mapped['accountable_officer'] ?? null,
+                    'client_uuid' => $clientUuid,
+                    'device_id' => $deviceId,
+                ]);
+ 
+                // Mark as scanned in our in-memory map so subsequent scans in the
+                // same batch don't try to insert the same detail again.
+                $alreadyScannedDetailIds->put($resolvedDetailId, (int) $scan->id);
+ 
+                $this->createAuditEntry(
+                    (int) $cycle->id,
+                    'scan_synced',
+                    $user,
+                    [
+                        'sync_source' => $source,
+                        'rpc_type' => (string) ($mapped['rpc_type'] ?? ''),
+                        'client_uuid' => $clientUuid,
+                        'device_id' => $deviceId,
+                        'status' => 'created',
+                        'inventory_detail_id' => $resolvedDetailId,
+                        'property_number' => $scan->property_number,
+                        'property_id' => $scan->property_id,
+                        'condition_id' => $conditionId,
+                        'remarks' => $remarks,
+                    ],
+                    $scan,
+                    $conditionId
+                );
+ 
+                if ($remarks !== null) {
+                    $groupContext = $this->resolveScanGroupContext($mapped, (int) $cycle->id);
+                    $existingScansByDetail = $groupContext['existing_scans_by_detail'] ?? [];
+                    if (!empty($existingScansByDetail)) {
+                        foreach ($existingScansByDetail as $existingDetailId => $existingScan) {
+                            if ($existingScan->id === $scan->id) {
+                                continue;
+                            }
+ 
+                            $previousRemarks = $existingScan->remarks ?? null;
+                            if ($previousRemarks === $remarks) {
+                                continue;
+                            }
+ 
+                            $existingScan->remarks = $remarks;
+                            $existingScan->save();
+ 
+                            $this->createAuditEntry(
+                                (int) $cycle->id,
+                                'scan_updated',
+                                $user,
+                                [
+                                    'inventory_detail_id' => $existingScan->inventory_detail_id,
+                                    'property_number' => $existingScan->property_number,
+                                ],
+                                $existingScan,
+                                (int) $existingScan->condition_id,
+                                null,
+                                $previousRemarks,
+                                $remarks
+                            );
+                        }
+                    }
+                }
+ 
+                if ($scan->property_number) {
+                    $syncedPropertyNumbers[] = (string) $scan->property_number;
+                }
+ 
+                $results[] = [
+                    'client_uuid' => $clientUuid,
+                    'status' => 'created',
+                    'message' => 'Scan recorded successfully',
+                    'scan_id' => (int) $scan->id,
+                ];
+                $createdScanIds[] = (int) $scan->id;
+                $createdCount++;
+            } catch (\Exception $e) {
+                $results[] = [
+                    'client_uuid' => $clientUuid,
+                    'status' => 'error',
+                    'message' => 'Error creating scan: ' . $e->getMessage(),
+                ];
+                $errorCount++;
             }
-        });
-
-        // Derive a clear action/status for the batch sync so the audit trail reflects result
-        $batchStatus = 'completed';
-        if ($errorCount > 0) {
-            $batchStatus = ($createdCount > 0 || $duplicateCount > 0) ? 'partially_completed' : 'failed';
         }
-
-        $this->createAuditEntry(
-            (int) $cycle->id,
-            'sync_batch_' . $batchStatus,
-            $user,
-            [
-                'source' => $source,
-                'property_number' => 'Batched',
-                'total' => count($validated['scans']),
-                'created' => $createdCount,
-                'duplicates' => $duplicateCount,
-                'errors' => $errorCount,
-                'property_numbers' => array_values(array_unique(array_filter($syncedPropertyNumbers))),
-                'status' => $batchStatus,
-            ]
-        );
-
-        // Debug telemetry: log created/duplicate scan ids to help trace sync issues
-        try {
-            \Log::debug('Bulk sync result', [
-                'cycle_id' => (int) $cycle->id,
-                'created_count' => $createdCount,
-                'duplicate_count' => $duplicateCount,
-                'error_count' => $errorCount,
-                'created_scan_ids' => $createdScanIds,
-            ]);
-        } catch (\Exception $_e) {
-            // swallow logging errors to avoid affecting response
-        }
-
-        return response()->json([
-            'message' => "Bulk sync processed: {$createdCount} created, {$duplicateCount} skipped, {$errorCount} errors",
-            'summary' => [
-                'total' => count($validated['scans']),
-                'created' => $createdCount,
-                'duplicates' => $duplicateCount,
-                'errors' => $errorCount,
-                'created_scan_ids' => $createdScanIds,
-            ],
-            'results' => $results,
-        ], 201);
+    });
+ 
+    $batchStatus = 'completed';
+    if ($errorCount > 0) {
+        $batchStatus = ($createdCount > 0 || $duplicateCount > 0) ? 'partially_completed' : 'failed';
     }
+ 
+    $this->createAuditEntry(
+        (int) $cycle->id,
+        'sync_batch_' . $batchStatus,
+        $user,
+        [
+            'source' => $source,
+            'property_number' => 'Batched',
+            'total' => count($validated['scans']),
+            'created' => $createdCount,
+            'duplicates' => $duplicateCount,
+            'errors' => $errorCount,
+            'property_numbers' => array_values(array_unique(array_filter($syncedPropertyNumbers))),
+            'status' => $batchStatus,
+        ]
+    );
+ 
+    try {
+        \Log::debug('Bulk sync result', [
+            'cycle_id' => (int) $cycle->id,
+            'created_count' => $createdCount,
+            'duplicate_count' => $duplicateCount,
+            'error_count' => $errorCount,
+            'created_scan_ids' => $createdScanIds,
+        ]);
+    } catch (\Exception $_e) {
+        // swallow logging errors
+    }
+ 
+    return response()->json([
+        'message' => "Bulk sync processed: {$createdCount} created, {$duplicateCount} skipped, {$errorCount} errors",
+        'summary' => [
+            'total' => count($validated['scans']),
+            'created' => $createdCount,
+            'duplicates' => $duplicateCount,
+            'errors' => $errorCount,
+            'created_scan_ids' => $createdScanIds,
+        ],
+        'results' => $results,
+    ], 201);
+}
 
     /**
      * Close an RPC inventory cycle.
