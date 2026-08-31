@@ -432,7 +432,7 @@ class InspectionAcceptanceReportController extends Controller
                 ]
             );
 
-            if ((int) ($iar->AcceptedBy ?? 0) > 0) {
+            if ((int) ($iar->AcceptedBy ?? 0) > 0 && !in_array((int) $iar->AcceptedBy, $recipientUserIds, true)) {
                 app(RoleNotificationService::class)->notifyUser(
                     (int) $iar->AcceptedBy,
                     'iar.created',
@@ -592,7 +592,7 @@ class InspectionAcceptanceReportController extends Controller
                 ]
             );
 
-            if ((int) ($iar->AcceptedBy ?? 0) > 0) {
+            if ((int) ($iar->AcceptedBy ?? 0) > 0 && !in_array((int) $iar->AcceptedBy, $recipientUserIds, true)) {
                 app(RoleNotificationService::class)->notifyUser(
                     (int) $iar->AcceptedBy,
                     'iar.updated',

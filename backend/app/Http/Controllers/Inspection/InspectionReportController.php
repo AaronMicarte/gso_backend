@@ -469,7 +469,7 @@ class InspectionReportController extends Controller
             ]
         );
 
-        if ((int) ($report->deliveryReceipt->RequestedBy ?? 0) > 0) {
+        if ((int) ($report->deliveryReceipt->RequestedBy ?? 0) > 0 && !in_array((int) $report->deliveryReceipt->RequestedBy, $recipientUserIds, true)) {
             app(RoleNotificationService::class)->notifyUser(
                 (int) $report->deliveryReceipt->RequestedBy,
                 'inspection_report.created',
@@ -870,7 +870,7 @@ class InspectionReportController extends Controller
             ]
         );
 
-        if ((int) ($report->deliveryReceipt->RequestedBy ?? 0) > 0) {
+        if ((int) ($report->deliveryReceipt->RequestedBy ?? 0) > 0 && !in_array((int) $report->deliveryReceipt->RequestedBy, $recipientUserIds, true)) {
             app(RoleNotificationService::class)->notifyUser(
                 (int) $report->deliveryReceipt->RequestedBy,
                 'inspection_report.completed',

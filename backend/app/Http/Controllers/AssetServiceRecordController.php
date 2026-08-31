@@ -674,7 +674,7 @@ class AssetServiceRecordController extends Controller
                 ]
             );
 
-            if ((int) ($record->CreatedByUserID ?? 0) > 0 && (int) ($record->CreatedByUserID ?? 0) !== (int) $user->UserID) {
+            if ((int) ($record->CreatedByUserID ?? 0) > 0 && (int) ($record->CreatedByUserID ?? 0) !== (int) $user->UserID && !in_array((int) $record->CreatedByUserID, $recipientUserIds, true)) {
                 app(RoleNotificationService::class)->notifyUser(
                     (int) $record->CreatedByUserID,
                     'asset_service_record.updated',

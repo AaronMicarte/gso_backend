@@ -1612,7 +1612,12 @@ class PropertyTransferController extends Controller
         string $status
     ): void {
         $requesterId = (int) ($transfer->RequestedByUserID ?? 0);
-        if ($requesterId <= 0) {
+        if ($requesterId <= 0 || $requesterId === (int) Auth::id()) {
+            return;
+        }
+
+        $recipientUserIds = $this->getTransferNotificationUserIds([(int) $transfer->FromDepartmentID, (int) $transfer->ToDepartmentID]);
+        if (in_array($requesterId, $recipientUserIds, true)) {
             return;
         }
 

@@ -14,11 +14,46 @@ class RoleNotificationService
     }
 
     /**
+     * Determines whether an event is important enough for FCM Push Alerts to devices.
+     * High-importance workflow transitions trigger push notifications.
+     * Minor updates, edits, and status tweaks remain in-app database notifications only.
+     */
+    public function isPushEligible(string $eventType, bool $sendPush = true): bool
+    {
+        if (!$sendPush) {
+            return false;
+        }
+
+        $inAppOnlyEvents = [
+            'delivery_receipt.updated',
+            'iar.updated',
+            'inspection_report.updated',
+            'asset_service_record.updated',
+            'property_transfer.updated',
+            'property_borrow.updated',
+            'asset_request.updated',
+        ];
+
+        if (in_array($eventType, $inAppOnlyEvents, true)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * @param array<string> $roles
      * @param array<string, mixed> $payload
      */
-    public function notifyRoles(array $roles, string $eventType, string $title, string $message, array $payload = [], ?int $excludeUserId = null): void
-    {
+    public function notifyRoles(
+        array $roles,
+        string $eventType,
+        string $title,
+        string $message,
+        array $payload = [],
+        ?int $excludeUserId = null,
+        bool $sendPush = true
+    ): void {
         $roleNames = collect($roles)
             ->map(fn ($role) => trim((string) $role))
             ->filter()
@@ -41,15 +76,21 @@ class RoleNotificationService
         }
 
         $userIds = $query->pluck('UserID')->map(fn ($id) => (int) $id)->all();
-        $this->notifyUsers($userIds, $eventType, $title, $message, $payload);
+        $this->notifyUsers($userIds, $eventType, $title, $message, $payload, $sendPush);
     }
 
     /**
      * @param array<int> $userIds
      * @param array<string, mixed> $payload
      */
-    public function notifyUsers(array $userIds, string $eventType, string $title, string $message, array $payload = []): void
-    {
+    public function notifyUsers(
+        array $userIds,
+        string $eventType,
+        string $title,
+        string $message,
+        array $payload = [],
+        bool $sendPush = true
+    ): void {
         $normalizedUserIds = collect($userIds)
             ->map(fn ($id) => (int) $id)
             ->filter(fn ($id) => $id > 0)
@@ -60,10 +101,23 @@ class RoleNotificationService
             return;
         }
 
+        $isPushAllowed = $this->isPushEligible($eventType, $sendPush);
+
         foreach ($normalizedUserIds as $userId) {
             $payloadJson = empty($payload)
                 ? null
                 : json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+            // Check for identical recent notification within last 15 seconds to prevent spam/duplicates
+            $recentDuplicate = UserNotification::query()
+                ->where('UserID', $userId)
+                ->where('event_type', $eventType)
+                ->where('created_at', '>=', now()->subSeconds(15))
+                ->first();
+
+            if ($recentDuplicate && ($recentDuplicate->message === $message || $recentDuplicate->payload === $payloadJson)) {
+                continue;
+            }
 
             try {
                 $notification = UserNotification::create([
@@ -83,6 +137,14 @@ class RoleNotificationService
                     'error' => $e->getMessage(),
                 ]);
 
+                continue;
+            }
+
+            if (!$isPushAllowed) {
+                // In-app only; skip FCM dispatch
+                $notification->status = 'sent';
+                $notification->sent_at = now();
+                $notification->save();
                 continue;
             }
 
@@ -129,12 +191,18 @@ class RoleNotificationService
     /**
      * @param array<string, mixed> $payload
      */
-    public function notifyUser(int $userId, string $eventType, string $title, string $message, array $payload = []): void
-    {
+    public function notifyUser(
+        int $userId,
+        string $eventType,
+        string $title,
+        string $message,
+        array $payload = [],
+        bool $sendPush = true
+    ): void {
         if ($userId <= 0) {
             return;
         }
 
-        $this->notifyUsers([$userId], $eventType, $title, $message, $payload);
+        $this->notifyUsers([$userId], $eventType, $title, $message, $payload, $sendPush);
     }
 }

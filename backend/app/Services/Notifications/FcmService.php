@@ -46,7 +46,13 @@ class FcmService
         $tokens = UserPushToken::query()
             ->whereIn('UserID', $normalizedUserIds->all())
             ->where('is_active', true)
-            ->get(['id', 'UserID', 'token']);
+            ->orderByDesc('last_used_at')
+            ->orderByDesc('id')
+            ->get(['id', 'UserID', 'token'])
+            ->unique('token')
+            ->groupBy('UserID')
+            ->flatMap(fn ($userTokens) => $userTokens->take(3))
+            ->values();
 
         $resultsByUser = [];
         foreach ($normalizedUserIds as $userId) {

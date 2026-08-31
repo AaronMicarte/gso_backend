@@ -53,17 +53,47 @@ class NotificationController extends Controller
         return response()->json(['message' => 'Push token removed']);
     }
 
+    public function unreadCount(): JsonResponse
+    {
+        $user = Auth::user();
+        $unreadCount = UserNotification::query()
+            ->where('UserID', (int) $user->UserID)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json(['unread_count' => (int) $unreadCount]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $perPage = min(100, max(10, (int) $request->query('per_page', 20)));
+        $perPage = min(100, max(1, (int) $request->query('per_page', 25)));
+        $unreadOnly = filter_var($request->query('unread_only', false), FILTER_VALIDATE_BOOLEAN);
 
-        $notifications = UserNotification::query()
-            ->where('UserID', (int) $user->UserID)
+        $query = UserNotification::query()
+            ->where('UserID', (int) $user->UserID);
+
+        if ($unreadOnly) {
+            $query->whereNull('read_at');
+        }
+
+        $notifications = $query
             ->orderByDesc('created_at')
             ->paginate($perPage);
 
-        return response()->json($notifications);
+        $unreadCount = UserNotification::query()
+            ->where('UserID', (int) $user->UserID)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json([
+            'data' => $notifications->items(),
+            'current_page' => $notifications->currentPage(),
+            'per_page' => $notifications->perPage(),
+            'total' => $notifications->total(),
+            'last_page' => $notifications->lastPage(),
+            'unread_count' => (int) $unreadCount,
+        ]);
     }
 
     public function markAsRead(int $id): JsonResponse

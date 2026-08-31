@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notification routes
     Route::prefix('notifications')->group(function () {
         Route::get('', [NotificationController::class, 'index']);
+        Route::get('unread-count', [NotificationController::class, 'unreadCount']);
         Route::delete('', [NotificationController::class, 'destroyAll']);
         Route::patch('read-all', [NotificationController::class, 'markAllAsRead']);
         Route::patch('{id}/read', [NotificationController::class, 'markAsRead']);

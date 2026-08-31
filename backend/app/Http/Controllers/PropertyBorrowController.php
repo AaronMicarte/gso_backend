@@ -1400,7 +1400,12 @@ class PropertyBorrowController extends Controller
         string $status
     ): void {
         $requesterId = (int) ($borrow->RequestedByUserID ?? 0);
-        if ($requesterId <= 0) {
+        if ($requesterId <= 0 || $requesterId === (int) Auth::id()) {
+            return;
+        }
+
+        $recipientUserIds = $this->getBorrowNotificationUserIds([(int) $borrow->FromDepartmentID, (int) $borrow->ToDepartmentID]);
+        if (in_array($requesterId, $recipientUserIds, true)) {
             return;
         }
 

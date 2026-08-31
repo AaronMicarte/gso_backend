@@ -481,7 +481,7 @@ class DeliveryReceiptController extends Controller
                 ]
             );
 
-            if ((int) $deliveryReceipt->RequestedBy > 0) {
+            if ((int) $deliveryReceipt->RequestedBy > 0 && !in_array((int) $deliveryReceipt->RequestedBy, $recipientUserIds, true)) {
                 app(RoleNotificationService::class)->notifyUser(
                     (int) $deliveryReceipt->RequestedBy,
                     'delivery_receipt.created',
@@ -904,7 +904,7 @@ class DeliveryReceiptController extends Controller
                 ]
             );
 
-            if ((int) $deliveryReceipt->RequestedBy > 0) {
+            if ((int) $deliveryReceipt->RequestedBy > 0 && !in_array((int) $deliveryReceipt->RequestedBy, $recipientUserIds, true)) {
                 app(RoleNotificationService::class)->notifyUser(
                     (int) $deliveryReceipt->RequestedBy,
                     'delivery_receipt.updated',
