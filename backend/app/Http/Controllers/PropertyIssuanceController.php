@@ -1433,6 +1433,7 @@ class PropertyIssuanceController extends Controller
                     'deliveryreceipt.CreatedDate',
                     'deliveryreceipt.InspectionStatus',
                     'deliveryreceipt.IsPartial',
+                    'deliveryreceipt.FinalizedAt',
                     'department.DepartmentName',
                     // Determine acceptance status based on propertyissuance records, not IAR
                     DB::raw('CASE WHEN MAX(propertyissuance.Status) IN ("acknowledged", "partially_acknowledged") THEN 1 ELSE 0 END as IsAccepted'),
@@ -1448,6 +1449,7 @@ class PropertyIssuanceController extends Controller
                     'deliveryreceipt.CreatedDate',
                     'deliveryreceipt.InspectionStatus',
                     'deliveryreceipt.IsPartial',
+                    'deliveryreceipt.FinalizedAt',
                     'department.DepartmentName'
                 )
                 ->orderBy('deliveryreceipt.CreatedDate', 'desc');
@@ -1467,7 +1469,8 @@ class PropertyIssuanceController extends Controller
 
             $results->getCollection()->transform(function ($row) {
                 $row->items_by_document_type = $this->buildItemsByDocumentTypeForDr((int) $row->DRID);
-                $row->is_partial = (bool) ($row->IsPartial ?? false);
+                $isFinalized = !empty($row->FinalizedAt) || !((bool) ($row->IsPartial ?? false));
+                $row->is_partial = ! $isFinalized;
 
                 $issuancesByType = [
                     'PAR' => null,
@@ -1535,7 +1538,8 @@ class PropertyIssuanceController extends Controller
         }
 
         $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
-        $isPartial = (bool) ($deliveryReceipt->IsPartial ?? false);
+        $isFinalized = !empty($deliveryReceipt->FinalizedAt) || !((bool) ($deliveryReceipt->IsPartial ?? false));
+        $isPartial = ! $isFinalized;
         $targetStatus = $isPartial ? 'partially_acknowledged' : 'acknowledged';
 
         // Check if already acknowledged
@@ -2433,8 +2437,8 @@ class PropertyIssuanceController extends Controller
         $issuedToName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? null;
         $departmentId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0) ?: null;
         $issuedAt = now();
-
-        $isPartial = (bool) ($deliveryReceipt->IsPartial ?? false);
+        $isFinalized = !empty($deliveryReceipt->FinalizedAt) || !((bool) ($deliveryReceipt->IsPartial ?? false));
+        $isPartial = ! $isFinalized;
         $status = $isPartial ? 'partially_acknowledged' : 'acknowledged';
 
         foreach ($groupedByType as $documentType => $details) {
