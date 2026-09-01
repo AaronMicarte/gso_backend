@@ -1549,6 +1549,14 @@ class DeliveryReceiptController extends Controller
                 'FinalizedAt' => now(),
             ]);
 
+            // Update any existing partially_acknowledged issuances for this DR to acknowledged
+            PropertyIssuance::where('DRID', $deliveryReceipt->DRID)
+                ->where('Status', 'partially_acknowledged')
+                ->update([
+                    'Status' => 'acknowledged',
+                    'AcknowledgedAt' => now(),
+                ]);
+
             $actorId = (int) (Auth::id() ?? 0);
             if ($actorId > 0) {
                 AssetAuditLog::createLog(
@@ -1688,13 +1696,16 @@ class DeliveryReceiptController extends Controller
 
         if ($issuance) {
             if ($issuance->Status === 'acknowledged') {
-                $workflowStatus = 'acknowledged';
+                $workflowStatus = $dr->is_partial ? 'partially_acknowledged' : 'acknowledged';
+            } elseif ($issuance->Status === 'partially_acknowledged') {
+                $workflowStatus = 'partially_acknowledged';
             } elseif ($issuance->Status === 'pending_acknowledgment') {
                 $workflowStatus = 'to_be_issued';
             }
         }
 
         $issuanceLabel = match ($workflowStatus) {
+            'partially_acknowledged' => 'Partial / Issued',
             'acknowledged' => 'Issued',
             'to_be_issued' => 'For Issuance',
             default => 'Pending inspection',
@@ -1702,7 +1713,9 @@ class DeliveryReceiptController extends Controller
 
         if ($dr->is_partial) {
             $dr->workflow_status = $workflowStatus;
-            $dr->workflow_status_label = 'Partial / ' . $issuanceLabel;
+            $dr->workflow_status_label = $workflowStatus === 'partially_acknowledged'
+                ? 'Partial / Issued'
+                : 'Partial / ' . $issuanceLabel;
         } else {
             $dr->workflow_status = $workflowStatus;
             $dr->workflow_status_label = $issuanceLabel;

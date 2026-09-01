@@ -229,8 +229,11 @@ class AssetIssuanceController extends Controller
                 $fileName = 'signatures/issuance_' . $issuance->IssuanceID . '_' . time() . '.png';
                 Storage::disk('public')->put($fileName, $signatureData);
 
+                $isPartial = (bool) ($issuance->deliveryReceipt?->IsPartial ?? $issuance->request?->IsPartial ?? false);
+                $targetStatus = $isPartial ? 'partially_acknowledged' : 'acknowledged';
+
                 $issuance->update([
-                    'Status' => 'acknowledged',
+                    'Status' => $targetStatus,
                     'AcknowledgedBy' => $user->UserID,
                     'AcknowledgedAt' => now(),
                     'AcknowledgmentSignature' => $fileName,

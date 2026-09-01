@@ -738,10 +738,10 @@ class AuthController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            // Clear device token cookie to require MFA verification on next login
+            // Preserve device_token cookie so 30-day trusted device status remains valid across logouts
             $response = response()->json([
                 'message' => 'Logout successful'
-            ])->cookie('device_token', '', -1, '/'); // Expire the cookie
+            ]);
 
             // Log logout event
             if ($request->user()) {

@@ -1435,7 +1435,7 @@ class PropertyIssuanceController extends Controller
                     'deliveryreceipt.IsPartial',
                     'department.DepartmentName',
                     // Determine acceptance status based on propertyissuance records, not IAR
-                    DB::raw('CASE WHEN MAX(propertyissuance.Status) = "acknowledged" THEN 1 ELSE 0 END as IsAccepted'),
+                    DB::raw('CASE WHEN MAX(propertyissuance.Status) IN ("acknowledged", "partially_acknowledged") THEN 1 ELSE 0 END as IsAccepted'),
                     DB::raw('COUNT(DISTINCT propertyissuance.IssuanceID) as IssuanceCount')
                 )
                 ->groupBy(
@@ -1535,15 +1535,27 @@ class PropertyIssuanceController extends Controller
         }
 
         $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
+        $isPartial = (bool) ($deliveryReceipt->IsPartial ?? false);
+        $targetStatus = $isPartial ? 'partially_acknowledged' : 'acknowledged';
 
         // Check if already acknowledged
-        $existingIssuance = PropertyIssuance::where('DRID', $deliveryReceipt->DRID)
+        $existingFullyAcknowledged = PropertyIssuance::where('DRID', $deliveryReceipt->DRID)
             ->where('Status', 'acknowledged')
             ->first();
-        
-        if ($existingIssuance) {
+
+        if ($existingFullyAcknowledged) {
             return response()->json([
-                'message' => 'Delivery receipt already acknowledged.',
+                'message' => 'Delivery receipt already fully acknowledged.',
+            ], 409);
+        }
+
+        $existingPartiallyAcknowledged = PropertyIssuance::where('DRID', $deliveryReceipt->DRID)
+            ->where('Status', 'partially_acknowledged')
+            ->first();
+
+        if ($existingPartiallyAcknowledged && $isPartial) {
+            return response()->json([
+                'message' => 'Delivery receipt is already partially acknowledged. Add remaining items or finalize the DR to complete issuance.',
             ], 409);
         }
 
@@ -1567,12 +1579,15 @@ class PropertyIssuanceController extends Controller
             app(RoleNotificationService::class)->notifyUser(
                 (int) $deliveryReceipt->RequestedBy,
                 'delivery_receipt.acknowledged',
-                'Delivery Receipt Acknowledged',
-                sprintf('Delivery receipt %s has been acknowledged and inventory is ready.', $deliveryReceipt->DRNumber),
+                $isPartial ? 'Delivery Receipt Partially Acknowledged' : 'Delivery Receipt Acknowledged',
+                $isPartial
+                    ? sprintf('Delivery receipt %s has been partially acknowledged and available inventory is ready.', $deliveryReceipt->DRNumber)
+                    : sprintf('Delivery receipt %s has been acknowledged and inventory is ready.', $deliveryReceipt->DRNumber),
                 [
                     'dr_id' => (string) $deliveryReceipt->DRID,
                     'dr_number' => (string) $deliveryReceipt->DRNumber,
-                    'status' => 'acknowledged',
+                    'status' => $targetStatus,
+                    'is_partial' => $isPartial,
                     'link' => '/department_head/delivery-receipts',
                 ]
             );
@@ -2419,6 +2434,9 @@ class PropertyIssuanceController extends Controller
         $departmentId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0) ?: null;
         $issuedAt = now();
 
+        $isPartial = (bool) ($deliveryReceipt->IsPartial ?? false);
+        $status = $isPartial ? 'partially_acknowledged' : 'acknowledged';
+
         foreach ($groupedByType as $documentType => $details) {
             $documentType = (string) $documentType;
             $issuance = $existingIssuances->get($documentType);
@@ -2438,7 +2456,7 @@ class PropertyIssuanceController extends Controller
                     'DocumentNumber' => $documentNumber,
                     'DateIssued' => $issuedAt,
                     'Remarks' => 'Auto-created from DR acknowledgment',
-                    'Status' => 'acknowledged',
+                    'Status' => $status,
                     'AcknowledgedBy' => Auth::id(),
                     'AcknowledgedAt' => $issuedAt,
                     'CreatedDate' => now(),
@@ -2449,7 +2467,7 @@ class PropertyIssuanceController extends Controller
             } else {
                 $issuance->AcknowledgedBy = Auth::id();
                 $issuance->AcknowledgedAt = $issuedAt;
-                $issuance->Status = 'acknowledged';
+                $issuance->Status = $status;
                 $issuance->save();
 
                 $existingDetailIds = $issuance->details
