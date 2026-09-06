@@ -210,4 +210,174 @@ class QrCodeController extends Controller
             'latest_issuance_detail' => $latestIssuanceDetail,
         ]);
     }
+
+    // GET or POST /api/qr/lookup
+    public function lookup(Request $request)
+    {
+        $raw = trim((string) ($request->input('query') ?? $request->input('q') ?? $request->input('property_number') ?? $request->input('qr_value') ?? ''));
+
+        if ($raw === '') {
+            return response()->json([
+                'success' => false,
+                'found' => false,
+                'message' => 'Please provide a QR code, property number, or property ID.',
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $roleName = $user?->userRole?->RoleName ?? '';
+        $isPrivileged = in_array($roleName, ['Admin', 'GSO Staff'], true);
+
+        $propertyId = null;
+        $inventoryDetailId = null;
+
+        if (preg_match('/\/qr\/scan\/(\d+)/i', $raw, $matches)) {
+            $propertyId = (int) $matches[1];
+        } elseif (preg_match('/detail=(\d+)/i', $raw, $matches)) {
+            $inventoryDetailId = (int) $matches[1];
+        } elseif (preg_match('/\/inventory\/(\d+)/i', $raw, $matches)) {
+            $inventoryDetailId = (int) $matches[1];
+        }
+
+
+
+        $propertyNumber = $raw;
+
+        $query = AssignedProperty::query()
+            ->select('assignedproperty.*')
+            ->selectRaw('(select u.FullName from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID inner join assetrequest as ar on pi.RequestID = ar.RequestID inner join user as u on ar.RequestedBy = u.UserID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as RequesterFullName')
+            ->selectRaw('(select pi.DocumentType from propertyissuancedetail as pid inner join propertyissuance as pi on pid.IssuanceID = pi.IssuanceID where pid.InventoryDetailID = assignedproperty.InventoryDetailID order by pid.IssuanceDetailID desc limit 1) as DocumentType')
+            ->selectRaw("(select u.FullName from user as u inner join userrole as ur on ur.UserRoleID = u.UserRoleID where u.IsActive = 1 and ur.RoleName = 'Department Head' and u.DepartmentID = assignedproperty.DepartmentID order by coalesce(u.UpdatedDate, u.CreatedDate) desc, u.UserID desc limit 1) as CurrentDepartmentHead")
+            ->with([
+                'inventoryDetail.drDetail.article',
+                'inventoryDetail.drDetail.deliveryReceipt.supplier',
+                'inventoryDetail.propertyType.propertyClassification',
+                'inventoryDetail.unitOfMeasure',
+                'endUser.department',
+                'department',
+                'propertyStatus',
+                'condition',
+                'qrCode',
+            ]);
+
+        $assignedProperty = null;
+
+        if ($propertyId) {
+            $assignedProperty = (clone $query)->where('PropertyID', $propertyId)->first();
+        }
+
+        if (!$assignedProperty && $inventoryDetailId) {
+            $assignedProperty = (clone $query)->where('InventoryDetailID', $inventoryDetailId)->first();
+        }
+
+        if (!$assignedProperty && !empty($propertyNumber)) {
+            $cleanNumber = trim($propertyNumber);
+            $padded = ctype_digit($cleanNumber) ? sprintf('%06d', (int) $cleanNumber) : null;
+
+            $assignedProperty = (clone $query)
+                ->where(function ($q) use ($cleanNumber, $padded) {
+                    $q->where('PropertyCardNumber', $cleanNumber)
+                        ->orWhereHas('inventoryDetail', function ($iq) use ($cleanNumber, $padded) {
+                            $iq->where('PropertyNumber', $cleanNumber)
+                                ->orWhere('SerialNumber', $cleanNumber);
+                            if ($padded) {
+                                $iq->orWhere('PropertyNumber', 'like', "%-{$padded}");
+                            }
+                        });
+                    if ($padded) {
+                        $q->orWhere('PropertyCardNumber', 'like', "%-{$padded}")
+                            ->orWhere('PropertyCardNumber', 'like', "%-" . (int) $cleanNumber);
+                    }
+                })
+                ->first();
+        }
+
+        if ($assignedProperty) {
+            if (!$isPrivileged && $assignedProperty->DepartmentID !== $user?->DepartmentID) {
+                return response()->json([
+                    'success' => false,
+                    'found' => true,
+                    'message' => 'This property belongs to another department. You do not have permission to view its full details.',
+                ], 403);
+            }
+
+            $latestIssuanceDetail = PropertyIssuanceDetail::with([
+                'issuance.issuedBy:UserID,FullName',
+                'issuance.request.department:DepartmentID,DepartmentName,DepartmentCode',
+            ])
+                ->where('InventoryDetailID', $assignedProperty->InventoryDetailID)
+                ->orderByDesc('IssuanceDetailID')
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'found' => true,
+                'type' => 'assigned',
+                'property' => (new QrAssignedPropertyResource($assignedProperty))->toArray($request),
+                'latest_issuance_detail' => $latestIssuanceDetail,
+            ]);
+        }
+
+        $invQuery = \App\Models\Inventory\PropertyInventoryDetail::query()
+            ->with([
+                'drDetail.article',
+                'drDetail.deliveryReceipt.supplier',
+                'propertyType.propertyClassification',
+                'unitOfMeasure',
+                'condition',
+            ]);
+
+        $inventoryDetail = null;
+
+        if ($inventoryDetailId) {
+            $inventoryDetail = (clone $invQuery)->where('InventoryDetailID', $inventoryDetailId)->first();
+        }
+
+        if (!$inventoryDetail && !empty($propertyNumber)) {
+            $cleanNumber = trim($propertyNumber);
+            $padded = ctype_digit($cleanNumber) ? sprintf('%06d', (int) $cleanNumber) : null;
+
+            $inventoryDetail = (clone $invQuery)
+                ->where(function ($q) use ($cleanNumber, $padded) {
+                    $q->where('PropertyNumber', $cleanNumber)
+                        ->orWhere('SerialNumber', $cleanNumber);
+                    if ($padded) {
+                        $q->orWhere('PropertyNumber', 'like', "%-{$padded}");
+                    }
+                })
+                ->first();
+        }
+
+        if ($inventoryDetail) {
+            return response()->json([
+                'success' => true,
+                'found' => true,
+                'type' => 'inventory_unassigned',
+                'inventory_detail' => [
+                    'InventoryDetailID' => $inventoryDetail->InventoryDetailID,
+                    'PropertyNumber' => $inventoryDetail->PropertyNumber,
+                    'Description' => $inventoryDetail->drDetail?->ItemDescription ?? $inventoryDetail->Description,
+                    'Brand' => $inventoryDetail->Brand,
+                    'ModelNumber' => $inventoryDetail->ModelNumber,
+                    'SerialNumber' => $inventoryDetail->SerialNumber,
+                    'UnitCost' => $inventoryDetail->UnitCost,
+                    'UnitName' => $inventoryDetail->unitOfMeasure?->UnitName,
+                    'PropertyName' => $inventoryDetail->propertyType?->PropertyName,
+                    'ClassificationName' => $inventoryDetail->propertyType?->propertyClassification?->ClassificationName,
+                    'ArticleName' => $inventoryDetail->drDetail?->article?->ArticleName,
+                    'ConditionName' => $inventoryDetail->condition?->ConditionName ?? 'Serviceable',
+                    'DRNumber' => $inventoryDetail->drDetail?->deliveryReceipt?->DRNumber,
+                    'DateAcquired' => $inventoryDetail->drDetail?->deliveryReceipt?->DateReceived,
+                    'Supplier' => $inventoryDetail->drDetail?->deliveryReceipt?->supplier?->SupplierName ?? null,
+                    'Status' => 'In Inventory (Unassigned)',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'success' => false,
+            'found' => false,
+            'message' => 'Please verify the property number.',
+        ], 404);
+    }
 }

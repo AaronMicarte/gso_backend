@@ -387,6 +387,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // QR management (assignedproperty + qrcode)
     Route::prefix('qr')->group(function () {
+        Route::match(['get', 'post'], 'lookup', [QrCodeController::class, 'lookup']);
         Route::get('properties', [QrCodeController::class, 'index']);
         Route::post('properties/{propertyId}/generate', [QrCodeController::class, 'generate']);
         Route::put('properties/{propertyId}', [QrCodeController::class, 'update']);
