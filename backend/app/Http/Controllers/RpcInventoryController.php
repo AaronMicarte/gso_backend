@@ -174,6 +174,7 @@ class RpcInventoryController extends Controller
 
         $scans = RpcInventoryScan::query()
             ->where('rpc_inventory_cycle_id', (int) $cycle->id)
+            ->with(['condition:ConditionID,ConditionName'])
             ->get();
 
         $scannedByDetailId = $scans->keyBy('inventory_detail_id');
@@ -284,14 +285,39 @@ class RpcInventoryController extends Controller
         $completedLocations = $completedDepartments->count();
         $pendingLocations = max(0, $expectedDepartments->count() - $completedLocations);
 
+        $serviceableCount = 0;
+        $unserviceableCount = 0;
+        foreach ($scans as $scan) {
+            $cName = strtolower(trim($scan->condition?->ConditionName ?? ''));
+            if (str_contains($cName, 'unserviceable')) {
+                $unserviceableCount++;
+            } elseif (str_contains($cName, 'serviceable')) {
+                $serviceableCount++;
+            }
+        }
+
+        $progressPercentage = $totalExpected > 0
+            ? round(($scannedTotal / $totalExpected) * 100, 1)
+            : ($scannedTotal > 0 ? 100 : 0);
+
         return response()->json([
             'total_expected' => $totalExpected,
             'total_scanned' => $scannedTotal,
+            'total_scans_recorded' => $scans->count(),
             'missing_count' => max(0, $totalExpected - $scannedTotal),
-            'excess_count' => max(0, $scannedTotal - $totalExpected),
+            'excess_count' => max(0, $scans->count() - $scannedTotal),
+            'serviceable_count' => $serviceableCount,
+            'unserviceable_count' => $unserviceableCount,
             'completed_locations' => $completedLocations,
             'pending_locations' => $pendingLocations,
-            'last_scan_time' => $lastScanTime ? $lastScanTime->toIso8601String() : now()->toIso8601String(),
+            'completed_departments' => $completedLocations,
+            'pending_departments' => $pendingLocations,
+            'total_departments' => $expectedDepartments->count(),
+            'progress_percentage' => $progressPercentage,
+            'last_scan_time' => $lastScanTime ? $lastScanTime->toIso8601String() : null,
+            'reopen_count' => (int) ($cycle->reopen_count ?? 0),
+            'max_reopens' => 2,
+            'can_reopen' => $cycle->canReopen(),
         ]);
     }
 
@@ -357,6 +383,14 @@ class RpcInventoryController extends Controller
                 'message' => "Inventory cycle with ID {$id} not found. Please create or select a valid cycle.",
                 'cycle_id' => $id,
             ], 404);
+        }
+
+        if ($cycle->isClosed()) {
+            return response()->json([
+                'message' => 'Cannot preview or scan in a closed inventory cycle. The cycle is locked and read-only.',
+                'cycle_status' => $cycle->status,
+                'closed_at' => $cycle->closed_at,
+            ], 409);
         }
 
         $validated = $request->validate([
@@ -468,6 +502,132 @@ class RpcInventoryController extends Controller
         ]);
     }
 
+    /**
+     * Update asset condition directly from scan preview or manual action.
+     * Connects directly to PropertyInventoryDetail and AssignedProperty (Inventory / All-Items).
+     */
+    public function updateAssetCondition(Request $request, ?int $id = null): JsonResponse
+    {
+        $user = $this->authorizeGso();
+
+        $validated = $request->validate([
+            'inventory_detail_id' => 'nullable|integer|min:1',
+            'property_id' => 'nullable|integer|min:1',
+            'condition_id' => 'required|integer|exists:condition,ConditionID',
+            'cycle_id' => 'nullable|integer|min:1',
+        ]);
+
+        $inventoryDetailId = isset($validated['inventory_detail_id']) ? (int) $validated['inventory_detail_id'] : 0;
+        $propertyId = isset($validated['property_id']) ? (int) $validated['property_id'] : null;
+        $conditionId = (int) $validated['condition_id'];
+
+        if ($inventoryDetailId <= 0 && (!$propertyId || $propertyId <= 0)) {
+            return response()->json(['message' => 'Property ID or Inventory Detail ID is required.'], 422);
+        }
+
+        if ($inventoryDetailId <= 0 && $propertyId > 0) {
+            $prop = AssignedProperty::find($propertyId);
+            if ($prop && $prop->InventoryDetailID) {
+                $inventoryDetailId = (int) $prop->InventoryDetailID;
+            }
+        }
+
+        $this->syncInventoryCondition($inventoryDetailId, $propertyId, $conditionId);
+
+        $cycleId = $id ? (int) $id : (int) ($validated['cycle_id'] ?? 0);
+        if ($cycleId > 0 && $inventoryDetailId > 0) {
+            RpcInventoryScan::where('rpc_inventory_cycle_id', $cycleId)
+                ->where('inventory_detail_id', $inventoryDetailId)
+                ->update(['condition_id' => $conditionId]);
+        }
+
+        $condition = Condition::find($conditionId);
+
+        if ($cycleId > 0) {
+            $propNum = null;
+            $art = null;
+            $desc = null;
+            $officer = null;
+            $rpcType = null;
+
+            if ($inventoryDetailId > 0) {
+                $invd = $this->resolveInventoryDetailById($inventoryDetailId);
+                if ($invd) {
+                    $mapped = $this->mapInventoryDetail($invd);
+                    $propNum = $mapped['property_number'] ?? null;
+                    $art = $mapped['article'] ?? null;
+                    $desc = $mapped['description'] ?? null;
+                    $officer = $mapped['accountable_officer'] ?? null;
+                    $rpcType = $mapped['rpc_type'] ?? null;
+                }
+            } elseif ($propertyId > 0) {
+                $assigned = $this->resolveAssignedProperty($propertyId);
+                if ($assigned) {
+                    $mapped = $this->mapAssignedProperty($assigned);
+                    $propNum = $mapped['property_number'] ?? null;
+                    $art = $mapped['article'] ?? null;
+                    $desc = $mapped['description'] ?? null;
+                    $officer = $mapped['accountable_officer'] ?? null;
+                    $rpcType = $mapped['rpc_type'] ?? null;
+                }
+            }
+
+            $this->createAuditEntry(
+                $cycleId,
+                'asset_condition_updated',
+                $user,
+                [
+                    'inventory_detail_id' => $inventoryDetailId,
+                    'property_id' => $propertyId,
+                    'property_number' => $propNum,
+                    'article' => $art,
+                    'description' => $desc,
+                    'accountable_officer' => $officer,
+                    'rpc_type' => $rpcType,
+                    'condition_id' => $conditionId,
+                    'condition_name' => $condition?->ConditionName,
+                    'source' => 'preview_scan',
+                ],
+                null,
+                $conditionId
+            );
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Item condition updated to {$condition?->ConditionName} in inventory and all items.",
+            'inventory_detail_id' => $inventoryDetailId,
+            'property_id' => $propertyId,
+            'condition_id' => $conditionId,
+            'condition_name' => $condition?->ConditionName,
+        ]);
+    }
+
+    /**
+     * Synchronize condition with PropertyInventoryDetail and AssignedProperty (Inventory / All-Items)
+     */
+    private function syncInventoryCondition(int $inventoryDetailId, ?int $propertyId, int $conditionId): void
+    {
+        if ($inventoryDetailId > 0) {
+            PropertyInventoryDetail::where('InventoryDetailID', $inventoryDetailId)
+                ->update(['ConditionID' => $conditionId]);
+
+            AssignedProperty::where('InventoryDetailID', $inventoryDetailId)
+                ->update(['ConditionID' => $conditionId]);
+        }
+
+        if ($propertyId !== null && $propertyId > 0) {
+            AssignedProperty::where('PropertyID', $propertyId)
+                ->update(['ConditionID' => $conditionId]);
+
+            $assigned = AssignedProperty::find($propertyId);
+            if ($assigned && $assigned->InventoryDetailID) {
+                PropertyInventoryDetail::where('InventoryDetailID', (int) $assigned->InventoryDetailID)
+                    ->update(['ConditionID' => $conditionId]);
+            }
+        }
+    }
+
     public function storeScan(Request $request, int $id): JsonResponse
     {
         $user = $this->authorizeGso();
@@ -560,12 +720,12 @@ class RpcInventoryController extends Controller
                         'accountable_officer' => $row['accountable_officer'] ?? null,
                     ]);
 
-                    // Auto-update ConditionID in PropertyInventoryDetail if Unserviceable
-                    $condition = Condition::find((int) $validated['condition_id']);
-                    if ($condition && strtolower(trim($condition->ConditionName)) === 'unserviceable') {
-                        PropertyInventoryDetail::where('InventoryDetailID', (int) $row['inventory_detail_id'])
-                            ->update(['ConditionID' => (int) $validated['condition_id']]);
-                    }
+                    // Sync condition to PropertyInventoryDetail and AssignedProperty (Inventory / All Items)
+                    $this->syncInventoryCondition(
+                        (int) $row['inventory_detail_id'],
+                        isset($row['property_id']) && $row['property_id'] !== null ? (int) $row['property_id'] : null,
+                        (int) $validated['condition_id']
+                    );
 
                     $createdScans[] = $scan;
 
@@ -576,6 +736,9 @@ class RpcInventoryController extends Controller
                             $user,
                             [
                                 'rpc_type' => $row['rpc_type'] ?? null,
+                                'article' => $row['article'] ?? null,
+                                'description' => $row['description'] ?? null,
+                                'accountable_officer' => $row['accountable_officer'] ?? null,
                                 'property_number' => $row['property_number'] ?? null,
                                 'property_id' => $row['property_id'] ?? null,
                                 'inventory_detail_id' => $row['inventory_detail_id'] ?? null,
@@ -700,12 +863,12 @@ class RpcInventoryController extends Controller
             }
             $scan->save();
 
-            // Auto-update ConditionID in PropertyInventoryDetail if Unserviceable
-            $condition = Condition::find((int) $validated['condition_id']);
-            if ($condition && strtolower(trim($condition->ConditionName)) === 'unserviceable') {
-                PropertyInventoryDetail::where('InventoryDetailID', (int) $scan->inventory_detail_id)
-                    ->update(['ConditionID' => (int) $validated['condition_id']]);
-            }
+            // Sync condition to PropertyInventoryDetail and AssignedProperty (Inventory / All Items)
+            $this->syncInventoryCondition(
+                (int) $scan->inventory_detail_id,
+                $scan->property_id ? (int) $scan->property_id : null,
+                (int) $validated['condition_id']
+            );
 
             $this->createAuditEntry(
                 $cycleId,
@@ -754,6 +917,9 @@ class RpcInventoryController extends Controller
         $cycleId = (int) $scan->rpc_inventory_cycle_id;
         $snapshot = [
             'property_number' => $scan->property_number,
+            'article' => $scan->article,
+            'description' => $scan->description,
+            'accountable_officer' => $scan->accountable_officer,
             'property_id' => $scan->property_id,
             'inventory_detail_id' => $scan->inventory_detail_id,
             'condition_id' => $scan->condition_id,
@@ -1010,8 +1176,10 @@ class RpcInventoryController extends Controller
             ->where('rpc_inventory_cycle_id', $id)
             ->with([
                 'performedBy:UserID,FullName',
-                    'scan:id,property_number,inventory_detail_id,condition_id',
-                    'scan.condition:ConditionID,ConditionName',
+                'condition:ConditionID,ConditionName',
+                'previousCondition:ConditionID,ConditionName',
+                'scan:id,property_number,inventory_detail_id,condition_id,rpc_type,article,description,accountable_officer,remarks',
+                'scan.condition:ConditionID,ConditionName',
             ])
             ->orderByDesc('created_at')
             ->orderByDesc('AuditID');
@@ -1140,6 +1308,8 @@ class RpcInventoryController extends Controller
     {
         return AssignedProperty::query()
             ->with([
+                'condition:ConditionID,ConditionName',
+                'inventoryDetail.condition:ConditionID,ConditionName',
                 'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
                 'inventoryDetail.drDetail.article:ArticleID,ArticleName',
                 'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
@@ -1158,6 +1328,8 @@ class RpcInventoryController extends Controller
 
         return AssignedProperty::query()
             ->with([
+                'condition:ConditionID,ConditionName',
+                'inventoryDetail.condition:ConditionID,ConditionName',
                 'inventoryDetail.propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
                 'inventoryDetail.drDetail.article:ArticleID,ArticleName',
                 'inventoryDetail.unitOfMeasure:UnitOfMeasureID,UnitName',
@@ -1175,9 +1347,11 @@ class RpcInventoryController extends Controller
     {
         return PropertyInventoryDetail::query()
             ->with([
+                'condition:ConditionID,ConditionName',
                 'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
                 'drDetail.article:ArticleID,ArticleName',
                 'unitOfMeasure:UnitOfMeasureID,UnitName',
+                'assignedProperties.condition:ConditionID,ConditionName',
                 'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
                 'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
             ])
@@ -1193,9 +1367,11 @@ class RpcInventoryController extends Controller
 
         return PropertyInventoryDetail::query()
             ->with([
+                'condition:ConditionID,ConditionName',
                 'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
                 'drDetail.article:ArticleID,ArticleName',
                 'unitOfMeasure:UnitOfMeasureID,UnitName',
+                'assignedProperties.condition:ConditionID,ConditionName',
                 'assignedProperties.endUser:EndUserID,FullName,DepartmentID',
                 'assignedProperties.department:DepartmentID,DepartmentName,DepartmentCode',
             ])
@@ -1219,6 +1395,8 @@ class RpcInventoryController extends Controller
         $fallback = $this->resolveCustodianFallbackByInventoryDetailId((int) ($detail?->InventoryDetailID ?? 0));
         $departmentId = $property->DepartmentID ? (int) $property->DepartmentID : ($fallback['department_id'] ?? null);
         $baseName = $property->endUser?->FullName ?: ($fallback['name'] ?? null);
+        $conditionId = $property->ConditionID ? (int) $property->ConditionID : ($detail?->ConditionID ? (int) $detail->ConditionID : null);
+        $conditionName = $property->condition?->ConditionName ?: ($detail?->condition?->ConditionName ?: null);
 
         return [
             'property_id' => (int) $property->PropertyID,
@@ -1227,6 +1405,8 @@ class RpcInventoryController extends Controller
             'source_iar_detail_id' => $detail?->SourceIARDetailID ? (int) $detail->SourceIARDetailID : null,
             'property_classification_id' => $classificationId,
             'property_type_name' => $propertyType?->PropertyName,
+            'condition_id' => $conditionId,
+            'condition_name' => $conditionName,
             'rpc_type' => $rpcType,
             'article' => $detail?->drDetail?->article?->ArticleName
                 ?? $detail?->drDetail?->ItemDescription
@@ -1269,6 +1449,8 @@ class RpcInventoryController extends Controller
         $fallback = $this->resolveCustodianFallbackByInventoryDetailId((int) ($detail->InventoryDetailID ?? 0));
         $departmentId = $latestAssigned?->DepartmentID ? (int) $latestAssigned->DepartmentID : ($fallback['department_id'] ?? null);
         $baseName = $latestAssigned?->endUser?->FullName ?: ($fallback['name'] ?? null);
+        $conditionId = $detail->ConditionID ? (int) $detail->ConditionID : ($latestAssigned?->ConditionID ? (int) $latestAssigned->ConditionID : null);
+        $conditionName = $detail->condition?->ConditionName ?: ($latestAssigned?->condition?->ConditionName ?: null);
 
         return [
             'property_id' => $latestAssigned ? (int) $latestAssigned->PropertyID : null,
@@ -1277,6 +1459,8 @@ class RpcInventoryController extends Controller
             'source_iar_detail_id' => $detail->SourceIARDetailID ? (int) $detail->SourceIARDetailID : null,
             'property_classification_id' => $classificationId,
             'property_type_name' => $propertyType?->PropertyName,
+            'condition_id' => $conditionId,
+            'condition_name' => $conditionName,
             'rpc_type' => $rpcType,
             'article' => $detail->drDetail?->article?->ArticleName
                 ?? $detail->drDetail?->ItemDescription
@@ -2100,6 +2284,13 @@ class RpcInventoryController extends Controller
                     'device_id' => $deviceId,
                 ]);
  
+                // Sync condition to PropertyInventoryDetail and AssignedProperty (Inventory / All Items)
+                $this->syncInventoryCondition(
+                    (int) $resolvedDetailId,
+                    isset($mapped['property_id']) && $mapped['property_id'] !== null ? (int) $mapped['property_id'] : null,
+                    (int) $conditionId
+                );
+ 
                 // Mark as scanned in our in-memory map so subsequent scans in the
                 // same batch don't try to insert the same detail again.
                 $alreadyScannedDetailIds->put($resolvedDetailId, (int) $scan->id);
@@ -2111,6 +2302,9 @@ class RpcInventoryController extends Controller
                     [
                         'sync_source' => $source,
                         'rpc_type' => (string) ($mapped['rpc_type'] ?? ''),
+                        'article' => $mapped['article'] ?? null,
+                        'description' => $mapped['description'] ?? null,
+                        'accountable_officer' => $mapped['accountable_officer'] ?? null,
                         'client_uuid' => $clientUuid,
                         'device_id' => $deviceId,
                         'status' => 'created',
@@ -2187,21 +2381,26 @@ class RpcInventoryController extends Controller
         $batchStatus = ($createdCount > 0 || $duplicateCount > 0) ? 'partially_completed' : 'failed';
     }
  
-    $this->createAuditEntry(
-        (int) $cycle->id,
-        'sync_batch_' . $batchStatus,
-        $user,
-        [
-            'source' => $source,
-            'property_number' => 'Batched',
-            'total' => count($validated['scans']),
-            'created' => $createdCount,
-            'duplicates' => $duplicateCount,
-            'errors' => $errorCount,
-            'property_numbers' => array_values(array_unique(array_filter($syncedPropertyNumbers))),
-            'status' => $batchStatus,
-        ]
-    );
+    // Only log a batch summary entry if this was a true multi-item batch (>1) or if there were errors/duplicates.
+    // For single successful scans, the individual 'scan_synced' audit log is already recorded, avoiding redundant duplicate entries.
+    $isMultiScanOrIssue = count($validated['scans']) > 1 || $errorCount > 0 || $duplicateCount > 0;
+    if ($isMultiScanOrIssue) {
+        $this->createAuditEntry(
+            (int) $cycle->id,
+            'sync_batch_' . $batchStatus,
+            $user,
+            [
+                'source' => $source,
+                'property_number' => count($syncedPropertyNumbers) === 1 ? ($syncedPropertyNumbers[0] ?? 'Batched') : 'Batched',
+                'total' => count($validated['scans']),
+                'created' => $createdCount,
+                'duplicates' => $duplicateCount,
+                'errors' => $errorCount,
+                'property_numbers' => array_values(array_unique(array_filter($syncedPropertyNumbers))),
+                'status' => $batchStatus,
+            ]
+        );
+    }
  
     try {
         \Log::debug('Bulk sync result', [
@@ -2244,6 +2443,7 @@ class RpcInventoryController extends Controller
         }
 
         $validated = $request->validate([
+            'password' => 'required|string',
             'close_reason' => 'required|string|min:10|max:1000',
         ]);
 
@@ -2254,6 +2454,24 @@ class RpcInventoryController extends Controller
                 return response()->json([
                     'message' => 'This inventory cycle is already closed.',
                 ], 409);
+            }
+
+            // Verify administrator password
+            if (!password_verify((string) $validated['password'], (string) $user->Password)) {
+                RpcInventoryAuditLog::createLog([
+                    'rpc_inventory_cycle_id' => (int) $cycle->id,
+                    'action' => 'close_password_failed',
+                    'source' => 'web',
+                    'performed_by_user_id' => (int) $user->UserID,
+                    'details' => [
+                        'cycle_label' => $cycle->cycle_label,
+                        'reason' => 'Failed administrator password verification during cycle closure',
+                    ],
+                ]);
+
+                return response()->json([
+                    'message' => 'Administrator password verification failed.',
+                ], 401);
             }
 
             DB::beginTransaction();
@@ -2323,8 +2541,10 @@ class RpcInventoryController extends Controller
             if (!$cycle->canReopen()) {
                 return response()->json([
                     'message' => 'This inventory cycle has reached the maximum number of reopen attempts and is now permanently closed.',
-                    'reopen_count' => $cycle->reopen_count,
+                    'reopen_count' => (int) $cycle->reopen_count,
                     'max_reopens' => 2,
+                    'can_reopen' => false,
+                    'is_permanently_closed' => true,
                 ], 409);
             }
 
@@ -2407,8 +2627,10 @@ class RpcInventoryController extends Controller
             if (!$cycle->canReopen()) {
                 return response()->json([
                     'message' => 'This inventory cycle has reached the maximum number of reopen attempts and is now permanently closed.',
-                    'reopen_count' => $cycle->reopen_count,
+                    'reopen_count' => (int) $cycle->reopen_count,
                     'max_reopens' => 2,
+                    'can_reopen' => false,
+                    'is_permanently_closed' => true,
                 ], 409);
             }
 

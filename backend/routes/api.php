@@ -400,6 +400,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('cycles/{id}', [RpcInventoryController::class, 'show']);
         Route::get('cycles/{id}/scans', [RpcInventoryController::class, 'scans']);
         Route::post('cycles/{id}/scan-preview', [RpcInventoryController::class, 'previewScan']);
+        Route::post('cycles/{id}/update-condition', [RpcInventoryController::class, 'updateAssetCondition']);
+        Route::post('update-condition', [RpcInventoryController::class, 'updateAssetCondition']);
         Route::post('cycles/{id}/scans', [RpcInventoryController::class, 'storeScan']);
         Route::post('cycles/{id}/scans/bulk', [RpcInventoryController::class, 'bulkStoreScan']);
         Route::get('cycles/{id}/report', [RpcInventoryController::class, 'report']);

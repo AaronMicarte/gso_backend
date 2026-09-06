@@ -54,6 +54,16 @@ class RpcInventoryAuditLog extends Model
         return $this->belongsTo(User::class, 'performed_by_user_id', 'UserID');
     }
 
+    public function condition(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\Condition::class, 'condition_id', 'ConditionID');
+    }
+
+    public function previousCondition(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\MasterData\Condition::class, 'previous_condition_id', 'ConditionID');
+    }
+
     public static function createLog(array $payload): self
     {
         return self::create($payload);

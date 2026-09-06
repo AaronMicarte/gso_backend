@@ -36,6 +36,11 @@ class RpcInventoryCycle extends Model
         'reopen_count' => 'integer',
     ];
 
+    protected $appends = [
+        'can_reopen',
+        'is_permanently_closed',
+    ];
+
     public function scans()
     {
         return $this->hasMany(RpcInventoryScan::class, 'rpc_inventory_cycle_id', 'id');
@@ -88,6 +93,16 @@ class RpcInventoryCycle extends Model
     public function canReopen(): bool
     {
         return $this->isClosed() && $this->reopen_count < 2;
+    }
+
+    public function getCanReopenAttribute(): bool
+    {
+        return $this->canReopen();
+    }
+
+    public function getIsPermanentlyClosedAttribute(): bool
+    {
+        return $this->isPermanentlyClosed();
     }
 
     /**
