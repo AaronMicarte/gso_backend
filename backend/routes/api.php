@@ -286,6 +286,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('acknowledge-iar', [\App\Http\Controllers\PropertyIssuanceController::class, 'acknowledgeIarFromInspection']);
         Route::post('ensure-issuances', [\App\Http\Controllers\PropertyIssuanceController::class, 'ensureIssuancesForInspection']);
         Route::get('requests-for-issuance', [\App\Http\Controllers\PropertyIssuanceController::class, 'getRequestsForIssuance']);
+        Route::get('receiver-suggestions', [\App\Http\Controllers\PropertyIssuanceAssignmentController::class, 'getReceiverSuggestions']);
         Route::get('{id}', [\App\Http\Controllers\PropertyIssuanceController::class, 'show']);
         Route::get('{id}/document/{type}', [\App\Http\Controllers\PropertyIssuanceController::class, 'generateDocument']);
         // Assignments for splitting quantities to receivers
