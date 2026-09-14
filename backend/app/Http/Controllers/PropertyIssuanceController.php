@@ -62,11 +62,52 @@ class PropertyIssuanceController extends Controller
             });
         }
 
-        // Status filter (based on request status)
+        // Status filter
         if ($request->filled('status')) {
-            if ($request->status === 'issued') {
+            $status = $request->status;
+            if ($status === 'issued') {
                 $query->whereNotNull('DateIssued');
+            } else {
+                $query->where('Status', $status);
             }
+        }
+
+        // Search filter
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('DocumentNumber', 'like', "%{$search}%")
+                    ->orWhere('IssuedToName', 'like', "%{$search}%")
+                    ->orWhereHas('deliveryReceipt', function ($drQ) use ($search) {
+                        $drQ->where('DRNumber', 'like', "%{$search}%")
+                            ->orWhereHas('requestedByUser', function ($userQ) use ($search) {
+                                $userQ->where('FullName', 'like', "%{$search}%")
+                                    ->orWhereHas('department', function ($deptQ) use ($search) {
+                                        $deptQ->where('DepartmentName', 'like', "%{$search}%");
+                                    });
+                            });
+                    })
+                    ->orWhereHas('request', function ($reqQ) use ($search) {
+                        $reqQ->where('RequestNumber', 'like', "%{$search}%")
+                            ->orWhereHas('requester', function ($userQ) use ($search) {
+                                $userQ->where('FullName', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('department', function ($deptQ) use ($search) {
+                                $deptQ->where('DepartmentName', 'like', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
+        // Document counts reflecting active status & search filters across all pages
+        $countsQuery = clone $query;
+        $totalAll = (clone $countsQuery)->count();
+        $totalPar = (clone $countsQuery)->where('DocumentType', 'PAR')->count();
+        $totalIcs = (clone $countsQuery)->where('DocumentType', 'ICS')->count();
+
+        // Document type filter (PAR or ICS)
+        if ($request->filled('document_type')) {
+            $query->where('DocumentType', strtoupper($request->document_type));
         }
 
         $issuances = $query->orderBy('DateIssued', 'desc')
@@ -211,7 +252,14 @@ class PropertyIssuanceController extends Controller
 
         $issuances->setCollection(collect($transformedData));
 
-        return response()->json($issuances);
+        $responseArray = $issuances->toArray();
+        $responseArray['counts'] = [
+            'all' => $totalAll,
+            'par' => $totalPar,
+            'ics' => $totalIcs,
+        ];
+
+        return response()->json($responseArray);
     }
 
     /**
