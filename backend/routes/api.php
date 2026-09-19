@@ -212,6 +212,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('delivery-receipts', [DeliveryReceiptController::class, 'store']);
         Route::get('delivery-receipts/{id}', [DeliveryReceiptController::class, 'show']);
         Route::put('delivery-receipts/{id}', [DeliveryReceiptController::class, 'update']);
+        Route::post('delivery-receipts/{id}', [DeliveryReceiptController::class, 'update']);  
         Route::post('delivery-receipts/{id}/add-items', [DeliveryReceiptController::class, 'addItems']);
         Route::post('delivery-receipts/{id}/finalize', [DeliveryReceiptController::class, 'finalize']);
         Route::delete('delivery-receipts/{id}', [DeliveryReceiptController::class, 'destroy']);

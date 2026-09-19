@@ -14,8 +14,12 @@ class SanitizeInput
 
         $input = $request->all();
 
-        array_walk_recursive($input, function (&$value) {
+        array_walk_recursive($input, function (&$value, $key) {
             if (is_string($value)) {
+                $trimmed = trim($value);
+                if ($key === 'assignments' || (str_starts_with($trimmed, '[') && str_ends_with($trimmed, ']')) || (str_starts_with($trimmed, '{') && str_ends_with($trimmed, '}'))) {
+                    return;
+                }
                 $value = strip_tags($value);
                 $value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
             }

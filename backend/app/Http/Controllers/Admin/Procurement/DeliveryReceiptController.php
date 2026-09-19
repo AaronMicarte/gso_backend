@@ -15,7 +15,9 @@ use App\Models\MasterData\Supplier;
 use App\Models\AssetAuditLog;
 use App\Models\AssignedProperty;
 use App\Models\EndUser;
+use App\Models\MasterData\Position;
 use App\Models\PropertyIssuance;
+use App\Models\PropertyIssuanceDetail;
 use App\Models\QrCode;
 use App\Services\Notifications\RoleNotificationService;
 use Illuminate\Http\Request;
@@ -186,6 +188,7 @@ class DeliveryReceiptController extends Controller
                 'details.*.unit_of_measure_id' => 'nullable|integer|exists:unitofmeasure,UnitOfMeasureID',
                 'details.*.unit_cost' => 'required|numeric|min:0',
                 'items_still_pending_delivery' => 'nullable|boolean',
+                'assignments' => 'nullable',
             ], [
                 'dr_number.unique' => 'DR number already exists',
                 'po_number.unique' => 'PO number already exists for this supplier',
@@ -371,7 +374,8 @@ class DeliveryReceiptController extends Controller
                 ->get(['ArticleID', 'PropertyTypeID', 'DefaultUnitOfMeasureID'])
                 ->keyBy('ArticleID');
             $detailIds = [];
-            foreach ($details as $detail) {
+            $createdDetails = [];
+            foreach ($details as $index => $detail) {
                 $article = $articleMap->get((int) $detail['article_id']);
                 if (!$article) {
                     throw new \RuntimeException('Selected article was not found.');
@@ -405,10 +409,24 @@ class DeliveryReceiptController extends Controller
                     'InspectionStatus' => 'inspected',
                 ]);
 
+                $createdDetails[$index] = $createdDetail;
                 $detailIds[] = (int) $createdDetail->DRDetailID;
             }
 
             $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
+
+            $rawAssignments = $request->input('assignments');
+            if (is_string($rawAssignments)) {
+                $rawAssignments = html_entity_decode($rawAssignments, ENT_QUOTES, 'UTF-8');
+                $decoded = json_decode($rawAssignments, true);
+                $assignments = is_array($decoded) ? $decoded : [];
+            } elseif (is_array($rawAssignments)) {
+                $assignments = $rawAssignments;
+            } else {
+                $assignments = [];
+            }
+
+            $this->createIssuancesFromDeliveryReceipt($deliveryReceipt, $createdDetails, $assignments);
 
             DB::commit();
 
@@ -558,6 +576,38 @@ class DeliveryReceiptController extends Controller
             $data['is_partial'] = (bool) ($deliveryReceipt->IsPartial ?? false);
             $data['workflow_status'] = $deliveryReceipt->workflow_status;
             $data['workflow_status_label'] = $deliveryReceipt->workflow_status_label;
+            // Build a map: inventory_detail_id => assignment rows
+            $invDetailIds = collect($deliveryReceipt->details ?? [])
+                ->flatMap(fn($det) => $det->inventoryDetails->pluck('InventoryDetailID'))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $assignmentsByInvDetailId = [];
+            if (!empty($invDetailIds)) {
+                $rawAssignments = DB::table('property_issuance_assignments as pia')
+                    ->join('propertyissuancedetail as pid', 'pid.IssuanceDetailID', '=', 'pia.issuance_detail_id')
+                    ->whereIn('pid.InventoryDetailID', $invDetailIds)
+                    ->select(
+                        'pid.InventoryDetailID',
+                        'pia.receiver_name',
+                        'pia.position_office'
+                    )
+                    ->get();
+
+                foreach ($rawAssignments as $row) {
+                    $assignmentsByInvDetailId[(int) $row->InventoryDetailID] = [
+                        'receiver_name'   => $row->receiver_name,
+                        'position_office' => $row->position_office,
+                    ];
+                }
+            }
+
+            // Fallback name/position = requesting officer
+            $fallbackName     = $deliveryReceipt->requestedByUser?->FullName ?? null;
+            $fallbackPosition = $deliveryReceipt->requestedByUser?->department?->DepartmentName ?? null;
+
             if (!empty($data['details']) && is_array($data['details'])) {
                 foreach ($data['details'] as &$d) {
                     $d['propertyType'] = $d['property_type'] ?? null;
@@ -568,6 +618,31 @@ class DeliveryReceiptController extends Controller
                         ->filter()
                         ->values()
                         ->all();
+
+                    // Attach end user assignments per inventory detail; fallback to requesting officer
+                    $endUserAssignments = [];
+                    foreach (($d['inventory_details'] ?? []) as $invDet) {
+                        $invDetId = (int) ($invDet['InventoryDetailID'] ?? 0);
+                        $assignment = $invDetId > 0 ? ($assignmentsByInvDetailId[$invDetId] ?? null) : null;
+
+                        $receiverName   = trim((string) ($assignment['receiver_name']   ?? ''));
+                        $positionOffice = trim((string) ($assignment['position_office'] ?? ''));
+
+                        // Fallback to requesting officer when blank
+                        if ($receiverName === '') {
+                            $receiverName   = $fallbackName ?? '';
+                            $positionOffice = $fallbackPosition ?? '';
+                        }
+
+                        if ($invDetId > 0) {
+                            $endUserAssignments[] = [
+                                'inventory_detail_id' => $invDetId,
+                                'receiver_name'       => $receiverName ?: null,
+                                'position_office'     => $positionOffice ?: null,
+                            ];
+                        }
+                    }
+                    $d['end_user_assignments'] = $endUserAssignments;
                 }
             }
 
@@ -586,318 +661,374 @@ class DeliveryReceiptController extends Controller
     }
 
     public function update(Request $request, $id): JsonResponse
-    {
-        try {
-            $deliveryReceipt = DeliveryReceipt::findOrFail($id);
+{
+    try {
+        $deliveryReceipt = DeliveryReceipt::findOrFail($id);
 
-            if (($deliveryReceipt->InspectionStatus ?? 'pending') === 'inspected') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot edit delivery receipt that has already been inspected.',
-                ], 403);
-            }
+        // Guard removed — DRs are auto-inspected on creation, so blocking on
+        // InspectionStatus === 'inspected' would make every DR uneditable.
+        // If you need a hard lock later, gate on acknowledged/partially_acknowledged
+        // issuance state instead.
 
-            // For update: apply same backdate rules as store (use config)
-            $backdateYears = (int) config('gso.dr_backdate_years', 5);
-            $minDate = Carbon::now('Asia/Manila')->subYears($backdateYears)->toDateString();
-            $dateRules = 'required|date|before_or_equal:today|after_or_equal:' . $minDate;
+        // For update: apply same backdate rules as store (use config)
+        $backdateYears = (int) config('gso.dr_backdate_years', 5);
+        $manilaNow = Carbon::now('Asia/Manila')->toDateString();
+        $minDate = Carbon::now('Asia/Manila')->subYears($backdateYears)->toDateString();
+        $dateRules = 'required|date|before_or_equal:' . $manilaNow . '|after_or_equal:' . $minDate;
 
-            $validator = Validator::make($request->all(), [
-                'dr_number' => [
-                    'required',
-                    'string',
-                    'max:50',
-                    Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
-                ],
-                'supplier_id' => 'required|integer|exists:supplier,SupplierID',
-                'requested_by_user_id' => 'required|integer|exists:user,UserID',
-                'pr_number' => 'required|string|max:50',
-                'po_number' => [
-                    'required',
-                    'string',
-                    'max:50',
-                    Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
-                        return $q->where('SupplierID', (int) $request->supplier_id);
-                    })->ignore($deliveryReceipt->DRID, 'DRID'),
-                ],
-                'invoice_number' => [
-                    'required',
-                    'string',
-                    'max:50',
-                    Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
-                        return $q->where('SupplierID', (int) $request->supplier_id);
-                    })->ignore($deliveryReceipt->DRID, 'DRID'),
-                ],
-                'date_received' => $dateRules,
-                'remarks' => 'nullable|string',
-                'dr_picture' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
-                'details' => 'required|array|min:1',
-                'details.*.dr_detail_id' => 'sometimes|integer|exists:deliveryreceiptdetail,DRDetailID', // Optional for updates
-                'details.*.article_id' => 'required|integer|exists:articles,ArticleID',
-                'details.*.item_description' => 'required|string|max:255',
-                'details.*.brand' => 'nullable|string|max:100',
-                'details.*.model_number' => 'nullable|string|max:100',
-                'details.*.serial_number' => 'nullable|string|max:100',
-                'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
-                'details.*.quantity_delivered' => 'required|integer|min:1',
-                'details.*.quantity_requested' => 'required|integer|min:1',
-                'details.*.change_reason' => 'nullable|string|max:255',
-                'details.*.unit_of_measure_id' => 'nullable|integer|exists:unitofmeasure,UnitOfMeasureID',
-                'details.*.unit_cost' => 'required|numeric|min:0',
-            ], [
-                'dr_number.unique' => 'DR number already exists',
-                'po_number.unique' => 'PO number already exists for this supplier',
-                'invoice_number.unique' => 'Invoice number already exists for this supplier',
-                'dr_picture.file' => 'DR picture must be a valid file',
-                'dr_picture.mimes' => 'DR picture must be a JPEG, PNG, JPG, or GIF file',
-                'dr_picture.max' => 'DR picture must not exceed 2MB',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'dr_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('deliveryreceipt', 'DRNumber')->ignore($deliveryReceipt->DRID, 'DRID'),
+            ],
+            'supplier_id' => 'required|integer|exists:supplier,SupplierID',
+            'requested_by_user_id' => 'required|integer|exists:user,UserID',
+            'pr_number' => 'required|string|max:50',
+            'po_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('deliveryreceipt', 'PONumber')->where(function($q) use ($request) {
+                    return $q->where('SupplierID', (int) $request->supplier_id);
+                })->ignore($deliveryReceipt->DRID, 'DRID'),
+            ],
+            'invoice_number' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('deliveryreceipt', 'InvoiceNumber')->where(function($q) use ($request) {
+                    return $q->where('SupplierID', (int) $request->supplier_id);
+                })->ignore($deliveryReceipt->DRID, 'DRID'),
+            ],
+            'date_received' => $dateRules,
+            'remarks' => 'nullable|string',
+            'dr_picture' => 'nullable|file|mimes:jpeg,png,jpg,gif|max:2048',
+            'details' => 'required|array|min:1',
+            'details.*.dr_detail_id' => 'sometimes|integer|exists:deliveryreceiptdetail,DRDetailID',
+            'details.*.article_id' => 'required|integer|exists:articles,ArticleID',
+            'details.*.item_description' => 'required|string|max:255',
+            'details.*.brand' => 'nullable|string|max:100',
+            'details.*.model_number' => 'nullable|string|max:100',
+            'details.*.serial_number' => 'nullable|string|max:100',
+            'details.*.property_type_id' => 'required|integer|exists:propertytype,PropertyTypeID',
+            'details.*.quantity_delivered' => 'required|integer|min:1',
+            'details.*.quantity_requested' => 'required|integer|min:1',
+            'details.*.change_reason' => 'nullable|string|max:255',
+            'details.*.unit_of_measure_id' => 'nullable|integer|exists:unitofmeasure,UnitOfMeasureID',
+            'details.*.unit_cost' => 'required|numeric|min:0',
+            'assignments' => 'nullable',
+            'items_still_pending_delivery' => 'nullable|boolean',
+        ], [
+            'dr_number.unique' => 'DR number already exists',
+            'po_number.unique' => 'PO number already exists for this supplier',
+            'invoice_number.unique' => 'Invoice number already exists for this supplier',
+            'dr_picture.file' => 'DR picture must be a valid file',
+            'dr_picture.mimes' => 'DR picture must be a JPEG, PNG, JPG, or GIF file',
+            'dr_picture.max' => 'DR picture must not exceed 2MB',
+        ]);
 
-            $validator->after(function ($validator) use ($request, $id) {
-                $details = $request->input('details', []);
-                $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
-                $articleMap = Article::whereIn('ArticleID', $articleIds)
-                    ->get(['ArticleID', 'PropertyTypeID'])
-                    ->keyBy('ArticleID');
-
-                // Load existing serial numbers from DB excluding current DRID
-                $rawDrSerials = DB::table('deliveryreceiptdetail')
-                    ->whereNotNull('SerialNumber')
-                    ->where('SerialNumber', '!=', '')
-                    ->where('DRID', '!=', (int) $id)
-                    ->pluck('SerialNumber');
-
-                $rawInvSerials = DB::table('propertyinventorydetail as pid')
-                    ->join('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
-                    ->whereNotNull('pid.SerialNumber')
-                    ->where('pid.SerialNumber', '!=', '')
-                    ->where('pi.DRID', '!=', (int) $id)
-                    ->pluck('pid.SerialNumber');
-
-                $existingUsedSerials = [];
-                foreach ($rawDrSerials->concat($rawInvSerials) as $raw) {
-                    foreach (explode(',', (string) $raw) as $s) {
-                        $trimmed = strtolower(trim($s));
-                        if ($trimmed !== '') {
-                            $existingUsedSerials[$trimmed] = true;
-                        }
-                    }
-                }
-
-                $seenInPayload = [];
-
-                foreach ($details as $index => $detail) {
-                    $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
-                    $serialParts = [];
-                    if ($serial !== '') {
-                        $serialParts = array_values(array_filter(array_map('trim', explode(',', $serial)), fn($v) => $v !== ''));
-                    }
-                    $serialCount = count($serialParts);
-
-                    foreach ($serialParts as $sPart) {
-                        $lowerPart = strtolower($sPart);
-                        if (isset($seenInPayload[$lowerPart])) {
-                            $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is duplicated within this delivery receipt.");
-                        } else {
-                            $seenInPayload[$lowerPart] = true;
-                        }
-
-                        if (isset($existingUsedSerials[$lowerPart])) {
-                            $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is already used in another Delivery Receipt.");
-                        }
-                    }
-
-                    $quantity = (int) ($detail['quantity_delivered'] ?? 0);
-                    if ($serialCount > 0 && $quantity !== $serialCount) {
-                        $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must equal the number of serial numbers provided');
-                    }
-
-                    $requested = (int) ($detail['quantity_requested'] ?? 0);
-                    if ($serialCount > 0 && $requested !== $serialCount) {
-                        $validator->errors()->add("details.$index.quantity_requested", 'Quantity must equal the number of serial numbers provided');
-                    }
-
-                    $changeReason = isset($detail['change_reason']) ? trim((string) $detail['change_reason']) : '';
-                    if ($quantity !== $requested && $changeReason === '') {
-                        $validator->errors()->add("details.$index.change_reason", 'Change reason is required when delivered differs from requested quantity');
-                    }
-
-                    $articleId = (int) ($detail['article_id'] ?? 0);
-                    $article = $articleMap->get($articleId);
-                    if ($article && (int) ($detail['property_type_id'] ?? 0) !== (int) $article->PropertyTypeID) {
-                        $validator->errors()->add("details.$index.property_type_id", 'Property type must match the selected article.');
-                    }
-                }
-            });
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            // Handle DR picture upload (only if a new picture is provided)
-            $drPicturePath = null;
-            if ($request->hasFile('dr_picture')) {
-                $drPicturePath = $request->file('dr_picture')->store('dr_pictures', 'public');
-            }
-
-            DB::beginTransaction();
-            // enforce timezone-aware no-future date check (Asia/Manila)
-            $manilaNow = Carbon::now('Asia/Manila')->toDateString();
-            if (Carbon::parse($request->date_received, 'Asia/Manila')->gt(Carbon::parse($manilaNow))) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['date_received' => ['Date received cannot be in the future.']]
-                ], 422);
-            }
-            $requestedByUser = User::find((int) $request->requested_by_user_id);
-            if (!$requestedByUser) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['requested_by_user_id' => ['Requested by user not found.']]
-                ], 422);
-            }
-
-            $supplier = Supplier::find((int) $request->supplier_id);
-            if (!$supplier) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => ['supplier_id' => ['Supplier not found.']]
-                ], 422);
-            }
-
-            $iarNumber = $deliveryReceipt->IARNumber ?: $this->generateDrIarNumber();
-
-            $deliveryReceipt->update([
-                'DRNumber' => $request->dr_number,
-                'IARNumber' => $iarNumber,
-                'SupplierID' => (int) $supplier->SupplierID,
-                'RequestedBy' => (int) $requestedByUser->UserID,
-                'PRNumber' => $request->pr_number,
-                'PONumber' => $request->po_number,
-                'InvoiceNumber' => $request->invoice_number,
-                'DateReceived' => $request->date_received,
-                'InspectedBy' => $deliveryReceipt->InspectedBy ?? (Auth::id() ?: $deliveryReceipt->ReceivedBy),
-                'DateInspected' => $deliveryReceipt->DateInspected ?? $request->date_received,
-                'Remarks' => $request->remarks,
-                ...$drPicturePath ? ['dr_picture' => $drPicturePath] : [],
-                'InspectionStatus' => 'inspected',
-                'InspectionCompletedAt' => $deliveryReceipt->InspectionCompletedAt ?? now(),
-            ]);
-
-            // Handle details update properly - update existing, delete removed, insert new
-            $existingDetailIds = $deliveryReceipt->details()->pluck('DRDetailID')->toArray();
-            $incomingDetailIds = collect($request->details)->pluck('dr_detail_id')->filter()->toArray();
-
-            // Delete details that are no longer in the request
-            $detailsToDelete = array_diff($existingDetailIds, $incomingDetailIds);
-            if (!empty($detailsToDelete)) {
-                DeliveryReceiptDetail::whereIn('DRDetailID', $detailsToDelete)->delete();
-            }
-
-            // Update existing details and insert new ones
-            $details = $request->details ?? [];
+        $validator->after(function ($validator) use ($request, $id) {
+            $details = $request->input('details', []);
             $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
             $articleMap = Article::whereIn('ArticleID', $articleIds)
-                ->get(['ArticleID', 'PropertyTypeID', 'DefaultUnitOfMeasureID'])
+                ->get(['ArticleID', 'PropertyTypeID'])
                 ->keyBy('ArticleID');
 
-            foreach ($details as $detail) {
-                $article = $articleMap->get((int) $detail['article_id']);
-                if (!$article) {
-                    throw new \RuntimeException('Selected article was not found.');
-                }
+            $rawDrSerials = DB::table('deliveryreceiptdetail')
+                ->whereNotNull('SerialNumber')
+                ->where('SerialNumber', '!=', '')
+                ->where('DRID', '!=', (int) $id)
+                ->pluck('SerialNumber');
 
-                $unitOfMeasureId = $detail['unit_of_measure_id'] ?? null;
-                if (!$unitOfMeasureId) {
-                    $unitOfMeasureId = $article->DefaultUnitOfMeasureID;
-                }
+            $rawInvSerials = DB::table('propertyinventorydetail as pid')
+                ->join('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
+                ->whereNotNull('pid.SerialNumber')
+                ->where('pid.SerialNumber', '!=', '')
+                ->where('pi.DRID', '!=', (int) $id)
+                ->pluck('pid.SerialNumber');
 
-                $detailData = [
-                    'DRID' => $deliveryReceipt->DRID,
-                    'ArticleID' => $detail['article_id'],
-                    'ItemDescription' => $detail['item_description'],
-                    'Brand' => $detail['brand'] ?? null,
-                    'ModelNumber' => $detail['model_number'] ?? null,
-                    'PropertyTypeID' => $article->PropertyTypeID,
-                    'ChangeReason' => $detail['change_reason'] ?? null,
-                    'UnitOfMeasureID' => $unitOfMeasureId,
-                    'UnitCost' => $detail['unit_cost'],
-                    'InspectionStatus' => 'inspected',
-                ];
-
-                $serialRaw = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
-                $serialParts = $serialRaw === '' ? [] : array_values(array_filter(array_map('trim', explode(',', $serialRaw)), fn($v) => $v !== ''));
-                $quantityDelivered = (int) ($detail['quantity_delivered'] ?? 0);
-                $quantityRequested = (int) ($detail['quantity_requested'] ?? 0);
-
-                if (isset($detail['dr_detail_id']) && $detail['dr_detail_id']) {
-                    // Update existing detail: always keep one row per modal submission
-                    $existingId = (int) $detail['dr_detail_id'];
-                    $detailToUpdate = $detailData;
-                    $detailToUpdate['SerialNumber'] = $serialRaw ?: null;
-                    $detailToUpdate['QuantityDelivered'] = $quantityDelivered;
-                    $detailToUpdate['QuantityRequested'] = $quantityRequested;
-                    $detailToUpdate['TotalCost'] = $quantityDelivered * ($detail['unit_cost'] ?? 0);
-
-                    DeliveryReceiptDetail::where('DRDetailID', $existingId)
-                        ->where('DRID', $deliveryReceipt->DRID) // Security check
-                        ->update($detailToUpdate);
-                } else {
-                    // Insert new single-row detail for this modal submission
-                    DeliveryReceiptDetail::create(array_merge($detailData, [
-                        'SerialNumber' => $serialRaw ?: null,
-                        'QuantityDelivered' => $quantityDelivered,
-                        'QuantityRequested' => $quantityRequested,
-                        'TotalCost' => $quantityDelivered * ($detail['unit_cost'] ?? 0),
-                    ]));
+            $existingUsedSerials = [];
+            foreach ($rawDrSerials->concat($rawInvSerials) as $raw) {
+                foreach (explode(',', (string) $raw) as $s) {
+                    $trimmed = strtolower(trim($s));
+                    if ($trimmed !== '') {
+                        $existingUsedSerials[$trimmed] = true;
+                    }
                 }
             }
 
-            $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
+            $seenInPayload = [];
 
-            DB::commit();
+            foreach ($details as $index => $detail) {
+                $serial = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+                $serialParts = [];
+                if ($serial !== '') {
+                    $serialParts = array_values(array_filter(array_map('trim', explode(',', $serial)), fn($v) => $v !== ''));
+                }
+                $serialCount = count($serialParts);
 
-            // Load relationships
-            $deliveryReceipt->load([
-                'supplier:SupplierID,SupplierName',
-                'details.propertyType',
-                'details.unitOfMeasure',
-                'details.article',
-                'details.inventoryDetails:InventoryDetailID,SourceDRDetailID,PropertyNumber',
-                'requestedByUser:UserID,FullName,DepartmentID',
-                'requestedByUser.department:DepartmentID,DepartmentName',
-            ]);
-            // Set receivedByUser manually
-            $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
-            $deliveryReceipt->receivedByUser = $user ? [
-                'UserID' => $user->UserID,
-                'FullName' => $user->FullName
-            ] : null;
+                foreach ($serialParts as $sPart) {
+                    $lowerPart = strtolower($sPart);
+                    if (isset($seenInPayload[$lowerPart])) {
+                        $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is duplicated within this delivery receipt.");
+                    } else {
+                        $seenInPayload[$lowerPart] = true;
+                    }
 
-            // Convenience fields for legacy frontend usage
-            $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser?->FullName;
-            $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser?->department?->DepartmentName;
-            $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser?->DepartmentID;
-            $deliveryReceipt->SupplierName = $deliveryReceipt->supplier?->SupplierName;
-            $deliveryReceipt->supplier_name = $deliveryReceipt->supplier?->SupplierName;
+                    if (isset($existingUsedSerials[$lowerPart])) {
+                        $validator->errors()->add("details.$index.serial_number", "Serial number '{$sPart}' is already used in another Delivery Receipt.");
+                    }
+                }
 
-            $recipientUserIds = $this->getProcurementNotificationUserIds(
-                (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0),
-                (int) (Auth::id() ?? 0)
-            );
+                $quantity = (int) ($detail['quantity_delivered'] ?? 0);
+                if ($serialCount > 0 && $quantity !== $serialCount) {
+                    $validator->errors()->add("details.$index.quantity_delivered", 'Quantity must equal the number of serial numbers provided');
+                }
 
-            app(RoleNotificationService::class)->notifyUsers(
-                $recipientUserIds,
+                $requested = (int) ($detail['quantity_requested'] ?? 0);
+                if ($serialCount > 0 && $requested !== $serialCount) {
+                    $validator->errors()->add("details.$index.quantity_requested", 'Quantity must equal the number of serial numbers provided');
+                }
+
+                $changeReason = isset($detail['change_reason']) ? trim((string) $detail['change_reason']) : '';
+                if ($quantity !== $requested && $changeReason === '') {
+                    $validator->errors()->add("details.$index.change_reason", 'Change reason is required when delivered differs from requested quantity');
+                }
+
+                $articleId = (int) ($detail['article_id'] ?? 0);
+                $article = $articleMap->get($articleId);
+                if ($article && (int) ($detail['property_type_id'] ?? 0) !== (int) $article->PropertyTypeID) {
+                    $validator->errors()->add("details.$index.property_type_id", 'Property type must match the selected article.');
+                }
+            }
+        });
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $drPicturePath = null;
+        if ($request->hasFile('dr_picture')) {
+            $drPicturePath = $request->file('dr_picture')->store('dr_pictures', 'public');
+        }
+
+        DB::beginTransaction();
+
+        $manilaNow = Carbon::now('Asia/Manila')->toDateString();
+        if (Carbon::parse($request->date_received, 'Asia/Manila')->gt(Carbon::parse($manilaNow))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => ['date_received' => ['Date received cannot be in the future.']]
+            ], 422);
+        }
+        $requestedByUser = User::find((int) $request->requested_by_user_id);
+        if (!$requestedByUser) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => ['requested_by_user_id' => ['Requested by user not found.']]
+            ], 422);
+        }
+
+        $supplier = Supplier::find((int) $request->supplier_id);
+        if (!$supplier) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => ['supplier_id' => ['Supplier not found.']]
+            ], 422);
+        }
+
+        $iarNumber = $deliveryReceipt->IARNumber ?: $this->generateDrIarNumber();
+
+        $itemsStillPending = $request->has('items_still_pending_delivery')
+            ? filter_var($request->input('items_still_pending_delivery', false), FILTER_VALIDATE_BOOLEAN)
+            : (bool) ($deliveryReceipt->IsPartial ?? false);
+
+        $deliveryReceipt->update([
+            'DRNumber' => $request->dr_number,
+            'IARNumber' => $iarNumber,
+            'SupplierID' => (int) $supplier->SupplierID,
+            'RequestedBy' => (int) $requestedByUser->UserID,
+            'PRNumber' => $request->pr_number,
+            'PONumber' => $request->po_number,
+            'InvoiceNumber' => $request->invoice_number,
+            'DateReceived' => $request->date_received,
+            'InspectedBy' => $deliveryReceipt->InspectedBy ?? (Auth::id() ?: $deliveryReceipt->ReceivedBy),
+            'DateInspected' => $deliveryReceipt->DateInspected ?? $request->date_received,
+            'Remarks' => $request->remarks,
+            ...$drPicturePath ? ['dr_picture' => $drPicturePath] : [],
+            'InspectionStatus' => 'inspected',
+            'InspectionCompletedAt' => $deliveryReceipt->InspectionCompletedAt ?? now(),
+            'IsPartial' => $itemsStillPending,
+        ]);
+
+        // Handle details update
+        $existingDetailIds = $deliveryReceipt->details()->pluck('DRDetailID')->toArray();
+        $incomingDetailIds = collect($request->details)->pluck('dr_detail_id')->filter()->toArray();
+
+        $detailsToDelete = array_diff($existingDetailIds, $incomingDetailIds);
+        if (!empty($detailsToDelete)) {
+            DeliveryReceiptDetail::whereIn('DRDetailID', $detailsToDelete)->delete();
+        }
+
+        $details = $request->details ?? [];
+        $articleIds = collect($details)->pluck('article_id')->filter()->unique()->values();
+        $articleMap = Article::whereIn('ArticleID', $articleIds)
+            ->get(['ArticleID', 'PropertyTypeID', 'DefaultUnitOfMeasureID'])
+            ->keyBy('ArticleID');
+
+        foreach ($details as $detail) {
+            $article = $articleMap->get((int) $detail['article_id']);
+            if (!$article) {
+                throw new \RuntimeException('Selected article was not found.');
+            }
+
+            $unitOfMeasureId = $detail['unit_of_measure_id'] ?? null;
+            if (!$unitOfMeasureId) {
+                $unitOfMeasureId = $article->DefaultUnitOfMeasureID;
+            }
+
+            $detailData = [
+                'DRID' => $deliveryReceipt->DRID,
+                'ArticleID' => $detail['article_id'],
+                'ItemDescription' => $detail['item_description'],
+                'Brand' => $detail['brand'] ?? null,
+                'ModelNumber' => $detail['model_number'] ?? null,
+                'PropertyTypeID' => $article->PropertyTypeID,
+                'ChangeReason' => $detail['change_reason'] ?? null,
+                'UnitOfMeasureID' => $unitOfMeasureId,
+                'UnitCost' => $detail['unit_cost'],
+                'InspectionStatus' => 'inspected',
+            ];
+
+            $serialRaw = isset($detail['serial_number']) ? trim((string) $detail['serial_number']) : '';
+            $quantityDelivered = (int) ($detail['quantity_delivered'] ?? 0);
+            $quantityRequested = (int) ($detail['quantity_requested'] ?? 0);
+
+            if (isset($detail['dr_detail_id']) && $detail['dr_detail_id']) {
+                $existingId = (int) $detail['dr_detail_id'];
+                $detailToUpdate = $detailData;
+                $detailToUpdate['SerialNumber'] = $serialRaw ?: null;
+                $detailToUpdate['QuantityDelivered'] = $quantityDelivered;
+                $detailToUpdate['QuantityRequested'] = $quantityRequested;
+                $detailToUpdate['TotalCost'] = $quantityDelivered * ($detail['unit_cost'] ?? 0);
+
+                DeliveryReceiptDetail::where('DRDetailID', $existingId)
+                    ->where('DRID', $deliveryReceipt->DRID)
+                    ->update($detailToUpdate);
+            } else {
+                DeliveryReceiptDetail::create(array_merge($detailData, [
+                    'SerialNumber' => $serialRaw ?: null,
+                    'QuantityDelivered' => $quantityDelivered,
+                    'QuantityRequested' => $quantityRequested,
+                    'TotalCost' => $quantityDelivered * ($detail['unit_cost'] ?? 0),
+                ]));
+            }
+        }
+
+        $this->ingestInventoryFromDeliveryReceipt($deliveryReceipt);
+
+        // ─────────────────────────────────────────────────────────────
+        // Apply assignment changes if provided
+        // ─────────────────────────────────────────────────────────────
+        $rawAssignments = $request->input('assignments');
+        if (is_string($rawAssignments)) {
+            $rawAssignments = html_entity_decode($rawAssignments, ENT_QUOTES, 'UTF-8');
+            $decoded = json_decode($rawAssignments, true);
+            $assignments = is_array($decoded) ? $decoded : [];
+        } elseif (is_array($rawAssignments)) {
+            $assignments = $rawAssignments;
+        } else {
+            $assignments = [];
+        }
+
+        // Always re-run issuance assignment to ensure receiver names are correct.
+        // Delete existing assignment rows and recreate from the submitted payload
+        // (or fallback to requesting officer if assignments array is empty/blank).
+        $issuanceDetailIds = DB::table('propertyissuancedetail as pid')
+            ->join('propertyissuance as pi', 'pi.IssuanceID', '=', 'pid.IssuanceID')
+            ->where('pi.DRID', (int) $deliveryReceipt->DRID)
+            ->pluck('pid.IssuanceDetailID')
+            ->all();
+
+        if (!empty($issuanceDetailIds)) {
+            DB::table('property_issuance_assignments')
+                ->whereIn('issuance_detail_id', $issuanceDetailIds)
+                ->delete();
+        }
+
+        $createdDetails = [];
+        $currentDrDetails = $deliveryReceipt->details()->get()->keyBy('DRDetailID');
+        foreach ($details as $idx => $detInput) {
+            if (!empty($detInput['dr_detail_id']) && $currentDrDetails->has((int) $detInput['dr_detail_id'])) {
+                $createdDetails[$idx] = $currentDrDetails->get((int) $detInput['dr_detail_id']);
+            }
+        }
+        $allDetails = $deliveryReceipt->details()->orderBy('DRDetailID')->get();
+        foreach ($allDetails as $idx => $det) {
+            if (!isset($createdDetails[$idx])) {
+                $createdDetails[$idx] = $det;
+            }
+        }
+
+        $this->createIssuancesFromDeliveryReceipt($deliveryReceipt, $createdDetails, $assignments);
+        // ─────────────────────────────────────────────────────────────
+
+        DB::commit();
+
+        $deliveryReceipt->load([
+            'supplier:SupplierID,SupplierName',
+            'details.propertyType',
+            'details.unitOfMeasure',
+            'details.article',
+            'details.inventoryDetails:InventoryDetailID,SourceDRDetailID,PropertyNumber',
+            'requestedByUser:UserID,FullName,DepartmentID',
+            'requestedByUser.department:DepartmentID,DepartmentName',
+        ]);
+        $user = \App\Models\Auth\User::find($deliveryReceipt->ReceivedBy);
+        $deliveryReceipt->receivedByUser = $user ? [
+            'UserID' => $user->UserID,
+            'FullName' => $user->FullName
+        ] : null;
+
+        $deliveryReceipt->RequestedByName = $deliveryReceipt->requestedByUser?->FullName;
+        $deliveryReceipt->DepartmentName = $deliveryReceipt->requestedByUser?->department?->DepartmentName;
+        $deliveryReceipt->DepartmentID = $deliveryReceipt->requestedByUser?->DepartmentID;
+        $deliveryReceipt->SupplierName = $deliveryReceipt->supplier?->SupplierName;
+        $deliveryReceipt->supplier_name = $deliveryReceipt->supplier?->SupplierName;
+
+        $recipientUserIds = $this->getProcurementNotificationUserIds(
+            (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?? 0),
+            (int) (Auth::id() ?? 0)
+        );
+
+        app(RoleNotificationService::class)->notifyUsers(
+            $recipientUserIds,
+            'delivery_receipt.updated',
+            'Delivery Receipt Updated',
+            sprintf('Delivery receipt %s has been updated.', (string) $deliveryReceipt->DRNumber),
+            [
+                'dr_id' => (string) $deliveryReceipt->DRID,
+                'dr_number' => (string) $deliveryReceipt->DRNumber,
+                'status' => 'inspected',
+                'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
+            ]
+        );
+
+        if ((int) $deliveryReceipt->RequestedBy > 0 && !in_array((int) $deliveryReceipt->RequestedBy, $recipientUserIds, true)) {
+            app(RoleNotificationService::class)->notifyUser(
+                (int) $deliveryReceipt->RequestedBy,
                 'delivery_receipt.updated',
                 'Delivery Receipt Updated',
-                sprintf('Delivery receipt %s has been updated.', (string) $deliveryReceipt->DRNumber),
+                sprintf('Delivery receipt %s linked to your request has been updated.', (string) $deliveryReceipt->DRNumber),
                 [
                     'dr_id' => (string) $deliveryReceipt->DRID,
                     'dr_number' => (string) $deliveryReceipt->DRNumber,
@@ -905,46 +1036,32 @@ class DeliveryReceiptController extends Controller
                     'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
                 ]
             );
-
-            if ((int) $deliveryReceipt->RequestedBy > 0 && !in_array((int) $deliveryReceipt->RequestedBy, $recipientUserIds, true)) {
-                app(RoleNotificationService::class)->notifyUser(
-                    (int) $deliveryReceipt->RequestedBy,
-                    'delivery_receipt.updated',
-                    'Delivery Receipt Updated',
-                    sprintf('Delivery receipt %s linked to your request has been updated.', (string) $deliveryReceipt->DRNumber),
-                    [
-                        'dr_id' => (string) $deliveryReceipt->DRID,
-                        'dr_number' => (string) $deliveryReceipt->DRNumber,
-                        'status' => 'inspected',
-                        'link' => '/procurement/delivery-receipts/' . $deliveryReceipt->DRID,
-                    ]
-                );
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Delivery receipt updated successfully',
-                'data' => $deliveryReceipt,
-                'dr_picture_url' => Storage::disk('public')->url($deliveryReceipt->dr_picture)
-            ]);
-        } catch (\Exception $e) {
-            if (DB::transactionLevel() > 0) {
-                DB::rollBack();
-            }
-            Log::error('DeliveryReceiptController@update failed', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'dr_id' => $id,
-                'user_id' => Auth::id(),
-                'payload' => $request->except(['dr_picture']),
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update delivery receipt',
-                'error' => $e->getMessage()
-            ], 500);
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Delivery receipt updated successfully',
+            'data' => $deliveryReceipt,
+            'dr_picture_url' => Storage::disk('public')->url($deliveryReceipt->dr_picture)
+        ]);
+    } catch (\Exception $e) {
+        if (DB::transactionLevel() > 0) {
+            DB::rollBack();
+        }
+        Log::error('DeliveryReceiptController@update failed', [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'dr_id' => $id,
+            'user_id' => Auth::id(),
+            'payload' => $request->except(['dr_picture']),
+        ]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update delivery receipt',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     private function ingestInventoryFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt, ?array $onlyDetailIds = null): void
     {
@@ -1122,7 +1239,7 @@ class DeliveryReceiptController extends Controller
         return $numbers;
     }
 
-    private function createIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt): void
+    private function createIssuancesFromDeliveryReceipt(DeliveryReceipt $deliveryReceipt, array $createdDetails = [], array $assignments = []): void
     {
         $inventoryDetails = PropertyInventoryDetail::with([
                 'drDetail',
@@ -1140,7 +1257,37 @@ class DeliveryReceiptController extends Controller
 
         $deliveryReceipt->loadMissing(['requestedByUser']);
         $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);
-        $existingIssuances = \App\Models\PropertyIssuance::query()
+        $targetDeptId = (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?: $resolvedEndUser->DepartmentID);
+
+        // Pre-process assignments mapping by DRDetailID
+        $assignmentsByDrDetailId = [];
+        foreach ($assignments as $a) {
+            $drDetailId = null;
+            if (!empty($a['dr_detail_id'])) {
+                $drDetailId = (int) $a['dr_detail_id'];
+            } elseif (isset($a['item_index'])) {
+                $idx = (int) $a['item_index'];
+                if (isset($createdDetails[$idx])) {
+                    $drDetailId = (int) $createdDetails[$idx]->DRDetailID;
+                }
+            }
+            if ($drDetailId === null && count($createdDetails) === 1) {
+                $first = reset($createdDetails);
+                $drDetailId = (int) $first->DRDetailID;
+            }
+
+            if ($drDetailId !== null) {
+                $recName = trim((string) ($a['receiver_name'] ?? ''));
+                $pos = trim((string) ($a['position_office'] ?? ''));
+                $assignmentsByDrDetailId[$drDetailId][] = [
+                    'receiver_name' => $recName !== '' ? $recName : null,
+                    'position_office' => $pos !== '' ? $pos : null,
+                    'remaining_qty' => max(1, (int) ($a['quantity'] ?? 1)),
+                ];
+            }
+        }
+
+        $existingIssuances = PropertyIssuance::query()
             ->where('DRID', (int) $deliveryReceipt->DRID)
             ->get()
             ->keyBy(function ($issuance) {
@@ -1161,7 +1308,7 @@ class DeliveryReceiptController extends Controller
 
             if (! $issuance) {
                 $documentNumber = $this->generateDocumentNumber($documentType);
-                $issuance = \App\Models\PropertyIssuance::create([
+                $issuance = PropertyIssuance::create([
                     'RequestID' => null,
                     'DRID' => (int) $deliveryReceipt->DRID,
                     'IssuedBy' => Auth::id() ?: (int) ($deliveryReceipt->InspectedBy ?? 0),
@@ -1183,58 +1330,139 @@ class DeliveryReceiptController extends Controller
             }
 
             foreach ($details as $detail) {
-                $alreadyExists = \App\Models\PropertyIssuanceDetail::where('IssuanceID', $issuance->IssuanceID)
+                $issuanceDetail = PropertyIssuanceDetail::where('IssuanceID', $issuance->IssuanceID)
                     ->where('InventoryDetailID', $detail->InventoryDetailID)
-                    ->exists();
-
-                if ($alreadyExists) {
-                    continue;
-                }
+                    ->first();
 
                 $itemDescription = $detail->drDetail?->ItemDescription ?? $detail->Description ?? 'Item';
                 $unitName = $detail->unitOfMeasure?->UnitName ?? null;
 
-                \App\Models\PropertyIssuanceDetail::create([
-                    'IssuanceID' => $issuance->IssuanceID,
-                    'RequestDetailID' => null,
-                    'InventoryDetailID' => $detail->InventoryDetailID,
-                    'ItemDescription' => $itemDescription,
-                    'Unit' => $unitName,
-                    'QuantityIssued' => 1,
-                    'Remarks' => $issuance->Remarks,
-                ]);
+                if (! $issuanceDetail) {
+                    $issuanceDetail = PropertyIssuanceDetail::create([
+                        'IssuanceID' => $issuance->IssuanceID,
+                        'RequestDetailID' => null,
+                        'InventoryDetailID' => $detail->InventoryDetailID,
+                        'ItemDescription' => $itemDescription,
+                        'Unit' => $unitName,
+                        'QuantityIssued' => 1,
+                        'Remarks' => $issuance->Remarks,
+                    ]);
+                }
 
-                // update inventory availability and create/update AssignedProperty record
-                $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
-                $availableQty = (int) ($detail->QuantityAvailable ?? 0);
-                $shouldFinalize = $availableQty > 0 || (int) ($detail->PropertyStatusID ?? 0) !== 2;
+                // Determine end user receiver for this specific asset item
+                $sourceDrDetailId = (int) ($detail->SourceDRDetailID ?? 0);
+                $assignedReceiverName = null;
+                $assignedPosition = null;
 
-                if ($shouldFinalize) {
-                    if ($availableQty < 1) {
-                        $alreadyAssigned = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->exists();
-                        if ($alreadyAssigned) {
-                            throw new \Exception('Insufficient available quantity for DR issuance item.');
+                if ($sourceDrDetailId > 0 && !empty($assignmentsByDrDetailId[$sourceDrDetailId])) {
+                    foreach ($assignmentsByDrDetailId[$sourceDrDetailId] as $k => &$aItem) {
+                        if ($aItem['remaining_qty'] > 0) {
+                            $assignedReceiverName = $aItem['receiver_name'];
+                            $assignedPosition = $aItem['position_office'];
+                            $aItem['remaining_qty']--;
+                            if ($aItem['remaining_qty'] <= 0) {
+                                unset($assignmentsByDrDetailId[$sourceDrDetailId][$k]);
+                                $assignmentsByDrDetailId[$sourceDrDetailId] = array_values($assignmentsByDrDetailId[$sourceDrDetailId]);
+                            }
+                            break;
                         }
-
-                        $detail->QuantityAvailable = 1;
-                        $detail->save();
-                        $availableQty = 1;
                     }
+                    unset($aItem);
+                }
 
-                    $detail->decrement('QuantityAvailable', 1);
-                    if ($detail->fresh()->QuantityAvailable <= 0) {
+                // Fallback requesting officer info
+                $fallbackOfficerName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? 'Unassigned';
+                $fallbackOfficerDept = $deliveryReceipt->requestedByUser?->department?->DepartmentName ?? null;
+
+                // If receiver_name is blank or unassigned, fallback to requesting officer
+                if (empty($assignedReceiverName)) {
+                    $assignedReceiverName = $fallbackOfficerName;
+                    if (empty($assignedPosition)) {
+                        $assignedPosition = $fallbackOfficerDept;
+                    }
+                } else {
+                    // Receiver name provided! If position/office was left blank, fallback to requesting officer's department/position
+                    if (empty($assignedPosition)) {
+                        $assignedPosition = $fallbackOfficerDept;
+                    }
+                }
+
+                // Normalize receiver name to proper case before any DB operation
+                $assignedReceiverName = ucwords(strtolower(trim($assignedReceiverName)));
+
+                // Save or update property_issuance_assignments table
+               $existingAssignment = DB::table('property_issuance_assignments')
+                    ->where('issuance_id', (int) $issuance->IssuanceID)
+                    ->where('receiver_name', $assignedReceiverName)
+                    ->first();
+
+                if ($existingAssignment) {
+                    DB::table('property_issuance_assignments')
+                        ->where('id', $existingAssignment->id)
+                        ->update([
+                            'issuance_detail_id' => (int) $issuanceDetail->IssuanceDetailID, // repoint to latest
+                            'position_office' => $assignedPosition,   // overwrite position
+                            'quantity' => $existingAssignment->quantity + 1,  // stack quantity
+                            'updated_at' => now(),
+                        ]);
+                } else {
+                    DB::table('property_issuance_assignments')->insert([
+                        'issuance_id' => (int) $issuance->IssuanceID,
+                        'issuance_detail_id' => (int) $issuanceDetail->IssuanceDetailID,
+                        'receiver_name' => $assignedReceiverName,
+                        'position_office' => $assignedPosition,
+                        'quantity' => 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+                // Resolve EndUser record for AssignedProperty — normalize name, never create duplicates
+                $positionId = 2;
+                if (!empty($assignedPosition)) {
+                    $pos = Position::firstOrCreate(['PositionName' => trim($assignedPosition)]);
+                    $positionId = (int) $pos->PositionID;
+                }
+
+                $receiverEndUser = EndUser::where('FullName', $assignedReceiverName)
+                    ->where('DepartmentID', $targetDeptId)
+                    ->first();
+
+                if ($receiverEndUser) {
+                    $receiverEndUser->update([
+                        'IsActive' => 1,
+                        'PositionID' => $positionId,
+                    ]);
+                } else {
+                    $receiverEndUser = EndUser::create([
+                        'FullName' => $assignedReceiverName,
+                        'DepartmentID' => $targetDeptId,
+                        'PositionID' => $positionId,
+                        'IsActive' => 1,
+                    ]);
+                }
+
+                // Update inventory availability and create/update AssignedProperty record
+                $assignedProperty = AssignedProperty::where('InventoryDetailID', $detail->InventoryDetailID)->first();
+                if (! $assignedProperty) {
+                    $availableQty = (int) ($detail->QuantityAvailable ?? 0);
+                    if ($availableQty > 0) {
+                        $detail->decrement('QuantityAvailable', 1);
+                        if ($detail->fresh()->QuantityAvailable <= 0) {
+                            $detail->update(['PropertyStatusID' => 2]);
+                        }
+                    } else {
                         $detail->update(['PropertyStatusID' => 2]);
                     }
                 }
 
                 $assignedPayload = [
                     'InventoryDetailID' => $detail->InventoryDetailID,
-                    'EndUserID' => (int) $resolvedEndUser->EndUserID,
-                    'DepartmentID' => (int) ($deliveryReceipt->requestedByUser?->DepartmentID ?: $resolvedEndUser->DepartmentID),
+                    'EndUserID' => (int) $receiverEndUser->EndUserID,
+                    'DepartmentID' => $targetDeptId,
                     'PropertyCardNumber' => $issuance->DocumentNumber,
                     'Description' => $detail->Description ?? $itemDescription,
                     'AssignedDate' => $issuedAt,
-                    'PropertyStatusID' => $shouldFinalize ? 2 : (int) ($assignedProperty?->PropertyStatusID ?? 2),
+                    'PropertyStatusID' => 2,
                     'ConditionID' => (int) ($detail->ConditionID ?? 1),
                     'Remarks' => $issuance->Remarks,
                 ];
@@ -1263,6 +1491,9 @@ class DeliveryReceiptController extends Controller
         if (! $departmentId || ! $fullName) {
             throw new \Exception('Unable to resolve EndUser for delivery receipt inspection.');
         }
+
+        // Normalize to proper case before any lookup or insert
+        $fullName = ucwords(strtolower(trim($fullName)));
 
         $existing = EndUser::where('FullName', $fullName)
             ->where('DepartmentID', $departmentId)
