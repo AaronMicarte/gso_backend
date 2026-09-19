@@ -1165,6 +1165,332 @@ class RpcInventoryController extends Controller
         return response()->json(['data' => $conditions]);
     }
 
+    public function departmentCrossCheck(Request $request): JsonResponse
+    {
+        $this->authorizeGso();
+
+        $departmentId = $request->query('department_id');
+        if (!$departmentId) {
+            return response()->json([
+                'message' => 'Department is required for cross-checking.',
+                'data' => [],
+            ], 422);
+        }
+
+        $department = DB::table('department')
+            ->where('DepartmentID', (int) $departmentId)
+            ->first(['DepartmentID', 'DepartmentName', 'DepartmentCode']);
+
+        if (!$department) {
+            return response()->json([
+                'message' => 'Department not found.',
+                'data' => [],
+            ], 404);
+        }
+
+        // Resolve Department Head
+        $departmentHead = DB::table('user as u')
+            ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+            ->where('u.DepartmentID', (int) $departmentId)
+            ->where('u.IsActive', 1)
+            ->where('ur.RoleName', 'Department Head')
+            ->orderByDesc('u.UpdatedDate')
+            ->orderByDesc('u.CreatedDate')
+            ->value('u.FullName');
+
+        $typeFilter = strtoupper(trim((string) $request->query('type', 'ALL')));
+        $search = trim((string) $request->query('search', ''));
+
+        // Exclude removed items (marked as Lost/Stolen/Damaged/Destroyed in RLSDDP)
+        $removedDetailIds = DB::table('property_rlsddp_items')
+            ->pluck('InventoryDetailID')
+            ->map(fn ($id) => (int) $id)
+            ->toArray();
+
+        $query = DB::table('assignedproperty as ap')
+            ->join('propertyinventorydetail as pid', 'pid.InventoryDetailID', '=', 'ap.InventoryDetailID')
+            ->join('propertytype as pt', 'pt.PropertyTypeID', '=', 'pid.PropertyTypeID')
+            ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
+            ->leftJoin('deliveryreceipt as dr', 'dr.DRID', '=', 'drd.DRID')
+            ->leftJoin('supplier as s', 's.SupplierID', '=', 'dr.SupplierID')
+            ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
+            ->leftJoin('unitofmeasure as uom', 'uom.UnitOfMeasureID', '=', 'pid.UnitOfMeasureID')
+            ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'ap.EndUserID')
+            ->where('ap.DepartmentID', (int) $departmentId)
+            ->whereNull('pid.deleted_at');
+
+        if (!empty($removedDetailIds)) {
+            $query->whereNotIn('pid.InventoryDetailID', $removedDetailIds);
+        }
+
+        // Classification filter: 1 = Semi-Expendable (RPCSEP), 2 = Non-Expendable (RPCPPE)
+        if ($typeFilter === 'RPCPPE') {
+            $query->where('pt.PropertyClassificationID', self::CLASSIFICATION_NON_EXPENDABLE);
+        } elseif ($typeFilter === 'RPCSEP') {
+            $query->where('pt.PropertyClassificationID', self::CLASSIFICATION_SEMI_EXPENDABLE);
+        } else {
+            $query->whereIn('pt.PropertyClassificationID', [
+                self::CLASSIFICATION_NON_EXPENDABLE,
+                self::CLASSIFICATION_SEMI_EXPENDABLE,
+            ]);
+        }
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('pid.PropertyNumber', 'like', "%{$search}%")
+                    ->orWhere('dr.PONumber', 'like', "%{$search}%")
+                    ->orWhere('s.SupplierName', 'like', "%{$search}%")
+                    ->orWhere('a.ArticleName', 'like', "%{$search}%")
+                    ->orWhere('pid.Brand', 'like', "%{$search}%")
+                    ->orWhere('pid.ModelNumber', 'like', "%{$search}%")
+                    ->orWhere('pid.SerialNumber', 'like', "%{$search}%");
+            });
+        }
+
+        $query->addSelect([
+            'pid.InventoryDetailID',
+            'pid.PropertyNumber',
+            'dr.DRID',
+            'dr.DRNumber',
+            'dr.PONumber',
+            's.SupplierName',
+            'pid.Quantity',
+            'uom.UnitName as Unit',
+            'a.ArticleName',
+            'drd.ItemDescription as DrItemDescription',
+            'pid.Description as InventoryDescription',
+            'pid.Brand',
+            'pid.ModelNumber',
+            'pid.SerialNumber',
+            'pid.UnitCost',
+            'pid.TotalCost',
+            'dr.DateReceived',
+            'pid.Remarks as InventoryRemarks',
+            'pt.PropertyClassificationID',
+            'pt.PropertyName as PropertyTypeName',
+            'eu.FullName as FallbackEndUserName',
+        ]);
+
+        $query->addSelect(DB::raw("(
+            SELECT pi.DocumentNumber
+            FROM propertyissuancedetail pidet
+            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+            WHERE pidet.InventoryDetailID = pid.InventoryDetailID
+                AND pi.deleted_at IS NULL
+                AND pidet.deleted_at IS NULL
+                AND pi.Status = 'acknowledged'
+            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+            LIMIT 1
+        ) as ParIcsNumber"));
+
+        $query->addSelect(DB::raw("(
+            SELECT COALESCE(pidet.Remarks, pi.Remarks)
+            FROM propertyissuancedetail pidet
+            JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
+            WHERE pidet.InventoryDetailID = pid.InventoryDetailID
+                AND pi.deleted_at IS NULL
+                AND pidet.deleted_at IS NULL
+                AND pi.Status = 'acknowledged'
+            ORDER BY pi.DateIssued DESC, pi.IssuanceID DESC
+            LIMIT 1
+        ) as IssuanceRemarks"));
+
+        $query->addSelect(DB::raw("(
+            SELECT pia.receiver_name
+            FROM propertyissuancedetail pidet2
+            JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
+            LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
+            WHERE pidet2.InventoryDetailID = pid.InventoryDetailID
+                AND pi2.deleted_at IS NULL
+                AND pidet2.deleted_at IS NULL
+                AND pia.receiver_name IS NOT NULL
+                AND pia.receiver_name != ''
+            ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
+            LIMIT 1
+        ) as AssignedReceiverName"));
+
+        $rawRows = $query->orderBy('pid.PropertyNumber')->get();
+
+        // Get recorded scans for the cycle (or latest cycle)
+        $cycleId = $request->query('cycle_id');
+        $scansQuery = DB::table('rpc_inventory_scans');
+        if ($cycleId) {
+            $scansQuery->where('rpc_inventory_cycle_id', (int) $cycleId);
+        } else {
+            $latestCycle = DB::table('rpc_inventory_cycles')->orderByDesc('start_year')->first();
+            if ($latestCycle) {
+                $scansQuery->where('rpc_inventory_cycle_id', (int) $latestCycle->id);
+            }
+        }
+        $scannedDetailIds = $scansQuery->pluck('inventory_detail_id')->map(fn ($id) => (int) $id)->flip()->toArray();
+
+        // 1. Group by DR + Article + Description + Model + Brand to calculate group scan stats
+        $groupStats = [];
+        foreach ($rawRows as $row) {
+            $drKey = $row->DRNumber ? trim((string) $row->DRNumber) : ($row->PONumber ? trim((string) $row->PONumber) : 'DR-' . (int) ($row->DRID ?? 0));
+            $article = strtolower(trim((string) ($row->ArticleName ?? '')));
+            $desc = strtolower(trim((string) ($row->DrItemDescription ?: $row->InventoryDescription)));
+            $brand = strtolower(trim((string) ($row->Brand ?? '')));
+            $model = strtolower(trim((string) ($row->ModelNumber ?? '')));
+
+            $groupKey = implode('||', [$drKey, $article, $desc, $brand, $model]);
+            $isScanned = isset($scannedDetailIds[(int) $row->InventoryDetailID]);
+
+            if (!isset($groupStats[$groupKey])) {
+                $groupStats[$groupKey] = ['total' => 0, 'scanned' => 0];
+            }
+            $groupStats[$groupKey]['total']++;
+            if ($isScanned) {
+                $groupStats[$groupKey]['scanned']++;
+            }
+        }
+
+        // 2. Separate rows if they have different serial numbers; only combine if they have the same DR, article, description, model, brand.
+        // If an item has a serial number, each unique serial number stays on its own row.
+        $combinedBuckets = [];
+        foreach ($rawRows as $row) {
+            $drKey = $row->DRNumber ? trim((string) $row->DRNumber) : ($row->PONumber ? trim((string) $row->PONumber) : 'DR-' . (int) ($row->DRID ?? 0));
+            $article = strtolower(trim((string) ($row->ArticleName ?? '')));
+            $desc = strtolower(trim((string) ($row->DrItemDescription ?: $row->InventoryDescription)));
+            $brand = strtolower(trim((string) ($row->Brand ?? '')));
+            $model = strtolower(trim((string) ($row->ModelNumber ?? '')));
+            $serial = trim((string) ($row->SerialNumber ?? ''));
+
+            $groupKey = implode('||', [$drKey, $article, $desc, $brand, $model]);
+
+            if ($serial !== '') {
+                // Different serial number -> separate row!
+                $bucketKey = $groupKey . '||SN:' . strtolower($serial) . '||PID:' . $row->InventoryDetailID;
+            } else {
+                // Same DR, article, description, model, brand with no serial number -> combine!
+                $bucketKey = $groupKey . '||NO_SN';
+            }
+
+            if (!isset($combinedBuckets[$bucketKey])) {
+                $combinedBuckets[$bucketKey] = [
+                    'groupKey' => $groupKey,
+                    'row' => $row,
+                    'propertyNumbers' => [],
+                    'quantity' => 0,
+                    'inventoryDetailIds' => [],
+                ];
+            }
+
+            $combinedBuckets[$bucketKey]['propertyNumbers'][] = trim((string) $row->PropertyNumber);
+            $combinedBuckets[$bucketKey]['quantity'] += (int) ($row->Quantity ?? 1);
+            $combinedBuckets[$bucketKey]['inventoryDetailIds'][] = (int) $row->InventoryDetailID;
+        }
+
+        $items = [];
+        $totalCost = 0.0;
+        $rpcppeCount = 0;
+        $rpcsepCount = 0;
+
+        foreach ($combinedBuckets as $bucket) {
+            $row = $bucket['row'];
+            $stats = $groupStats[$bucket['groupKey']];
+            $totalInGroup = $stats['total'];
+            $scannedInGroup = $stats['scanned'];
+            $notScannedInGroup = $totalInGroup - $scannedInGroup;
+
+            // Scan status per requirements:
+            if ($totalInGroup === 1) {
+                $scanStatus = $scannedInGroup === 1 ? 'Scanned' : 'Not Scanned';
+            } else {
+                if ($scannedInGroup === $totalInGroup) {
+                    $scanStatus = 'Scanned';
+                } elseif ($scannedInGroup === 0) {
+                    $scanStatus = 'Not Scanned';
+                } else {
+                    $scanStatus = "{$scannedInGroup} Scanned / {$notScannedInGroup} Not Scanned";
+                }
+            }
+
+            // Remarks per requirements:
+            // Leave blank when all assets are scanned. If some assets are not scanned, indicate the count, such as "5 Not Scanned".
+            // Do not use "Not Found" in the cross-check feature.
+            $remarks = $notScannedInGroup > 0 ? "{$notScannedInGroup} Not Scanned" : '';
+
+            $classificationId = (int) $row->PropertyClassificationID;
+            $rpcType = $classificationId === self::CLASSIFICATION_NON_EXPENDABLE ? 'RPCPPE' : 'RPCSEP';
+
+            if ($rpcType === 'RPCPPE') {
+                $rpcppeCount += $bucket['quantity'];
+            } else {
+                $rpcsepCount += $bucket['quantity'];
+            }
+
+            $article = trim((string) ($row->ArticleName ?: ($row->DrItemDescription ?: $row->InventoryDescription)));
+            $brand = trim((string) ($row->Brand ?? ''));
+            $model = trim((string) ($row->ModelNumber ?? ''));
+            $serial = trim((string) ($row->SerialNumber ?? ''));
+
+            $descParts = array_values(array_filter([$article, $brand, $model, $serial], fn ($v) => $v !== ''));
+            $combinedDescription = implode(', ', $descParts);
+            if ($combinedDescription === '') {
+                $combinedDescription = '-';
+            }
+
+            $unitCost = $row->UnitCost !== null ? (float) $row->UnitCost : 0.0;
+            $quantity = $bucket['quantity'];
+            $itemTotalCost = $unitCost * $quantity;
+            $totalCost += $itemTotalCost;
+
+            $endUser = trim((string) ($row->AssignedReceiverName ?: ($row->FallbackEndUserName ?: '')));
+            if ($endUser === '') {
+                $endUser = '-';
+            }
+
+            $propNums = array_values(array_filter($bucket['propertyNumbers']));
+            if (count($propNums) > 1) {
+                $firstPn = $propNums[0];
+                $lastPn = end($propNums);
+                if (preg_match('/^(.*?)-(\d+)$/', $firstPn, $m1) && preg_match('/^(.*?)-(\d+)$/', $lastPn, $m2) && $m1[1] === $m2[1]) {
+                    $propNumDisplay = $firstPn . '/' . $m2[2];
+                } else {
+                    $propNumDisplay = $firstPn . '/' . $lastPn;
+                }
+            } else {
+                $propNumDisplay = $propNums[0] ?? '-';
+            }
+
+            $items[] = [
+                'inventory_detail_id' => (int) $row->InventoryDetailID,
+                'po_number' => $row->PONumber ? trim((string) $row->PONumber) : '-',
+                'supplier' => $row->SupplierName ? trim((string) $row->SupplierName) : '-',
+                'par_ics_number' => $row->ParIcsNumber ? trim((string) $row->ParIcsNumber) : '-',
+                'quantity' => $quantity,
+                'unit' => $row->Unit ? trim((string) $row->Unit) : 'unit',
+                'description' => $combinedDescription,
+                'property_number' => $propNumDisplay,
+                'unit_cost' => $unitCost,
+                'total_cost' => $itemTotalCost,
+                'date_received' => $row->DateReceived ? (string) $row->DateReceived : '-',
+                'remarks' => $remarks,
+                'end_user' => $endUser,
+                'scan_status' => $scanStatus,
+                'rpc_type' => $rpcType,
+                'property_type' => $row->PropertyTypeName ?? '-',
+            ];
+        }
+
+        return response()->json([
+            'department' => [
+                'DepartmentID' => (int) $department->DepartmentID,
+                'DepartmentName' => (string) $department->DepartmentName,
+                'DepartmentCode' => (string) ($department->DepartmentCode ?? ''),
+                'DepartmentHead' => $departmentHead ? (string) $departmentHead : null,
+            ],
+            'summary' => [
+                'total_items' => array_sum(array_column($items, 'quantity')),
+                'total_cost' => round($totalCost, 2),
+                'rpcppe_count' => $rpcppeCount,
+                'rpcsep_count' => $rpcsepCount,
+            ],
+            'data' => $items,
+        ]);
+    }
+
     public function auditLogs(Request $request, int $id): JsonResponse
     {
         $this->authorizeAdmin();

@@ -419,6 +419,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('scans/{scanId}', [RpcInventoryController::class, 'destroyScan']);
 
         Route::get('helpers/conditions', [RpcInventoryController::class, 'conditions']);
+        Route::get('department-cross-check', [RpcInventoryController::class, 'departmentCrossCheck']);
     });
 
     // Inspection Officer routes
