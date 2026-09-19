@@ -117,8 +117,21 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipts = $query->orderBy('CreatedDate', 'desc')->paginate($perPage);
 
             // Transform to include workflow info
-            $deliveryReceipts->getCollection()->transform(function ($dr) {
+              $deliveryReceipts->getCollection()->transform(function ($dr) {
                 $this->applyWorkflowStatus($dr);
+
+                // Resolve RIS (synthetic request pattern) for each row.
+                $syntheticRequestNumber = 'REQ-' . date('Y') . '-DR-' . str_pad((string) $dr->DRID, 4, '0', STR_PAD_LEFT);
+                $ris = \App\Models\RequisitionIssueSlip::query()
+                    ->whereHas('assetRequest', function ($q) use ($syntheticRequestNumber) {
+                        $q->where('RequestNumber', $syntheticRequestNumber);
+                    })
+                    ->first(['id', 'ris_number', 'status']);
+
+                $dr->ris_id = $ris?->id;
+                $dr->ris_number = $ris?->ris_number;
+                $dr->ris_status = $ris?->status;
+
                 return $dr;
             });
 
@@ -572,10 +585,22 @@ class DeliveryReceiptController extends Controller
             $deliveryReceipt->supplier_name = $deliveryReceipt->supplier?->SupplierName;
 
             // Normalize relationship keys for frontend by converting the model to an array
-            $data = $deliveryReceipt->toArray();
+$data = $deliveryReceipt->toArray();
             $data['is_partial'] = (bool) ($deliveryReceipt->IsPartial ?? false);
             $data['workflow_status'] = $deliveryReceipt->workflow_status;
             $data['workflow_status_label'] = $deliveryReceipt->workflow_status_label;
+
+            // Resolve the RIS created at acknowledgment time (synthetic request pattern).
+            $syntheticRequestNumber = 'REQ-' . date('Y') . '-DR-' . str_pad((string) $deliveryReceipt->DRID, 4, '0', STR_PAD_LEFT);
+            $ris = \App\Models\RequisitionIssueSlip::query()
+                ->whereHas('assetRequest', function ($q) use ($syntheticRequestNumber) {
+                    $q->where('RequestNumber', $syntheticRequestNumber);
+                })
+                ->first(['id', 'ris_number', 'status']);
+
+            $data['ris_id'] = $ris?->id;
+            $data['ris_number'] = $ris?->ris_number;
+            $data['ris_status'] = $ris?->status;
             // Build a map: inventory_detail_id => assignment rows
             $invDetailIds = collect($deliveryReceipt->details ?? [])
                 ->flatMap(fn($det) => $det->inventoryDetails->pluck('InventoryDetailID'))
@@ -665,10 +690,20 @@ class DeliveryReceiptController extends Controller
     try {
         $deliveryReceipt = DeliveryReceipt::findOrFail($id);
 
-        // Guard removed — DRs are auto-inspected on creation, so blocking on
-        // InspectionStatus === 'inspected' would make every DR uneditable.
-        // If you need a hard lock later, gate on acknowledged/partially_acknowledged
-        // issuance state instead.
+        // ── LOCK: block edits once the DR has been acknowledged ────────────────
+        // Once acknowledged, inventory/RIS/issuance records already exist and
+        // editing the DR would desync them. Use the /add-items flow instead.
+        $isAcknowledged = \App\Models\PropertyIssuance::where('DRID', $deliveryReceipt->DRID)
+            ->whereIn('Status', ['acknowledged', 'partially_acknowledged'])
+            ->exists();
+
+        if ($isAcknowledged) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot edit delivery receipt after acknowledgment. Inventory and issuance have already been created. Use the Add Items flow if you need to append items.',
+            ], 403);
+        }
+        // ───────────────────────────────────────────────────────────────────────
 
         // For update: apply same backdate rules as store (use config)
         $backdateYears = (int) config('gso.dr_backdate_years', 5);
