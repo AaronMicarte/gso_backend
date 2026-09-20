@@ -92,24 +92,39 @@ class PropertyIssuanceAssignmentController extends Controller
 
         $assignments = $payload['assignments'];
 
-        // Delete existing assignments for issuance and re-insert
         DB::transaction(function () use ($id, $assignments) {
-            DB::table('property_issuance_assignments')->where('issuance_id', $id)->delete();
             $now = now();
-            $rows = [];
+
+            // Collect detail IDs from the payload
+            $detailIds = array_values(array_unique(array_map(
+                fn ($a) => (int) $a['issuance_detail_id'],
+                $assignments
+            )));
+
+            // Delete any rows for this issuance OR any row pointing at these detail IDs
+            // (covers rows left behind from earlier issuance edits)
+            DB::table('property_issuance_assignments')
+                ->where('issuance_id', $id)
+                ->orWhereIn('issuance_detail_id', $detailIds)
+                ->delete();
+
+            // Dedup payload by issuance_detail_id — last one wins
+            $byDetail = [];
             foreach ($assignments as $a) {
-                $rows[] = [
+                $byDetail[(int) $a['issuance_detail_id']] = [
                     'issuance_id' => $id,
-                    'issuance_detail_id' => $a['issuance_detail_id'],
+                    'issuance_detail_id' => (int) $a['issuance_detail_id'],
                     'receiver_name' => $a['receiver_name'],
                     'position_office' => $a['position_office'] ?? null,
-                    'quantity' => $a['quantity'],
+                    'quantity' => (int) $a['quantity'],
                     'created_at' => $now,
                     'updated_at' => $now,
                 ];
             }
 
-            if (!empty($rows)) DB::table('property_issuance_assignments')->insert($rows);
+            if (!empty($byDetail)) {
+                DB::table('property_issuance_assignments')->insert(array_values($byDetail));
+            }
         });
 
         return response()->json(['message' => 'Assignments saved']);
