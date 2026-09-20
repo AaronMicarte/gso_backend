@@ -1048,6 +1048,65 @@ class RpcInventoryController extends Controller
             $mappedByInventoryDetail[$inventoryDetailId] = $mapped;
         }
 
+        // Overwrite accountable_officer with the end user from property_issuance_assignments
+        // (latest assignment per inventory_detail_id). Falls back to assignedproperty.EndUserID
+        // when no assignment row exists. Department suffix appended so the RPCSEP
+        // "Department" column still populates on the frontend.
+        if (!empty($mappedByInventoryDetail)) {
+            $detailIds = array_keys($mappedByInventoryDetail);
+
+            $assignmentRows = DB::table('property_issuance_assignments as pia')
+                ->join('propertyissuancedetail as pidet', 'pidet.IssuanceDetailID', '=', 'pia.issuance_detail_id')
+                ->join('propertyissuance as pi', 'pi.IssuanceID', '=', 'pidet.IssuanceID')
+                ->whereIn('pidet.InventoryDetailID', $detailIds)
+                ->whereNull('pi.deleted_at')
+                ->whereNull('pidet.deleted_at')
+                ->whereNotNull('pia.receiver_name')
+                ->where('pia.receiver_name', '!=', '')
+                ->orderBy('pidet.InventoryDetailID')
+                ->orderByDesc('pi.DateIssued')
+                ->orderByDesc('pi.IssuanceID')
+                ->orderByDesc('pia.id')
+                ->get([
+                    'pidet.InventoryDetailID as InventoryDetailID',
+                    'pia.receiver_name as receiver_name',
+                ]);
+
+            $endUserByDetail = [];
+            foreach ($assignmentRows as $row) {
+                $detailId = (int) $row->InventoryDetailID;
+                if (!isset($endUserByDetail[$detailId])) {
+                    $endUserByDetail[$detailId] = trim((string) $row->receiver_name);
+                }
+            }
+
+            foreach ($mappedByInventoryDetail as $detailId => $mapped) {
+                $endUserName = $endUserByDetail[$detailId] ?? '';
+
+                // Fallback: assignedproperty.EndUserID → enduser.FullName
+                if ($endUserName === '') {
+                    $assigned = AssignedProperty::query()
+                        ->with(['endUser:EndUserID,FullName,DepartmentID'])
+                        ->where('InventoryDetailID', $detailId)
+                        ->orderByDesc('PropertyID')
+                        ->first();
+
+                    $endUserName = trim((string) ($assigned?->endUser?->FullName ?? ''));
+                }
+
+                if ($endUserName === '') {
+                    continue;
+                }
+
+                $departmentName = trim((string) ($mapped['department_name'] ?? ''));
+                $mappedByInventoryDetail[$detailId]['accountable_officer'] = $departmentName !== ''
+                    ? $endUserName . ' - ' . $departmentName
+                    : $endUserName;
+            }
+        }
+
+        $expectedDetails = [];
+
         foreach ($mappedByInventoryDetail as $inventoryDetailId => $mapped) {
             $rpcType = (string) $mapped['rpc_type'];
 
@@ -2435,11 +2494,6 @@ class RpcInventoryController extends Controller
         'scans.*.device_id' => 'nullable|string|max:100',
     ]);
  
-    // -------------------------------------------------------
-    // FIX #4: Batch-load all needed inventory details upfront.
-    // Collect every inventory_detail_id and property_id first,
-    // then load them in two queries instead of N queries.
-    // -------------------------------------------------------
     $allInventoryDetailIds = [];
     $allPropertyIds = [];
  
@@ -2452,7 +2506,6 @@ class RpcInventoryController extends Controller
         }
     }
  
-    // One query for all inventory details needed
     $inventoryDetailMap = PropertyInventoryDetail::query()
         ->with([
             'propertyType:PropertyTypeID,PropertyClassificationID,PropertyName',
@@ -2465,7 +2518,6 @@ class RpcInventoryController extends Controller
         ->get()
         ->keyBy('InventoryDetailID');
  
-    // One query for all assigned properties needed (for property_id lookups)
     $assignedPropertyMap = collect([]);
     if (!empty($allPropertyIds)) {
         $assignedPropertyMap = AssignedProperty::query()
@@ -2481,7 +2533,6 @@ class RpcInventoryController extends Controller
             ->keyBy('PropertyID');
     }
  
-    // Also batch-load existing scans for duplicate detection (one query)
     $existingClientUuids = collect($validated['scans'])
         ->pluck('client_uuid')
         ->filter()
@@ -2498,12 +2549,9 @@ class RpcInventoryController extends Controller
             ->keyBy('client_uuid');
     }
  
-    // Batch-load already-scanned inventory detail IDs for this cycle (one query)
     $alreadyScannedDetailIds = RpcInventoryScan::where('rpc_inventory_cycle_id', (int) $cycle->id)
         ->whereIn('inventory_detail_id', array_unique($allInventoryDetailIds))
-        ->pluck('id', 'inventory_detail_id'); // detail_id => scan_id
- 
-    // -------------------------------------------------------
+        ->pluck('id', 'inventory_detail_id');
  
     $results = [];
     $createdCount = 0;
@@ -2538,7 +2586,6 @@ class RpcInventoryController extends Controller
             $remarks = isset($scanData['remarks']) ? trim((string) $scanData['remarks']) : null;
  
             try {
-                // FIX #4: Use pre-loaded map instead of individual DB query
                 if ($clientUuid && $existingByClientUuid->has($clientUuid)) {
                     $existing = $existingByClientUuid->get($clientUuid);
                     $results[] = [
@@ -2561,7 +2608,6 @@ class RpcInventoryController extends Controller
                     continue;
                 }
  
-                // FIX #4: Use pre-loaded map instead of individual DB query
                 $inventoryDetail = null;
                 if ($inventoryDetailId && $inventoryDetailMap->has($inventoryDetailId)) {
                     $inventoryDetail = $inventoryDetailMap->get($inventoryDetailId);
@@ -2583,7 +2629,6 @@ class RpcInventoryController extends Controller
                 $mapped = $this->mapInventoryDetail($inventoryDetail);
                 $resolvedDetailId = (int) $inventoryDetail->InventoryDetailID;
  
-                // FIX #4: Use pre-loaded duplicate check instead of individual DB query
                 if ($alreadyScannedDetailIds->has($resolvedDetailId)) {
                     $results[] = [
                         'client_uuid' => $clientUuid,
@@ -2621,15 +2666,12 @@ class RpcInventoryController extends Controller
                     'device_id' => $deviceId,
                 ]);
  
-                // Sync condition to PropertyInventoryDetail and AssignedProperty (Inventory / All Items)
                 $this->syncInventoryCondition(
                     (int) $resolvedDetailId,
                     isset($mapped['property_id']) && $mapped['property_id'] !== null ? (int) $mapped['property_id'] : null,
                     (int) $conditionId
                 );
  
-                // Mark as scanned in our in-memory map so subsequent scans in the
-                // same batch don't try to insert the same detail again.
                 $alreadyScannedDetailIds->put($resolvedDetailId, (int) $scan->id);
  
                 $this->createAuditEntry(
@@ -2718,8 +2760,6 @@ class RpcInventoryController extends Controller
         $batchStatus = ($createdCount > 0 || $duplicateCount > 0) ? 'partially_completed' : 'failed';
     }
  
-    // Only log a batch summary entry if this was a true multi-item batch (>1) or if there were errors/duplicates.
-    // For single successful scans, the individual 'scan_synced' audit log is already recorded, avoiding redundant duplicate entries.
     $isMultiScanOrIssue = count($validated['scans']) > 1 || $errorCount > 0 || $duplicateCount > 0;
     if ($isMultiScanOrIssue) {
         $this->createAuditEntry(
@@ -2885,8 +2925,6 @@ class RpcInventoryController extends Controller
                 ], 409);
             }
 
-            // Build a compatible response shape for frontend consumers.
-            // Provide both a flattened top-level shape and `closure_info` for older clients.
             $closureInfo = [
                 'status' => $cycle->status,
                 'closed_by' => $cycle->closedBy?->FullName,
@@ -2945,7 +2983,6 @@ class RpcInventoryController extends Controller
             $request->merge(['reopen_reason' => $request->input('reason')]);
         }
 
-        // Password length validation removed to accept short legacy passwords.
         $validated = $request->validate([
             'password' => 'required|string',
             'reopen_reason' => 'required|string|min:10|max:1000',
