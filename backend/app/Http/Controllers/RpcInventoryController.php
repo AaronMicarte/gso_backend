@@ -1309,6 +1309,17 @@ class RpcInventoryController extends Controller
             LIMIT 1
         ) as AssignedReceiverName"));
 
+        // Only include items that were actually issued (acknowledged)
+        $query->whereExists(function ($sub) {
+            $sub->select(DB::raw(1))
+                ->from('propertyissuancedetail as pidet')
+                ->join('propertyissuance as pi', 'pi.IssuanceID', '=', 'pidet.IssuanceID')
+                ->whereColumn('pidet.InventoryDetailID', 'pid.InventoryDetailID')
+                ->whereNull('pi.deleted_at')
+                ->whereNull('pidet.deleted_at')
+                ->where('pi.Status', 'acknowledged');
+        });
+
         $rawRows = $query->orderBy('pid.PropertyNumber')->get();
 
         // Get recorded scans for the cycle (or latest cycle)
