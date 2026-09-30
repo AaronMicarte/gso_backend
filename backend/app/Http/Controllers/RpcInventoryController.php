@@ -1539,6 +1539,9 @@ class RpcInventoryController extends Controller
                 'remarks' => $remarks,
                 'end_user' => $endUser,
                 'scan_status' => $scanStatus,
+                'scanned_count' => (int) $scannedInGroup,
+                'unscanned_count' => (int) $notScannedInGroup,
+                'total_in_group' => (int) $totalInGroup,
                 'rpc_type' => $rpcType,
                 'property_type' => $row->PropertyTypeName ?? '-',
             ];
