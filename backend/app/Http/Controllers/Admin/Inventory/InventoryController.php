@@ -603,7 +603,9 @@ class InventoryController extends Controller
                       ) as lastIssuedDate"))
                       ->addSelect(DB::raw($this->rlsddpStatusSelectSql() . ' as rlsddpStatus'))
                       ->addSelect(DB::raw($this->rlsddpNumberSelectSql() . ' as rlsddpNumber'))
-                      ->addSelect(DB::raw($this->rlsddpIdSelectSql() . ' as rlsddpId'));
+                      ->addSelect(DB::raw($this->rlsddpIdSelectSql() . ' as rlsddpId'))
+                      ->addSelect(DB::raw($this->parIcsNumberSelectSql() . ' as par_ics_number'))
+                      ->addSelect(DB::raw($this->parIcsTypeSelectSql() . ' as par_ics_type'));
             },
             'details.qrCode',
             'details.drDetail' => function($query) {
@@ -2349,6 +2351,60 @@ class InventoryController extends Controller
         )";
     }
 
+    private function parIcsNumberSelectSql(): string
+    {
+        return "COALESCE(
+            (
+                SELECT p.PARNumber
+                FROM assignedproperty ap
+                JOIN pardetail pard ON pard.PropertyID = ap.PropertyID
+                JOIN par p ON p.PARID = pard.PARID
+                WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                  AND p.PARNumber IS NOT NULL
+                ORDER BY ap.PropertyID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT piss.DocumentNumber
+                FROM propertyissuancedetail pissd
+                JOIN propertyissuance piss ON piss.IssuanceID = pissd.IssuanceID
+                WHERE pissd.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                  AND piss.DocumentNumber IS NOT NULL
+                  AND piss.deleted_at IS NULL
+                  AND pissd.deleted_at IS NULL
+                ORDER BY piss.DateIssued DESC, piss.IssuanceID DESC
+                LIMIT 1
+            )
+        )";
+    }
+
+    private function parIcsTypeSelectSql(): string
+    {
+        return "COALESCE(
+            (
+                SELECT 'PAR'
+                FROM assignedproperty ap
+                JOIN pardetail pard ON pard.PropertyID = ap.PropertyID
+                JOIN par p ON p.PARID = pard.PARID
+                WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                  AND p.PARNumber IS NOT NULL
+                ORDER BY ap.PropertyID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT piss.DocumentType
+                FROM propertyissuancedetail pissd
+                JOIN propertyissuance piss ON piss.IssuanceID = pissd.IssuanceID
+                WHERE pissd.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                  AND piss.DocumentNumber IS NOT NULL
+                  AND piss.deleted_at IS NULL
+                  AND pissd.deleted_at IS NULL
+                ORDER BY piss.DateIssued DESC, piss.IssuanceID DESC
+                LIMIT 1
+            )
+        )";
+    }
+
     private function fetchEnrichedAllItems(array $inventoryDetailIds, string $dateSortColumn)
     {
         if ($inventoryDetailIds === []) {
@@ -2594,6 +2650,8 @@ class InventoryController extends Controller
                 'rlsddpStatus' => DB::raw($this->rlsddpStatusSelectSql() . ' as rlsddpStatus'),
                 'rlsddpNumber' => DB::raw($this->rlsddpNumberSelectSql() . ' as rlsddpNumber'),
                 'rlsddpId' => DB::raw($this->rlsddpIdSelectSql() . ' as rlsddpId'),
+                'par_ics_number' => DB::raw($this->parIcsNumberSelectSql() . ' as par_ics_number'),
+                'par_ics_type' => DB::raw($this->parIcsTypeSelectSql() . ' as par_ics_type'),
             ]);
     }
 }
