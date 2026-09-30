@@ -33,6 +33,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SanitizeInput::class,
         ]);
 
+        // Role alias
+        $middleware->alias([
+            'role' => \App\Http\Middleware\EnsureRole::class,
+        ]);
+
         $middleware->trustProxies(
             at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR |

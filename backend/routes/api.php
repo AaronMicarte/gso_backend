@@ -254,8 +254,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Expose unserviceable listing to authenticated users (Department Heads will be scoped to their department)
     Route::get('property-unserviceable', [PropertyWasteController::class, 'adminUnserviceable']);
 
-    // Department Head routes
-    Route::middleware('auth:sanctum')->prefix('department-head')->group(function () {
+       // Department Head routes (restricted to Department Head role = UserRoleID 4)
+    Route::middleware(['auth:sanctum', 'role:4'])->prefix('department-head')->group(function () {
         Route::get('dashboard/stats', [DepartmentHeadDashboardController::class, 'getStats']);
         Route::get('dashboard/activities', [DepartmentHeadDashboardController::class, 'getActivities']);
         Route::get('received-items', [DepartmentHeadReceivedItemsController::class, 'index']);
