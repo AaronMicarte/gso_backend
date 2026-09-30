@@ -1563,6 +1563,7 @@ class PropertyIssuanceController extends Controller
 
         $request->validate([
             'dr_id' => 'required|integer|exists:deliveryreceipt,DRID',
+            'dr_number' => 'nullable|string|max:50',
             'ris_number' => 'nullable|string|max:80|unique:requisition_issue_slips,ris_number',
         ]);
 
@@ -1583,6 +1584,39 @@ class PropertyIssuanceController extends Controller
             return response()->json([
                 'message' => 'Delivery receipt not found.',
             ], 404);
+        }
+
+        $isCurrentDrTemp = (bool) preg_match('/temp/i', (string) $deliveryReceipt->DRNumber);
+        $newDrNumber = trim((string) $request->input('dr_number', ''));
+
+        if ($newDrNumber !== '') {
+            if (preg_match('/temp/i', $newDrNumber)) {
+                return response()->json([
+                    'message' => 'Official DR number cannot be a temporary name.',
+                    'errors' => ['dr_number' => ['Official DR number cannot contain "temp".']]
+                ], 422);
+            }
+
+            if ($newDrNumber !== $deliveryReceipt->DRNumber) {
+                $exists = DeliveryReceipt::where('DRNumber', $newDrNumber)
+                    ->where('DRID', '!=', $deliveryReceipt->DRID)
+                    ->exists();
+
+                if ($exists) {
+                    return response()->json([
+                        'message' => 'The provided DR Number is already in use by another receipt.',
+                        'errors' => ['dr_number' => ['DR number already exists.']]
+                    ], 422);
+                }
+
+                $deliveryReceipt->DRNumber = $newDrNumber;
+                $deliveryReceipt->save();
+            }
+        } elseif ($isCurrentDrTemp) {
+            return response()->json([
+                'message' => 'This delivery receipt has a temporary number. Please provide the official DR number before acknowledging.',
+                'errors' => ['dr_number' => ['Official DR number is required before acknowledging.']]
+            ], 422);
         }
 
         $resolvedEndUser = $this->resolveEndUserForDeliveryReceipt($deliveryReceipt);

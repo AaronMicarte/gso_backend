@@ -163,8 +163,12 @@ class DeliveryReceiptController extends Controller
             // enforce backdate window in Asia/Manila
             $dateRules = 'required|date|before_or_equal:today|after_or_equal:' . $minDate;
 
+            $isTemporaryDr = filter_var($request->input('is_temporary_dr', false), FILTER_VALIDATE_BOOLEAN)
+                || empty(trim((string) $request->input('dr_number', '')));
+
             $validator = Validator::make($request->all(), [
-                'dr_number' => 'required|string|max:50|unique:deliveryreceipt,DRNumber',
+                'dr_number' => $isTemporaryDr ? 'nullable|string|max:50|unique:deliveryreceipt,DRNumber' : 'required|string|max:50|unique:deliveryreceipt,DRNumber',
+                'is_temporary_dr' => 'nullable|boolean',
                 'supplier_id' => 'required|integer|exists:supplier,SupplierID',
                 'requested_by_user_id' => 'required|integer|exists:user,UserID',
                 'pr_number' => 'required|string|max:50',
@@ -330,8 +334,13 @@ class DeliveryReceiptController extends Controller
 
             $itemsStillPending = filter_var($request->input('items_still_pending_delivery', false), FILTER_VALIDATE_BOOLEAN);
 
+            $drNumber = trim((string) $request->input('dr_number', ''));
+            if ($drNumber === '') {
+                $drNumber = $this->generateTempDrNumber();
+            }
+
             $deliveryPayload = [
-                'DRNumber' => $request->dr_number,
+                'DRNumber' => $drNumber,
                 'SupplierID' => (int) $supplier->SupplierID,
                 'RequestedBy' => (int) $requestedByUser->UserID,
                 'PRNumber' => $request->pr_number,
@@ -1618,6 +1627,30 @@ $data = $deliveryReceipt->toArray();
 
             $exists = DB::table('deliveryreceipt')->where('IARNumber', $candidate)->exists()
                 || DB::table('inspectionacceptancereport')->where('IARNumber', $candidate)->exists();
+        } while ($exists);
+
+        return $candidate;
+    }
+
+    private function generateTempDrNumber(): string
+    {
+        $year = date('Y');
+        $prefix = 'TEMP-DR-' . $year . '-';
+
+        $latestDr = DB::table('deliveryreceipt')
+            ->where('DRNumber', 'like', $prefix . '%')
+            ->orderByDesc('DRNumber')
+            ->value('DRNumber');
+
+        $maxSequence = 0;
+        if ($latestDr && preg_match('/^TEMP-DR-\d{4}-(\d{4,})$/', (string) $latestDr, $matches)) {
+            $maxSequence = (int) $matches[1];
+        }
+
+        do {
+            $maxSequence++;
+            $candidate = $prefix . str_pad((string) $maxSequence, 4, '0', STR_PAD_LEFT);
+            $exists = DB::table('deliveryreceipt')->where('DRNumber', $candidate)->exists();
         } while ($exists);
 
         return $candidate;
