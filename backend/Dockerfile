@@ -2,6 +2,13 @@ FROM php:8.3-apache
 
 RUN docker-php-ext-install pdo pdo_mysql
 
+RUN apt-get update && apt-get install -y \
+    unzip \
+    libzip-dev \
+    && docker-php-ext-install zip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN a2enmod rewrite
 
 COPY . /var/www/html/
