@@ -4,7 +4,7 @@ RUN docker-php-ext-install pdo pdo_mysql
 
 RUN a2enmod rewrite
 
-COPY backend/ /var/www/html/
+COPY . /var/www/html/
 
 WORKDIR /var/www/html
 
