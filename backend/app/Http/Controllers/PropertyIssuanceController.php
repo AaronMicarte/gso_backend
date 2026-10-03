@@ -1185,26 +1185,11 @@ class PropertyIssuanceController extends Controller
     }
 
     /**
-     * Generate document number for PAR/ICS
+     * Generate document number for PAR/ICS in YY-##### format
      */
     private function generateDocumentNumber(string $type): string
     {
-        $year = date('Y');
-        $prefix = $type === 'PAR' ? "PAR-{$year}-" : "ICS-{$year}-";
-        
-        $lastIssuance = PropertyIssuance::where('DocumentType', $type)
-            ->where('DocumentNumber', 'like', $prefix . '%')
-            ->orderBy('IssuanceID', 'desc')
-            ->first();
-
-        if ($lastIssuance) {
-            $lastNumber = (int) substr($lastIssuance->DocumentNumber, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return PropertyIssuance::generateDocumentNumber($type);
     }
 
     private function resolveEndUserForIssuance(string $classification, ?int $endUserId, ?string $endUserName, AssetRequest $assetRequest): EndUser
@@ -1357,7 +1342,7 @@ class PropertyIssuanceController extends Controller
         // Generate document data
         $documentData = [
             'type' => $documentType,
-            'document_number' => $issuance->generateDocumentNumber($documentType),
+            'document_number' => PropertyIssuance::generateDocumentNumber($documentType),
             'date_issued' => $issuance->DateIssued,
             'department' => $issuance->request->department->DepartmentName,
             'recipient' => [

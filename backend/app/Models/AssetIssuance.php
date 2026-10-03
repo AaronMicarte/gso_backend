@@ -74,25 +74,11 @@ class AssetIssuance extends Model
     }
 
     /**
-     * Generate document number based on type
+     * Generate document number based on type (delegates to PropertyIssuance for consistent YY-##### format)
      */
     public static function generateDocumentNumber(string $type): string
     {
-        $year = date('Y');
-        $prefix = strtoupper($type) . "-{$year}-";
-        
-        $lastIssuance = self::where('DocumentNumber', 'like', $prefix . '%')
-            ->orderBy('IssuanceID', 'desc')
-            ->first();
-
-        if ($lastIssuance) {
-            $lastNumber = (int) substr($lastIssuance->DocumentNumber, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-
-        return $prefix . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+        return \App\Models\PropertyIssuance::generateDocumentNumber($type);
     }
 
     /**

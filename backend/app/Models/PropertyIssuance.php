@@ -80,24 +80,44 @@ class PropertyIssuance extends Model
     }
 
     // Helper methods
-    public function generateDocumentNumber(string $type = 'PAR'): string
+    public static function generateDocumentNumber(string $type = 'PAR'): string
     {
-        $year = date('Y');
-        $month = date('m');
-        
-        $lastNumber = static::where('DocumentType', $type)
-            ->whereYear('DateIssued', $year)
-            ->whereMonth('DateIssued', $month)
-            ->max('DocumentNumber');
-        
-        if ($lastNumber) {
-            $lastSequence = (int)substr($lastNumber, -4);
-            $newSequence = $lastSequence + 1;
-        } else {
-            $newSequence = 1;
+        $normalizedType = strtoupper(trim($type)) === 'ICS' ? 'ICS' : 'PAR';
+        $year2 = date('y');
+        $fullYear = date('Y');
+
+        $existingNumbers = static::where('DocumentType', $normalizedType)
+            ->where(function ($q) use ($year2, $fullYear, $normalizedType) {
+                $q->where('DocumentNumber', 'like', "{$year2}-%")
+                  ->orWhere('DocumentNumber', 'like', "{$normalizedType}-{$fullYear}-%")
+                  ->orWhere('DocumentNumber', 'like', "{$normalizedType}-{$fullYear}%")
+                  ->orWhereYear('DateIssued', $fullYear);
+            })
+            ->pluck('DocumentNumber');
+
+        $maxSequence = 0;
+        foreach ($existingNumbers as $docNum) {
+            if (is_string($docNum) && preg_match('/-(\d+)$/', trim($docNum), $matches)) {
+                $seq = (int) $matches[1];
+                if ($seq > $maxSequence) {
+                    $maxSequence = $seq;
+                }
+            }
         }
-        
-        return sprintf('%s-%s%s-%04d', $type, $year, $month, $newSequence);
+
+        $nextSequence = $maxSequence + 1;
+
+        do {
+            $candidate = sprintf('%s-%05d', $year2, $nextSequence);
+            $exists = static::where('DocumentType', $normalizedType)
+                ->where('DocumentNumber', $candidate)
+                ->exists();
+            if ($exists) {
+                $nextSequence++;
+            }
+        } while ($exists);
+
+        return $candidate;
     }
 
     public function getStatusAttribute($value): string

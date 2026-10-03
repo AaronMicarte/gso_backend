@@ -1220,22 +1220,7 @@ class InspectionReportController extends Controller
 
     private function generateDocumentNumber(string $type): string
     {
-        $year = date('Y');
-        $prefix = $type === 'PAR' ? "PAR-{$year}-" : "ICS-{$year}-";
-
-        $lastIssuance = PropertyIssuance::where('DocumentType', $type)
-            ->where('DocumentNumber', 'like', $prefix . '%')
-            ->orderBy('IssuanceID', 'desc')
-            ->first();
-
-        if ($lastIssuance) {
-            $lastNumber = (int) substr($lastIssuance->DocumentNumber, -4);
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
-        }
-
-        return $prefix . str_pad((string) $newNumber, 4, '0', STR_PAD_LEFT);
+        return PropertyIssuance::generateDocumentNumber($type);
     }
 
     /**
