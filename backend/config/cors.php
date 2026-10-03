@@ -29,6 +29,7 @@ return [
         'http://10.191.64.25:3000',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
+        'https://gso-iams.vercel.app'
     ],
 
     'allowed_origins_patterns' => [],
