@@ -92,8 +92,8 @@ return [
                     }
                 }
 
-                // If CA file exists or is configured, attach SSL CA option
-                if ($caPath) {
+                // Only attach CA file if it actually exists on disk
+                if ($caPath && file_exists($caPath)) {
                     $options[PDO::MYSQL_ATTR_SSL_CA] = $caPath;
                 }
 
@@ -103,7 +103,7 @@ return [
                         env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'),
                         FILTER_VALIDATE_BOOLEAN
                     );
-                } elseif ($caPath) {
+                } else {
                     $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
                 }
 
