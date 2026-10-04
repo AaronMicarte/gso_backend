@@ -17,16 +17,20 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(HandleCors::class);
 
-        $middleware->web(replace: [
-            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class => \App\Http\Middleware\VerifyCsrfToken::class,
+        // Exempt authentication and API endpoints from CSRF verification (crucial for cross-site SPA requests)
+        $middleware->validateCsrfTokens(except: [
+            'login',
+            'logout',
+            'auth/*',
+            'mfa/*',
+            'api/*',
+            'sanctum/*',
         ]);
+
+        $middleware->statefulApi();
 
         $middleware->web(append: [
             \App\Http\Middleware\SanitizeInput::class,
-        ]);
-
-        $middleware->api(prepend: [
-            EnsureFrontendRequestsAreStateful::class,
         ]);
 
         $middleware->api(append: [
