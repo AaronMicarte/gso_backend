@@ -53,6 +53,45 @@ Route::get('/test-connection', function () {
     return response()->json(['message' => 'API is working']);
 });
 
+// Database & system health check
+Route::get('/health', function () {
+    $dbStatus = 'disconnected';
+    $dbError = null;
+    $tableCount = 0;
+    $sslCipher = 'none';
+
+    try {
+        \DB::connection()->getPdo();
+        $dbStatus = 'connected';
+        $tables = \DB::select('SHOW TABLES');
+        $tableCount = count($tables);
+        $sslRows = \DB::select("SHOW STATUS LIKE 'Ssl_cipher'");
+        if (!empty($sslRows) && isset($sslRows[0]->Value)) {
+            $sslCipher = $sslRows[0]->Value ?: 'none';
+        }
+    } catch (\Throwable $e) {
+        $dbError = $e->getMessage();
+    }
+
+    return response()->json([
+        'status' => $dbStatus === 'connected' ? 'ok' : 'degraded',
+        'app_env' => config('app.env'),
+        'database' => [
+            'status' => $dbStatus,
+            'default_connection' => config('database.default'),
+            'host' => config('database.connections.' . config('database.default') . '.host'),
+            'database' => config('database.connections.' . config('database.default') . '.database'),
+            'table_count' => $tableCount,
+            'ssl_cipher' => $sslCipher,
+            'error' => $dbError,
+        ],
+    ], $dbStatus === 'connected' ? 200 : 503);
+});
+
+// Public auth routes (aliases for SPA convenience when calling through /api prefix)
+Route::post('/login', [AuthController::class, 'login'])->name('api.login');
+Route::post('/auth/change-temporary-password', [AuthController::class, 'changeTemporaryPassword']);
+
 // Public account activation routes
 Route::post('/auth/activate-account', [AuthController::class, 'activateAccount']);
 

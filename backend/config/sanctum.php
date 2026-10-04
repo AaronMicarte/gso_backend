@@ -15,11 +15,21 @@ return [
     |
     */
 
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,127.0.0.1,127.0.0.1:3000,gso_backend.localhost',
-        Sanctum::currentApplicationUrlWithPort(),
-    ))),
+    'stateful' => array_values(array_filter(array_unique(array_merge(
+        [
+            'localhost',
+            'localhost:3000',
+            '127.0.0.1',
+            '127.0.0.1:3000',
+            'gso_backend.localhost',
+            'gso-iams.vercel.app',
+            '.vercel.app',
+        ],
+        parse_url(env('FRONTEND_URL', ''), PHP_URL_HOST) ? [parse_url(env('FRONTEND_URL', ''), PHP_URL_HOST)] : [],
+        parse_url(env('GSO_FRONTEND_URL', ''), PHP_URL_HOST) ? [parse_url(env('GSO_FRONTEND_URL', ''), PHP_URL_HOST)] : [],
+        array_map('trim', explode(',', env('SANCTUM_STATEFUL_DOMAINS', ''))),
+        [Sanctum::currentApplicationUrlWithPort()]
+    )))),
 
     /*
     |--------------------------------------------------------------------------
