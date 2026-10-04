@@ -47,7 +47,11 @@ return Application::configure(basePath: dirname(__DIR__))
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*') || $request->is('sanctum/*')) {
+                return response()->json(['message' => 'Unauthenticated.'], 401);
+            }
+        });
     })
     ->withSchedule(function ($schedule): void {
         $cfg = config('backup.schedule');
