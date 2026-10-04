@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -58,11 +58,57 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
+            'options' => extension_loaded('pdo_mysql') ? (function () {
+                $options = [];
 
-            ]) : [],
+                // 1. If Aiven CA certificate content is provided via env variable, write it to file
+                $caPath = env('MYSQL_ATTR_SSL_CA');
+                if (!$caPath && env('AIVEN_CA_CERT')) {
+                    $certDir = storage_path('app');
+                    if (!is_dir($certDir)) {
+                        @mkdir($certDir, 0755, true);
+                    }
+                    $certFile = $certDir . '/aiven-ca.pem';
+                    if (!file_exists($certFile) || file_get_contents($certFile) !== env('AIVEN_CA_CERT')) {
+                        @file_put_contents($certFile, env('AIVEN_CA_CERT'));
+                    }
+                    $caPath = $certFile;
+                }
+
+                // 2. Fallback to candidate file paths
+                if (!$caPath) {
+                    $candidates = [
+                        base_path('certs/aiven-ca.pem'),
+                        base_path('certs/ca.pem'),
+                        storage_path('app/aiven/ca.pem'),
+                        storage_path('app/ca.pem'),
+                        '/etc/ssl/certs/ca-certificates.crt', // Standard Linux/Debian CA in Docker container
+                    ];
+                    foreach ($candidates as $candidate) {
+                        if (file_exists($candidate)) {
+                            $caPath = $candidate;
+                            break;
+                        }
+                    }
+                }
+
+                // If CA file exists or is configured, attach SSL CA option
+                if ($caPath) {
+                    $options[PDO::MYSQL_ATTR_SSL_CA] = $caPath;
+                }
+
+                // Disable certificate hostname/chain verification for Aiven custom project CA unless explicitly enabled
+                if (env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null) {
+                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = filter_var(
+                        env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'),
+                        FILTER_VALIDATE_BOOLEAN
+                    );
+                } elseif ($caPath) {
+                    $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
+                }
+
+                return $options;
+            })() : [],
         ],
 
         'mariadb' => [
