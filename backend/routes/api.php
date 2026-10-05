@@ -460,6 +460,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('helpers/conditions', [RpcInventoryController::class, 'conditions']);
         Route::get('department-cross-check', [RpcInventoryController::class, 'departmentCrossCheck']);
+       
+        Route::get('scans/{scanId}', [RpcInventoryController::class, 'showScan']);
     });
 
     // Inspection Officer routes

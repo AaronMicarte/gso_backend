@@ -2491,6 +2491,7 @@ class RpcInventoryController extends Controller
         'scans.*.client_uuid' => 'nullable|string|max:36',
         'scans.*.inventory_detail_id' => 'nullable|integer|min:1',
         'scans.*.property_id' => 'nullable|integer|min:1',
+        'scans.*.property_number' => 'nullable|string|max:100',
         'scans.*.condition_id' => 'required|integer|exists:condition,ConditionID',
         'scans.*.scanned_at' => 'nullable|date_format:Y-m-d\TH:i:s\Z',
         'scans.*.remarks' => 'nullable|string|max:255',
@@ -2534,6 +2535,12 @@ class RpcInventoryController extends Controller
             ->whereIn('PropertyID', array_unique($allPropertyIds))
             ->get()
             ->keyBy('PropertyID');
+
+        foreach ($assignedPropertyMap as $ap) {
+            if (!empty($ap->InventoryDetailID)) {
+                $allInventoryDetailIds[] = (int) $ap->InventoryDetailID;
+            }
+        }
     }
  
     $existingClientUuids = collect($validated['scans'])
@@ -2601,11 +2608,13 @@ class RpcInventoryController extends Controller
                     continue;
                 }
  
-                if (!$inventoryDetailId && !$propertyId) {
+                $propertyNumber = isset($scanData['property_number']) ? trim((string) $scanData['property_number']) : null;
+
+                if (!$inventoryDetailId && !$propertyId && !$propertyNumber) {
                     $results[] = [
                         'client_uuid' => $clientUuid,
                         'status' => 'error',
-                        'message' => 'Inventory Detail ID or Property ID is required',
+                        'message' => 'Inventory Detail ID, Property ID, or Property Number is required',
                     ];
                     $errorCount++;
                     continue;
@@ -2617,6 +2626,13 @@ class RpcInventoryController extends Controller
                 } elseif ($propertyId && $assignedPropertyMap->has($propertyId)) {
                     $assignedProperty = $assignedPropertyMap->get($propertyId);
                     $inventoryDetail = $assignedProperty?->inventoryDetail;
+                } elseif ($propertyNumber) {
+                    $assignedProperty = $this->resolveAssignedPropertyByPropertyNumber($propertyNumber);
+                    if ($assignedProperty) {
+                        $inventoryDetail = $assignedProperty->inventoryDetail;
+                    } else {
+                        $inventoryDetail = $this->resolveInventoryDetailByPropertyNumber($propertyNumber);
+                    }
                 }
  
                 if (!$inventoryDetail) {
@@ -3082,5 +3098,12 @@ class RpcInventoryController extends Controller
                 'message' => 'Error reopening inventory cycle: ' . $e->getMessage(),
             ], 500);
         }
+    }
+    public function showScan(int $scanId): JsonResponse
+    {
+        $this->authorizeGso();
+        $scan = RpcInventoryScan::with(['condition:ConditionID,ConditionName', 'scannedBy:UserID,FullName'])
+            ->findOrFail($scanId);
+        return response()->json(['scan' => $scan]);
     }
 }

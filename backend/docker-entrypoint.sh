@@ -11,6 +11,16 @@ mkdir -p /var/www/html/storage/framework/sessions \
 chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Clear any stale caches baked into the image
+# This ensures new routes/config from routes/api.php are picked up on every boot
+echo "[GSO Entrypoint] Clearing stale route/config/cache files..."
+php artisan route:clear || echo "[GSO Entrypoint] route:clear failed; continuing..."
+php artisan config:clear || echo "[GSO Entrypoint] config:clear failed; continuing..."
+php artisan cache:clear || echo "[GSO Entrypoint] cache:clear failed; continuing..."
+
+# Rebuild config cache (safe, fast). Do NOT route:cache — we want routes read fresh.
+php artisan config:cache || echo "[GSO Entrypoint] config:cache failed; continuing..."
+
 # Run database migrations if DB is configured and AUTO_MIGRATE is true (default: true)
 if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
     echo "[GSO Entrypoint] Running database migrations..."
