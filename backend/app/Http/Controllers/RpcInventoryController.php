@@ -947,9 +947,20 @@ class RpcInventoryController extends Controller
         return response()->json(['message' => 'Scanned asset removed.']);
     }
 
-    public function report(int $id): JsonResponse
+   public function report(int $id): JsonResponse
     {
         $this->authorizeGso();
+
+        // Cache the entire report for 5 minutes. First load slow, rest instant.
+        // Pass ?fresh=1 to bypass the cache.
+        $cacheKey = "rpc_report_{$id}";
+        if (request()->query('fresh')) {
+            cache()->forget($cacheKey);
+        }
+        if ($cached = cache()->get($cacheKey)) {
+            return response()->json($cached);
+        }
+
         $cycle = RpcInventoryCycle::findOrFail($id);
 
         $scans = RpcInventoryScan::query()
@@ -1188,7 +1199,7 @@ class RpcInventoryController extends Controller
                 ->all(),
         ];
 
-        return response()->json([
+      $payload = [
             'cycle' => $cycle,
             'generated_at' => now()->toIso8601String(),
             'rpcppe' => [
@@ -1203,7 +1214,11 @@ class RpcInventoryController extends Controller
                 'scanned_count' => $totalsByType['RPCSEP']['scanned'],
                 'total_count' => $totalsByType['RPCSEP']['total'],
             ],
-        ]);
+        ];
+
+        cache()->put($cacheKey, $payload, 300); // 5 minutes
+
+        return response()->json($payload);
     }
 
     public function conditions(): JsonResponse
