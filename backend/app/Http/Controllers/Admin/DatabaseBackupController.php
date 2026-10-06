@@ -107,22 +107,31 @@ class DatabaseBackupController extends Controller
             ], 500);
         }
 
+        // Write credentials file
         $cnfFile = tempnam(sys_get_temp_dir(), 'mysqldump');
         file_put_contents($cnfFile, "[mysqldump]\npassword=" . $pass . "\n");
 
+        // Capture stderr separately so we can read the real error
+        $errFile = tempnam(sys_get_temp_dir(), 'mysqldump_err');
+
         $cmd = sprintf(
-            '%s --defaults-extra-file=%s --routines --single-transaction --host=%s --port=%s --user=%s %s > %s 2>&1',
+            '%s --defaults-extra-file=%s --routines --single-transaction --ssl-mode=REQUIRED --host=%s --port=%s --user=%s %s > %s 2> %s',
             escapeshellcmd($mysqldump),
             escapeshellarg($cnfFile),
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($user),
             escapeshellarg($dbName),
-            escapeshellarg($tmpPathLocal)
+            escapeshellarg($tmpPathLocal),
+            escapeshellarg($errFile)
         );
 
         exec($cmd, $output, $returnVar);
+
+        $stderr = file_exists($errFile) ? file_get_contents($errFile) : '';
+
         @unlink($cnfFile);
+        @unlink($errFile);
 
         if ($returnVar !== 0 || !file_exists($tmpPathLocal) || filesize($tmpPathLocal) === 0) {
             if (file_exists($tmpPathLocal)) {
@@ -130,8 +139,9 @@ class DatabaseBackupController extends Controller
             }
             return response()->json([
                 'message' => 'Failed to create database backup',
-                'details' => implode("\n", $output),
+                'details' => $stderr ?: implode("\n", $output),
                 'return_var' => $returnVar,
+                'cmd' => $cmd,
             ], 500);
         }
 
@@ -167,7 +177,6 @@ class DatabaseBackupController extends Controller
             }
         }
 
-        // Try PATH lookup on Linux/macOS
         $which = @shell_exec('command -v mysqldump 2>/dev/null');
         if ($which && trim($which) !== '') {
             return trim($which);
