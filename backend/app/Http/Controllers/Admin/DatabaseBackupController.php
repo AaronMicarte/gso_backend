@@ -157,7 +157,7 @@ class DatabaseBackupController extends Controller
 
         @chmod($tmpPathLocal, 0600);
 
-        if ($disk !== 'local') {
+      if ($disk !== 'local' && $disk !== 'backups') {
             $relPath = $dir . '/' . $filename;
             Storage::disk($disk)->put($relPath, fopen($tmpPathLocal, 'r'));
             @unlink($tmpPathLocal);
