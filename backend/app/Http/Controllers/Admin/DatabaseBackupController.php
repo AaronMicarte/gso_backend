@@ -113,11 +113,13 @@ class DatabaseBackupController extends Controller
 
         // Capture stderr separately so we can read the real error
         $errFile = tempnam(sys_get_temp_dir(), 'mysqldump_err');
+        $caPath = storage_path('app/aiven-ca.pem');
 
         $cmd = sprintf(
-            '%s --defaults-extra-file=%s --routines --single-transaction --ssl --host=%s --port=%s --user=%s %s > %s 2> %s',
+            '%s --defaults-extra-file=%s --routines --single-transaction --ssl --ssl-ca=%s --host=%s --port=%s --user=%s %s > %s 2> %s',
             escapeshellcmd($mysqldump),
             escapeshellarg($cnfFile),
+            escapeshellarg($caPath),     // ← new line
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($user),
