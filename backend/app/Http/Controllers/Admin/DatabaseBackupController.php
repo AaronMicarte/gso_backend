@@ -115,7 +115,7 @@ class DatabaseBackupController extends Controller
         $errFile = tempnam(sys_get_temp_dir(), 'mysqldump_err');
 
         $cmd = sprintf(
-            '%s --defaults-extra-file=%s --routines --single-transaction --ssl-mode=REQUIRED --host=%s --port=%s --user=%s %s > %s 2> %s',
+            '%s --defaults-extra-file=%s --routines --single-transaction --ssl --host=%s --port=%s --user=%s %s > %s 2> %s',
             escapeshellcmd($mysqldump),
             escapeshellarg($cnfFile),
             escapeshellarg($host),
