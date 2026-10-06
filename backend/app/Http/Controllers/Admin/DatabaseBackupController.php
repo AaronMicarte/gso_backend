@@ -115,11 +115,19 @@ class DatabaseBackupController extends Controller
         $errFile = tempnam(sys_get_temp_dir(), 'mysqldump_err');
         $caPath = storage_path('app/aiven-ca.pem');
 
+        // --quick          : stream rows one-by-one instead of buffering entire result set in RAM
+        // --compress        : LZ77-compress data over the WAN link (significant on Aiven remote)
+        // --skip-lock-tables: skip table-level locks; --single-transaction handles consistency for InnoDB
+        // --net-buffer-length: batch writes in 64 KB chunks instead of the default 1 KB
+        // --ssl-ca alone is sufficient to enforce SSL; bare --ssl is redundant and adds a second handshake
+        //   on some client versions
         $cmd = sprintf(
-            '%s --defaults-extra-file=%s --routines --single-transaction --ssl --ssl-ca=%s --host=%s --port=%s --user=%s %s > %s 2> %s',
+            '%s --defaults-extra-file=%s --single-transaction --quick --compress'
+            . ' --skip-lock-tables --net-buffer-length=65536'
+            . ' --ssl-ca=%s --host=%s --port=%s --user=%s %s > %s 2> %s',
             escapeshellcmd($mysqldump),
             escapeshellarg($cnfFile),
-            escapeshellarg($caPath),     // ← new line
+            escapeshellarg($caPath),
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($user),
