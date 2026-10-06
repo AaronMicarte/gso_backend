@@ -20,11 +20,11 @@ class DatabaseBackupController extends Controller
             'page' => 'sometimes|integer|min:1',
             'per_page' => 'sometimes|integer|min:1|max:100',
         ]);
-        
+
         $page = $request->input('page', 1);
         $perPage = $request->input('per_page', 10);
-        
-        $disk = config('backup.disk', 'local');
+
+        $disk = config('backup.disk', 'backups');
         $dir = config('backup.directory', $this->backupDir);
 
         try {
@@ -62,7 +62,6 @@ class DatabaseBackupController extends Controller
             ]);
         })->sortByDesc('modified')->values();
 
-        // Paginate the results
         $total = $list->count();
         $paginated = $list->slice(($page - 1) * $perPage, $perPage)->values();
 
@@ -73,91 +72,108 @@ class DatabaseBackupController extends Controller
                 'per_page' => $perPage,
                 'total' => $total,
                 'last_page' => ceil($total / $perPage),
-            ]
+            ],
         ]);
     }
 
     public function store(Request $request)
     {
-        $disk = config('backup.disk', 'local');
+        $disk = config('backup.disk', 'backups');
         $dir = config('backup.directory', $this->backupDir);
 
-        // Create backups directory if missing
         Storage::disk($disk)->makeDirectory($dir);
 
         $db = config('database.connections.' . config('database.default'));
 
         $dbName = $db['database'] ?? env('DB_DATABASE');
-        $user = $db['username'] ?? env('DB_USERNAME');
-        $pass = $db['password'] ?? env('DB_PASSWORD');
-        $host = $db['host'] ?? env('DB_HOST', '127.0.0.1');
-        $port = $db['port'] ?? env('DB_PORT', '3306');
+        $user   = $db['username'] ?? env('DB_USERNAME');
+        $pass   = $db['password'] ?? env('DB_PASSWORD');
+        $host   = $db['host']     ?? env('DB_HOST', '127.0.0.1');
+        $port   = $db['port']     ?? env('DB_PORT', '3306');
 
-       $date = date('Y-m-d');
+        $date = date('Y-m-d');
         $time = date('g.iA');
         $filename = "gso_backup_{$date}_{$time}.sql";
         $tmpPathLocal = storage_path('app/' . $dir . DIRECTORY_SEPARATOR . $filename);
 
-        // Try mysqldump command first
+        if (!is_dir(dirname($tmpPathLocal))) {
+            @mkdir(dirname($tmpPathLocal), 0775, true);
+        }
+
+        $mysqldump = $this->resolveMysqldumpPath();
+        if (!$mysqldump) {
+            return response()->json([
+                'message' => 'mysqldump binary not found on this server',
+            ], 500);
+        }
+
         $cnfFile = tempnam(sys_get_temp_dir(), 'mysqldump');
         file_put_contents($cnfFile, "[mysqldump]\npassword=" . $pass . "\n");
 
         $cmd = sprintf(
-            '"C:\\xampp\\mysql\\bin\\mysqldump.exe" --defaults-extra-file=%s --routines --single-transaction -h %s -P %s -u %s %s',
+            '%s --defaults-extra-file=%s --routines --single-transaction --host=%s --port=%s --user=%s %s > %s 2>&1',
+            escapeshellcmd($mysqldump),
             escapeshellarg($cnfFile),
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($user),
-            escapeshellarg($dbName)
+            escapeshellarg($dbName),
+            escapeshellarg($tmpPathLocal)
         );
 
-        $errLog = storage_path('logs/mysqldump_err.txt');
-        $cmd .= ' > ' . escapeshellarg($tmpPathLocal) . ' 2>' . escapeshellarg($errLog);
-
         exec($cmd, $output, $returnVar);
-
-        return response()->json([
-    'cmd' => $cmd,
-    'return_var' => $returnVar,
-    'output' => $output,
-    'file_exists' => file_exists($tmpPathLocal),
-    'filesize' => file_exists($tmpPathLocal) ? filesize($tmpPathLocal) : null,
-    'err_log' => file_exists($errLog) ? file_get_contents($errLog) : 'no err log',
-]);
-
         @unlink($cnfFile);
 
         if ($returnVar !== 0 || !file_exists($tmpPathLocal) || filesize($tmpPathLocal) === 0) {
             if (file_exists($tmpPathLocal)) {
                 @unlink($tmpPathLocal);
             }
-            $errDetail = file_exists($errLog) ? file_get_contents($errLog) : implode("\n", $output);
             return response()->json([
                 'message' => 'Failed to create database backup',
-                'details' => $errDetail,
+                'details' => implode("\n", $output),
+                'return_var' => $returnVar,
             ], 500);
         }
-        // Try to restrict file permissions when possible
+
         @chmod($tmpPathLocal, 0600);
 
-        // If using a non-local disk, move it
         if ($disk !== 'local') {
             $relPath = $dir . '/' . $filename;
             Storage::disk($disk)->put($relPath, fopen($tmpPathLocal, 'r'));
             @unlink($tmpPathLocal);
         }
 
-        // Log audit
         $this->writeAudit($request, 'database_backup', 'created', ['file' => $filename, 'disk' => $disk]);
 
         $deleted = $this->purgeOldBackups($disk, $dir);
-        if (!empty($deleted)) {
-            foreach ($deleted as $deletedFile) {
-                $this->writeAudit($request, 'database_backup', 'auto_deleted', ['file' => $deletedFile, 'reason' => 'retention']);
-            }
+        foreach ($deleted as $deletedFile) {
+            $this->writeAudit($request, 'database_backup', 'auto_deleted', ['file' => $deletedFile, 'reason' => 'retention']);
         }
 
         return response()->json(['message' => 'Backup created', 'file' => $filename, 'deleted' => $deleted]);
+    }
+
+    private function resolveMysqldumpPath(): ?string
+    {
+        $candidates = [
+            '/usr/bin/mysqldump',
+            '/usr/local/bin/mysqldump',
+            'C:\\xampp\\mysql\\bin\\mysqldump.exe',
+        ];
+
+        foreach ($candidates as $path) {
+            if (file_exists($path)) {
+                return $path;
+            }
+        }
+
+        // Try PATH lookup on Linux/macOS
+        $which = @shell_exec('command -v mysqldump 2>/dev/null');
+        if ($which && trim($which) !== '') {
+            return trim($which);
+        }
+
+        return null;
     }
 
     public function status(Request $request)
@@ -178,14 +194,10 @@ class DatabaseBackupController extends Controller
 
     public function settings(Request $request)
     {
-        $schedule = config('backup.schedule', 'disabled');
-        $preferredTime = config('backup.time', '00:00');
-        $retentionDays = (int) config('backup.retention_days', 30);
-
         return response()->json([
-            'frequency' => $schedule,
-            'time' => $preferredTime,
-            'retention_days' => $retentionDays,
+            'frequency' => config('backup.schedule', 'disabled'),
+            'time' => config('backup.time', '00:00'),
+            'retention_days' => (int) config('backup.retention_days', 30),
         ]);
     }
 
@@ -206,8 +218,7 @@ class DatabaseBackupController extends Controller
             $payload['retention_days'] = (int) $data['retention_days'];
         }
 
-        $settingsPath = storage_path('app/backup-settings.json');
-        file_put_contents($settingsPath, json_encode($payload, JSON_PRETTY_PRINT));
+        file_put_contents(storage_path('app/backup-settings.json'), json_encode($payload, JSON_PRETTY_PRINT));
 
         $this->writeAudit($request, 'database_backup', 'schedule_updated', $payload);
 
@@ -219,9 +230,8 @@ class DatabaseBackupController extends Controller
 
     public function download(Request $request, $name)
     {
-        $disk = config('backup.disk', 'local');
+        $disk = config('backup.disk', 'backups');
         $dir = config('backup.directory', $this->backupDir);
-
         $path = $dir . '/' . $name;
 
         if (!Storage::disk($disk)->exists($path)) {
@@ -235,9 +245,8 @@ class DatabaseBackupController extends Controller
 
     public function destroy(Request $request, $name)
     {
-        $disk = config('backup.disk', 'local');
+        $disk = config('backup.disk', 'backups');
         $dir = config('backup.directory', $this->backupDir);
-
         $path = $dir . '/' . $name;
 
         if (!Storage::disk($disk)->exists($path)) {
@@ -253,18 +262,24 @@ class DatabaseBackupController extends Controller
 
     public function restore(Request $request, $name)
     {
-        // Restore via web is disabled by default for safety. Enable with config('backup.allow_web_restore')
         if (!config('backup.allow_web_restore', false)) {
             return response()->json(['message' => 'Web restore is disabled'], 403);
         }
 
-        $path = storage_path('app/' . $this->backupDir . '/' . $name);
+        $disk = config('backup.disk', 'backups');
+        $dir = config('backup.directory', $this->backupDir);
+        $path = $dir . '/' . $name;
 
-        if (!file_exists($path)) {
+        if (!Storage::disk($disk)->exists($path)) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
-        // Restoring is destructive: drop & import. We'll import using mysql client if available.
+        $localPath = storage_path('app/' . $dir . '/' . $name);
+        if (!file_exists($localPath)) {
+            $contents = Storage::disk($disk)->get($path);
+            file_put_contents($localPath, $contents);
+        }
+
         $db = config('database.connections.' . config('database.default'));
         $dbName = $db['database'] ?? env('DB_DATABASE');
         $user = $db['username'] ?? env('DB_USERNAME');
@@ -272,14 +287,11 @@ class DatabaseBackupController extends Controller
         $host = $db['host'] ?? env('DB_HOST', '127.0.0.1');
         $port = $db['port'] ?? env('DB_PORT', '3306');
 
-        // Attempt to run mysql to import
         $cmd = sprintf('mysql -h %s -P %s -u %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($user), escapeshellarg($dbName));
-
         if (!empty($pass)) {
             $cmd = 'MYSQL_PWD=' . escapeshellarg($pass) . ' ' . $cmd;
         }
-
-        $cmd .= ' < ' . escapeshellarg($path) . ' 2>&1';
+        $cmd .= ' < ' . escapeshellarg($localPath) . ' 2>&1';
 
         exec($cmd, $output, $returnVar);
 
@@ -305,7 +317,6 @@ class DatabaseBackupController extends Controller
             ]);
         }
 
-        // Check if current time is past or at the scheduled time (within a 5-minute window)
         $now = Carbon::now();
         [$hour, $minute] = explode(':', $preferredTime) + [0, 0];
         $hour = (int) $hour;
@@ -319,10 +330,8 @@ class DatabaseBackupController extends Controller
         if ($schedule === 'daily') {
             $isDue = $now->isBetween($windowStart, $windowEnd);
         } elseif ($schedule === 'weekly') {
-            // Check if today is Sunday and within the time window
             $isDue = $now->dayOfWeek === 0 && $now->isBetween($windowStart, $windowEnd);
         } elseif ($schedule === 'monthly') {
-            // Check if today is the 1st of the month and within the time window
             $isDue = $now->day === 1 && $now->isBetween($windowStart, $windowEnd);
         }
 
@@ -338,7 +347,6 @@ class DatabaseBackupController extends Controller
             ]);
         }
 
-        // Execute the scheduled backup command
         try {
             ob_start();
             $exitCode = Artisan::call('backup:run', ['--origin' => 'manual']);
@@ -396,12 +404,10 @@ class DatabaseBackupController extends Controller
             if (!is_array($details) || empty($details['file'])) {
                 continue;
             }
-
             $fileName = $details['file'];
             if (!in_array($fileName, $fileNames, true)) {
                 continue;
             }
-
             $map[$fileName] = [
                 'performed_by' => $record->performed_by ?? 'System',
                 'created_at' => $record->CreatedAt,
@@ -425,13 +431,11 @@ class DatabaseBackupController extends Controller
             if (!Str::endsWith($path, '.sql') && !Str::endsWith($path, '.gz')) {
                 continue;
             }
-
             try {
                 $modified = Storage::disk($disk)->lastModified($path);
             } catch (\Exception $e) {
                 continue;
             }
-
             if ($modified !== null && $modified < $cutoff) {
                 Storage::disk($disk)->delete($path);
                 $deleted[] = basename($path);
@@ -495,7 +499,6 @@ class DatabaseBackupController extends Controller
                 'CreatedAt' => now()->toDateTimeString(),
             ]);
         } catch (\Exception $e) {
-            // Don't break primary action if audit fails
             \Log::error('Failed to write backup audit: ' . $e->getMessage());
         }
     }

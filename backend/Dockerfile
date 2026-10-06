@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     libzip-dev \
     ca-certificates \
+    default-mysql-client \
     && docker-php-ext-install pdo pdo_mysql zip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
