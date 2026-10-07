@@ -316,12 +316,11 @@ class PropertyRlsddpController extends Controller
      */
     public function approveReport(int $id): JsonResponse
     {
-        $user = Auth::user();
+       $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
-        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
-            return response()->json(['message' => 'Unauthorized. Only Admin and Staff can approve RLSDDP reports.'], 403);
+        if ($roleName !== 'Admin') {
+            return response()->json(['message' => 'Unauthorized. Only Admin can approve RLSDDP reports.'], 403);
         }
-
         $report = PropertyRlsddpReport::with('items')->findOrFail($id);
 
         if ($report->ApprovalStatus === 'Approved') {
@@ -384,11 +383,11 @@ class PropertyRlsddpController extends Controller
      */
     public function rejectReport(Request $request, int $id): JsonResponse
     {
-        $user = Auth::user();
-        $roleName = $user?->userRole?->RoleName ?? '';
-        if (!in_array($roleName, ['Admin', 'GSO Staff'], true)) {
-            return response()->json(['message' => 'Unauthorized. Only Admin and Staff can reject RLSDDP reports.'], 403);
-        }
+    $user = Auth::user();
+$roleName = $user?->userRole?->RoleName ?? '';
+if ($roleName !== 'Admin') {
+    return response()->json(['message' => 'Unauthorized. Only Admin can reject RLSDDP reports.'], 403);
+}
 
         $validated = $request->validate([
             'RejectionNotes' => 'required|string|min:5|max:1000',
