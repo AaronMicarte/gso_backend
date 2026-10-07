@@ -420,32 +420,82 @@ class UserManagementController extends Controller
             return;
         }
 
-        $updatePayload = [
-            'FullName' => $newName,
-            'DepartmentID' => $newDepartmentId,
-            'UpdatedDate' => Carbon::now(),
-        ];
+        $oldName = trim((string) ($previousFullName ?? ''));
+        $departmentToMatch = $previousDepartmentId && $previousDepartmentId > 0
+            ? $previousDepartmentId
+            : $newDepartmentId;
 
         $normalizedEmail = strtolower(trim((string) ($user->Email ?? '')));
-        $updatedRows = 0;
+        $endUser = null;
 
+        // 1. Try to find existing EndUser by Email
         if ($normalizedEmail !== '') {
-            $updatedRows = EndUser::query()
+            $endUser = EndUser::query()
                 ->whereNotNull('Email')
                 ->whereRaw('LOWER(Email) = ?', [$normalizedEmail])
-                ->update($updatePayload);
+                ->first();
         }
 
-        $oldName = trim((string) ($previousFullName ?? ''));
-        if ($updatedRows === 0 && $oldName !== '') {
-            $departmentToMatch = $previousDepartmentId && $previousDepartmentId > 0
-                ? $previousDepartmentId
-                : $newDepartmentId;
-
-            EndUser::query()
+        // 2. Try to find existing EndUser by previous full name in department
+        if (!$endUser && $oldName !== '') {
+            $endUser = EndUser::query()
                 ->where('DepartmentID', $departmentToMatch)
                 ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($oldName)])
-                ->update($updatePayload);
+                ->first();
+        }
+
+        // 3. Try to find existing EndUser by new full name in department
+        if (!$endUser) {
+            $endUser = EndUser::query()
+                ->where('DepartmentID', $newDepartmentId)
+                ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($newName)])
+                ->first();
+        }
+
+        // 4. If this user is a Department Head, find the primary EndUser in that department
+        $isDeptHead = (int) ($user->UserRoleID ?? 0) === 4
+            || strtolower(trim((string) ($user->userRole?->RoleName ?? ''))) === 'department head';
+        if (!$endUser && $isDeptHead) {
+            $endUser = EndUser::query()
+                ->where('DepartmentID', $departmentToMatch)
+                ->orderBy('EndUserID')
+                ->first();
+        }
+
+        if ($endUser) {
+            $oldEndUserName = trim((string) ($endUser->FullName ?? ''));
+
+            $endUser->update([
+                'FullName' => $newName,
+                'DepartmentID' => $newDepartmentId,
+                'Email' => !empty($user->Email) ? $user->Email : $endUser->Email,
+                'UpdatedDate' => Carbon::now(),
+            ]);
+
+            // Update propertyissuance.IssuedToName so PAR/ICS records reflect the corrected name
+            DB::table('propertyissuance')
+                ->where('IssuedTo', (int) $endUser->EndUserID)
+                ->update(['IssuedToName' => $newName]);
+
+            // Update property_issuance_assignments
+            if ($oldName !== '') {
+                DB::table('property_issuance_assignments')
+                    ->whereRaw('LOWER(TRIM(receiver_name)) = ?', [strtolower($oldName)])
+                    ->update(['receiver_name' => $newName]);
+            }
+            if ($oldEndUserName !== '' && strtolower($oldEndUserName) !== strtolower($oldName)) {
+                DB::table('property_issuance_assignments')
+                    ->whereRaw('LOWER(TRIM(receiver_name)) = ?', [strtolower($oldEndUserName)])
+                    ->update(['receiver_name' => $newName]);
+            }
+        } else {
+            EndUser::create([
+                'PositionID' => 2,
+                'DepartmentID' => $newDepartmentId,
+                'FullName' => $newName,
+                'Email' => !empty($user->Email) ? $user->Email : null,
+                'IsActive' => 1,
+            ]);
         }
     }
 }

@@ -568,27 +568,49 @@ class InventoryController extends Controller
                                                 ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
                                                 LIMIT 1
                                             ) as currentBorrowerName"))
-                                                                    ->addSelect(DB::raw("(
-                                                                        SELECT COALESCE(pia.receiver_name)
-                                                                        FROM propertyissuancedetail pidet2
-                                                                        JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
-                                                                        LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
-                                                                        WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                                                            AND pi2.deleted_at IS NULL
-                                                                            AND pidet2.deleted_at IS NULL
-                                                                        ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
-                                                                        LIMIT 1
+                                                                    ->addSelect(DB::raw("COALESCE(
+                                                                        (
+                                                                            SELECT apEu.FullName
+                                                                            FROM assignedproperty ap
+                                                                            LEFT JOIN enduser apEu ON apEu.EndUserID = ap.EndUserID
+                                                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                                                            LIMIT 1
+                                                                        ),
+                                                                        (
+                                                                            SELECT COALESCE(pia.receiver_name, eu2.FullName, pi2.IssuedToName)
+                                                                            FROM propertyissuancedetail pidet2
+                                                                            JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
+                                                                            LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
+                                                                            LEFT JOIN enduser eu2 ON eu2.EndUserID = pi2.IssuedTo
+                                                                            WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                                                AND pi2.deleted_at IS NULL
+                                                                                AND pidet2.deleted_at IS NULL
+                                                                            ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
+                                                                            LIMIT 1
+                                                                        )
                                                                     ) as endUserName"))
-                                                                    ->addSelect(DB::raw("(
-                                                                        SELECT pia.position_office
-                                                                        FROM propertyissuancedetail pidet3
-                                                                        JOIN propertyissuance pi3 ON pi3.IssuanceID = pidet3.IssuanceID
-                                                                        LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet3.IssuanceDetailID
-                                                                        WHERE pidet3.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                                                                            AND pi3.deleted_at IS NULL
-                                                                            AND pidet3.deleted_at IS NULL
-                                                                        ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
-                                                                        LIMIT 1
+                                                                    ->addSelect(DB::raw("COALESCE(
+                                                                        (
+                                                                            SELECT pia.position_office
+                                                                            FROM propertyissuancedetail pidet3
+                                                                            JOIN propertyissuance pi3 ON pi3.IssuanceID = pidet3.IssuanceID
+                                                                            LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet3.IssuanceDetailID
+                                                                            WHERE pidet3.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                                                AND pi3.deleted_at IS NULL
+                                                                                AND pidet3.deleted_at IS NULL
+                                                                            ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
+                                                                            LIMIT 1
+                                                                        ),
+                                                                        (
+                                                                            SELECT pos.PositionName
+                                                                            FROM assignedproperty ap
+                                                                            LEFT JOIN enduser apEu ON apEu.EndUserID = ap.EndUserID
+                                                                            LEFT JOIN position pos ON pos.PositionID = apEu.PositionID
+                                                                            WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                                                                            ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                                                                            LIMIT 1
+                                                                        )
                                                                     ) as endUserPosition"))
                       ->addSelect(DB::raw("(
                             SELECT pi.DateIssued
@@ -2625,27 +2647,49 @@ class InventoryController extends Controller
                     ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
                     LIMIT 1
                 ) as currentBorrowerDepartment"),
-                'endUserName' => DB::raw("(
-                    SELECT COALESCE(pia.receiver_name)
-                    FROM propertyissuancedetail pidet2
-                    JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
-                    LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
-                    WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                        AND pi2.deleted_at IS NULL
-                        AND pidet2.deleted_at IS NULL
-                    ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
-                    LIMIT 1
+                'endUserName' => DB::raw("COALESCE(
+                    (
+                        SELECT apEu.FullName
+                        FROM assignedproperty ap
+                        LEFT JOIN enduser apEu ON apEu.EndUserID = ap.EndUserID
+                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT COALESCE(pia.receiver_name, eu2.FullName, pi2.IssuedToName)
+                        FROM propertyissuancedetail pidet2
+                        JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
+                        LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
+                        LEFT JOIN enduser eu2 ON eu2.EndUserID = pi2.IssuedTo
+                        WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                            AND pi2.deleted_at IS NULL
+                            AND pidet2.deleted_at IS NULL
+                        ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
+                        LIMIT 1
+                    )
                 ) as endUserName"),
-                'endUserPosition' => DB::raw("(
-                    SELECT pia.position_office
-                    FROM propertyissuancedetail pidet3
-                    JOIN propertyissuance pi3 ON pi3.IssuanceID = pidet3.IssuanceID
-                    LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet3.IssuanceDetailID
-                    WHERE pidet3.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                        AND pi3.deleted_at IS NULL
-                        AND pidet3.deleted_at IS NULL
-                    ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
-                    LIMIT 1
+                'endUserPosition' => DB::raw("COALESCE(
+                    (
+                        SELECT pia.position_office
+                        FROM propertyissuancedetail pidet3
+                        JOIN propertyissuance pi3 ON pi3.IssuanceID = pidet3.IssuanceID
+                        LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet3.IssuanceDetailID
+                        WHERE pidet3.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                            AND pi3.deleted_at IS NULL
+                            AND pidet3.deleted_at IS NULL
+                        ORDER BY pia.id DESC, pi3.DateIssued DESC, pi3.IssuanceID DESC
+                        LIMIT 1
+                    ),
+                    (
+                        SELECT pos.PositionName
+                        FROM assignedproperty ap
+                        LEFT JOIN enduser apEu ON apEu.EndUserID = ap.EndUserID
+                        LEFT JOIN position pos ON pos.PositionID = apEu.PositionID
+                        WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                        ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                        LIMIT 1
+                    )
                 ) as endUserPosition"),
                 'rlsddpStatus' => DB::raw($this->rlsddpStatusSelectSql() . ' as rlsddpStatus'),
                 'rlsddpNumber' => DB::raw($this->rlsddpNumberSelectSql() . ' as rlsddpNumber'),

@@ -32,4 +32,54 @@ class EndUserService extends BaseMasterDataService
             $query->where('PositionID', $params['position_id']);
         }
     }
+
+    public function update($id, array $data): ?\Illuminate\Database\Eloquent\Model
+    {
+        return DB::transaction(function () use ($id, $data) {
+            $endUser = $this->findById($id);
+            if (!$endUser) {
+                return null;
+            }
+
+            $oldName = trim((string) ($endUser->FullName ?? ''));
+            $endUser->update($data);
+            $endUser = $endUser->fresh();
+            $newName = trim((string) ($endUser->FullName ?? ''));
+
+            if ($newName !== '' && strtolower($newName) !== strtolower($oldName)) {
+                // Update propertyissuance.IssuedToName
+                DB::table('propertyissuance')
+                    ->where('IssuedTo', (int) $endUser->EndUserID)
+                    ->update(['IssuedToName' => $newName]);
+
+                // Update property_issuance_assignments
+                if ($oldName !== '') {
+                    DB::table('property_issuance_assignments')
+                        ->whereRaw('LOWER(TRIM(receiver_name)) = ?', [strtolower($oldName)])
+                        ->update(['receiver_name' => $newName]);
+                }
+
+                // Sync User table if matching Department Head or Email
+                if (!empty($endUser->Email)) {
+                    DB::table('user')
+                        ->whereNotNull('Email')
+                        ->whereRaw('LOWER(Email) = ?', [strtolower(trim((string) $endUser->Email))])
+                        ->update(['FullName' => $newName, 'UpdatedDate' => now()]);
+                }
+                if ($endUser->DepartmentID) {
+                    DB::table('user')
+                        ->where('DepartmentID', (int) $endUser->DepartmentID)
+                        ->where('UserRoleID', 4)
+                        ->where(function ($q) use ($oldName) {
+                            $q->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($oldName)])
+                              ->orWhereNull('FullName')
+                              ->orWhere('FullName', '');
+                        })
+                        ->update(['FullName' => $newName, 'UpdatedDate' => now()]);
+                }
+            }
+
+            return $endUser;
+        });
+    }
 }

@@ -44,15 +44,9 @@ class PropertyRlsddpReport extends Model
     ];
 
     public function items(): HasMany
-    {
-        return $this->hasMany(PropertyRlsddpItem::class, 'RlsddpID', 'RlsddpID')
-            ->whereExists(function ($query) {
-                $query->select(DB::raw(1))
-                    ->from('propertyinventorydetail')
-                    ->whereColumn('propertyinventorydetail.InventoryDetailID', 'property_rlsddp_items.InventoryDetailID')
-                    ->whereNull('propertyinventorydetail.deleted_at');
-            });
-    }
+{
+    return $this->hasMany(PropertyRlsddpItem::class, 'RlsddpID', 'RlsddpID');
+}
 
     public function removedItems(): HasMany
     {

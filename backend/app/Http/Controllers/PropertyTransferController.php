@@ -267,7 +267,9 @@ class PropertyTransferController extends Controller
             return response()->json(['message' => 'One or more items are currently under an active borrow request'], 422);
         }
 
-        return DB::transaction(function () use ($validated, $user, $inventoryDetailIds, $requesterUserId) {
+        $isAdmin = $roleName === self::ROLE_ADMIN;
+
+        return DB::transaction(function () use ($validated, $user, $inventoryDetailIds, $requesterUserId, $isAdmin) {
             $assignedProperties = AssignedProperty::query()
                 ->join('propertyinventorydetail as pid', 'assignedproperty.InventoryDetailID', '=', 'pid.InventoryDetailID')
                 ->whereIn('assignedproperty.InventoryDetailID', $inventoryDetailIds)
@@ -304,10 +306,13 @@ class PropertyTransferController extends Controller
                 'ToEndUserID' => (int) $validated['to_end_user_id'],
                 'Reason' => $validated['reason'] ?? null,
                 'RequestedItemsCount' => (int) $inventoryDetailIds->count(),
-                'ReleasingDecision' => 'pending',
-                'Status' => 'approved',
-                'ApprovedByUserID' => (int) $user->UserID,
-                'ApprovedAt' => now(),
+                'ReleasingDecision' => $isAdmin ? 'approved' : 'pending',
+                'ReleasingApprovedCount' => $isAdmin ? (int) $inventoryDetailIds->count() : 0,
+                'ReleasingReviewedByUserID' => $isAdmin ? (int) $user->UserID : null,
+                'ReleasingReviewedAt' => $isAdmin ? now() : null,
+                'Status' => $isAdmin ? 'approved' : 'pending',
+                'ApprovedByUserID' => $isAdmin ? (int) $user->UserID : null,
+                'ApprovedAt' => $isAdmin ? now() : null,
             ]);
 
             foreach ($validated['items'] as $item) {
@@ -315,6 +320,7 @@ class PropertyTransferController extends Controller
                     'TransferID' => $transfer->TransferID,
                     'InventoryDetailID' => (int) $item['inventory_detail_id'],
                     'Quantity' => (int) $item['quantity'],
+                    'ApprovedQuantity' => $isAdmin ? (int) $item['quantity'] : null,
                     'Remarks' => null,
                 ]);
             }
@@ -329,6 +335,7 @@ class PropertyTransferController extends Controller
                     'from_department_id' => (int) $transfer->FromDepartmentID,
                     'to_department_id' => (int) $transfer->ToDepartmentID,
                     'items' => $inventoryDetailIds->all(),
+                    'auto_approved' => $isAdmin,
                 ]
             );
 
@@ -364,17 +371,33 @@ class PropertyTransferController extends Controller
                 'items.inventoryDetail.drDetail.article',
             ]);
 
+            if ($isAdmin) {
+                $this->notifyTransferRoles(
+                    $transfer,
+                    'property_transfer.created',
+                    'New Property Transfer Request (Auto-Approved)',
+                    sprintf('Transfer %s was created by Admin and auto-approved.', (string) $transfer->TransferNumber),
+                    'approved',
+                    (int) $user->UserID
+                );
+
+                return response()->json([
+                    'message' => 'Transfer request submitted and auto-approved',
+                    'transfer' => $transfer,
+                ], 201);
+            }
+
             $this->notifyTransferRoles(
                 $transfer,
                 'property_transfer.created',
-                'New Property Transfer Request (Auto-Approved)',
-                sprintf('Transfer %s was submitted by %s and auto-approved by GSO workflow.', (string) $transfer->TransferNumber, (string) ($user->FullName ?? 'Department Head')),
-                'approved',
+                'New Property Transfer Request (Pending Admin Approval)',
+                sprintf('Transfer %s was submitted by %s and is pending Admin approval.', (string) $transfer->TransferNumber, (string) ($user->FullName ?? 'GSO Staff')),
+                'pending',
                 (int) $user->UserID
             );
 
             return response()->json([
-                'message' => 'Transfer request submitted and auto-approved',
+                'message' => 'Transfer request submitted and pending Admin approval',
                 'transfer' => $transfer,
             ], 201);
         });
@@ -385,20 +408,32 @@ class PropertyTransferController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if (!$this->isPrivileged($roleName)) {
-            return response()->json(['message' => 'Unauthorized to approve transfer requests'], 403);
+        if ($roleName !== self::ROLE_ADMIN) {
+            return response()->json(['message' => 'Only Admin can approve transfer requests'], 403);
         }
 
-        $transfer = PropertyTransfer::findOrFail($id);
+        $transfer = PropertyTransfer::with('items')->findOrFail($id);
         if ($transfer->Status !== 'pending') {
             return response()->json(['message' => 'Only pending transfers can be approved'], 422);
         }
+
+        $itemCount = $transfer->items->count();
 
         $transfer->update([
             'Status' => 'approved',
             'ApprovedByUserID' => (int) $user->UserID,
             'ApprovedAt' => now(),
+            'ReleasingDecision' => 'approved',
+            'ReleasingApprovedCount' => $itemCount,
+            'ReleasingReviewedByUserID' => (int) $user->UserID,
+            'ReleasingReviewedAt' => now(),
         ]);
+
+        foreach ($transfer->items as $item) {
+            $item->update([
+                'ApprovedQuantity' => (int) ($item->Quantity ?? 1),
+            ]);
+        }
 
         AssetAuditLog::createLog(
             'property_transfer',
@@ -408,25 +443,24 @@ class PropertyTransferController extends Controller
             ['transfer_number' => $transfer->TransferNumber]
         );
 
-            $transfer->loadMissing('items');
-            foreach ($transfer->items as $item) {
-                AssetAuditLog::createLog(
-                    'inventory_detail',
-                    (int) $item->InventoryDetailID,
-                    'transfer_approved',
-                    (int) $user->UserID,
-                    [
-                        'transfer_id' => (int) $transfer->TransferID,
-                        'transfer_number' => $transfer->TransferNumber,
-                    ]
-                );
-            }
+        foreach ($transfer->items as $item) {
+            AssetAuditLog::createLog(
+                'inventory_detail',
+                (int) $item->InventoryDetailID,
+                'transfer_approved',
+                (int) $user->UserID,
+                [
+                    'transfer_id' => (int) $transfer->TransferID,
+                    'transfer_number' => $transfer->TransferNumber,
+                ]
+            );
+        }
 
         $this->notifyTransferRoles(
             $transfer,
             'property_transfer.approved',
             'Property Transfer Approved',
-            sprintf('Transfer %s was approved by GSO/Admin.', (string) $transfer->TransferNumber),
+            sprintf('Transfer %s was approved by Admin.', (string) $transfer->TransferNumber),
             'approved',
             (int) $user->UserID
         );
@@ -434,7 +468,7 @@ class PropertyTransferController extends Controller
             $transfer,
             'property_transfer.approved',
             'Your Transfer Request Was Approved',
-            sprintf('Transfer %s has been approved and is waiting for releasing department review.', (string) $transfer->TransferNumber),
+            sprintf('Transfer %s has been approved by Admin and is ready for completion.', (string) $transfer->TransferNumber),
             'approved'
         );
 
@@ -802,8 +836,8 @@ class PropertyTransferController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if (!$this->isPrivileged($roleName)) {
-            return response()->json(['message' => 'Unauthorized to reject transfer requests'], 403);
+        if ($roleName !== self::ROLE_ADMIN) {
+            return response()->json(['message' => 'Only Admin can reject transfer requests'], 403);
         }
 
         $validated = $request->validate([
@@ -811,8 +845,8 @@ class PropertyTransferController extends Controller
         ]);
 
         $transfer = PropertyTransfer::findOrFail($id);
-        if (!in_array($transfer->Status, ['pending', 'approved'], true)) {
-            return response()->json(['message' => 'Only pending or approved transfers can be rejected'], 422);
+        if ($transfer->Status !== 'pending') {
+            return response()->json(['message' => 'Only pending transfers can be rejected'], 422);
         }
 
         $transfer->update([
@@ -849,7 +883,7 @@ class PropertyTransferController extends Controller
             $transfer,
             'property_transfer.rejected',
             'Property Transfer Rejected',
-            sprintf('Transfer %s was rejected by GSO/Admin.', (string) $transfer->TransferNumber),
+            sprintf('Transfer %s was rejected by Admin.', (string) $transfer->TransferNumber),
             'rejected',
             (int) $user->UserID
         );
@@ -857,7 +891,7 @@ class PropertyTransferController extends Controller
             $transfer,
             'property_transfer.rejected',
             'Your Transfer Request Was Rejected',
-            sprintf('Transfer %s was rejected by GSO/Admin.', (string) $transfer->TransferNumber),
+            sprintf('Transfer %s was rejected by Admin.', (string) $transfer->TransferNumber),
             'rejected'
         );
 
@@ -1103,8 +1137,8 @@ class PropertyTransferController extends Controller
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
 
-        if (!$this->isPrivileged($roleName)) {
-            return response()->json(['message' => 'Unauthorized to complete transfers'], 403);
+        if ($roleName !== self::ROLE_ADMIN) {
+            return response()->json(['message' => 'Only Admin can complete transfers'], 403);
         }
 
         $validated = $request->validate([
@@ -1456,9 +1490,57 @@ class PropertyTransferController extends Controller
         $departmentId = $request->query('department_id');
         $excludeGso = filter_var($request->query('exclude_gso'), FILTER_VALIDATE_BOOLEAN);
 
+        // Fetch Department Head users from user table
+        $deptHeadUsers = DB::table('user as u')
+            ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+            ->where('u.IsActive', 1)
+            ->where(function ($q) {
+                $q->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+                  ->orWhere('u.UserRoleID', 4);
+            })
+            ->select(['u.UserID', 'u.FullName', 'u.DepartmentID'])
+            ->get();
+
+        foreach ($deptHeadUsers as $head) {
+            $trimmedName = trim((string) $head->FullName);
+            if ($trimmedName === '' || !$head->DepartmentID) {
+                continue;
+            }
+
+            $endUser = EndUser::where('DepartmentID', (int) $head->DepartmentID)
+                ->whereRaw('LOWER(FullName) = ?', [strtolower($trimmedName)])
+                ->first();
+
+            if (!$endUser) {
+                $existingDeptEndUser = EndUser::where('DepartmentID', (int) $head->DepartmentID)
+                    ->orderBy('EndUserID')
+                    ->first();
+
+                if ($existingDeptEndUser) {
+                    $existingDeptEndUser->update(['FullName' => $trimmedName]);
+                } else {
+                    EndUser::create([
+                        'PositionID' => 2,
+                        'DepartmentID' => (int) $head->DepartmentID,
+                        'FullName' => $trimmedName,
+                        'IsActive' => 1,
+                    ]);
+                }
+            }
+        }
+
+        $headNames = $deptHeadUsers->pluck('FullName')->filter()->map(fn ($n) => strtolower(trim($n)))->values()->all();
+        $headDeptIds = $deptHeadUsers->pluck('DepartmentID')->filter()->map(fn ($id) => (int) $id)->values()->all();
+
         $query = EndUser::query()
             ->leftJoin('department as d', 'enduser.DepartmentID', '=', 'd.DepartmentID')
             ->where('enduser.IsActive', 1)
+            ->whereIn('enduser.DepartmentID', $headDeptIds)
+            ->where(function ($q) use ($headNames) {
+                foreach ($headNames as $name) {
+                    $q->orWhereRaw('LOWER(enduser.FullName) = ?', [$name]);
+                }
+            })
             ->orderBy('enduser.FullName')
             ->select([
                 'enduser.EndUserID',

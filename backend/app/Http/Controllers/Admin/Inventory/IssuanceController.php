@@ -101,15 +101,20 @@ class IssuanceController extends Controller
                 if ($issuedToType === 'enduser') {
                     $resolvedEndUser = $enduser;
                 } else {
-                    $resolvedEndUser = EndUser::where('DepartmentID', $departmentId)
-                        ->where('FullName', 'Department Custodian')
-                        ->first();
+                    $resolvedEndUser = EndUser::where('DepartmentID', $departmentId)->orderBy('EndUserID')->first();
 
                     if (!$resolvedEndUser) {
+                        $deptHead = \App\Models\Auth\User::where('DepartmentID', $departmentId)
+                            ->where('IsActive', 1)
+                            ->whereIn('UserRoleID', [4, 5])
+                            ->orderByDesc('UpdatedDate')
+                            ->first();
+
                         $resolvedEndUser = EndUser::create([
                             'PositionID' => 2,
                             'DepartmentID' => $departmentId,
-                            'FullName' => 'Department Custodian',
+                            'FullName' => $deptHead?->FullName ?? 'Department Custodian',
+                            'Email' => $deptHead?->Email ?? null,
                             'IsActive' => 1,
                         ]);
                     }

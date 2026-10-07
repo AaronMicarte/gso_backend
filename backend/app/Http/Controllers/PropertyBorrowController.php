@@ -1225,9 +1225,57 @@ class PropertyBorrowController extends Controller
         $departmentId = $request->query('department_id');
         $excludeGso = filter_var($request->query('exclude_gso'), FILTER_VALIDATE_BOOLEAN);
 
+        // Fetch Department Head users from user table
+        $deptHeadUsers = DB::table('user as u')
+            ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+            ->where('u.IsActive', 1)
+            ->where(function ($q) {
+                $q->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+                  ->orWhere('u.UserRoleID', 4);
+            })
+            ->select(['u.UserID', 'u.FullName', 'u.DepartmentID'])
+            ->get();
+
+        foreach ($deptHeadUsers as $head) {
+            $trimmedName = trim((string) $head->FullName);
+            if ($trimmedName === '' || !$head->DepartmentID) {
+                continue;
+            }
+
+            $endUser = EndUser::where('DepartmentID', (int) $head->DepartmentID)
+                ->whereRaw('LOWER(FullName) = ?', [strtolower($trimmedName)])
+                ->first();
+
+            if (!$endUser) {
+                $existingDeptEndUser = EndUser::where('DepartmentID', (int) $head->DepartmentID)
+                    ->orderBy('EndUserID')
+                    ->first();
+
+                if ($existingDeptEndUser) {
+                    $existingDeptEndUser->update(['FullName' => $trimmedName]);
+                } else {
+                    EndUser::create([
+                        'PositionID' => 2,
+                        'DepartmentID' => (int) $head->DepartmentID,
+                        'FullName' => $trimmedName,
+                        'IsActive' => 1,
+                    ]);
+                }
+            }
+        }
+
+        $headNames = $deptHeadUsers->pluck('FullName')->filter()->map(fn ($n) => strtolower(trim($n)))->values()->all();
+        $headDeptIds = $deptHeadUsers->pluck('DepartmentID')->filter()->map(fn ($id) => (int) $id)->values()->all();
+
         $query = EndUser::query()
             ->leftJoin('department as d', 'enduser.DepartmentID', '=', 'd.DepartmentID')
             ->where('enduser.IsActive', 1)
+            ->whereIn('enduser.DepartmentID', $headDeptIds)
+            ->where(function ($q) use ($headNames) {
+                foreach ($headNames as $name) {
+                    $q->orWhereRaw('LOWER(enduser.FullName) = ?', [$name]);
+                }
+            })
             ->orderBy('enduser.FullName')
             ->select([
                 'enduser.EndUserID',

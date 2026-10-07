@@ -1209,11 +1209,33 @@ class PropertyIssuanceController extends Controller
             throw new \Exception('Unable to resolve EndUser for issuance. Please set Assigned End User (PAR) or ensure requester has a FullName + Department.');
         }
 
-        $existing = EndUser::where('FullName', $nameToUse)
-            ->where('DepartmentID', $departmentId)
-            ->first();
+        $nameToUse = trim($nameToUse);
+
+        $existing = null;
+        if (!empty($assetRequest->requester?->Email)) {
+            $existing = EndUser::where('Email', $assetRequest->requester->Email)->first();
+        }
+
+        if (!$existing) {
+            $existing = EndUser::where('DepartmentID', $departmentId)
+                ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($nameToUse)])
+                ->first();
+        }
+
+        if (!$existing && in_array((int) ($assetRequest->requester?->UserRoleID ?? 0), [4, 5], true)) {
+            $existing = EndUser::where('DepartmentID', $departmentId)
+                ->orderBy('EndUserID')
+                ->first();
+        }
 
         if ($existing) {
+            if ($existing->FullName !== $nameToUse) {
+                $existing->FullName = $nameToUse;
+                if (!empty($assetRequest->requester?->Email) && empty($existing->Email)) {
+                    $existing->Email = $assetRequest->requester->Email;
+                }
+                $existing->save();
+            }
             return $existing;
         }
 
@@ -1222,6 +1244,7 @@ class PropertyIssuanceController extends Controller
             'PositionID' => 2, // Staff (safe default)
             'DepartmentID' => $departmentId,
             'FullName' => $nameToUse,
+            'Email' => $assetRequest->requester?->Email,
             'IsActive' => 1,
         ]);
     }
@@ -1802,28 +1825,31 @@ class PropertyIssuanceController extends Controller
     {
         $requester = $deliveryReceipt->requestedByUser;
         if ($requester) {
-            $existing = EndUser::where(function ($q) use ($requester) {
-                    $hasCondition = false;
+            $existing = null;
+            if (!empty($requester->Email)) {
+                $existing = EndUser::where('Email', $requester->Email)->first();
+            }
 
-                    if (!empty($requester->Email)) {
-                        $q->where('Email', $requester->Email);
-                        $hasCondition = true;
-                    }
+            if (!$existing && !empty($requester->FullName) && !empty($requester->DepartmentID)) {
+                $existing = EndUser::where('DepartmentID', $requester->DepartmentID)
+                    ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower(trim($requester->FullName))])
+                    ->first();
+            }
 
-                    if (!empty($requester->FullName)) {
-                        if ($hasCondition) {
-                            $q->orWhere('FullName', $requester->FullName);
-                        } else {
-                            $q->where('FullName', $requester->FullName);
-                        }
-                    }
-                })
-                ->when(!empty($requester->DepartmentID), function ($q) use ($requester) {
-                    $q->where('DepartmentID', $requester->DepartmentID);
-                })
-                ->first();
+            if (!$existing && !empty($requester->DepartmentID) && in_array((int) ($requester->UserRoleID ?? 0), [4, 5], true)) {
+                $existing = EndUser::where('DepartmentID', $requester->DepartmentID)
+                    ->orderBy('EndUserID')
+                    ->first();
+            }
 
             if ($existing) {
+                if (!empty($requester->FullName) && $existing->FullName !== $requester->FullName) {
+                    $existing->FullName = $requester->FullName;
+                    if (!empty($requester->Email) && empty($existing->Email)) {
+                        $existing->Email = $requester->Email;
+                    }
+                    $existing->save();
+                }
                 return $existing;
             }
 

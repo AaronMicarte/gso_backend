@@ -1539,11 +1539,32 @@ $data = $deliveryReceipt->toArray();
         // Normalize to proper case before any lookup or insert
         $fullName = ucwords(strtolower(trim($fullName)));
 
-        $existing = EndUser::where('FullName', $fullName)
-            ->where('DepartmentID', $departmentId)
-            ->first();
+        $existing = null;
+        if (!empty($requester?->Email)) {
+            $existing = EndUser::where('Email', $requester->Email)->first();
+        }
+
+        if (!$existing) {
+            $existing = EndUser::where('DepartmentID', $departmentId)
+                ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($fullName)])
+                ->first();
+        }
+
+        // If this requester is a Department Head/Officer, reuse existing department EndUser
+        if (!$existing && in_array((int) ($requester?->UserRoleID ?? 0), [4, 5], true)) {
+            $existing = EndUser::where('DepartmentID', $departmentId)
+                ->orderBy('EndUserID')
+                ->first();
+        }
 
         if ($existing) {
+            if ($existing->FullName !== $fullName) {
+                $existing->FullName = $fullName;
+                if (!empty($requester?->Email) && empty($existing->Email)) {
+                    $existing->Email = $requester->Email;
+                }
+                $existing->save();
+            }
             return $existing;
         }
 
@@ -1551,6 +1572,7 @@ $data = $deliveryReceipt->toArray();
             'PositionID' => 2,
             'DepartmentID' => $departmentId,
             'FullName' => $fullName,
+            'Email' => $requester?->Email,
             'IsActive' => 1,
         ]);
     }

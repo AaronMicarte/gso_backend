@@ -1156,11 +1156,34 @@ class InspectionReportController extends Controller
             throw new \Exception('Unable to resolve EndUser for inspection inventory creation.');
         }
 
-        $existing = EndUser::where('FullName', $fullName)
-            ->where('DepartmentID', $departmentId)
-            ->first();
+        $fullName = ucwords(strtolower(trim($fullName)));
+
+        $existing = null;
+        if (!empty($requester?->Email)) {
+            $existing = EndUser::where('Email', $requester->Email)->first();
+        }
+
+        if (!$existing) {
+            $existing = EndUser::where('DepartmentID', $departmentId)
+                ->whereRaw('LOWER(TRIM(FullName)) = ?', [strtolower($fullName)])
+                ->first();
+        }
+
+        // If this requester is a Department Head/Officer, reuse existing department EndUser
+        if (!$existing && in_array((int) ($requester?->UserRoleID ?? 0), [4, 5], true)) {
+            $existing = EndUser::where('DepartmentID', $departmentId)
+                ->orderBy('EndUserID')
+                ->first();
+        }
 
         if ($existing) {
+            if ($existing->FullName !== $fullName) {
+                $existing->FullName = $fullName;
+                if (!empty($requester?->Email) && empty($existing->Email)) {
+                    $existing->Email = $requester->Email;
+                }
+                $existing->save();
+            }
             return $existing;
         }
 
@@ -1168,6 +1191,7 @@ class InspectionReportController extends Controller
             'PositionID' => 2,
             'DepartmentID' => $departmentId,
             'FullName' => $fullName,
+            'Email' => $requester?->Email,
             'IsActive' => 1,
         ]);
     }
