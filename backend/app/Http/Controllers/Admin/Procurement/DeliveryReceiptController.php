@@ -1435,10 +1435,11 @@ $data = $deliveryReceipt->toArray();
                 $assignedReceiverName = ucwords(strtolower(trim($assignedReceiverName)));
 
                 // Save or update property_issuance_assignments table
-               $existingAssignment = DB::table('property_issuance_assignments')
-                    ->where('issuance_id', (int) $issuance->IssuanceID)
-                    ->where('receiver_name', $assignedReceiverName)
-                    ->first();
+                $existingAssignment = DB::table('property_issuance_assignments')
+                ->where('issuance_id', (int) $issuance->IssuanceID)
+                ->where('issuance_detail_id', (int) $issuanceDetail->IssuanceDetailID)
+                ->where('receiver_name', $assignedReceiverName)
+                ->first();
 
                 if ($existingAssignment) {
                     DB::table('property_issuance_assignments')
