@@ -1286,28 +1286,54 @@ $removedDetailIds = DB::table('property_rlsddp_items as ri')
     ->map(fn ($id) => (int) $id)
     ->toArray();
 
-     // Pick only the latest assignedproperty row per InventoryDetailID
-// for the requested department, so transfers/re-issuances don't
-// inflate the count.
-$latestApSub = DB::table('assignedproperty as ap2')
-    ->select('ap2.InventoryDetailID', DB::raw('MAX(ap2.PropertyID) as PropertyID'))
-    ->where('ap2.DepartmentID', (int) $departmentId)
-    ->groupBy('ap2.InventoryDetailID');
+        // Use the same 3-level COALESCE department resolution as InventoryController::applyAllItemsFilters
+        // so the cross-check captures EVERY item that All Items would show for this department,
+        // including items whose accountable officer was set via propertyissuance (not assignedproperty).
+        $locationDepartmentIdSql = "COALESCE(
+            (
+                SELECT ap.DepartmentID
+                FROM assignedproperty ap
+                WHERE ap.InventoryDetailID = pid.InventoryDetailID
+                ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT COALESCE(depReq_d.DepartmentID, dep_d.DepartmentID, depU_d.DepartmentID)
+                FROM propertyissuancedetail pidet_d
+                JOIN propertyissuance pi_d ON pi_d.IssuanceID = pidet_d.IssuanceID
+                LEFT JOIN enduser eu_d ON eu_d.EndUserID = pi_d.IssuedTo
+                LEFT JOIN department dep_d ON dep_d.DepartmentID = eu_d.DepartmentID
+                LEFT JOIN user u_d ON u_d.UserID = pi_d.IssuedTo
+                LEFT JOIN department depU_d ON depU_d.DepartmentID = u_d.DepartmentID
+                LEFT JOIN assetrequest ar_d ON ar_d.RequestID = pi_d.RequestID
+                LEFT JOIN department depReq_d ON depReq_d.DepartmentID = ar_d.DepartmentID
+                WHERE pidet_d.InventoryDetailID = pid.InventoryDetailID
+                    AND pi_d.deleted_at IS NULL
+                    AND pidet_d.deleted_at IS NULL
+                    AND pi_d.Status = 'acknowledged'
+                ORDER BY pi_d.DateIssued DESC, pi_d.IssuanceID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT depDR_d.DepartmentID
+                FROM deliveryreceiptdetail drd_d
+                JOIN deliveryreceipt dr_d ON dr_d.DRID = drd_d.DRID
+                LEFT JOIN user drReqU_d ON drReqU_d.UserID = dr_d.RequestedBy
+                LEFT JOIN department depDR_d ON depDR_d.DepartmentID = drReqU_d.DepartmentID
+                WHERE drd_d.DRDetailID = pid.SourceDRDetailID
+                LIMIT 1
+            )
+        )";
 
-$query = DB::table('assignedproperty as ap')
-    ->joinSub($latestApSub, 'latest_ap', function ($join) {
-        $join->on('latest_ap.InventoryDetailID', '=', 'ap.InventoryDetailID')
-             ->on('latest_ap.PropertyID', '=', 'ap.PropertyID');
-    })
-    ->join('propertyinventorydetail as pid', 'pid.InventoryDetailID', '=', 'ap.InventoryDetailID')
-    ->join('propertytype as pt', 'pt.PropertyTypeID', '=', 'pid.PropertyTypeID')
-    ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
-    ->leftJoin('deliveryreceipt as dr', 'dr.DRID', '=', 'drd.DRID')
-    ->leftJoin('supplier as s', 's.SupplierID', '=', 'dr.SupplierID')
-    ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
-    ->leftJoin('unitofmeasure as uom', 'uom.UnitOfMeasureID', '=', 'pid.UnitOfMeasureID')
-    ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'ap.EndUserID')
-    ->whereNull('pid.deleted_at');
+        $query = DB::table('propertyinventorydetail as pid')
+            ->join('propertytype as pt', 'pt.PropertyTypeID', '=', 'pid.PropertyTypeID')
+            ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
+            ->leftJoin('deliveryreceipt as dr', 'dr.DRID', '=', 'drd.DRID')
+            ->leftJoin('supplier as s', 's.SupplierID', '=', 'dr.SupplierID')
+            ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
+            ->leftJoin('unitofmeasure as uom', 'uom.UnitOfMeasureID', '=', 'pid.UnitOfMeasureID')
+            ->whereNull('pid.deleted_at')
+            ->whereRaw("($locationDepartmentIdSql) = ?", [(int) $departmentId]);
 
         if (!empty($removedDetailIds)) {
             $query->whereNotIn('pid.InventoryDetailID', $removedDetailIds);
@@ -1358,7 +1384,14 @@ $query = DB::table('assignedproperty as ap')
             'pid.Remarks as InventoryRemarks',
             'pt.PropertyClassificationID',
             'pt.PropertyName as PropertyTypeName',
-            'eu.FullName as FallbackEndUserName',
+            DB::raw("(
+                SELECT eu_fb.FullName
+                FROM assignedproperty ap_fb
+                LEFT JOIN enduser eu_fb ON eu_fb.EndUserID = ap_fb.EndUserID
+                WHERE ap_fb.InventoryDetailID = pid.InventoryDetailID
+                ORDER BY COALESCE(ap_fb.UpdatedDate, ap_fb.CreatedDate) DESC, ap_fb.PropertyID DESC
+                LIMIT 1
+            ) as FallbackEndUserName"),
         ]);
 
         $query->addSelect(DB::raw("(
@@ -1429,7 +1462,9 @@ $query->where('pid.PropertyStatusID', 2)
         }
         $scannedDetailIds = $scansQuery->pluck('inventory_detail_id')->map(fn ($id) => (int) $id)->flip()->toArray();
 
-        // 1. Group by DR + Article + Description + Model + Brand to calculate group scan stats
+        // 1. Group by DR + Article + Description + Model + Brand + EndUser to calculate group scan stats.
+        // EndUser is included so that items assigned to different people (same DR batch) are NOT merged.
+        // This matches the All Items filter behaviour where each person's assets are counted independently.
         $groupStats = [];
         foreach ($rawRows as $row) {
             $drKey = $row->DRNumber ? trim((string) $row->DRNumber) : ($row->PONumber ? trim((string) $row->PONumber) : 'DR-' . (int) ($row->DRID ?? 0));
@@ -1437,8 +1472,10 @@ $query->where('pid.PropertyStatusID', 2)
             $desc = strtolower(trim((string) ($row->DrItemDescription ?: $row->InventoryDescription)));
             $brand = strtolower(trim((string) ($row->Brand ?? '')));
             $model = strtolower(trim((string) ($row->ModelNumber ?? '')));
+            // Resolve the end-user the same way the display row will (receiver_name takes priority).
+            $endUserKey = strtolower(trim((string) ($row->AssignedReceiverName ?: ($row->FallbackEndUserName ?: ''))));
 
-            $groupKey = implode('||', [$drKey, $article, $desc, $brand, $model]);
+            $groupKey = implode('||', [$drKey, $article, $desc, $brand, $model, $endUserKey]);
             $isScanned = isset($scannedDetailIds[(int) $row->InventoryDetailID]);
 
             if (!isset($groupStats[$groupKey])) {
@@ -1450,8 +1487,9 @@ $query->where('pid.PropertyStatusID', 2)
             }
         }
 
-        // 2. Separate rows if they have different serial numbers; only combine if they have the same DR, article, description, model, brand.
-        // If an item has a serial number, each unique serial number stays on its own row.
+        // 2. Separate rows if they have different serial numbers or different end users.
+        // Items from the same DR batch but assigned to different people must NOT be merged —
+        // otherwise Aaron's 2 keyboards would incorrectly show as 5 (absorbing 3 others).
         $combinedBuckets = [];
         foreach ($rawRows as $row) {
             $drKey = $row->DRNumber ? trim((string) $row->DRNumber) : ($row->PONumber ? trim((string) $row->PONumber) : 'DR-' . (int) ($row->DRID ?? 0));
@@ -1460,14 +1498,17 @@ $query->where('pid.PropertyStatusID', 2)
             $brand = strtolower(trim((string) ($row->Brand ?? '')));
             $model = strtolower(trim((string) ($row->ModelNumber ?? '')));
             $serial = trim((string) ($row->SerialNumber ?? ''));
+            // Resolve end-user consistently (same priority as display: receiver_name first).
+            $endUserKey = strtolower(trim((string) ($row->AssignedReceiverName ?: ($row->FallbackEndUserName ?: ''))));
 
-            $groupKey = implode('||', [$drKey, $article, $desc, $brand, $model]);
+            // GroupKey now includes the end-user so per-person scan stats are tracked separately.
+            $groupKey = implode('||', [$drKey, $article, $desc, $brand, $model, $endUserKey]);
 
             if ($serial !== '') {
-                // Different serial number -> separate row!
+                // Each unique serial number stays on its own row.
                 $bucketKey = $groupKey . '||SN:' . strtolower($serial) . '||PID:' . $row->InventoryDetailID;
             } else {
-                // Same DR, article, description, model, brand with no serial number -> combine!
+                // Same DR + article + description + model + brand + end-user with no serial -> combine.
                 $bucketKey = $groupKey . '||NO_SN';
             }
 

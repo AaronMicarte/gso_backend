@@ -1966,6 +1966,7 @@ class InventoryController extends Controller
         $documentType = $request->filled('document_type') ? strtoupper(trim((string) $request->query('document_type'))) : null;
         $rlsddpStatus = $request->filled('rlsddp_status') ? trim((string) $request->query('rlsddp_status')) : null;
         $departmentId = $request->filled('department_id') ? (int) $request->query('department_id') : null;
+        $accountableOfficer = $request->filled('accountable_officer') ? trim((string) $request->query('accountable_officer')) : null;
         $displayMode = $request->query('display_mode', 'individual');
         $dateSortColumn = $this->allItemsDateSortColumn();
         $qualifiedDateCol = 'propertyinventorydetail.' . $dateSortColumn;
@@ -1973,7 +1974,7 @@ class InventoryController extends Controller
 
         // Lightweight filter query: no per-row correlated subqueries (stats + pagination stay fast).
         $filterQuery = $this->newAllItemsFilterQuery();
-        $this->applyAllItemsFilters($filterQuery, $search, $conditionId, $propertyTypeId, $documentType, $rlsddpStatus, $departmentId, $propertyStatusId);
+        $this->applyAllItemsFilters($filterQuery, $search, $conditionId, $propertyTypeId, $documentType, $rlsddpStatus, $departmentId, $propertyStatusId, $accountableOfficer);
 
         $statsResult = (clone $filterQuery)->reorder()->select(DB::raw("
             COUNT(*) as total,
@@ -2174,7 +2175,7 @@ class InventoryController extends Controller
             ->whereNull('propertyinventorydetail.deleted_at');
     }
 
-    private function applyAllItemsFilters($query, ?string $search, ?int $conditionId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null, ?int $propertyStatusId = null): void
+    private function applyAllItemsFilters($query, ?string $search, ?int $conditionId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null, ?int $propertyStatusId = null, ?string $accountableOfficer = null): void
     {
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -2274,6 +2275,44 @@ class InventoryController extends Controller
                 )
             )";
             $query->whereRaw("($locationDepartmentIdSql) = ?", [$departmentId]);
+        }
+
+        if ($accountableOfficer !== null && $accountableOfficer !== '') {
+            $officerPattern = '%' . $accountableOfficer . '%';
+            $query->where(function ($q) use ($officerPattern) {
+                // Check assignment via issuance assignment receiver_name
+                $q->whereExists(function ($sub) use ($officerPattern) {
+                    $sub->select(DB::raw(1))
+                        ->from('propertyissuancedetail as pidet_ao')
+                        ->join('propertyissuance as pi_ao', 'pi_ao.IssuanceID', '=', 'pidet_ao.IssuanceID')
+                        ->join('property_issuance_assignments as pia_ao', 'pia_ao.issuance_detail_id', '=', 'pidet_ao.IssuanceDetailID')
+                        ->whereColumn('pidet_ao.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+                        ->whereNull('pi_ao.deleted_at')
+                        ->whereNull('pidet_ao.deleted_at')
+                        ->whereNotNull('pia_ao.receiver_name')
+                        ->where('pia_ao.receiver_name', '!=', '')
+                        ->where('pia_ao.receiver_name', 'like', $officerPattern);
+                })
+                // OR via issuance end-user (IssuedTo)
+                ->orWhereExists(function ($sub) use ($officerPattern) {
+                    $sub->select(DB::raw(1))
+                        ->from('propertyissuancedetail as pidet_ao2')
+                        ->join('propertyissuance as pi_ao2', 'pi_ao2.IssuanceID', '=', 'pidet_ao2.IssuanceID')
+                        ->join('enduser as eu_ao', 'eu_ao.EndUserID', '=', 'pi_ao2.IssuedTo')
+                        ->whereColumn('pidet_ao2.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+                        ->whereNull('pi_ao2.deleted_at')
+                        ->whereNull('pidet_ao2.deleted_at')
+                        ->where('eu_ao.FullName', 'like', $officerPattern);
+                })
+                // OR via assignedproperty end-user
+                ->orWhereExists(function ($sub) use ($officerPattern) {
+                    $sub->select(DB::raw(1))
+                        ->from('assignedproperty as ap_ao')
+                        ->join('enduser as apeu_ao', 'apeu_ao.EndUserID', '=', 'ap_ao.EndUserID')
+                        ->whereColumn('ap_ao.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
+                        ->where('apeu_ao.FullName', 'like', $officerPattern);
+                });
+            });
         }
     }
 
