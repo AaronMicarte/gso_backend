@@ -1275,23 +1275,39 @@ class RpcInventoryController extends Controller
         $typeFilter = strtoupper(trim((string) $request->query('type', 'ALL')));
         $search = trim((string) $request->query('search', ''));
 
-        // Exclude removed items (marked as Lost/Stolen/Damaged/Destroyed in RLSDDP)
-        $removedDetailIds = DB::table('property_rlsddp_items')
-            ->pluck('InventoryDetailID')
-            ->map(fn ($id) => (int) $id)
-            ->toArray();
+      // Exclude removed items (marked as Lost/Stolen/Damaged/Destroyed in RLSDDP).
+// Only exclude items whose RLSDDP report is still active (not deleted, not Rejected),
+// matching the logic used by InventoryController::applyRlsddpStatusFilter().
+$removedDetailIds = DB::table('property_rlsddp_items as ri')
+    ->join('property_rlsddp_reports as rlsddp', 'rlsddp.RlsddpID', '=', 'ri.RlsddpID')
+    ->whereNull('rlsddp.deleted_at')
+    ->where('rlsddp.ApprovalStatus', '!=', 'Rejected')
+    ->pluck('ri.InventoryDetailID')
+    ->map(fn ($id) => (int) $id)
+    ->toArray();
 
-        $query = DB::table('assignedproperty as ap')
-            ->join('propertyinventorydetail as pid', 'pid.InventoryDetailID', '=', 'ap.InventoryDetailID')
-            ->join('propertytype as pt', 'pt.PropertyTypeID', '=', 'pid.PropertyTypeID')
-            ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
-            ->leftJoin('deliveryreceipt as dr', 'dr.DRID', '=', 'drd.DRID')
-            ->leftJoin('supplier as s', 's.SupplierID', '=', 'dr.SupplierID')
-            ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
-            ->leftJoin('unitofmeasure as uom', 'uom.UnitOfMeasureID', '=', 'pid.UnitOfMeasureID')
-            ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'ap.EndUserID')
-            ->where('ap.DepartmentID', (int) $departmentId)
-            ->whereNull('pid.deleted_at');
+     // Pick only the latest assignedproperty row per InventoryDetailID
+// for the requested department, so transfers/re-issuances don't
+// inflate the count.
+$latestApSub = DB::table('assignedproperty as ap2')
+    ->select('ap2.InventoryDetailID', DB::raw('MAX(ap2.PropertyID) as PropertyID'))
+    ->where('ap2.DepartmentID', (int) $departmentId)
+    ->groupBy('ap2.InventoryDetailID');
+
+$query = DB::table('assignedproperty as ap')
+    ->joinSub($latestApSub, 'latest_ap', function ($join) {
+        $join->on('latest_ap.InventoryDetailID', '=', 'ap.InventoryDetailID')
+             ->on('latest_ap.PropertyID', '=', 'ap.PropertyID');
+    })
+    ->join('propertyinventorydetail as pid', 'pid.InventoryDetailID', '=', 'ap.InventoryDetailID')
+    ->join('propertytype as pt', 'pt.PropertyTypeID', '=', 'pid.PropertyTypeID')
+    ->leftJoin('deliveryreceiptdetail as drd', 'drd.DRDetailID', '=', 'pid.SourceDRDetailID')
+    ->leftJoin('deliveryreceipt as dr', 'dr.DRID', '=', 'drd.DRID')
+    ->leftJoin('supplier as s', 's.SupplierID', '=', 'dr.SupplierID')
+    ->leftJoin('articles as a', 'a.ArticleID', '=', 'drd.ArticleID')
+    ->leftJoin('unitofmeasure as uom', 'uom.UnitOfMeasureID', '=', 'pid.UnitOfMeasureID')
+    ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'ap.EndUserID')
+    ->whereNull('pid.deleted_at');
 
         if (!empty($removedDetailIds)) {
             $query->whereNotIn('pid.InventoryDetailID', $removedDetailIds);
@@ -1384,15 +1400,19 @@ class RpcInventoryController extends Controller
         ) as AssignedReceiverName"));
 
         // Only include items that were actually issued (acknowledged)
-        $query->whereExists(function ($sub) {
-            $sub->select(DB::raw(1))
-                ->from('propertyissuancedetail as pidet')
-                ->join('propertyissuance as pi', 'pi.IssuanceID', '=', 'pidet.IssuanceID')
-                ->whereColumn('pidet.InventoryDetailID', 'pid.InventoryDetailID')
-                ->whereNull('pi.deleted_at')
-                ->whereNull('pidet.deleted_at')
-                ->where('pi.Status', 'acknowledged');
-        });
+       // Match the All Items "Issued" definition so counts align.
+// PropertyStatusID = 2 is the authoritative "Issued" flag used by
+// InventoryController::allItems().
+$query->where('pid.PropertyStatusID', 2)
+    ->whereExists(function ($sub) {
+        $sub->select(DB::raw(1))
+            ->from('propertyissuancedetail as pidet')
+            ->join('propertyissuance as pi', 'pi.IssuanceID', '=', 'pidet.IssuanceID')
+            ->whereColumn('pidet.InventoryDetailID', 'pid.InventoryDetailID')
+            ->whereNull('pi.deleted_at')
+            ->whereNull('pidet.deleted_at')
+            ->whereIn('pi.Status', ['acknowledged', 'pending_acknowledgment']);
+    });
 
         $rawRows = $query->orderBy('pid.PropertyNumber')->get();
 
