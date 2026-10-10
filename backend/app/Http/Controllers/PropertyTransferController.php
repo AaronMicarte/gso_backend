@@ -1291,6 +1291,8 @@ class PropertyTransferController extends Controller
                 'issuance_detail_id'  => $row->issuance_detail_id,
                 'receiver_name'       => $row->receiver_name,
                 'position_office'     => $row->position_office,
+                'office_name'         => $row->office_name ?? null,
+                'is_department_head'  => (bool) ($row->is_department_head ?? false),
                 'quantity'            => $row->quantity,
             ];
         })->filter(fn($r) => $r['inventory_detail_id'] !== null)->values();
@@ -1305,6 +1307,8 @@ class PropertyTransferController extends Controller
             'assignments.*.inventory_detail_id'    => 'required|integer',
             'assignments.*.receiver_name'          => 'required|string',
             'assignments.*.position_office'        => 'nullable|string',
+            'assignments.*.office_name'            => 'nullable|string',
+            'assignments.*.is_department_head'     => 'nullable|boolean',
             'assignments.*.quantity'               => 'required|integer|min:1',
         ]);
 
@@ -1330,11 +1334,19 @@ class PropertyTransferController extends Controller
                     ->where('issuance_detail_id', $issuanceDetail->IssuanceDetailID)
                     ->delete();
 
+                $isDeptHead = filter_var($a['is_department_head'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                $positionOffice = isset($a['position_office']) ? trim((string) $a['position_office']) : '';
+                if ($isDeptHead && $positionOffice === '') {
+                    $positionOffice = 'Department Head';
+                }
+
                 DB::table('property_issuance_assignments')->insert([
                     'issuance_id'       => $issuanceDetail->IssuanceID,
                     'issuance_detail_id'=> $issuanceDetail->IssuanceDetailID,
                     'receiver_name'     => trim((string) $a['receiver_name']),
-                    'position_office'   => isset($a['position_office']) ? trim((string) $a['position_office']) : null,
+                    'position_office'   => $positionOffice !== '' ? $positionOffice : null,
+                    'office_name'       => isset($a['office_name']) ? trim((string) $a['office_name']) : null,
+                    'is_department_head'=> $isDeptHead ? 1 : 0,
                     'quantity'          => (int) $a['quantity'],
                     'created_at'        => $now,
                     'updated_at'        => $now,

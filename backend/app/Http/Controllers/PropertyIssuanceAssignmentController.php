@@ -83,6 +83,8 @@ class PropertyIssuanceAssignmentController extends Controller
             'assignments.*.issuance_detail_id' => 'required|integer',
             'assignments.*.receiver_name' => 'required|string',
             'assignments.*.position_office' => 'nullable|string',
+            'assignments.*.office_name' => 'nullable|string',
+            'assignments.*.is_department_head' => 'nullable|boolean',
             'assignments.*.quantity' => 'required|integer|min:1',
         ]);
 
@@ -111,11 +113,14 @@ class PropertyIssuanceAssignmentController extends Controller
             // Dedup payload by issuance_detail_id — last one wins
             $byDetail = [];
             foreach ($assignments as $a) {
+                $isDeptHead = filter_var($a['is_department_head'] ?? false, FILTER_VALIDATE_BOOLEAN);
                 $byDetail[(int) $a['issuance_detail_id']] = [
                     'issuance_id' => $id,
                     'issuance_detail_id' => (int) $a['issuance_detail_id'],
                     'receiver_name' => $a['receiver_name'],
-                    'position_office' => $a['position_office'] ?? null,
+                    'position_office' => $a['position_office'] ?? ($isDeptHead ? 'Department Head' : null),
+                    'office_name' => $a['office_name'] ?? null,
+                    'is_department_head' => $isDeptHead ? 1 : 0,
                     'quantity' => (int) $a['quantity'],
                     'created_at' => $now,
                     'updated_at' => $now,

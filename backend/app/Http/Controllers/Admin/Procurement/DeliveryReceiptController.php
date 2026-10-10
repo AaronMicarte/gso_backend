@@ -626,7 +626,9 @@ $data = $deliveryReceipt->toArray();
                     ->select(
                         'pid.InventoryDetailID',
                         'pia.receiver_name',
-                        'pia.position_office'
+                        'pia.position_office',
+                        'pia.office_name',
+                        'pia.is_department_head'
                     )
                     ->get();
 
@@ -634,6 +636,8 @@ $data = $deliveryReceipt->toArray();
                     $assignmentsByInvDetailId[(int) $row->InventoryDetailID] = [
                         'receiver_name'   => $row->receiver_name,
                         'position_office' => $row->position_office,
+                        'office_name' => $row->office_name ?? null,
+                        'is_department_head' => (bool) ($row->is_department_head ?? false),
                     ];
                 }
             }
@@ -661,11 +665,17 @@ $data = $deliveryReceipt->toArray();
 
                         $receiverName   = trim((string) ($assignment['receiver_name']   ?? ''));
                         $positionOffice = trim((string) ($assignment['position_office'] ?? ''));
+                        $officeName = trim((string) ($assignment['office_name'] ?? ''));
+                        $isDepartmentHead = !empty($assignment['is_department_head']);
 
                         // Fallback to requesting officer when blank
                         if ($receiverName === '') {
                             $receiverName   = $fallbackName ?? '';
-                            $positionOffice = $fallbackPosition ?? '';
+                            $positionOffice = $isDepartmentHead ? 'Department Head' : ($positionOffice ?: ($fallbackPosition ?? ''));
+                        }
+
+                        if ($officeName === '') {
+                            $officeName = $fallbackPosition ?? '';
                         }
 
                         if ($invDetId > 0) {
@@ -673,6 +683,8 @@ $data = $deliveryReceipt->toArray();
                                 'inventory_detail_id' => $invDetId,
                                 'receiver_name'       => $receiverName ?: null,
                                 'position_office'     => $positionOffice ?: null,
+                                'office_name' => $officeName ?: null,
+                                'is_department_head' => $isDepartmentHead,
                             ];
                         }
                     }
@@ -1323,9 +1335,16 @@ $data = $deliveryReceipt->toArray();
             if ($drDetailId !== null) {
                 $recName = trim((string) ($a['receiver_name'] ?? ''));
                 $pos = trim((string) ($a['position_office'] ?? ''));
+                $officeName = trim((string) ($a['office_name'] ?? ''));
+                $isDeptHead = filter_var($a['is_department_head'] ?? false, FILTER_VALIDATE_BOOLEAN);
+                if ($isDeptHead && $pos === '') {
+                    $pos = 'Department Head';
+                }
                 $assignmentsByDrDetailId[$drDetailId][] = [
                     'receiver_name' => $recName !== '' ? $recName : null,
                     'position_office' => $pos !== '' ? $pos : null,
+                    'office_name' => $officeName !== '' ? $officeName : null,
+                    'is_department_head' => $isDeptHead,
                     'remaining_qty' => max(1, (int) ($a['quantity'] ?? 1)),
                 ];
             }
@@ -1397,12 +1416,16 @@ $data = $deliveryReceipt->toArray();
                 $sourceDrDetailId = (int) ($detail->SourceDRDetailID ?? 0);
                 $assignedReceiverName = null;
                 $assignedPosition = null;
+                $assignedOfficeName = null;
+                $assignedIsDeptHead = false;
 
                 if ($sourceDrDetailId > 0 && !empty($assignmentsByDrDetailId[$sourceDrDetailId])) {
                     foreach ($assignmentsByDrDetailId[$sourceDrDetailId] as $k => &$aItem) {
                         if ($aItem['remaining_qty'] > 0) {
                             $assignedReceiverName = $aItem['receiver_name'];
                             $assignedPosition = $aItem['position_office'];
+                            $assignedOfficeName = $aItem['office_name'] ?? null;
+                            $assignedIsDeptHead = !empty($aItem['is_department_head']);
                             $aItem['remaining_qty']--;
                             if ($aItem['remaining_qty'] <= 0) {
                                 unset($assignmentsByDrDetailId[$sourceDrDetailId][$k]);
@@ -1418,17 +1441,25 @@ $data = $deliveryReceipt->toArray();
                 $fallbackOfficerName = $deliveryReceipt->requestedByUser?->FullName ?? $resolvedEndUser->FullName ?? 'Unassigned';
                 $fallbackOfficerDept = $deliveryReceipt->requestedByUser?->department?->DepartmentName ?? null;
 
+                if ($assignedIsDeptHead && empty($assignedPosition)) {
+                    $assignedPosition = 'Department Head';
+                }
+
                 // If receiver_name is blank or unassigned, fallback to requesting officer
                 if (empty($assignedReceiverName)) {
                     $assignedReceiverName = $fallbackOfficerName;
                     if (empty($assignedPosition)) {
-                        $assignedPosition = $fallbackOfficerDept;
+                        $assignedPosition = $assignedIsDeptHead ? 'Department Head' : $fallbackOfficerDept;
                     }
                 } else {
-                    // Receiver name provided! If position/office was left blank, fallback to requesting officer's department/position
+                    // Receiver name provided! If position was left blank, fallback to dept name or title
                     if (empty($assignedPosition)) {
-                        $assignedPosition = $fallbackOfficerDept;
+                        $assignedPosition = $assignedIsDeptHead ? 'Department Head' : $fallbackOfficerDept;
                     }
+                }
+
+                if (empty($assignedOfficeName)) {
+                    $assignedOfficeName = $fallbackOfficerDept;
                 }
 
                 // Normalize receiver name to proper case before any DB operation
@@ -1441,25 +1472,27 @@ $data = $deliveryReceipt->toArray();
                 ->where('receiver_name', $assignedReceiverName)
                 ->first();
 
+                $assignmentPayload = [
+                    'issuance_detail_id' => (int) $issuanceDetail->IssuanceDetailID,
+                    'position_office' => $assignedPosition,
+                    'office_name' => $assignedOfficeName,
+                    'is_department_head' => $assignedIsDeptHead ? 1 : 0,
+                    'updated_at' => now(),
+                ];
+
                 if ($existingAssignment) {
                     DB::table('property_issuance_assignments')
                         ->where('id', $existingAssignment->id)
-                        ->update([
-                            'issuance_detail_id' => (int) $issuanceDetail->IssuanceDetailID, // repoint to latest
-                            'position_office' => $assignedPosition,   // overwrite position
-                            'quantity' => $existingAssignment->quantity + 1,  // stack quantity
-                            'updated_at' => now(),
-                        ]);
+                        ->update(array_merge($assignmentPayload, [
+                            'quantity' => $existingAssignment->quantity + 1,
+                        ]));
                 } else {
-                    DB::table('property_issuance_assignments')->insert([
+                    DB::table('property_issuance_assignments')->insert(array_merge($assignmentPayload, [
                         'issuance_id' => (int) $issuance->IssuanceID,
-                        'issuance_detail_id' => (int) $issuanceDetail->IssuanceDetailID,
                         'receiver_name' => $assignedReceiverName,
-                        'position_office' => $assignedPosition,
                         'quantity' => 1,
                         'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    ]));
                 }
                 // Resolve EndUser record for AssignedProperty — normalize name, never create duplicates
                 $positionId = 2;
