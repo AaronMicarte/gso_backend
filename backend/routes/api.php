@@ -36,6 +36,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AssetServiceRecordController;
 use App\Http\Controllers\PropertyWasteController;
 use App\Http\Controllers\RpcInventoryController;
+use App\Http\Controllers\UnserviceableReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -284,6 +285,11 @@ Route::middleware('auth:sanctum')->group(function () {
         // Generic removal / restore for inventory details
         Route::post('details/{id}/remove', [\App\Http\Controllers\InventoryRemovalController::class, 'remove']);
         Route::post('details/{id}/restore', [\App\Http\Controllers\InventoryRemovalController::class, 'restore']);
+        // Unserviceable reports and proof attachments
+        Route::post('unserviceable-reports', [UnserviceableReportController::class, 'store']);
+        Route::get('details/{id}/unserviceable-report', [UnserviceableReportController::class, 'showForDetail']);
+        Route::get('unserviceable-reports/{reportId}/attachments/{attachmentId}/view', [UnserviceableReportController::class, 'viewAttachment']);
+        Route::get('unserviceable-reports/{reportId}/attachments/{attachmentId}/download', [UnserviceableReportController::class, 'downloadAttachment']);
         Route::get('', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'index']);
         // Keep wildcard last to avoid swallowing static routes
         Route::get('{id}', [\App\Http\Controllers\Admin\Inventory\InventoryController::class, 'show']);

@@ -139,50 +139,43 @@ class AssetServiceRecordController extends Controller
             ->value('PropertyStatusID');
     }
 
-    private function ensureWasteRecordForUnserviceable(
-        AssetServiceRecord $record,
-        AssetServiceRecordDetail $detail,
-        \App\Models\Inventory\PropertyInventoryDetail $inventoryDetail,
-        int $actorUserId
-    ): void {
-        if ((string) $detail->Status !== 'unserviceable') {
-            return;
-        }
-
-        $report = PropertyWasteReport::firstOrCreate(
-            ['SourceServiceRecordID' => (int) $record->ServiceRecordID],
-            [
-                'WasteNumber' => PropertyWasteReport::generateWasteNumber(),
-                'DepartmentID' => (int) $record->ReportSource,
-                'Status' => 'draft',
-                'Notes' => 'Auto-created from service record unserviceable outcome.',
-                'CreatedByUserID' => $actorUserId,
-                'UpdatedByUserID' => $actorUserId,
-            ]
-        );
-
-        PropertyWasteItem::firstOrCreate(
-            ['ServiceRecordDetailID' => (int) $detail->ServiceRecordDetailID],
-            [
-                'PropertyWasteReportID' => (int) $report->PropertyWasteReportID,
-                'InventoryDetailID' => (int) $detail->InventoryDetailID,
-                'PropertyNumber' => $detail->PropertyNumber ?: $inventoryDetail->PropertyNumber,
-                'ItemDescription' => $detail->ItemDescription ?: $inventoryDetail->Description,
-                'ConditionID' => (int) $inventoryDetail->ConditionID,
-                'Status' => 'pending_method',
-                'ActionedByUserID' => $actorUserId,
-            ]
-        );
-
-        $forDisposalStatusId = $this->getForDisposalPropertyStatusId();
-        if (!empty($forDisposalStatusId)) {
-            $inventoryDetail->PropertyStatusID = (int) $forDisposalStatusId;
-            $inventoryDetail->save();
-
-            \App\Models\AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)
-                ->update(['PropertyStatusID' => (int) $forDisposalStatusId]);
-        }
+   private function ensureWasteRecordForUnserviceable(
+    AssetServiceRecord $record,
+    AssetServiceRecordDetail $detail,
+    \App\Models\Inventory\PropertyInventoryDetail $inventoryDetail,
+    int $actorUserId
+): void {
+    if ((string) $detail->Status !== 'unserviceable') {
+        return;
     }
+
+    $report = PropertyWasteReport::firstOrCreate(
+        ['SourceServiceRecordID' => (int) $record->ServiceRecordID],
+        [
+            'WasteNumber' => PropertyWasteReport::generateWasteNumber(),
+            'DepartmentID' => (int) $record->ReportSource,
+            'Status' => 'draft',
+            'Notes' => 'Auto-created from service record unserviceable outcome.',
+            'CreatedByUserID' => $actorUserId,
+            'UpdatedByUserID' => $actorUserId,
+        ]
+    );
+
+    PropertyWasteItem::withTrashed()->updateOrCreate(
+    ['ServiceRecordDetailID' => (int) $detail->ServiceRecordDetailID],
+    [
+        'PropertyWasteReportID' => (int) $report->PropertyWasteReportID,
+        'InventoryDetailID' => (int) $detail->InventoryDetailID,
+        'PropertyNumber' => $detail->PropertyNumber ?: $inventoryDetail->PropertyNumber,
+        'ItemDescription' => $detail->ItemDescription ?: $inventoryDetail->Description,
+        'ConditionID' => (int) $inventoryDetail->ConditionID,
+        'Status' => 'pending_method',
+        'ActionedByUserID' => $actorUserId,
+        'deleted_at' => null,
+    ]
+);
+
+}
 
     public function index(Request $request)
     {
@@ -574,20 +567,28 @@ class AssetServiceRecordController extends Controller
                     $inventoryConditionId = $this->getConditionIdForStatus($detail->Status);
                     if ($inventoryConditionId !== null) {
                         $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
-                        $this->ensureWasteRecordForUnserviceable($record, $detail, $inventoryDetail, (int) $user->UserID);
+                        if ((string) $detail->Status === 'unserviceable') {
+                            $this->ensureWasteRecordForUnserviceable($record, $detail, $inventoryDetail, (int) $user->UserID);
+                        } else {
+                            $forDisposalStatusId = $this->getForDisposalPropertyStatusId();
+                            if (!empty($forDisposalStatusId) && (int) $inventoryDetail->PropertyStatusID === (int) $forDisposalStatusId) {
+                                $inventoryDetail->PropertyStatusID = null;
+                                $inventoryDetail->save();
+                            }
+                            PropertyWasteItem::where('ServiceRecordDetailID', (int) $detail->ServiceRecordDetailID)->delete();
+                        }
                     }
                 }
             }
 
-            if (empty($detailStatuses)) {
-                $detailStatuses = AssetServiceRecordDetail::where('ServiceRecordID', (int) $record->ServiceRecordID)
-                    ->pluck('Status')
-                    ->map(static fn ($value) => (string) $value)
-                    ->all();
-            }
+            // Always evaluate overall status based on ALL details of this service record
+            $allDetailStatuses = AssetServiceRecordDetail::where('ServiceRecordID', (int) $record->ServiceRecordID)
+                ->pluck('Status')
+                ->map(static fn ($value) => (string) $value)
+                ->all();
 
-            $resolvedStatus = $this->computeOverallStatus($detailStatuses);
-            if (array_key_exists('status', $validated)) {
+            $resolvedStatus = $this->computeOverallStatus($allDetailStatuses);
+            if (!empty($validated['status'])) {
                 $resolvedStatus = (string) $validated['status'];
             }
 
@@ -602,24 +603,20 @@ class AssetServiceRecordController extends Controller
 
             $record->save();
 
-            // If top-level status is changed without updating any details explicitly, sync inventory conditions.
-            if (empty($validated['details']) && array_key_exists('status', $validated)) {
+            // If top-level status is changed without updating details explicitly, sync inventory conditions for non-terminal details only.
+            if (empty($validated['details']) && !empty($validated['status'])) {
                 $inventoryConditionId = $this->getConditionIdForStatus($record->Status);
                 if ($inventoryConditionId !== null) {
                     $serviceDetails = AssetServiceRecordDetail::where('ServiceRecordID', (int) $record->ServiceRecordID)->get();
                     foreach ($serviceDetails as $serviceDetail) {
+                        // Do not overwrite items that have already been resolved individually
+                        if (in_array((string) $serviceDetail->Status, ['fixed', 'unserviceable'], true)) {
+                            continue;
+                        }
+
                         $inventoryDetail = \App\Models\Inventory\PropertyInventoryDetail::find($serviceDetail->InventoryDetailID);
                         if ($inventoryDetail) {
                             $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
-                            if ((string) $record->Status === 'unserviceable') {
-                                $serviceDetail = AssetServiceRecordDetail::where('ServiceRecordID', (int) $record->ServiceRecordID)
-                                    ->where('InventoryDetailID', (int) $inventoryDetail->InventoryDetailID)
-                                    ->first();
-
-                                if ($serviceDetail) {
-                                    $this->ensureWasteRecordForUnserviceable($record, $serviceDetail, $inventoryDetail, (int) $user->UserID);
-                                }
-                            }
                         }
                     }
                 }
@@ -938,42 +935,36 @@ class AssetServiceRecordController extends Controller
             throw new HttpResponseException(response()->json(['message' => 'Invalid handling decision provided.'], 422));
         }
 
-        if (empty($handlingDecision)) {
-            throw new HttpResponseException(response()->json(['message' => 'Handling decision is required.'], 422));
-        }
+      // Handling decision is optional. Default to warranty so budget_status stays populated.
+$handlingDecision = $handlingDecision ?: 'warranty';
 
-        $status = $forcePending
-            ? 'pending'
-            : (string) ($detailInput['status'] ?? $defaultStatus ?: 'pending');
+$status = $forcePending
+    ? 'pending'
+    : (string) ($detailInput['status'] ?? $defaultStatus ?: 'pending');
 
-        $verificationNote = isset($detailInput['verification_note']) ? (string) $detailInput['verification_note'] : null;
+$verificationNote = isset($detailInput['verification_note']) ? (string) $detailInput['verification_note'] : null;
 
-        $normalizedHandlingDecision = $handlingDecision;
-        if ($handlingDecision === 'warranty_claim') {
-            $normalizedHandlingDecision = 'warranty';
-        } elseif ($handlingDecision === 'vendor_repair') {
-            $normalizedHandlingDecision = 'no_warranty';
-        }
+$normalizedHandlingDecision = $handlingDecision;
+if ($handlingDecision === 'warranty_claim') {
+    $normalizedHandlingDecision = 'warranty';
+} elseif ($handlingDecision === 'vendor_repair') {
+    $normalizedHandlingDecision = 'no_warranty';
+}
 
-        $warrantyCovered = $normalizedHandlingDecision === 'warranty';
-        $actualCost = array_key_exists('actual_cost', $detailInput) ? $detailInput['actual_cost'] : null;
-        $assignedVendorId = !empty($detailInput['assigned_vendor_id']) ? (int) $detailInput['assigned_vendor_id'] : null;
-        $assignedSupplierId = !empty($detailInput['assigned_supplier_id']) ? (int) $detailInput['assigned_supplier_id'] : null;
+$warrantyCovered = $normalizedHandlingDecision === 'warranty';
+$actualCost = array_key_exists('actual_cost', $detailInput) ? $detailInput['actual_cost'] : null;
+$assignedVendorId = !empty($detailInput['assigned_vendor_id']) ? (int) $detailInput['assigned_vendor_id'] : null;
+$assignedSupplierId = !empty($detailInput['assigned_supplier_id']) ? (int) $detailInput['assigned_supplier_id'] : null;
 
-        if ($assignedVendorId && $assignedSupplierId) {
-            throw new HttpResponseException(response()->json(['message' => 'Assign only one service provider: vendor or supplier.'], 422));
-        }
-
-        if (!$assignedVendorId && !$assignedSupplierId) {
-            throw new HttpResponseException(response()->json(['message' => 'Selecting a vendor or supplier is required.'], 422));
-        }
+// Only one provider allowed. Zero providers allowed. No requirement.
+if ($assignedVendorId && $assignedSupplierId) {
+    throw new HttpResponseException(response()->json(['message' => 'Assign only one service provider: vendor or supplier.'], 422));
+}
 
         $isFinal = $status === 'fixed';
-        if (!$isFinal && ($actualCost !== null && $actualCost !== '')) {
-            throw new HttpResponseException(response()->json(['message' => 'Actual cost can only be set when service is in fixed stage.'], 422));
-        }
-
-        if ($isFinal && !$warrantyCovered && ($actualCost === null || $actualCost === '')) {
+        if (!$isFinal) {
+            $actualCost = null;
+        } elseif (!$warrantyCovered && ($actualCost === null || $actualCost === '')) {
             $actualCost = 0;
         }
 
@@ -1042,22 +1033,11 @@ class AssetServiceRecordController extends Controller
             return true;
         }
 
-        if ($currentStatus === 'repair_in_progress' && in_array($nextStatus, ['fixed', 'unserviceable'], true)) {
-            return true;
-        }
-
-        if ($currentStatus === 'verification' && in_array($nextStatus, ['fixed', 'unserviceable', 'repair_in_progress'], true)) {
-            return true;
-        }
-
-        $currentIndex = array_search($currentStatus, self::STATUS_FLOW, true);
-        $nextIndex = array_search($nextStatus, self::STATUS_FLOW, true);
-
-        if ($currentIndex === false || $nextIndex === false) {
+        if (!in_array($currentStatus, self::ALLOWED_STATUSES, true) || !in_array($nextStatus, self::ALLOWED_STATUSES, true)) {
             return false;
         }
 
-        return $nextIndex >= $currentIndex && $nextIndex - $currentIndex <= 1;
+        return true;
     }
 
     private function withAttachmentUrls(AssetServiceRecord $record): AssetServiceRecord
@@ -1083,18 +1063,37 @@ class AssetServiceRecordController extends Controller
             return 'pending';
         }
 
-        if (in_array('repair_in_progress', $statuses, true)) {
-            return 'repair_in_progress';
-        }
-        if (in_array('verification', $statuses, true)) {
-            return 'verification';
-        }
-        if (in_array('unserviceable', $statuses, true)) {
-            return 'unserviceable';
-        }
-        if (in_array('fixed', $statuses, true)) {
-            return 'fixed';
-        }
+        $totalCount = count($statuses);
+        $fixedCount = count(array_filter($statuses, fn ($s) => $s === 'fixed'));
+        $unserviceableCount = count(array_filter($statuses, fn ($s) => $s === 'unserviceable'));
+
+        // If all items are fixed -> fixed
+      // If any item is in verification -> verification wins (finalized)
+if (in_array('verification', $statuses, true)) {
+    return 'verification';
+}
+
+// If all items are fixed -> fixed
+if ($fixedCount === $totalCount) {
+    return 'fixed';
+}
+
+// If all items are unserviceable -> unserviceable
+if ($unserviceableCount === $totalCount) {
+    return 'unserviceable';
+}
+
+// If all items are resolved (combination of fixed and unserviceable)
+if (($fixedCount + $unserviceableCount) === $totalCount) {
+    return 'fixed';
+}
+
+// If any item is in active repair -> repair_in_progress
+if (in_array('repair_in_progress', $statuses, true)) {
+    return 'repair_in_progress';
+}
+
+        // If any item is work_approved -> work_approved
         if (in_array('work_approved', $statuses, true)) {
             return 'work_approved';
         }
