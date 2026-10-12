@@ -2100,6 +2100,33 @@ class InventoryController extends Controller
             ->whereNull('propertyinventorydetail.deleted_at');
     }
 
+    private function resolvedEndUserNameSql(): string
+    {
+        return "CONVERT(COALESCE(
+            (
+                SELECT pia.receiver_name
+                FROM propertyissuancedetail pidet_eu
+                JOIN propertyissuance pi_eu ON pi_eu.IssuanceID = pidet_eu.IssuanceID
+                LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet_eu.IssuanceDetailID
+                WHERE pidet_eu.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                    AND pi_eu.deleted_at IS NULL
+                    AND pidet_eu.deleted_at IS NULL
+                    AND pia.receiver_name IS NOT NULL
+                    AND pia.receiver_name <> ''
+                ORDER BY pia.id DESC, pi_eu.DateIssued DESC, pi_eu.IssuanceID DESC
+                LIMIT 1
+            ),
+            (
+                SELECT apEu.FullName
+                FROM assignedproperty ap
+                LEFT JOIN enduser apEu ON apEu.EndUserID = ap.EndUserID
+                WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
+                ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
+                LIMIT 1
+            )
+        ) USING utf8mb4) COLLATE utf8mb4_unicode_ci";
+    }
+
     private function applyAllItemsFilters($query, ?string $search, ?int $conditionId, ?int $propertyTypeId, ?string $documentType, ?string $rlsddpStatus = null, ?int $departmentId = null, ?int $propertyStatusId = null, ?string $accountableOfficer = null): void
     {
         if ($search) {
@@ -2118,33 +2145,7 @@ class InventoryController extends Controller
                     ->orWhere('deliveryreceiptdetail.ModelNumber', 'like', '%' . $search . '%')
                     ->orWhere('deliveryreceiptdetail.SerialNumber', 'like', '%' . $search . '%')
                     ->orWhere('articles.ArticleName', 'like', '%' . $search . '%')
-                    ->orWhereExists(function ($sub) use ($search) {
-                        $sub->select(DB::raw(1))
-                            ->from('propertyissuancedetail as pidet_s')
-                            ->join('propertyissuance as pi_s', 'pi_s.IssuanceID', '=', 'pidet_s.IssuanceID')
-                            ->join('property_issuance_assignments as pia_s', 'pia_s.issuance_detail_id', '=', 'pidet_s.IssuanceDetailID')
-                            ->whereColumn('pidet_s.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                            ->whereNull('pi_s.deleted_at')
-                            ->whereNull('pidet_s.deleted_at')
-                            ->where('pia_s.receiver_name', 'like', '%' . $search . '%');
-                    })
-                    ->orWhereExists(function ($sub) use ($search) {
-                        $sub->select(DB::raw(1))
-                            ->from('propertyissuancedetail as pidet_s2')
-                            ->join('propertyissuance as pi_s2', 'pi_s2.IssuanceID', '=', 'pidet_s2.IssuanceID')
-                            ->join('enduser as eu_s', 'eu_s.EndUserID', '=', 'pi_s2.IssuedTo')
-                            ->whereColumn('pidet_s2.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                            ->whereNull('pi_s2.deleted_at')
-                            ->whereNull('pidet_s2.deleted_at')
-                            ->where('eu_s.FullName', 'like', '%' . $search . '%');
-                    })
-                    ->orWhereExists(function ($sub) use ($search) {
-                        $sub->select(DB::raw(1))
-                            ->from('assignedproperty as ap_s')
-                            ->join('enduser as apeu_s', 'apeu_s.EndUserID', '=', 'ap_s.EndUserID')
-                            ->whereColumn('ap_s.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                            ->where('apeu_s.FullName', 'like', '%' . $search . '%');
-                    })
+                    ->orWhereRaw("({$this->resolvedEndUserNameSql()}) LIKE ?", ['%' . $search . '%'])
                     ->orWhereExists(function ($sub) use ($search) {
                         $sub->select(DB::raw(1))
                             ->from('assignedproperty as ap_dep')
@@ -2238,40 +2239,7 @@ class InventoryController extends Controller
 
         if ($accountableOfficer !== null && $accountableOfficer !== '') {
             $officerPattern = '%' . $accountableOfficer . '%';
-            $query->where(function ($q) use ($officerPattern) {
-                // Check assignment via issuance assignment receiver_name
-                $q->whereExists(function ($sub) use ($officerPattern) {
-                    $sub->select(DB::raw(1))
-                        ->from('propertyissuancedetail as pidet_ao')
-                        ->join('propertyissuance as pi_ao', 'pi_ao.IssuanceID', '=', 'pidet_ao.IssuanceID')
-                        ->join('property_issuance_assignments as pia_ao', 'pia_ao.issuance_detail_id', '=', 'pidet_ao.IssuanceDetailID')
-                        ->whereColumn('pidet_ao.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                        ->whereNull('pi_ao.deleted_at')
-                        ->whereNull('pidet_ao.deleted_at')
-                        ->whereNotNull('pia_ao.receiver_name')
-                        ->where('pia_ao.receiver_name', '!=', '')
-                        ->where('pia_ao.receiver_name', 'like', $officerPattern);
-                })
-                // OR via issuance end-user (IssuedTo)
-                ->orWhereExists(function ($sub) use ($officerPattern) {
-                    $sub->select(DB::raw(1))
-                        ->from('propertyissuancedetail as pidet_ao2')
-                        ->join('propertyissuance as pi_ao2', 'pi_ao2.IssuanceID', '=', 'pidet_ao2.IssuanceID')
-                        ->join('enduser as eu_ao', 'eu_ao.EndUserID', '=', 'pi_ao2.IssuedTo')
-                        ->whereColumn('pidet_ao2.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                        ->whereNull('pi_ao2.deleted_at')
-                        ->whereNull('pidet_ao2.deleted_at')
-                        ->where('eu_ao.FullName', 'like', $officerPattern);
-                })
-                // OR via assignedproperty end-user
-                ->orWhereExists(function ($sub) use ($officerPattern) {
-                    $sub->select(DB::raw(1))
-                        ->from('assignedproperty as ap_ao')
-                        ->join('enduser as apeu_ao', 'apeu_ao.EndUserID', '=', 'ap_ao.EndUserID')
-                        ->whereColumn('ap_ao.InventoryDetailID', 'propertyinventorydetail.InventoryDetailID')
-                        ->where('apeu_ao.FullName', 'like', $officerPattern);
-                });
-            });
+            $query->whereRaw("({$this->resolvedEndUserNameSql()}) LIKE ?", [$officerPattern]);
         }
     }
 
@@ -2450,29 +2418,7 @@ class InventoryController extends Controller
                     ORDER BY q.DateGenerated DESC, q.QRCodeID DESC
                     LIMIT 1
                 ) as qrCodeData"),
-               'custodianName' => DB::raw("COALESCE(
-                (
-                    SELECT pia.receiver_name
-                    FROM propertyissuancedetail pidet
-                    JOIN propertyissuance pi ON pi.IssuanceID = pidet.IssuanceID
-                    LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet.IssuanceDetailID
-                    WHERE pidet.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                        AND pi.deleted_at IS NULL
-                        AND pidet.deleted_at IS NULL
-                        AND pia.receiver_name IS NOT NULL
-                        AND pia.receiver_name <> ''
-                    ORDER BY pia.id DESC, pi.DateIssued DESC, pi.IssuanceID DESC
-                    LIMIT 1
-                ),
-                (
-                    SELECT euAP.FullName
-                    FROM assignedproperty ap
-                    LEFT JOIN enduser euAP ON euAP.EndUserID = ap.EndUserID
-                    WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                    ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
-                    LIMIT 1
-                )
-            ) as custodianName"),
+                'custodianName' => DB::raw("({$this->resolvedEndUserNameSql()}) as custodianName"),
                 'locationDepartment' => DB::raw("COALESCE(
                     (
                         SELECT depAP.DepartmentName
@@ -2601,40 +2547,7 @@ class InventoryController extends Controller
                     ORDER BY pb.BorrowedAt DESC, pb.BorrowID DESC
                     LIMIT 1
                 ) as currentBorrowerDepartment"),
-           'endUserName' => DB::raw("COALESCE(
-                (
-                    SELECT pia.receiver_name
-                    FROM propertyissuancedetail pidet2
-                    JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
-                    LEFT JOIN property_issuance_assignments pia ON pia.issuance_detail_id = pidet2.IssuanceDetailID
-                    WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                        AND pi2.deleted_at IS NULL
-                        AND pidet2.deleted_at IS NULL
-                        AND pia.receiver_name IS NOT NULL
-                        AND pia.receiver_name <> ''
-                    ORDER BY pia.id DESC, pi2.DateIssued DESC, pi2.IssuanceID DESC
-                    LIMIT 1
-                ),
-                (
-                    SELECT eu2.FullName
-                    FROM propertyissuancedetail pidet2
-                    JOIN propertyissuance pi2 ON pi2.IssuanceID = pidet2.IssuanceID
-                    LEFT JOIN enduser eu2 ON eu2.EndUserID = pi2.IssuedTo
-                    WHERE pidet2.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                        AND pi2.deleted_at IS NULL
-                        AND pidet2.deleted_at IS NULL
-                    ORDER BY pi2.DateIssued DESC, pi2.IssuanceID DESC
-                    LIMIT 1
-                ),
-                (
-                    SELECT apEu.FullName
-                    FROM assignedproperty ap
-                    LEFT JOIN enduser apEu ON apEu.EndUserID = ap.EndUserID
-                    WHERE ap.InventoryDetailID = propertyinventorydetail.InventoryDetailID
-                    ORDER BY COALESCE(ap.UpdatedDate, ap.CreatedDate) DESC, ap.PropertyID DESC
-                    LIMIT 1
-                )
-            ) as endUserName"),
+                'endUserName' => DB::raw("({$this->resolvedEndUserNameSql()}) as endUserName"),
                    'endUserPosition' => DB::raw("COALESCE(
             (
                 SELECT pia.position_office
