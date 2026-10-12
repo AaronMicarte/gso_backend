@@ -713,75 +713,108 @@ class InventoryController extends Controller
         return response()->json(['message' => 'QR generated', 'qr' => $qr], 201);
     }
 
-    // PUT /api/admin/inventory/details/{id}
-    public function updateDetail(Request $request, $id)
-    {
-        $detail = PropertyInventoryDetail::find($id);
-        if (!$detail) {
-            return response()->json(['message' => 'Inventory detail not found'], 404);
+  public function updateDetail(Request $request, $id)
+{
+    $detail = PropertyInventoryDetail::find($id);
+    if (!$detail) {
+        return response()->json(['message' => 'Inventory detail not found'], 404);
+    }
+
+    $editableFields = ['Description', 'Brand', 'ModelNumber', 'SerialNumber'];
+
+    $validator = Validator::make($request->all(), [
+        'Description' => 'nullable|string|max:255',
+        'Brand' => 'nullable|string|max:100',
+        'ModelNumber' => 'nullable|string|max:100',
+        'SerialNumber' => [
+            'nullable',
+            'string',
+            'max:100',
+            // Uniqueness is enforced manually below (case-insensitive).
+            // Keep this rule for basic shape/type validation only.
+        ],
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $normalize = static function ($value): ?string {
+        if ($value === null) {
+            return null;
+        }
+        $trimmed = trim((string) $value);
+        return $trimmed === '' ? null : $trimmed;
+    };
+
+    $beforeSnapshot = [];
+    foreach ($editableFields as $field) {
+        $beforeSnapshot[$field] = $normalize($detail->{$field});
+    }
+
+    $updates = [];
+    $changes = [];
+
+    foreach ($editableFields as $field) {
+        if (!$request->exists($field)) {
+            continue;
         }
 
-        $editableFields = ['Description', 'Brand', 'ModelNumber', 'SerialNumber'];
+        $newValue = $normalize($request->input($field));
+        $oldValue = $beforeSnapshot[$field];
 
-        $validator = Validator::make($request->all(), [
-            'Description' => 'nullable|string|max:255',
-            'Brand' => 'nullable|string|max:100',
-            'ModelNumber' => 'nullable|string|max:100',
-            'SerialNumber' => 'nullable|string|max:100',
+        if ($oldValue !== $newValue) {
+            $changes[$field] = [
+                'before' => $oldValue,
+                'after' => $newValue,
+            ];
+            $updates[$field] = $newValue;
+        }
+    }
+
+    if (empty($updates)) {
+        return response()->json([
+            'message' => 'No changes detected',
+            'detail' => $detail,
         ]);
+    }
 
-        if ($validator->fails()) {
+    // ---------------------------------------------------------------
+    // NEW: Reject duplicate serial numbers (case-insensitive).
+    // Scoped to the same InventoryID by default. Remove the ->where()
+    // block if serials must be globally unique instead.
+    // ---------------------------------------------------------------
+    if (!empty($updates['SerialNumber'])) {
+        $normalizedSerial = mb_strtolower(trim((string) $updates['SerialNumber']));
+
+        $duplicate = PropertyInventoryDetail::query()
+            ->where('InventoryDetailID', '!=', $detail->InventoryDetailID)
+            ->whereNotNull('SerialNumber')
+            ->whereRaw('LOWER(TRIM(SerialNumber)) = ?', [$normalizedSerial])
+            ->where('InventoryID', $detail->InventoryID) // scope to same inventory
+            ->first(['InventoryDetailID', 'PropertyNumber']);
+
+        if ($duplicate) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => [
+                    'SerialNumber' => [
+                        'Serial number already used by item #'
+                        . $duplicate->InventoryDetailID
+                        . ($duplicate->PropertyNumber ? " ({$duplicate->PropertyNumber})" : '')
+                        . '.',
+                    ],
+                ],
             ], 422);
         }
+    }
 
-        $normalize = static function ($value): ?string {
-            if ($value === null) {
-                return null;
-            }
-
-            $trimmed = trim((string) $value);
-
-            return $trimmed === '' ? null : $trimmed;
-        };
-
-        $beforeSnapshot = [];
-        foreach ($editableFields as $field) {
-            $beforeSnapshot[$field] = $normalize($detail->{$field});
-        }
-
-        $updates = [];
-        $changes = [];
-
-        foreach ($editableFields as $field) {
-            if (!$request->exists($field)) {
-                continue;
-            }
-
-            $newValue = $normalize($request->input($field));
-            $oldValue = $beforeSnapshot[$field];
-
-            if ($oldValue !== $newValue) {
-                $changes[$field] = [
-                    'before' => $oldValue,
-                    'after' => $newValue,
-                ];
-                $updates[$field] = $newValue;
-            }
-        }
-
-        if (empty($updates)) {
-            return response()->json([
-                'message' => 'No changes detected',
-                'detail' => $detail,
-            ]);
-        }
-
-        $detail->fill($updates);
-        $detail->UpdatedDate = now();
-        $detail->save();
+    $detail->fill($updates);
+    $detail->UpdatedDate = now();
+    $detail->save();
 
         if (array_key_exists('Description', $updates)) {
             AssignedProperty::where('InventoryDetailID', (int) $detail->InventoryDetailID)
