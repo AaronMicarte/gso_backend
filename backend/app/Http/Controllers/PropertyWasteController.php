@@ -246,11 +246,25 @@ class PropertyWasteController extends Controller
      * Returns flattened list of unserviceable inventory items.
      * Scoped to department if requester is a Department Head.
      */
-   public function adminUnserviceable(Request $request): JsonResponse
+    public function adminUnserviceable(Request $request): JsonResponse
     {
         $user = Auth::user();
         $roleName = $user?->userRole?->RoleName ?? '';
         $perPage = max(10, min(100, (int) $request->query('per_page', 15)));
+
+        $latestWasteSub = DB::table('property_waste_items')
+            ->select('InventoryDetailID', DB::raw('MAX(PropertyWasteItemID) as LatestWasteItemID'))
+            ->whereNull('deleted_at')
+            ->groupBy('InventoryDetailID');
+
+        $latestPuiSub = DB::table('property_unserviceable_items as pui')
+            ->join('property_unserviceable_reports as pur', 'pur.id', '=', 'pui.unserviceable_report_id')
+            ->whereNull('pur.deleted_at')
+            ->where('pur.status', '=', 'active')
+            ->select('pui.inventory_detail_id', DB::raw('MAX(pui.id) as LatestPuiID'))
+            ->groupBy('pui.inventory_detail_id');
+
+        $effectiveDateSql = 'COALESCE(pwi.created_at, pur.created_at, pid.UpdatedDate, pid.CreatedDate)';
 
         $query = DB::table('propertyinventorydetail as pid')
             ->leftJoin('propertyinventory as pi', 'pi.InventoryID', '=', 'pid.InventoryID')
@@ -258,8 +272,13 @@ class PropertyWasteController extends Controller
             ->leftJoin('condition as c', 'c.ConditionID', '=', 'pid.ConditionID')
             ->leftJoin('deliveryreceiptdetail as drd', 'pid.SourceDRDetailID', '=', 'drd.DRDetailID')
             ->leftJoin('articles as a', 'drd.ArticleID', '=', 'a.ArticleID')
-            ->leftJoin('property_waste_items as pwi', 'pwi.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->leftJoinSub($latestWasteSub, 'lw', 'lw.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->leftJoin('property_waste_items as pwi', 'pwi.PropertyWasteItemID', '=', 'lw.LatestWasteItemID')
             ->leftJoin('user as actionUser', 'actionUser.UserID', '=', 'pwi.ActionedByUserID')
+            ->leftJoinSub($latestPuiSub, 'lpui', 'lpui.inventory_detail_id', '=', 'pid.InventoryDetailID')
+            ->leftJoin('property_unserviceable_items as pui', 'pui.id', '=', 'lpui.LatestPuiID')
+            ->leftJoin('property_unserviceable_reports as pur', 'pur.id', '=', 'pui.unserviceable_report_id')
+            ->leftJoin('user as puiUser', 'puiUser.UserID', '=', 'pur.created_by_user_id')
             ->select(
                 'pid.InventoryDetailID',
                 'pi.InventoryID',
@@ -272,15 +291,16 @@ class PropertyWasteController extends Controller
                 'pid.UnitCost',
                 'pid.TotalCost',
                 'pwi.PropertyWasteItemID',
-                DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate) as marked_at'),
-                'actionUser.UserID as marked_by_user_id',
-                'actionUser.FullName as marked_by_fullname',
+                DB::raw("{$effectiveDateSql} as marked_at"),
+                DB::raw('COALESCE(actionUser.UserID, puiUser.UserID) as marked_by_user_id'),
+                DB::raw('COALESCE(actionUser.FullName, puiUser.FullName) as marked_by_fullname'),
                 'c.ConditionName',
                 'pt.PropertyClassificationID'
             )
             ->where(function ($q) {
                 $q->whereRaw("LOWER(c.ConditionName) = ?", ['unserviceable'])
-                    ->orWhereNotNull('pwi.PropertyWasteItemID');
+                    ->orWhereNotNull('lw.LatestWasteItemID')
+                    ->orWhereNotNull('lpui.LatestPuiID');
             })
             ->when($roleName === self::ROLE_DEPARTMENT_HEAD, function ($q) use ($user) {
                 $deptId = (int) ($user?->DepartmentID ?? 0);
@@ -335,7 +355,7 @@ class PropertyWasteController extends Controller
                 ], 422);
             }
 
-            $query->whereBetween(DB::raw('DATE(COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate))'), [$start->toDateString(), $end->toDateString()]);
+            $query->whereBetween(DB::raw("DATE({$effectiveDateSql})"), [$start->toDateString(), $end->toDateString()]);
         } else {
             $month = $request->query('month');
             $year = $request->query('year');
@@ -348,19 +368,19 @@ class PropertyWasteController extends Controller
             if ($month !== null) {
                 $month = (int) $month;
                 if ($month >= 1 && $month <= 12) {
-                    $query->whereMonth(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'), $month);
+                    $query->whereMonth(DB::raw($effectiveDateSql), $month);
                 }
             }
 
             if ($year !== null) {
                 $year = (int) $year;
                 if ($year >= 2000 && $year <= 9999) {
-                    $query->whereYear(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'), $year);
+                    $query->whereYear(DB::raw($effectiveDateSql), $year);
                 }
             }
         }
 
-        $query->orderByDesc(DB::raw('COALESCE(pwi.created_at, pid.UpdatedDate, pid.CreatedDate)'));
+        $query->orderByDesc(DB::raw($effectiveDateSql));
 
         $rows = $query->paginate($perPage);
 
