@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Auth\User;
 use App\Models\Inventory\PropertyInventoryDetail;
 use App\Models\MasterData\Condition;
+use App\Models\PropertyUnserviceableItem;
 use App\Models\PropertyUnserviceableReport;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -147,6 +148,169 @@ class UnserviceableReportTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $dupRes->assertStatus(422);
+    }
+
+    private function submitReportForDetail(User $admin, PropertyInventoryDetail $detail, string $fileName = 'proof.pdf'): int
+    {
+        Storage::fake('local');
+        $proofPdf = UploadedFile::fake()->create($fileName, 500, 'application/pdf');
+
+        $response = $this->actingAs($admin, 'sanctum')->post('/api/inventory/unserviceable-reports', [
+            'items' => json_encode([$detail->InventoryDetailID]),
+            'remarks' => 'Unserviceable incident',
+            'attachments' => [$proofPdf],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertStatus(201);
+
+        return (int) $response->json('report.id');
+    }
+
+    /** Test: New report allowed after prior active report is resolved */
+    public function test_new_report_allowed_after_previous_report_resolved()
+    {
+        $admin = $this->admin();
+        $this->assertNotNull($admin);
+
+        $detail = PropertyInventoryDetail::where('ConditionID', 1)->first();
+        if (!$detail) {
+            $this->markTestSkipped('No serviceable inventory detail found for testing.');
+        }
+
+        $firstReportId = $this->submitReportForDetail($admin, $detail, 'first_incident.pdf');
+
+        PropertyUnserviceableReport::resolveActiveReportsForInventoryDetail(
+            (int) $detail->InventoryDetailID,
+            (int) $admin->UserID,
+            ['reason' => 'test_repair']
+        );
+
+        $this->assertDatabaseHas('property_unserviceable_reports', [
+            'id' => $firstReportId,
+            'status' => PropertyUnserviceableReport::STATUS_RESOLVED,
+        ]);
+
+        $detail->refresh();
+        $detail->ConditionID = 1;
+        $detail->save();
+
+        $secondReportId = $this->submitReportForDetail($admin, $detail, 'second_incident.pdf');
+        $this->assertNotEquals($firstReportId, $secondReportId);
+
+        $this->assertEquals(2, PropertyUnserviceableItem::where('inventory_detail_id', $detail->InventoryDetailID)->count());
+    }
+
+    /** Test: Duplicate rejection while an active report still exists */
+    public function test_duplicate_active_report_is_rejected()
+    {
+        $admin = $this->admin();
+        $this->assertNotNull($admin);
+
+        $detail = PropertyInventoryDetail::where('ConditionID', 1)->first();
+        if (!$detail) {
+            $this->markTestSkipped('No serviceable inventory detail found for testing.');
+        }
+
+        $this->submitReportForDetail($admin, $detail);
+
+        Storage::fake('local');
+        $dupProof = UploadedFile::fake()->create('duplicate_proof.pdf', 200, 'application/pdf');
+        $dupRes = $this->actingAs($admin, 'sanctum')->post('/api/inventory/unserviceable-reports', [
+            'items' => json_encode([$detail->InventoryDetailID]),
+            'remarks' => 'Attempting duplicate submission',
+            'attachments' => [$dupProof],
+        ], ['Accept' => 'application/json']);
+
+        $dupRes->assertStatus(422);
+        $dupRes->assertJsonValidationErrors(['items']);
+    }
+
+    /** Test: Serviceable inventory auto-resolves orphaned active report so a new incident can be filed */
+    public function test_stale_active_report_reconciled_when_inventory_is_serviceable()
+    {
+        $admin = $this->admin();
+        $this->assertNotNull($admin);
+
+        $detail = PropertyInventoryDetail::where('ConditionID', 1)->first();
+        if (!$detail) {
+            $this->markTestSkipped('No serviceable inventory detail found for testing.');
+        }
+
+        $firstReportId = $this->submitReportForDetail($admin, $detail);
+
+        $detail->refresh();
+        $detail->ConditionID = 1;
+        $detail->save();
+        $detail->load('condition');
+
+        $secondReportId = $this->submitReportForDetail($admin, $detail, 'after_repair.pdf');
+        $this->assertNotEquals($firstReportId, $secondReportId);
+
+        $this->assertDatabaseHas('property_unserviceable_reports', [
+            'id' => $firstReportId,
+            'status' => PropertyUnserviceableReport::STATUS_RESOLVED,
+        ]);
+    }
+
+    /** Test: Resolved prior report allows filing again even if condition still shows unserviceable */
+    public function test_new_report_allowed_when_resolved_even_if_condition_still_unserviceable()
+    {
+        $admin = $this->admin();
+        $this->assertNotNull($admin);
+
+        $detail = PropertyInventoryDetail::where('ConditionID', 1)->first();
+        if (!$detail) {
+            $this->markTestSkipped('No serviceable inventory detail found for testing.');
+        }
+
+        $this->submitReportForDetail($admin, $detail);
+
+        PropertyUnserviceableReport::resolveActiveReportsForInventoryDetail(
+            (int) $detail->InventoryDetailID,
+            (int) $admin->UserID
+        );
+
+        $detail->refresh();
+        $this->assertEquals(2, (int) $detail->ConditionID);
+
+        $secondReportId = $this->submitReportForDetail($admin, $detail, 'repeat_incident.pdf');
+        $this->assertGreaterThan(0, $secondReportId);
+    }
+
+    /** Test: Multiple resolved incidents preserve history and unique report numbers */
+    public function test_repeated_unserviceable_incidents_preserve_history()
+    {
+        $admin = $this->admin();
+        $this->assertNotNull($admin);
+
+        $detail = PropertyInventoryDetail::where('ConditionID', 1)->first();
+        if (!$detail) {
+            $this->markTestSkipped('No serviceable inventory detail found for testing.');
+        }
+
+        $reportIds = [];
+        for ($i = 1; $i <= 3; $i++) {
+            if ($i > 1) {
+                PropertyUnserviceableReport::resolveActiveReportsForInventoryDetail(
+                    (int) $detail->InventoryDetailID,
+                    (int) $admin->UserID
+                );
+                $detail->refresh();
+                $detail->ConditionID = 1;
+                $detail->save();
+            }
+
+            $reportIds[] = $this->submitReportForDetail($admin, $detail, "incident_{$i}.pdf");
+        }
+
+        $reports = PropertyUnserviceableReport::query()->whereIn('id', $reportIds)->get();
+        $this->assertCount(3, $reports->pluck('report_number')->unique());
+        $this->assertEquals(3, PropertyUnserviceableItem::where('inventory_detail_id', $detail->InventoryDetailID)->count());
+        $this->assertEquals(
+            2,
+            $reports->where('status', PropertyUnserviceableReport::STATUS_RESOLVED)->count()
+        );
+        $this->assertEquals(1, $reports->where('status', PropertyUnserviceableReport::STATUS_ACTIVE)->count());
     }
 
     /** Test: Eye-icon endpoint returns empty state for item without report */

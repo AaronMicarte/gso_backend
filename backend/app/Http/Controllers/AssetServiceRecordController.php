@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AssetAuditLog;
 use App\Models\AssetServiceRecord;
 use App\Models\AssetServiceRecordDetail;
+use App\Models\PropertyUnserviceableReport;
 use App\Models\PropertyWasteItem;
 use App\Models\PropertyWasteReport;
 use App\Models\Auth\User;
@@ -130,6 +131,17 @@ class AssetServiceRecordController extends Controller
         // Keep assigned property condition in sync as well.
         \App\Models\AssignedProperty::where('InventoryDetailID', $inventoryDetail->InventoryDetailID)
             ->update(['ConditionID' => $conditionId]);
+
+        if ($conditionId === $this->getConditionIdByName(self::CONDITION_SERVICEABLE)) {
+            $userId = (int) (Auth::id() ?? 0);
+            if ($userId > 0) {
+                PropertyUnserviceableReport::resolveActiveReportsForInventoryDetail(
+                    (int) $inventoryDetail->InventoryDetailID,
+                    $userId,
+                    ['trigger' => 'inventory_condition_serviceable']
+                );
+            }
+        }
     }
 
     private function getForDisposalPropertyStatusId(): ?int
@@ -567,7 +579,17 @@ class AssetServiceRecordController extends Controller
                     $inventoryConditionId = $this->getConditionIdForStatus($detail->Status);
                     if ($inventoryConditionId !== null) {
                         $this->assignConditionForInventory($inventoryDetail, $inventoryConditionId);
-                        if ((string) $detail->Status === 'unserviceable') {
+                        if ((string) $detail->Status === 'fixed') {
+                            PropertyUnserviceableReport::resolveActiveReportsForInventoryDetail(
+                                (int) $detail->InventoryDetailID,
+                                (int) $user->UserID,
+                                [
+                                    'service_record_id' => (int) $record->ServiceRecordID,
+                                    'service_record_detail_id' => (int) $detail->ServiceRecordDetailID,
+                                    'service_number' => (string) $record->ServiceNumber,
+                                ]
+                            );
+                        } elseif ((string) $detail->Status === 'unserviceable') {
                             $this->ensureWasteRecordForUnserviceable($record, $detail, $inventoryDetail, (int) $user->UserID);
                         } else {
                             $forDisposalStatusId = $this->getForDisposalPropertyStatusId();

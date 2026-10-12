@@ -31,4 +31,14 @@ class PropertyUnserviceableItem extends Model
     {
         return $this->belongsTo(PropertyInventoryDetail::class, 'inventory_detail_id', 'InventoryDetailID')->withTrashed();
     }
+
+    public function scopeForInventoryDetail($query, int $inventoryDetailId)
+    {
+        return $query->where('inventory_detail_id', $inventoryDetailId);
+    }
+
+    public function scopeWithActiveReport($query)
+    {
+        return $query->whereHas('report', fn ($q) => $q->active());
+    }
 }

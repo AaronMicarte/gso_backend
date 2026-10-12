@@ -145,12 +145,20 @@ class UnserviceableReportController extends Controller
             ], 422);
         }
 
-        // Check for duplicate active reports or already unserviceable items
+        // If the asset is serviceable again, resolve orphaned active reports before duplicate checks.
         foreach ($inventoryDetails as $detail) {
-            $activeReportItem = PropertyUnserviceableItem::where('inventory_detail_id', $detail->InventoryDetailID)
-                ->whereHas('report', function ($q) {
-                    $q->where('status', 'active');
-                })
+            PropertyUnserviceableReport::reconcileActiveReportsForServiceableInventory(
+                $detail,
+                $userId,
+                ['trigger' => 'unserviceable_report_store']
+            );
+        }
+
+        // Block only when an active unserviceable report already exists for the item.
+        foreach ($inventoryDetails as $detail) {
+            $activeReportItem = PropertyUnserviceableItem::query()
+                ->forInventoryDetail((int) $detail->InventoryDetailID)
+                ->withActiveReport()
                 ->with('report')
                 ->first();
 
@@ -161,16 +169,6 @@ class UnserviceableReportController extends Controller
                     'message' => 'Validation failed',
                     'errors' => [
                         'items' => ["{$itemIdentifier} already has an active unserviceable report ({$activeReportItem->report->report_number})."],
-                    ],
-                ], 422);
-            }
-
-            $currentConditionName = strtolower(trim($detail->condition?->ConditionName ?? ''));
-            if ($detail->ConditionID === self::UNSERVICEABLE_CONDITION_ID || $currentConditionName === 'unserviceable') {
-                return response()->json([
-                    'message' => 'Validation failed',
-                    'errors' => [
-                        'items' => ["{$itemIdentifier} is already marked as Unserviceable."],
                     ],
                 ], 422);
             }
@@ -188,7 +186,7 @@ class UnserviceableReportController extends Controller
 
             $report = PropertyUnserviceableReport::create([
                 'report_number' => $reportNumber,
-                'status' => 'active',
+                'status' => PropertyUnserviceableReport::STATUS_ACTIVE,
                 'remarks' => $remarks !== '' ? $remarks : null,
                 'created_by_user_id' => $userId,
                 'attachment_path' => $primaryStoredPath,
@@ -259,10 +257,9 @@ class UnserviceableReportController extends Controller
     public function showForDetail(Request $request, int $detailId): JsonResponse
     {
         // 1. Direct match for this specific inventory detail
-        $item = PropertyUnserviceableItem::where('inventory_detail_id', $detailId)
-            ->whereHas('report', function ($q) {
-                $q->where('status', 'active');
-            })
+        $item = PropertyUnserviceableItem::query()
+            ->forInventoryDetail($detailId)
+            ->withActiveReport()
             ->with([
                 'report.createdBy:UserID,FullName',
                 'report.attachments',
@@ -293,10 +290,9 @@ class UnserviceableReportController extends Controller
             }
 
             if (!empty($siblingIds)) {
-                $item = PropertyUnserviceableItem::whereIn('inventory_detail_id', $siblingIds)
-                    ->whereHas('report', function ($q) {
-                        $q->where('status', 'active');
-                    })
+                $item = PropertyUnserviceableItem::query()
+                    ->whereIn('inventory_detail_id', $siblingIds)
+                    ->withActiveReport()
                     ->with([
                         'report.createdBy:UserID,FullName',
                         'report.attachments',
