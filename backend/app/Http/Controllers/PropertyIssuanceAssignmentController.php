@@ -66,6 +66,42 @@ class PropertyIssuanceAssignmentController extends Controller
 
     public function index($id)
     {
+        // Sync any transferred items belonging to this issuance with the latest department and end user
+        $transferredItems = DB::table('propertyissuancedetail as pid')
+            ->join('propertytransferdetails as ptd', 'ptd.InventoryDetailID', '=', 'pid.InventoryDetailID')
+            ->join('propertytransfer as pt', 'pt.TransferID', '=', 'ptd.TransferID')
+            ->leftJoin('department as d', 'd.DepartmentID', '=', 'pt.ToDepartmentID')
+            ->leftJoin('enduser as eu', 'eu.EndUserID', '=', 'pt.ToEndUserID')
+            ->where('pid.IssuanceID', $id)
+            ->where('pt.Status', 'completed')
+            ->whereNull('pid.deleted_at')
+            ->whereNull('ptd.deleted_at')
+            ->whereNull('pt.deleted_at')
+            ->orderBy('pt.CompletedAt', 'desc')
+            ->orderBy('pt.TransferID', 'desc')
+            ->select([
+                'pid.IssuanceDetailID',
+                'd.DepartmentName',
+                'eu.FullName',
+            ])
+            ->get()
+            ->unique('IssuanceDetailID');
+
+        foreach ($transferredItems as $tItem) {
+            $assignmentUpdate = [];
+            if (!empty($tItem->DepartmentName)) {
+                $assignmentUpdate['office_name'] = $tItem->DepartmentName;
+            }
+            if (!empty($tItem->FullName)) {
+                $assignmentUpdate['receiver_name'] = trim($tItem->FullName);
+            }
+            if (!empty($assignmentUpdate)) {
+                DB::table('property_issuance_assignments')
+                    ->where('issuance_detail_id', $tItem->IssuanceDetailID)
+                    ->update($assignmentUpdate);
+            }
+        }
+
         $rows = DB::table('property_issuance_assignments')
             ->where('issuance_id', $id)
             ->orderBy('id')
@@ -160,21 +196,18 @@ class PropertyIssuanceAssignmentController extends Controller
                     if ($oldRow) {
                         $oldName = trim($oldRow->receiver_name ?? '');
                         $oldPos = trim($oldRow->position_office ?? '');
-                        $oldOffice = trim($oldRow->office_name ?? '');
                         $newName = $data['receiver_name'];
                         $newPos = trim($data['position_office'] ?? '');
-                        $newOffice = trim($data['office_name'] ?? '');
 
-                        // If ANY receiver field changed, track it for global propagation
+                        // If name or position changed, track for global propagation
+                        // (office_name is NOT propagated — different issuances can have different offices due to transfers)
                         if ($oldName !== '' && (
                             mb_strtolower($oldName) !== mb_strtolower($newName) ||
-                            mb_strtolower($oldPos) !== mb_strtolower($newPos) ||
-                            mb_strtolower($oldOffice) !== mb_strtolower($newOffice)
+                            mb_strtolower($oldPos) !== mb_strtolower($newPos)
                         )) {
                             $updates[mb_strtolower($oldName)] = [
                                 'receiver_name' => $newName,
                                 'position_office' => $data['position_office'],
-                                'office_name' => $data['office_name'],
                             ];
                         }
                     }
@@ -189,19 +222,18 @@ class PropertyIssuanceAssignmentController extends Controller
                 }
             }
 
-            // Propagate receiver info changes globally across ALL issuances
+            // Propagate receiver name/position changes globally across ALL issuances
+            // office_name is intentionally excluded — it varies per issuance (transfers, etc.)
             foreach ($updates as $oldNameLower => $newInfo) {
                 DB::table('property_issuance_assignments')
                     ->whereRaw('LOWER(TRIM(receiver_name)) = ?', [$oldNameLower])
                     ->where(function ($q) use ($newInfo) {
                         $q->where('receiver_name', '!=', $newInfo['receiver_name'])
-                          ->orWhere(DB::raw('COALESCE(position_office, \'\')'), '!=', $newInfo['position_office'] ?? '')
-                          ->orWhere(DB::raw('COALESCE(office_name, \'\')'), '!=', $newInfo['office_name'] ?? '');
+                          ->orWhere(DB::raw('COALESCE(position_office, \'\')'), '!=', $newInfo['position_office'] ?? '');
                     })
                     ->update([
                         'receiver_name' => $newInfo['receiver_name'],
                         'position_office' => $newInfo['position_office'],
-                        'office_name' => $newInfo['office_name'],
                         'updated_at' => $now,
                     ]);
             }

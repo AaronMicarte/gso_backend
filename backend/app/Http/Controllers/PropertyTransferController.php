@@ -1064,6 +1064,35 @@ class PropertyTransferController extends Controller
 
                 $this->updateQrCodeForAssignedProperty($assignedProperty);
 
+                // Update property_issuance_assignments to reflect the new department & end user after transfer
+                $toDeptName = DB::table('department')
+                    ->where('DepartmentID', (int) $transfer->ToDepartmentID)
+                    ->value('DepartmentName');
+                $toEndUserName = DB::table('enduser')
+                    ->where('EndUserID', (int) $transfer->ToEndUserID)
+                    ->value('FullName');
+
+                if ($toDeptName || $toEndUserName) {
+                    $issuanceDetailIds = DB::table('propertyissuancedetail')
+                        ->where('InventoryDetailID', (int) $item->InventoryDetailID)
+                        ->whereNull('deleted_at')
+                        ->pluck('IssuanceDetailID')
+                        ->toArray();
+
+                    if (!empty($issuanceDetailIds)) {
+                        $assignmentUpdate = ['updated_at' => $completionTime];
+                        if ($toDeptName) {
+                            $assignmentUpdate['office_name'] = $toDeptName;
+                        }
+                        if ($toEndUserName) {
+                            $assignmentUpdate['receiver_name'] = trim($toEndUserName);
+                        }
+                        DB::table('property_issuance_assignments')
+                            ->whereIn('issuance_detail_id', $issuanceDetailIds)
+                            ->update($assignmentUpdate);
+                    }
+                }
+
                 AssetAuditLog::createLog(
                     'property_transfer_item',
                     (int) $item->TransferItemID,
@@ -1197,6 +1226,35 @@ class PropertyTransferController extends Controller
                     ->update(['PropertyStatusID' => self::PROPERTY_STATUS_ISSUED]);
 
                 $this->updateQrCodeForAssignedProperty($assignedProperty);
+
+                // Update property_issuance_assignments to reflect the new department & end user after transfer
+                $toDeptName = DB::table('department')
+                    ->where('DepartmentID', (int) $transfer->ToDepartmentID)
+                    ->value('DepartmentName');
+                $toEndUserName = DB::table('enduser')
+                    ->where('EndUserID', (int) $transfer->ToEndUserID)
+                    ->value('FullName');
+
+                if ($toDeptName || $toEndUserName) {
+                    $issuanceDetailIds = DB::table('propertyissuancedetail')
+                        ->where('InventoryDetailID', (int) $item->InventoryDetailID)
+                        ->whereNull('deleted_at')
+                        ->pluck('IssuanceDetailID')
+                        ->toArray();
+
+                    if (!empty($issuanceDetailIds)) {
+                        $assignmentUpdate = ['updated_at' => $completionTime];
+                        if ($toDeptName) {
+                            $assignmentUpdate['office_name'] = $toDeptName;
+                        }
+                        if ($toEndUserName) {
+                            $assignmentUpdate['receiver_name'] = trim($toEndUserName);
+                        }
+                        DB::table('property_issuance_assignments')
+                            ->whereIn('issuance_detail_id', $issuanceDetailIds)
+                            ->update($assignmentUpdate);
+                    }
+                }
 
                 AssetAuditLog::createLog(
                     'property_transfer_item',
