@@ -1467,13 +1467,13 @@ $data = $deliveryReceipt->toArray();
 
                 // Save or update property_issuance_assignments table
                 $existingAssignment = DB::table('property_issuance_assignments')
-                ->where('issuance_id', (int) $issuance->IssuanceID)
-                ->where('issuance_detail_id', (int) $issuanceDetail->IssuanceDetailID)
-                ->where('receiver_name', $assignedReceiverName)
-                ->first();
+                    ->where('issuance_id', (int) $issuance->IssuanceID)
+                    ->where('issuance_detail_id', (int) $issuanceDetail->IssuanceDetailID)
+                    ->first();
 
                 $assignmentPayload = [
                     'issuance_detail_id' => (int) $issuanceDetail->IssuanceDetailID,
+                    'receiver_name' => $assignedReceiverName,
                     'position_office' => $assignedPosition,
                     'office_name' => $assignedOfficeName,
                     'is_department_head' => $assignedIsDeptHead ? 1 : 0,
@@ -1489,7 +1489,6 @@ $data = $deliveryReceipt->toArray();
                 } else {
                     DB::table('property_issuance_assignments')->insert(array_merge($assignmentPayload, [
                         'issuance_id' => (int) $issuance->IssuanceID,
-                        'receiver_name' => $assignedReceiverName,
                         'quantity' => 1,
                         'created_at' => now(),
                     ]));
