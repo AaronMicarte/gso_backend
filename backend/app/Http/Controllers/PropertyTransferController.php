@@ -38,10 +38,12 @@ class PropertyTransferController extends Controller
             'requestedBy.department:DepartmentID,DepartmentName',
             'fromDepartment:DepartmentID,DepartmentName',
             'toDepartment:DepartmentID,DepartmentName',
-            'fromEndUser:EndUserID,FullName,DepartmentID',
+            'fromEndUser:EndUserID,FullName,DepartmentID,PositionID',
             'fromEndUser.department:DepartmentID,DepartmentName',
-            'toEndUser:EndUserID,FullName,DepartmentID',
+            'fromEndUser.position:PositionID,PositionName',
+            'toEndUser:EndUserID,FullName,DepartmentID,PositionID',
             'toEndUser.department:DepartmentID,DepartmentName',
+            'toEndUser.position:PositionID,PositionName',
             'releasingReviewedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
             'completedBy:UserID,FullName',
@@ -129,10 +131,12 @@ class PropertyTransferController extends Controller
             'requestedBy.department:DepartmentID,DepartmentName',
             'fromDepartment:DepartmentID,DepartmentName',
             'toDepartment:DepartmentID,DepartmentName',
-            'fromEndUser:EndUserID,FullName,DepartmentID',
+            'fromEndUser:EndUserID,FullName,DepartmentID,PositionID',
             'fromEndUser.department:DepartmentID,DepartmentName',
-            'toEndUser:EndUserID,FullName,DepartmentID',
+            'fromEndUser.position:PositionID,PositionName',
+            'toEndUser:EndUserID,FullName,DepartmentID,PositionID',
             'toEndUser.department:DepartmentID,DepartmentName',
+            'toEndUser.position:PositionID,PositionName',
             'releasingReviewedBy:UserID,FullName',
             'approvedBy:UserID,FullName',
             'completedBy:UserID,FullName',
@@ -167,7 +171,7 @@ class PropertyTransferController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            if ((int) $transfer->FromDepartmentID === $departmentId) {
+            if ((int) $transfer->FromDepartmentID === $departmentId && (int) $transfer->ToDepartmentID !== $departmentId) {
                 $transfer->ApprovedAt = null;
                 $transfer->BorrowerSignedAt = null;
                 $transfer->BorrowingSignedAt = null;
@@ -214,14 +218,18 @@ class PropertyTransferController extends Controller
 
         $validated = $request->validate([
             'from_department_id' => 'required|integer|exists:department,DepartmentID',
-            'to_department_id' => 'required|integer|different:from_department_id|exists:department,DepartmentID',
+            'to_department_id' => 'required|integer|exists:department,DepartmentID',
             'from_end_user_id' => 'required|integer|exists:enduser,EndUserID',
-            'to_end_user_id' => 'required|integer|exists:enduser,EndUserID',
+            'to_end_user_id' => 'required|integer|different:from_end_user_id|exists:enduser,EndUserID',
             'reason' => 'nullable|string|max:2000',
             'items' => 'required|array|min:1',
             'items.*.inventory_detail_id' => 'required|integer|exists:propertyinventorydetail,InventoryDetailID',
             'items.*.quantity' => 'required|integer|in:1',
         ]);
+
+        if ((int) $validated['from_end_user_id'] === (int) $validated['to_end_user_id']) {
+            return response()->json(['message' => 'The releasing custodian and receiving custodian cannot be the same person'], 422);
+        }
 
         $fromEndUser = EndUser::find((int) $validated['from_end_user_id']);
         $toEndUser = EndUser::find((int) $validated['to_end_user_id']);
@@ -240,9 +248,14 @@ class PropertyTransferController extends Controller
         );
 
         if (!$requesterUserId) {
-            return response()->json([
-                'message' => 'Receiving department requester is missing. Assign an active user (preferably Department Head) in the receiving department.'
-            ], 422);
+            $isAdmin = $roleName === self::ROLE_ADMIN;
+            if ($isAdmin || $this->isPrivileged($roleName)) {
+                $requesterUserId = (int) $user->UserID;
+            } else {
+                return response()->json([
+                    'message' => 'Receiving department requester is missing. Assign an active user in the receiving department.'
+                ], 422);
+            }
         }
 
         $inventoryDetailIds = collect($validated['items'])->pluck('inventory_detail_id')->map(fn ($id) => (int) $id)->values();
@@ -1599,24 +1612,23 @@ class PropertyTransferController extends Controller
             }
         }
 
-        $headNames = $deptHeadUsers->pluck('FullName')->filter()->map(fn ($n) => strtolower(trim($n)))->values()->all();
-        $headDeptIds = $deptHeadUsers->pluck('DepartmentID')->filter()->map(fn ($id) => (int) $id)->values()->all();
+        $headLookup = [];
+        foreach ($deptHeadUsers as $head) {
+            $key = ((int) $head->DepartmentID) . '|' . strtolower(trim((string) $head->FullName));
+            $headLookup[$key] = true;
+        }
 
         $query = EndUser::query()
             ->leftJoin('department as d', 'enduser.DepartmentID', '=', 'd.DepartmentID')
+            ->leftJoin('position as p', 'enduser.PositionID', '=', 'p.PositionID')
             ->where('enduser.IsActive', 1)
-            ->whereIn('enduser.DepartmentID', $headDeptIds)
-            ->where(function ($q) use ($headNames) {
-                foreach ($headNames as $name) {
-                    $q->orWhereRaw('LOWER(enduser.FullName) = ?', [$name]);
-                }
-            })
-            ->orderBy('enduser.FullName')
             ->select([
                 'enduser.EndUserID',
                 'enduser.FullName',
                 'enduser.DepartmentID',
+                'enduser.PositionID',
                 'd.DepartmentName',
+                'p.PositionName',
             ]);
 
         if ($departmentId) {
@@ -1633,9 +1645,23 @@ class PropertyTransferController extends Controller
             });
         }
 
-        $endUsers = $query->get();
+        $endUsers = $query->orderBy('enduser.FullName')->get();
 
-        return response()->json($endUsers);
+        $result = $endUsers->map(function ($u) use ($headLookup) {
+            $key = ((int) $u->DepartmentID) . '|' . strtolower(trim((string) $u->FullName));
+            $isDeptHead = isset($headLookup[$key]) || str_contains(strtolower((string) $u->PositionName), 'department head');
+            return [
+                'EndUserID' => (int) $u->EndUserID,
+                'FullName' => $u->FullName,
+                'DepartmentID' => $u->DepartmentID ? (int) $u->DepartmentID : null,
+                'DepartmentName' => $u->DepartmentName,
+                'PositionID' => $u->PositionID ? (int) $u->PositionID : null,
+                'PositionName' => $u->PositionName ?: ($isDeptHead ? 'Department Head' : 'Employee'),
+                'is_department_head' => $isDeptHead,
+            ];
+        })->values();
+
+        return response()->json($result);
     }
 
     private function isPrivileged(string $roleName): bool
