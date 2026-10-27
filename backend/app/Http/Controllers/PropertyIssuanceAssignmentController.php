@@ -107,6 +107,58 @@ class PropertyIssuanceAssignmentController extends Controller
             ->orderBy('id')
             ->get();
 
+        // Build dept-head-name lookup per unique office_name so the frontend
+        // "Assign to Dept Head" button resolves the correct head after transfers.
+        $officeNames = $rows->pluck('office_name')
+            ->filter(fn($v) => trim((string) $v) !== '')
+            ->unique()
+            ->values();
+        $deptHeadByOffice = [];
+        foreach ($officeNames as $office) {
+            $officeLower = strtolower(trim((string) $office));
+            if (isset($deptHeadByOffice[$officeLower])) {
+                continue;
+            }
+            $dept = DB::table('department')
+                ->whereRaw("LOWER(TRIM(DepartmentName)) = ?", [$officeLower])
+                ->where('IsActive', 1)
+                ->first(['DepartmentID']);
+            if (!$dept) {
+                continue;
+            }
+            // Try user table (department head role)
+            $headName = DB::table('user as u')
+                ->join('userrole as ur', 'ur.UserRoleID', '=', 'u.UserRoleID')
+                ->where('u.DepartmentID', (int) $dept->DepartmentID)
+                ->where('u.IsActive', 1)
+                ->where(function ($q) {
+                    $q->whereRaw("LOWER(COALESCE(ur.RoleName, '')) = ?", ['department head'])
+                      ->orWhere('u.UserRoleID', 4);
+                })
+                ->value('u.FullName');
+            if (!$headName) {
+                // Fallback: enduser table with department-head position
+                $headName = DB::table('enduser as eu')
+                    ->leftJoin('position as p', 'p.PositionID', '=', 'eu.PositionID')
+                    ->where('eu.DepartmentID', (int) $dept->DepartmentID)
+                    ->where('eu.IsActive', 1)
+                    ->where(function ($q) {
+                        $q->where('eu.PositionID', 2)
+                          ->orWhereRaw("LOWER(COALESCE(p.PositionName, '')) = ?", ['department head']);
+                    })
+                    ->value('eu.FullName');
+            }
+            if ($headName) {
+                $deptHeadByOffice[$officeLower] = trim((string) $headName);
+            }
+        }
+
+        $rows = $rows->map(function ($row) use ($deptHeadByOffice) {
+            $officeKey = strtolower(trim((string) ($row->office_name ?? '')));
+            $row->dept_head_name = $deptHeadByOffice[$officeKey] ?? null;
+            return $row;
+        });
+
         return response()->json(['data' => $rows]);
     }
 
