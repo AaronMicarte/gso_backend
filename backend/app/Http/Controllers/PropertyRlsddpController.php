@@ -846,9 +846,22 @@ if ($roleName !== 'Admin') {
         $detailId = $rlsddpItem->InventoryDetailID;
 
         DB::transaction(function () use ($detailId) {
+            $serviceableId = DB::table('condition')
+                ->whereRaw("LOWER(ConditionName) = ?", ['serviceable'])
+                ->value('ConditionID') ?? 1;
+
+            $hasAssignment = DB::table('assignedproperty')
+                ->where('InventoryDetailID', $detailId)
+                ->exists();
+
+            $targetStatusId = $hasAssignment ? 2 : 1; // 2 = Issued, 1 = For issuance (never For Disposal)
+
             $detail = \App\Models\Inventory\PropertyInventoryDetail::withTrashed()->find($detailId);
             if ($detail) {
                 $detail->restore();
+                $detail->ConditionID = $serviceableId;
+                $detail->PropertyStatusID = $targetStatusId;
+                $detail->save();
 
                 $inventoryId = $detail->InventoryID;
                 $inventory = \App\Models\Inventory\PropertyInventory::withTrashed()->find($inventoryId);
@@ -856,6 +869,20 @@ if ($roleName !== 'Admin') {
                     $inventory->restore();
                 }
             }
+
+            if ($hasAssignment) {
+                DB::table('assignedproperty')
+                    ->where('InventoryDetailID', $detailId)
+                    ->update([
+                        'ConditionID' => $serviceableId,
+                        'PropertyStatusID' => 2, // Issued
+                    ]);
+            }
+
+            // Disassociate from RLSDDP items so it no longer retains RLSDDP status after restoration
+            DB::table('property_rlsddp_items')
+                ->where('InventoryDetailID', $detailId)
+                ->delete();
         });
 
         return response()->json(['message' => 'Item restored to active inventory successfully.']);
