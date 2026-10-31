@@ -26,10 +26,41 @@ class DashboardController extends Controller
                     ->count();
             };
 
+            $conditionStats = DB::table('propertyinventorydetail')
+                ->whereNull('deleted_at')
+                ->select(DB::raw("
+                    COUNT(*) as total,
+                    SUM(CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM `condition` AS cu
+                            WHERE cu.ConditionID = propertyinventorydetail.ConditionID
+                            AND LOWER(cu.ConditionName) = 'unserviceable'
+                        ) THEN 0
+                        ELSE 1
+                    END) as serviceable,
+                    SUM(CASE
+                        WHEN EXISTS (
+                            SELECT 1 FROM `condition` AS cu
+                            WHERE cu.ConditionID = propertyinventorydetail.ConditionID
+                            AND LOWER(cu.ConditionName) = 'unserviceable'
+                        ) THEN 1
+                        ELSE 0
+                    END) as unserviceable
+                "))
+                ->first();
+
+            $totalInventory = (int) ($conditionStats->total ?? 0);
+            $serviceable = (int) ($conditionStats->serviceable ?? 0);
+            $unserviceable = (int) ($conditionStats->unserviceable ?? 0);
+
             $stats = [
                 // Only count active (not soft-deleted) inventory details to match the
                 // All Items listing which uses the Eloquent model (SoftDeletes).
-                'totalInventory' => DB::table('propertyinventorydetail')->whereNull('deleted_at')->count(),
+                'totalInventory' => $totalInventory,
+                'serviceableInventory' => $serviceable,
+                'unserviceableInventory' => $unserviceable,
+                'serviceable' => $serviceable,
+                'unserviceable' => $unserviceable,
                 'forIssuanceInventory' => $statusCounts(['For issuance', 'For Issuance', 'To be issued', 'Available']),
                 'issuedInventory' => $statusCounts(['Issued', 'Assigned']),
                 'totalDeliveryReceipts' => DB::table('deliveryreceipt')->whereNull('deleted_at')->count(),
