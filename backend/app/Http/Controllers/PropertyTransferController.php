@@ -87,6 +87,9 @@ class PropertyTransferController extends Controller
                     ->orWhereHas('toDepartment', function ($dq) use ($search) {
                         $dq->where('DepartmentName', 'like', "%{$search}%");
                     })
+                    ->orWhereHas('toEndUser', function ($eq) use ($search) {
+                        $eq->where('FullName', 'like', "%{$search}%");
+                    })
                     ->orWhereHas('requestedBy', function ($uq) use ($search) {
                         $uq->where('FullName', 'like', "%{$search}%");
                     });
