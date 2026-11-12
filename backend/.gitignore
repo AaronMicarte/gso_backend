@@ -24,3 +24,5 @@ Homestead.yaml
 Thumbs.db
 app.zip
 *.zip
+*.pem
+*.crt
